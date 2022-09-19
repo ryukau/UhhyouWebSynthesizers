@@ -1,0 +1,23 @@
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: AlwaysBreak
+AlwaysBreakTemplateDeclarations: MultiLine
+AlignOperands: false
+AllowShortBlocksOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+BinPackParameters: false
+BreakBeforeBinaryOperators: All
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterControlStatement: MultiLine
+BreakConstructorInitializers: BeforeComma
+ColumnLimit: 90
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+KeepEmptyLinesAtTheStartOfBlocks: false
+SpaceAfterTemplateKeyword: false
+SpacesInContainerLiterals: false
+UseTab: Never
