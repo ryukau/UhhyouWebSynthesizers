@@ -1,0 +1,181 @@
+:root {
+  --controlWidth: 32em;
+  --margin: 0.5em;
+  --font-family: sans-serif;
+  --highlight-color: #fbf1b4;
+  --fill-color: #c0c0c0;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  margin: auto;
+  height: 100%;
+}
+
+#main {
+  margin: 0 auto;
+  text-align: center;
+  width: fit-content;
+  height: 100%;
+  column-count: auto;
+  column-width: calc(var(--controlWidth) + var(--margin));
+}
+
+div.controlBlock {
+  display: inline-block;
+  vertical-align: top;
+  width: 100%;
+  max-width: calc(var(--controlWidth) + var(--margin));
+  margin: 0 var(--margin) 0 var(--margin);
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5 {
+  text-align: center;
+  width: 100%;
+}
+
+h6 {
+  display: inline-block;
+
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0.5em 0 0.5em 0;
+  padding: 0.25em 0 0.25em 0em;
+
+  font-size: 1em;
+
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Collapsible. */
+details {
+  display: inline-block;
+
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0.5em 0 0.5em 0;
+
+  text-align: left;
+  vertical-align: middle;
+}
+
+summary {
+  padding: 0.25em 0 0.25em 0em;
+  font: 1em var(--font-family);
+  font-weight: bold;
+}
+
+div.summaryBottomPad {
+  height: var(--margin);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+summary:hover {
+  background-color: var(--highlight-color);
+}
+
+/* Canvas */
+canvas {
+  vertical-align: top;
+}
+
+div.canvasMargin {
+  display: inline-block;
+  margin: var(--margin);
+  border: solid 1px var(--fill-color);
+  border-radius: 1px;
+  padding: 0px;
+}
+
+div.canvasMargin:hover {
+  margin: 1px;
+  border: solid var(--margin) var(--highlight-color);
+  border-radius: 1px;
+}
+
+/* Button. */
+#playControl {
+  margin: var(--margin);
+}
+
+input[type="button"] {
+  font-size: inherit;
+  font-family: inherit;
+  height: 2em;
+}
+
+/* `inputLine` class is shared between controls that occupies a line. */
+div.inputLine {
+  display: flex;
+  text-align: center;
+  width: auto;
+
+  padding: var(--margin);
+}
+
+div.inputLine:hover {
+  background-color: var(--highlight-color);
+}
+
+label.inputLine {
+  display: block;
+  width: 31.25%;
+
+  margin: auto;
+  padding-left: var(--margin);
+
+  text-align: left;
+}
+
+/* NumberInput */
+input[type="range"] {
+  flex-grow: 1;
+  display: block;
+  margin-right: var(--margin);
+}
+
+input[type="number"] {
+  display: block;
+  font-size: inherit;
+  font-family: inherit;
+  width: 31.25%;
+  margin: auto;
+}
+
+/* ComboBox */
+select {
+  display: block;
+  text-align: center;
+  font-size: inherit;
+  font-family: inherit;
+  flex-grow: 1;
+}
+
+/* Barbox */
+label.barbox {
+  display: block;
+  margin: var(--margin);
+}
+
+span.barbox {
+  margin: var(--margin);
+  width: fit-content;
+  display: inline-block;
+}
+
+input.barbox {
+  margin: var(--margin);
+  width: fit-content;
+  display: inline-block;
+}

@@ -1,4 +1,4 @@
-import * as delay from "../common/dsp/delay.js";
+import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import * as multirate from "../common/dsp/multirate.js";
 
 onmessage = (event) => {
@@ -9,7 +9,7 @@ onmessage = (event) => {
 
   let halfband = new multirate.HalfBandIIR();
 
-  let fdn = new delay.FeedbackDelayNetwork(
+  let fdn = new FeedbackDelayNetwork(
     pv.matrixSize,
     upRate,
     pv.maxDelayTime,

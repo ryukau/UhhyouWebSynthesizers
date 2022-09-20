@@ -10,6 +10,22 @@ function createArrayParameters(defaultDspValue, scale) {
   return arr;
 }
 
+function render(value) {
+  audio.render(parameter.toMessage(param, {
+    sampleRate: audio.audioContext.sampleRate,
+    maxDelayTime: scales.delayTime.maxDsp,
+    overSample: ui.overSample.value,
+    matrixType: ui.matrixType.value,
+  }));
+}
+
+function onMatrixSizeChanged(value) {
+  ui.delayTime.setViewRange(0, value);
+  ui.lowpassCutoffHz.setViewRange(0, value);
+  ui.highpassCutoffHz.setViewRange(0, value);
+  render(value);
+}
+
 const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, false),
@@ -39,55 +55,60 @@ const param = {
   highpassCutoffHz: createArrayParameters(5, scales.highpassCutoffHz),
 };
 
+// Add controls.
 const audio = new wave.Audio(
   2,
   "./renderer.js",
-  document.getElementById("renderStatus"),
+  undefined,
   (wave) => {
-    for (let i = 0; i < ui.waveView.length; ++i) ui.waveView[i].set(wave.data[i]);
+    for (let i = 0; i < waveView.length; ++i) waveView[i].set(wave.data[i]);
   },
 );
 
-function render(value) {
-  audio.render(parameter.toMessage(param, {
-    sampleRate: audio.audioContext.sampleRate,
-    maxDelayTime: scales.delayTime.maxDsp,
-    overSample: ui.overSample.value,
-    matrixType: ui.matrixType.value,
-  }));
-}
+const fontSize
+  = parseFloat(getComputedStyle(document.body).getPropertyValue("font-size"));
+const waveViewWidth = 15 * fontSize;
+const waveViewHeight = 8 * fontSize;
+const barboxWidth = 32 * fontSize;
+const barboxHeight = 12 * fontSize;
 
-function onMatrixSizeChanged(value) {
-  ui.delayTime.setViewRange(0, value);
-  ui.lowpassCutoffHz.setViewRange(0, value);
-  ui.highpassCutoffHz.setViewRange(0, value);
-  render(value);
-}
+const pageTitle = widget.heading(document.body, 1, document.title, undefined, undefined);
+const divMain = widget.div(document.body, "main", undefined);
 
-const divMain = document.getElementById("main");
+const divLeft = widget.div(divMain, undefined, "controlBlock");
+const divRight = widget.div(divMain, undefined, "controlBlock");
+
+const headingWaveform = widget.heading(divLeft, 6, "Waveform");
+const waveView = [
+  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, audio.wave.data[0], false),
+  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, audio.wave.data[1], false),
+];
+
+const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
+audio.renderStatusElement = pRenderStatus;
+
+const divPlayControl = widget.div(divLeft, "playControl", undefined);
+const playButton = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const stopButton = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
+const saveButton = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+
+const detailRender = widget.details(divLeft, "Render");
+const detailFdn = widget.details(divLeft, "FDN");
+const detailDelay = widget.details(divRight, "Delay & Filter");
 
 const ui = {
-  waveView: [
-    new widget.WaveView(divMain, 384, 128, audio.wave.data[0], false),
-    new widget.WaveView(divMain, 384, 128, audio.wave.data[1], false),
-  ],
-
-  play: new widget.Button(divMain, "Play", (ev) => { audio.play(); }),
-  stop: new widget.Button(divMain, "Stop", (ev) => { audio.stop(); }),
-  save: new widget.Button(divMain, "Save", (ev) => { audio.save(); }),
-
   renderDuration:
-    new widget.NumberInput(divMain, "Duration [s]", param.renderDuration, render),
-  fadeOut: new widget.NumberInput(divMain, "Fade out [s]", param.fadeOut, render),
-  overSample: new widget.PullDownMenu(divMain, "Over-sample", ["1", "2"], "2", render),
+    new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
+  fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
+  overSample: new widget.ComboBox(detailRender, "Over-sample", ["1", "2"], "2", render),
 
-  matrixSize:
-    new widget.NumberInput(divMain, "MatrixSize", param.matrixSize, onMatrixSizeChanged),
+  matrixSize: new widget.NumberInput(
+    detailFdn, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
   timeMultiplier:
-    new widget.NumberInput(divMain, "Time Multiplier", param.timeMultiplier, render),
-  feedback: new widget.NumberInput(divMain, "Feedback", param.feedback, render),
-  matrixType: new widget.PullDownMenu(
-    divMain, "Matrix Type",
+    new widget.NumberInput(detailFdn, "Time Multiplier", param.timeMultiplier, render),
+  feedback: new widget.NumberInput(detailFdn, "Feedback", param.feedback, render),
+  matrixType: new widget.ComboBox(
+    detailFdn, "Matrix Type",
     [
       "orthogonal",
       "specialOrthogonal",
@@ -108,14 +129,16 @@ const ui = {
       "conference",
     ],
     "specialOrthogonal", render),
-  seed: new widget.NumberInput(divMain, "Seed", param.seed, render),
+  seed: new widget.NumberInput(detailFdn, "Seed", param.seed, render),
 
-  delayTime:
-    new widget.BarBox(divMain, "Delay Time [s]", 512, 200, param.delayTime, render),
+  delayTime: new widget.BarBox(
+    detailDelay, "Delay Time [s]", barboxWidth, barboxHeight, param.delayTime, render),
   lowpassCutoffHz: new widget.BarBox(
-    divMain, "Lowpass Cutoff [Hz]", 512, 200, param.lowpassCutoffHz, render),
+    detailDelay, "Lowpass Cutoff [Hz]", barboxWidth, barboxHeight, param.lowpassCutoffHz,
+    render),
   highpassCutoffHz: new widget.BarBox(
-    divMain, "Highpass Cutoff [Hz]", 512, 200, param.highpassCutoffHz, render),
+    detailDelay, "Highpass Cutoff [Hz]", barboxWidth, barboxHeight,
+    param.highpassCutoffHz, render),
 };
 
 onMatrixSizeChanged(param.matrixSize.defaultDsp);

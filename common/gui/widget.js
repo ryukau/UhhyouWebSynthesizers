@@ -1,84 +1,53 @@
 export {BarBox} from "./barbox.js";
+export {ComboBox} from "./combobox.js";
 export {NumberInput} from "./numberinput.js";
 export {WaveView} from "./waveview.js";
 
-export class Button {
-  constructor(parent, label, onClickFunc) {
-    this.element = document.createElement("input");
-    this.element.type = "button";
-    this.element.value = label;
-    this.element.addEventListener("click", (event) => this.onClick(event), false);
-    this.onClickFunc = onClickFunc;
-    parent.appendChild(this.element);
-  }
-
-  onClick(event) { this.onClickFunc(event); }
+export function Button(parent, label, onClickFunc) {
+  let element = document.createElement("input");
+  element.type = "button";
+  element.value = label;
+  element.ariaLabel = label;
+  element.addEventListener("click", (event) => onClickFunc(event), false);
+  parent.appendChild(element);
+  return element;
 }
 
-export class PullDownMenu {
-  constructor(parent, label, menus, defaultValue, onChangeFunc) {
-    this.onChangeFunc = onChangeFunc;
-    this.options = [];
+function createGenericElement(tagName, parent, id, className) {
+  let element = document.createElement(tagName);
+  if (typeof id === "string") element.id = id;
+  if (typeof className === "string") element.className = className;
+  parent.appendChild(element);
+  return element;
+}
 
-    this.div = document.createElement("div");
-    this.div.className = "pullDownMenu";
-    if (typeof label === 'string' || label instanceof String) {
-      this.divLabel = document.createElement("div");
-      this.divLabel.className = "numberInputLabel";
-      this.divLabel.textContent = label;
-      this.div.appendChild(this.divLabel);
-    }
-    this.select = document.createElement("select");
-    this.div.appendChild(this.select);
-    parent.appendChild(this.div);
+export function div(parent, id, className) {
+  return createGenericElement("div", parent, id, className);
+}
 
-    this.select.addEventListener("change", (event) => this.onChange(event), false);
+export function span(parent, id, className) {
+  return createGenericElement("span", parent, id, className);
+}
 
-    this.addArray(menus);
-    this.setValue(defaultValue, false);
-  }
+export function paragraph(parent, id, className) {
+  return createGenericElement("p", parent, id, className);
+}
 
-  get value() { return this.select.value; }
+export function heading(parent, level, text, id, className) {
+  console.assert(level >= 1 && level <= 6, "Heading level out of range.", new Error());
+  let element = createGenericElement(`h${level}`, parent, id, className);
+  element.textContent = text;
+  return element;
+}
 
-  setValue(value, triggerOnChange = true) {
-    const backup = this.select.value;
-    this.select.value = value;
-    if (this.select.selectedIndex < 0) {
-      this.select.value = backup;
-      console.warn("PullDownMenu: Invalid value.");
-      return;
-    }
-    this.refreshValue(this.select, triggerOnChange);
-  }
+export function details(parent, summaryText, id, className, isOpen = true) {
+  let details = createGenericElement("details", parent, id, className);
+  if (isOpen) details.setAttribute("open", "");
 
-  setIndex(index, triggerOnChange = true) {
-    if (index < 0 || index >= this.options.length) {
-      console.warn("PullDownMenu: Index out of range.");
-      return;
-    }
-    this.select.value = this.options[index].value;
-    this.refreshValue(this.select, triggerOnChange);
-  }
+  let summary = createGenericElement("summary", details, id, className);
+  summary.textContent = summaryText;
 
-  onChange(event) { this.refreshValue(event.target, true); }
+  div(details, undefined, "summaryBottomPad");
 
-  refreshValue(select, triggerOnChange) {
-    if (triggerOnChange) this.onChangeFunc(select.value);
-  }
-
-  add(menu) {
-    if (typeof menu !== 'string' && !(menu instanceof String)) {
-      console.log("PullDownMenu.add() failed to invalid type.");
-    }
-    let option = document.createElement('option');
-    option.textContent = menu;
-    option.value = menu;
-    this.options.push(option);
-    this.select.appendChild(option);
-  }
-
-  // `menus` is array of strings.
-  addArray(menus) {
-    for (const menu of menus) this.add(menu);
-  }
+  return details;
 }

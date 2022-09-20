@@ -19,14 +19,73 @@ export class BarBox {
   `parameters` is a list of `widget.Parameter`.
   */
   constructor(parent, label, width, height, parameters, onInputFunc) {
-    this.div = document.createElement("div");
-    this.div.className = "canvasMargin";
-    parent.appendChild(this.div);
+    console.assert(parameters.length > 0, "BarBox parameter is empty.", new Error());
+
+    this.label = label;
+    this.param = parameters;
+    this.onInputFunc = onInputFunc;
+    this.snapValue = [];
+
+    this.divContainer = document.createElement("div");
+    this.divContainer.classList.add("barboxContainer");
+    parent.appendChild(this.divContainer);
+
+    this.label = document.createElement("label");
+    this.label.classList.add("barbox");
+    this.label.textContent = label;
+    this.label.style.textAlign = "left";
+    this.divContainer.appendChild(this.label);
+
+    this.spanIndex = document.createElement("span");
+    this.spanIndex.classList.add("barbox");
+    this.spanIndex.textContent = "Index";
+    this.spanIndex.style.textAlign = "left";
+    this.divContainer.appendChild(this.spanIndex);
+
+    this.inputIndex = document.createElement("input");
+    this.inputIndex.classList.add("barbox");
+    this.inputIndex.ariaLabel = label + ", index selector";
+    this.inputIndex.ariaDescription
+      = "Select index of bar box control. Each index corresponds to a value in an array. The value can be set at the next element.";
+    this.inputIndex.type = "number";
+    this.inputIndex.min = 0; // TODO: Add offset.
+    this.inputIndex.max = parameters.length;
+    this.inputIndex.step = 1;
+    this.inputIndex.value = 0;
+    this.divContainer.appendChild(this.inputIndex);
+
+    this.spanValue = document.createElement("span");
+    this.spanValue.classList.add("barbox");
+    this.spanValue.textContent = "Value";
+    this.spanValue.style.textAlign = "left";
+    this.divContainer.appendChild(this.spanValue);
+
+    this.inputValue = document.createElement("input");
+    this.inputValue.classList.add("barbox");
+    this.inputValue.ariaLabel = label + ", value input";
+    this.inputValue.ariaDescription
+      = "Set value of bar box control. This value is a part of an array. The index of array can be set at the previous element.";
+    this.inputValue.type = "number";
+    this.inputValue.min = parameters[0].scale.minDsp;
+    this.inputValue.max = parameters[0].scale.maxDsp;
+    this.inputValue.step = parameters[0].step;
+    this.inputValue.value = parameters[0].dsp;
+    this.divContainer.appendChild(this.inputValue);
+
+    this.inputIndex.addEventListener("input", (e) => this.#inputCallback(e), false);
+    this.inputValue.addEventListener("input", (e) => this.#inputCallback(e), false);
+
+    this.divCanvasMargin = document.createElement("div");
+    this.divCanvasMargin.classList.add("canvasMargin");
+    this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.ariaLabel = `${label}, canvas`;
+    this.canvas.ariaDescription
+      = "Keyboard shortcuts are available. 'R' to fully randomize. 'T' to slightly randomize.";
     this.canvas.width = width;
     this.canvas.height = height;
-    this.canvas.tabIndex = 1;
+    this.canvas.tabIndex = 0;
     this.canvas.addEventListener("mousedown", (e) => this.onMouseDown(e), false);
     this.canvas.addEventListener("mouseup", (e) => this.onMouseUp(e), false);
     this.canvas.addEventListener("mousemove", (e) => this.onMouseMove(e), false);
@@ -37,13 +96,8 @@ export class BarBox {
     this.canvas.addEventListener("contextmenu", (e) => {
       e.preventDefault(); // Prevent browser context menu on right click.
     }, false);
-    this.div.appendChild(this.canvas);
+    this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
-
-    this.label = label;
-    this.param = parameters;
-    this.onInputFunc = onInputFunc;
-    this.snapValue = [];
 
     this.sliderZero = 0;
     this.indexOffset = 0;
@@ -58,6 +112,17 @@ export class BarBox {
 
     this.#setViewRange(0, 1);
     this.draw();
+  }
+
+  #inputCallback(event) {
+    this.param[parseInt(this.inputIndex.value)].dsp = parseFloat(this.inputValue.value);
+    this.draw();
+    this.onInputFunc();
+  }
+
+  #setInputElement(index) {
+    this.inputIndex.value = index;
+    this.inputValue.value = this.param[index].dsp;
   }
 
   setViewRange(indexL, indexR) {
@@ -77,7 +142,7 @@ export class BarBox {
 
   #refreshSliderWidth(width) {
     this.#sliderWidth = this.#indexRange >= 1 ? width / this.#indexRange : width;
-    this.#barWidth = this.#sliderWidth <= 4 ? 1 : 2;
+    this.#barWidth = this.#sliderWidth <= 12 ? 1 : 2;
   }
 
   draw() {
@@ -118,7 +183,8 @@ export class BarBox {
 
     // Additional index text for zoom in.
     if (this.param.length != this.#indexRange) {
-      this.context.fillStyle = palette.overlay;
+      this.context.font = `12px ${palette.fontFamily}`;
+      this.context.fillStyle = palette.foreground;
       this.context.textAlign = "start";
       this.context.fillText(`<- #${this.#indexL + this.indexOffset}`, 4, 12);
     }
@@ -141,11 +207,11 @@ export class BarBox {
           width / 2, height / 2);
       }
     } else {
-      // Parameter name.
-      this.context.font = `24px ${palette.fontFamily}`;
-      this.context.fillStyle = palette.overlay;
-      this.context.textAlign = "center";
-      this.context.fillText(this.label, width / 2, height / 2);
+      // // Parameter name.
+      // this.context.font = `24px ${palette.fontFamily}`;
+      // this.context.fillStyle = palette.overlay;
+      // this.context.textAlign = "center";
+      // this.context.fillText(this.label, width / 2, height / 2);
     }
 
     // Zero line.
@@ -316,6 +382,8 @@ export class BarBox {
     } else {
       this.#setValueAt(index, 1.0 - position.y / this.canvas.height);
     }
+
+    this.#setInputElement(index);
   }
 
   #setValueFromLine(p0, p1, event) {
@@ -323,6 +391,7 @@ export class BarBox {
 
     const left = this.#calcIndex(p0);
     const right = this.#calcIndex(p1);
+    const cursorIndex = right;
     if (left >= this.param.length || right >= this.param.length) return;
 
     if (left === right) { // p0 and p1 are in a same bar.
@@ -332,6 +401,7 @@ export class BarBox {
 
     if (event.ctrlKey) {
       for (let i = left; i >= 0 && i <= right; ++i) this.#resetValueAt(i);
+      this.#setInputElement(cursorIndex);
       return;
     }
 
@@ -364,5 +434,7 @@ export class BarBox {
       this.#setValueAt(idx, isSnapping ? this.#snap(val) : val);
       y += yInc;
     }
+
+    this.#setInputElement(cursorIndex);
   }
 }
