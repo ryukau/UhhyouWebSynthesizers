@@ -1,10 +1,13 @@
+import {PcgRandom} from "../../lib/pcg-random/pcg-random.js";
 import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import * as multirate from "../common/dsp/multirate.js";
+
+import * as menuitems from "./menuitems.js";
 
 onmessage = (event) => {
   const pv = event.data; // Parameter values.
 
-  const upFold = parseInt(pv.overSample);
+  const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
 
   let halfband = new multirate.HalfBandIIR();
@@ -14,10 +17,16 @@ onmessage = (event) => {
     upRate,
     pv.maxDelayTime,
   );
-  fdn.randomizeMatrix(pv.matrixType, pv.seed + pv.channel * 0);
-  fdn.randomizeMatrix(pv.matrixType, pv.seed + pv.channel * 65537);
+
+  let rng = new PcgRandom(BigInt(pv.seed + pv.channel * 65537));
+
+  const matrixType = menuitems.matrixTypeItems[pv.matrixType];
+  fdn.randomizeMatrix(matrixType, Math.floor(rng.number() * (2 ** 32)));
+
   for (let i = 0; i < fdn.delay.length; ++i) {
-    fdn.delay[i].setTime(upRate * pv.delayTime[i] * pv.timeMultiplier);
+    const randTime = pv.timeRandomAmount * rng.number();
+    const baseTime = pv.delayTime[i] * pv.timeMultiplier;
+    fdn.delay[i].setTime(upRate * (baseTime + randTime));
     fdn.lowpass[i].setCutoff(pv.lowpassCutoffHz[i] / upRate);
     fdn.highpass[i].setCutoff(pv.highpassCutoffHz[i] / upRate);
   }

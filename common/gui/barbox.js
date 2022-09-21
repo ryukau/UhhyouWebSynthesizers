@@ -114,6 +114,11 @@ export class BarBox {
     this.draw();
   }
 
+  refresh() {
+    this.inputValue.value = this.param[this.inputIndex.value].dsp;
+    this.draw();
+  }
+
   #inputCallback(event) {
     this.param[parseInt(this.inputIndex.value)].dsp = parseFloat(this.inputValue.value);
     this.draw();

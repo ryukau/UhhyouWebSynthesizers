@@ -1,7 +1,23 @@
+import {ComboBoxLine, select} from "./combobox.js";
+
 export {BarBox} from "./barbox.js";
-export {ComboBox} from "./combobox.js";
+export {ComboBoxLine, select} from "./combobox.js";
 export {NumberInput} from "./numberinput.js";
+export {ToggleButton} from "./togglebutton.js";
 export {WaveView} from "./waveview.js";
+
+export function refresh(ui) {
+  let dest = {};
+  for (const key in ui) {
+    if (Array.isArray(ui[key])) {
+      dest[key] = ui[key].array.forEach(element => { element.refresh(); });
+    } else if (ui[key] instanceof ComboBoxLine) {
+      // Do nothing.
+    } else {
+      dest[key] = ui[key].refresh();
+    }
+  }
+}
 
 export function Button(parent, label, onClickFunc) {
   let element = document.createElement("input");

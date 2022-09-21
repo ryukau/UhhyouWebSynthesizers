@@ -42,15 +42,9 @@ export class NumberInput {
     this.number.addEventListener("change", (event) => this.onInputNumber(event), false);
   }
 
-  addInput(type, isDisplayValue) {
-    let input = document.createElement("input");
-    this.div.appendChild(input);
-    input.type = type;
-    input.min = isDisplay ? this.param.minDisplay : this.param.scale.minUi;
-    input.max = isDisplay ? this.param.maxDisplay : this.param.scale.maxUi;
-    input.step = this.param.step;
-    input.value = isDisplay ? this.param.display : this.param.defaultUi;
-    return input;
+  refresh() {
+    this.range.value = this.param.ui;
+    this.number.value = this.param.display;
   }
 
   onInputRange(event) {

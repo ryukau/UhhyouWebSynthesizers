@@ -58,7 +58,7 @@ export class Audio {
     }, 100);
   }
 
-  render(parameter) {
+  render(parameter, saveAfterRendering = false) {
     if (this.renderStatusElement !== undefined) {
       this.renderStatusElement.textContent = "⚠ Rendering ⚠";
     }
@@ -81,13 +81,19 @@ export class Audio {
           if (this.wave.channels === 1) this.wave.copyChannel(index);
 
           // TODO: get arguments from parameter.
-          this.finalize(true, false, 0, parameter.fadeOut);
+          this.finalize(true, false, 0, parameter.fadeOut, saveAfterRendering);
         }
       };
     });
   }
 
-  finalize(normalize, quickSave, fadeInSeconds, fadeOutSeconds, waveView) {
+  finalize(
+    normalize,
+    quickSave,
+    fadeInSeconds,
+    fadeOutSeconds,
+    saveAfterRendering = false,
+  ) {
     if (normalize) this.wave.normalize();
     this.wave.declickIn(fadeInSeconds * this.audioContext.sampleRate);
     this.wave.declickOut(fadeOutSeconds * this.audioContext.sampleRate);
@@ -99,6 +105,8 @@ export class Audio {
     if (this.renderStatusElement !== undefined) {
       this.renderStatusElement.textContent = "Rendering finished. ✓";
     }
+
+    if (saveAfterRendering) this.save();
   }
 }
 

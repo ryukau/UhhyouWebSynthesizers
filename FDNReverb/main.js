@@ -2,6 +2,34 @@ import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
 import * as wave from "../common/wave.js";
 
+import * as menuitems from "./menuitems.js";
+
+function randomize() {
+  // console.log(selectRandom.value);
+
+  for (const key in param) {
+    if (key === "renderDuration") continue;
+    if (key === "matrixSize") continue;
+    if (key === "fadeOut") continue;
+    if (key === "lowpassCutoffHz") continue;
+    if (key === "highpassCutoffHz") continue;
+    if (key === "delayTime") {
+      param[key].forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; });
+      continue;
+    }
+    if (Array.isArray(param[key])) {
+      param[key].forEach(e => { e.normalized = Math.random(); });
+    } else if (param[key].scale instanceof parameter.MenuItemScale) {
+      // Do nothing for now.
+    } else {
+      param[key].normalized = Math.random();
+    }
+  }
+
+  render();
+  widget.refresh(ui);
+}
+
 function createArrayParameters(defaultDspValue, scale) {
   let arr = new Array(scales.matrixSize.max);
   for (let i = 0; i < arr.length; ++i) {
@@ -10,29 +38,31 @@ function createArrayParameters(defaultDspValue, scale) {
   return arr;
 }
 
-function render(value) {
-  audio.render(parameter.toMessage(param, {
-    sampleRate: audio.audioContext.sampleRate,
-    maxDelayTime: scales.delayTime.maxDsp,
-    overSample: ui.overSample.value,
-    matrixType: ui.matrixType.value,
-  }));
+function render() {
+  audio.render(
+    parameter.toMessage(param, {
+      sampleRate: audio.audioContext.sampleRate,
+      maxDelayTime: scales.delayTime.maxDsp,
+    }),
+    togglebuttonQuickSave.state === 1);
 }
 
 function onMatrixSizeChanged(value) {
   ui.delayTime.setViewRange(0, value);
   ui.lowpassCutoffHz.setViewRange(0, value);
   ui.highpassCutoffHz.setViewRange(0, value);
-  render(value);
+  render();
 }
 
 const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, false),
+  overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
 
   matrixSize: new parameter.IntScale(1, 256),
   timeMultiplier: new parameter.LinearScale(0, 1),
   feedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
+  matrixType: new parameter.MenuItemScale(menuitems.matrixTypeItems),
   seed: new parameter.IntScale(0, 2 ** 32),
 
   delayTime: new parameter.DecibelScale(-60, 0, true),
@@ -43,10 +73,13 @@ const scales = {
 const param = {
   renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
+  overSample: new parameter.Parameter(1, scales.overSample),
 
   matrixSize: new parameter.Parameter(64, scales.matrixSize),
   timeMultiplier: new parameter.Parameter(1.0, scales.timeMultiplier),
+  timeRandomAmount: new parameter.Parameter(0.01, scales.delayTime, true),
   feedback: new parameter.Parameter(0.98, scales.feedback, true),
+  matrixType: new parameter.Parameter(0, scales.matrixType),
   seed: new parameter.Parameter(0, scales.seed),
 
   delayTime: createArrayParameters(0.01, scales.delayTime),
@@ -88,9 +121,18 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const divPlayControl = widget.div(divLeft, "playControl", undefined);
-const playButton = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
-const stopButton = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const saveButton = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const selectRandom = widget.select(
+  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
+  (ev) => { randomize(); });
+const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
+buttonRandom.id = "randomRecipe";
+const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
+// spanPlayControlFiller.textContent = " ";
+const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
+const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const togglebuttonQuickSave = new widget.ToggleButton(
+  divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
 const detailRender = widget.details(divLeft, "Render");
 const detailFdn = widget.details(divLeft, "FDN");
@@ -100,35 +142,17 @@ const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  overSample: new widget.ComboBox(detailRender, "Over-sample", ["1", "2"], "2", render),
+  overSample:
+    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
 
   matrixSize: new widget.NumberInput(
     detailFdn, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
   timeMultiplier:
     new widget.NumberInput(detailFdn, "Time Multiplier", param.timeMultiplier, render),
+  timeRandomAmount:
+    new widget.NumberInput(detailFdn, "Time Random", param.timeRandomAmount, render),
   feedback: new widget.NumberInput(detailFdn, "Feedback", param.feedback, render),
-  matrixType: new widget.ComboBox(
-    detailFdn, "Matrix Type",
-    [
-      "orthogonal",
-      "specialOrthogonal",
-      "circulantOrthogonal",
-      "circulant4",
-      "circulant8",
-      "circulant16",
-      "circulant32",
-      "upperTriangularPositive",
-      "upperTriangularNegative",
-      "lowerTriangularPositive",
-      "lowerTriangularNegative",
-      "schroederPositive",
-      "schroederNegative",
-      "absorbentPositive",
-      "absorbentNegative",
-      "hadamard",
-      "conference",
-    ],
-    "specialOrthogonal", render),
+  matrixType: new widget.ComboBoxLine(detailFdn, "Matrix Type", param.matrixType, render),
   seed: new widget.NumberInput(detailFdn, "Seed", param.seed, render),
 
   delayTime: new widget.BarBox(

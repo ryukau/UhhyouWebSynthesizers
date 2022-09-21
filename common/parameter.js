@@ -188,3 +188,20 @@ export class MidiPitchScale {
     return util.clamp(util.freqToMidiPitch(frequency), this.minPitch, this.maxPitch);
   }
 }
+
+// It works, but this is probably bad idea.
+export class MenuItemScale {
+  constructor(items) {
+    console.assert(Array.isArray(items), new Error());
+    this.items = items;
+  }
+
+  get minUi() { return 0; }
+  get maxUi() { return this.items.length - 1; }
+
+  get minDsp() { return 0; }
+  get maxDsp() { return this.items.length - 1; }
+
+  toDsp(index) { return Math.floor(index); }
+  toUi(index) { return Math.floor(index); }
+}

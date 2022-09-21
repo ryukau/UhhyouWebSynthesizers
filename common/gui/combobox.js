@@ -1,10 +1,36 @@
-export class ComboBox {
-  constructor(parent, label, menus, defaultValue, onChangeFunc) {
+export function select(parent, label, id, className, items, defaultValue, onChangeFunc) {
+  let select = document.createElement("select");
+  select.ariaLabel = label;
+  if (id !== undefined) select.id = id;
+  if (className !== undefined) select.className = className;
+  select.addEventListener("change", (event) => onChangeFunc(event), false);
+  parent.appendChild(select);
+
+  for (const item of items) {
+    console.assert(typeof item === "string", "item must be string.", new Error());
+
+    let option = document.createElement("option");
+    option.textContent = item;
+    option.value = item;
+    select.appendChild(option);
+  }
+
+  select.value = defaultValue;
+  console.assert(
+    select.selectedIndex >= 0, "defaultValue doesn't exist in provided items",
+    new Error());
+
+  return select;
+}
+
+export class ComboBoxLine {
+  constructor(parent, label, parameter, onChangeFunc) {
+    this.param = parameter;
     this.onChangeFunc = onChangeFunc;
-    this.options = [];
 
     this.div = document.createElement("div");
     this.div.className = "inputLine";
+    parent.appendChild(this.div);
     if (typeof label === 'string' || label instanceof String) {
       this.label = document.createElement("label");
       this.label.className = "inputLine";
@@ -12,57 +38,28 @@ export class ComboBox {
       this.div.appendChild(this.label);
     }
 
-    this.select = document.createElement("select");
-    this.select.ariaLabel = label;
-    this.select.addEventListener("change", (event) => this.onChange(event), false);
-    this.div.appendChild(this.select);
-    parent.appendChild(this.div);
+    this.select = select(
+      this.div,
+      label,
+      undefined,
+      "inputLine",
+      this.param.scale.items,
+      this.param.scale.items[this.param.defaultUi],
+      (e) => this.onChange(e),
+    );
 
-    this.addArray(menus);
-    this.setValue(defaultValue, false);
+    this.options = Array.from(this.select.children);
   }
 
   get value() { return this.select.value; }
 
-  setValue(value, triggerOnChange = true) {
-    const backup = this.select.value;
-    this.select.value = value;
-    if (this.select.selectedIndex < 0) {
-      this.select.value = backup;
-      console.warn("ComboBox: Invalid value.");
-      return;
-    }
-    this.refreshValue(this.select, triggerOnChange);
-  }
-
-  setIndex(index, triggerOnChange = true) {
-    if (index < 0 || index >= this.options.length) {
-      console.warn("ComboBox: Index out of range.");
-      return;
-    }
+  random() {
+    const index = Math.floor(Math.random() * this.options.length);
     this.select.value = this.options[index].value;
-    this.refreshValue(this.select, triggerOnChange);
   }
 
-  onChange(event) { this.refreshValue(event.target, true); }
-
-  refreshValue(select, triggerOnChange) {
-    if (triggerOnChange) this.onChangeFunc(select.value);
-  }
-
-  add(menu) {
-    if (typeof menu !== 'string' && !(menu instanceof String)) {
-      console.log("ComboBox.add() failed to invalid type.");
-    }
-    let option = document.createElement('option');
-    option.textContent = menu;
-    option.value = menu;
-    this.options.push(option);
-    this.select.appendChild(option);
-  }
-
-  // `menus` is array of strings.
-  addArray(menus) {
-    for (const menu of menus) this.add(menu);
+  onChange(event) {
+    this.param.ui = this.param.scale.items.indexOf(event.target.value);
+    this.onChangeFunc();
   }
 }

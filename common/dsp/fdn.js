@@ -30,37 +30,37 @@ export class FeedbackDelayNetwork {
   }
 
   randomizeMatrix(type, seed) {
-    if (type === "specialOrthogonal") {
+    if (type === "SpecialOrthogonal") {
       randomSpecialOrthogonal(this.#matrix, seed);
-    } else if (type === "circulantOrthogonal") {
+    } else if (type === "CirculantOrthogonal") {
       randomCirculantOrthogonal(this.#matrix, seed, this.#matrix.length);
-    } else if (type === "circulant4") {
+    } else if (type === "Circulant4") {
       randomCirculantOrthogonal(this.#matrix, seed, 4);
-    } else if (type === "circulant8") {
+    } else if (type === "Circulant8") {
       randomCirculantOrthogonal(this.#matrix, seed, 8);
-    } else if (type === "circulant16") {
+    } else if (type === "Circulant16") {
       randomCirculantOrthogonal(this.#matrix, seed, 16);
-    } else if (type === "circulant32") {
+    } else if (type === "Circulant32") {
       randomCirculantOrthogonal(this.#matrix, seed, 32);
-    } else if (type === "upperTriangularPositive") {
+    } else if (type === "UpperTriangularPositive") {
       randomUpperTriangular(this.#matrix, seed, 0, 1);
-    } else if (type === "upperTriangularNegative") {
+    } else if (type === "UpperTriangularNegative") {
       randomUpperTriangular(this.#matrix, seed, -1, 0);
-    } else if (type === "lowerTriangularPositive") {
+    } else if (type === "LowerTriangularPositive") {
       randomLowerTriangular(this.#matrix, seed, 0, 1);
-    } else if (type === "lowerTriangularNegative") {
+    } else if (type === "LowerTriangularNegative") {
       randomLowerTriangular(this.#matrix, seed, -1, 0);
-    } else if (type === "schroederPositive") {
+    } else if (type === "SchroederPositive") {
       randomSchroeder(this.#matrix, seed, 0, 1);
-    } else if (type === "schroederNegative") {
+    } else if (type === "SchroederNegative") {
       randomSchroeder(this.#matrix, seed, -1, 0);
-    } else if (type === "absorbentPositive") {
+    } else if (type === "AbsorbentPositive") {
       randomAbsorbent(this.#matrix, seed, 0, 1);
-    } else if (type === "absorbentNegative") {
+    } else if (type === "AbsorbentNegative") {
       randomAbsorbent(this.#matrix, seed, -1, 0);
-    } else if (type === "hadamard") {
+    } else if (type === "Hadamard") {
       constructHadamardSylvester(this.#matrix);
-    } else if (type === "conference") {
+    } else if (type === "Conference") {
       constructConference(this.#matrix);
     } else { // type === "orthogonal", or default.
       randomOrthogonal(this.#matrix, seed);
