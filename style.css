@@ -21,8 +21,6 @@ body {
   text-align: center;
   width: fit-content;
   height: 100%;
-  column-count: auto;
-  column-width: calc(var(--controlWidth) + var(--margin));
 }
 
 div.controlBlock {
