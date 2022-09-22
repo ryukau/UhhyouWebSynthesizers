@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset=utf-8>
+  <title>UhhyouWebSynthsizers</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 2em 0.5em 2em 0.5em;
+    }
+
+    header {
+      border-bottom: solid 1px #c0c0c0;
+    }
+
+    footer {
+      border-top: solid 1px #c0c0c0;
+    }
+
+    span#lastModified {
+      float: right;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 1em 0 0.5em 0;
+    }
+
+    div#main {
+      margin-bottom: 2em;
+    }
+
+    li {
+      padding: 0.1em;
+    }
+
+    li:hover {
+      background-color: #eeeeee;
+    }
+
+    div.languageBlock {
+      margin: 0;
+    }
+
+    dl {
+      width: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    div.description {
+      display: flex;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.1em 0;
+    }
+
+    div.description:hover {
+      background-color: #eeeeee;
+    }
+
+    dt {
+      width: 30%;
+      box-sizing: border-box;
+      vertical-align: top;
+      padding: 0;
+      margin: 0;
+      background-color: inherit;
+    }
+
+    dd {
+      flex-grow: 1;
+      max-width: 70%;
+      box-sizing: border-box;
+      vertical-align: top;
+      padding: 0;
+      margin: 0;
+      background-color: inherit;
+    }
+
+  </style>
+</head>
+
+<body>
+  <header>
+    <p>
+      <label>Language</label>
+      <select id="language">
+        {%- for code, name in languages.items() %}
+        <option value="{{ code }}">{{ name }}</option>
+        {%- endfor %}
+      </select>
+      <span id="lastModified">Last Modified: {{ last_modified }}</span>
+    </p>
+  </header>
+
+  <h1 id="title">Uhhyou Web Synths Collection</h1>
+  {%- for lang, _ in languages.items() %}
+  <div id="main">
+    <div class="languageBlock" lang="{{ lang }}">
+      {%- for sect in sections %}
+      <h2>{{ sect["title"][lang] }}</h2>
+      {%- if sect["summary"][lang]|length != 0%}
+      <p>{{ sect["summary"][lang] }}</p>
+      {%- endif %}
+      <dl>
+        {%- for li in sect["list"] %}
+        <div class="description">
+          <dt><a href="{{ li['href'] }}">{{ li["name"] }}</a></dt>
+          <dd>{{ li["description"][lang] }}</dd>
+        </div>
+        {%- endfor %}
+      </dl>
+      {%- endfor %}
+    </div>
+    {%- endfor %}
+  </div>
+
+  <footer>
+    <ul>
+      <li><a href="https://github.com/ryukau/UhhyouWebSynthsizers">Source Code</a> (github.com)</li>
+      <li><a href="https://ryukau.blogspot.com/">Blog</a> (Blogger)</li>
+    </ul>
+  </footer>
+
+  <script>
+    function changeLanguage(lang) {
+      for (let element of document.getElementsByClassName("languageBlock")) {
+        element.style.display = element.lang === lang ? "unset" : "none";
+      }
+    }
+
+    document.getElementById("language").addEventListener(
+      "change", e => changeLanguage(e.target.value), false);
+
+    changeLanguage(document.getElementById("language").value);
+  </script>
+</body>
+
+</html>

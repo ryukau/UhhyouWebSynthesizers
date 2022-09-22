@@ -1,0 +1,198 @@
+[
+  {
+    "title": {
+      "ja": "インパルス応答",
+      "en": "Impulse Resnponse"
+    },
+    "summary": {
+      "ja": "IRコンボルバに読み込んで使うインパルス応答を合成します。",
+      "en": "These are intended to be used with external IR convolver."
+    },
+    "list": [
+      {
+        "href": "./FDNReverb/synth.html",
+        "name": "FDNReverb",
+        "description": {
+          "ja": "Feedback delay network (FDN) を 1 つ使ったリバーブ。",
+          "en": "Reverb using feedback delay network."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/Pulseverb/",
+        "name": "Pulseverb",
+        "description": {
+          "ja": "インパルスを適当にモジュレーションしたリバーブ。",
+          "en": "Reverb using modulated band-limited impulse train (BLIT)."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/Freeverb/",
+        "name": "Freeverb",
+        "description": {
+          "ja": "Freeverbアルゴリズムによるリバーブ。",
+          "en": "Reverb using Freeverb algorithm."
+        }
+      }
+    ]
+  },
+  {
+    "title": {
+      "ja": "シンセサイザ",
+      "en": "Synthesizer"
+    },
+    "summary": {
+      "ja": "",
+      "en": ""
+    },
+    "list": [
+      {
+        "href": "https://ryukau.github.io/WobblingMetalBoard/",
+        "name": "WobblingMetalBoard",
+        "description": {
+          "ja": "薄い金属板を揺らしたときのような音。",
+          "en": "Approximation of wobbling thin metal plate sound."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/Bubbles/",
+        "name": "Bubbles",
+        "description": {
+          "ja": "水滴が水面に落ちた時に生じる泡の音。",
+          "en": "Sound of bubbles that is formed when droplets fall onto water surface."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/Singen0.3/",
+        "name": "Singen0.3",
+        "description": {
+          "ja": "FMシンセサイザ。",
+          "en": "Yet another FM synthesizer."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/PADchoir2/",
+        "name": "PADchoir2",
+        "description": {
+          "ja": "UIを変更したPADchoir。",
+          "en": "PADchoir with an alternative interface."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/FDNCymbal/",
+        "name": "FDNCymbal",
+        "description": {
+          "ja": "Feedback Delay Networkを使ったシンバルのような音。",
+          "en": "Cymbal-like sound using feedback delay network."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/PADchoir/",
+        "name": "PADchoir",
+        "description": {
+          "ja": "PADsynthアルゴリズム。",
+          "en": "PADsynth algorithm."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/WaveBox/",
+        "name": "WaveBox",
+        "description": {
+          "ja": "3次元の波のシミュレーション。",
+          "en": "3D wave simulation. Slow."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/WaveCymbal2/",
+        "name": "WaveCymbal2",
+        "description": {
+          "ja": "WaveCymbalの波のシミュレーションの解き方を変更。",
+          "en": "WaveCymbal that use implicit method for wave propagation."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/WaveCymbal/",
+        "name": "WaveCymbal",
+        "description": {
+          "ja": "1次元の波のシミュレーションとKarplus-Strongアルゴリズムの組み合わせ。シンバルというより紐につないだ空き缶を引きずったときのような音。",
+          "en": "Combination of 1D wave simulation and Karplus-Strong algorithm. It sounds like dragging a bunch of empty cans."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/KSCymbal/",
+        "name": "KSCymbal",
+        "description": {
+          "ja": "2つのKarplus-Strongを使って弦をぶつけた時のような音を合成。",
+          "en": "Collision of 2 Karplus-Strong string."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/Pluck/",
+        "name": "Pluck",
+        "description": {
+          "ja": "Karplus-Strongアルゴリズム。",
+          "en": "Karplus-Strong algorithm."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/PADcymbal/",
+        "name": "PADcymbal",
+        "description": {
+          "ja": "ランダムな周波数成分をPADsynthアルゴリズムに入力してシンバルのような音を合成。",
+          "en": "Cymbal-ish sound by inputting random frequency components into PADsynth algorithm."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/Singen0.2/",
+        "name": "Singen0.2",
+        "description": {
+          "ja": "FMシンセサイザ。",
+          "en": "Another FM synthesizer."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/WebECAFM/",
+        "name": "ECAFM",
+        "description": {
+          "ja": "ECAC + FM。",
+          "en": "ECAC + FM."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/Singen0.1/",
+        "name": "Singen0.1",
+        "description": {
+          "ja": "FMシンセサイザ。",
+          "en": "FM synthesizer."
+        }
+      },
+      {
+        "href": "https://ryukau.github.io/SinChord/",
+        "name": "SinChord",
+        "description": {
+          "ja": "エイリアスノイズが出る素朴なオシレータで適当なコードを合成。",
+          "en": "Random chord using naive oscillators."
+        }
+      }
+    ]
+  },
+  {
+    "title": {
+      "ja": "WebAudio",
+      "en": "WebAudio"
+    },
+    "summary": {
+      "ja": "",
+      "en": ""
+    },
+    "list": [
+      {
+        "href": "https://ryukau.github.io/ECAC/",
+        "name": "ECAC",
+        "description": {
+          "ja": "Elementary Cellular Automatonに基づいて倍音を加算合成",
+          "en": "Additive synthesizer using elementary cellular automaton."
+        }
+      }
+    ]
+  }
+]

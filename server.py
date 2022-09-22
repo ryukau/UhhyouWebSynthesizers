@@ -13,11 +13,12 @@ reqHandler.extensions_map = {
     ".svg": "image/svg+xml",
     ".css": "text/css",
     ".js": "application/x-javascript",
+    ".json": "application/json",
 }
 
 httpd = socketserver.TCPServer(("", port), reqHandler)
 
 print(f"Serving HTTP on localhost:{port}")
-webbrowser.open(f"http://127.0.0.1:{port}/FDNReverb/synth.html")
+webbrowser.open(f"http://127.0.0.1:{port}/index.html")
 
 httpd.serve_forever()
