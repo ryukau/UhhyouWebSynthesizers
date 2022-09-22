@@ -1,6 +1,6 @@
-import {PcgRandom} from "../../lib/pcgrandom/pcgrandom.js";
 import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import * as multirate from "../common/dsp/multirate.js";
+import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
 
