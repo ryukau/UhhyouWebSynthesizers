@@ -1,4 +1,4 @@
-import {PcgRandom} from "../../lib/pcg-random/pcg-random.js";
+import {PcgRandom} from "../../lib/pcgrandom/pcgrandom.js";
 
 import * as delay from "./delay.js";
 import * as smoo from "./smoother.js";

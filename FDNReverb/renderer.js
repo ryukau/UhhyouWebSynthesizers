@@ -1,4 +1,4 @@
-import {PcgRandom} from "../../lib/pcg-random/pcg-random.js";
+import {PcgRandom} from "../../lib/pcgrandom/pcgrandom.js";
 import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import * as multirate from "../common/dsp/multirate.js";
 
