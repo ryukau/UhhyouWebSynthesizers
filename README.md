@@ -3,7 +3,7 @@ A collection of sample generators that run on browser.
 
 - [Index Page](https://ryukau.github.io/UhhyouWebSynthesizers/)
 
-Generators in this collection outputs wav file to use on DAW or sampler. If you are looking for instruments or effects that runs on real-time, take a look at [my plugin repository](https://github.com/ryukau/VSTPlugins).
+Generators in this collection outputs wav file to use on external DAW or sampler. If you are looking for instruments or effects that runs on real-time, take a look at [my plugin repository](https://github.com/ryukau/VSTPlugins).
 
 # Known Issue
 Rendering doesn't work on Firefox 104.0.2. It requires support for ECMAScript modules on Web Workers.
