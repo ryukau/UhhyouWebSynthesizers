@@ -58,7 +58,7 @@ function onMatrixSizeChanged(value) {
 
 const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
-  fade: new parameter.DecibelScale(-60, 40, false),
+  fade: new parameter.DecibelScale(-60, 40, true),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
 
   matrixSize: new parameter.IntScale(1, 256),
