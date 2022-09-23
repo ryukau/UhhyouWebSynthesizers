@@ -80,8 +80,12 @@ export class Audio {
         if (this.workers.every((v) => !v.isRunning)) {
           if (this.wave.channels === 1) this.wave.copyChannel(index);
 
-          // TODO: get arguments from parameter.
-          this.finalize(normalize, 0, parameter.fadeOut, quickSave);
+          this.finalize(
+            normalize,
+            parameter.fadeIn === undefined ? 0 : parameter.fadeIn,
+            parameter.fadeOut === undefined ? 0 : parameter.fadeOut,
+            quickSave,
+          );
         }
       };
     });
@@ -93,14 +97,14 @@ export class Audio {
     fadeOutSeconds,
     quickSave,
   ) {
+    this.wave.declickIn(fadeInSeconds * this.audioContext.sampleRate);
+    this.wave.declickOut(fadeOutSeconds * this.audioContext.sampleRate);
+
     if (normalize === "link") {
       this.wave.normalize();
     } else if (normalize === "perChannel") {
       this.wave.normalizePerChannel();
     }
-
-    this.wave.declickIn(fadeInSeconds * this.audioContext.sampleRate);
-    this.wave.declickOut(fadeOutSeconds * this.audioContext.sampleRate);
 
     this.onRenderFinish(this.wave);
 
@@ -202,7 +206,7 @@ export class Wave {
   }
 
   // Using quater cosine from equal power panning.
-  #fadeCurve(t) { return Math.cos(t * Math.PI / 2); }
+  #fadeCurve(t) { return Math.cos((1 - t) * Math.PI / 2); }
 
   declickIn(fadeLength) {
     for (let channel = 0; channel < this.data.length; ++channel) {
@@ -218,7 +222,7 @@ export class Wave {
       const length = Math.min(fadeLength, this.data[channel].length);
       const last = this.data[channel].length - 1;
       for (let sample = 0; sample < length; ++sample) {
-        this.data[channel][last - sample] *= this.#fadeCurve((length - sample) / length);
+        this.data[channel][last - sample] *= this.#fadeCurve(sample / length);
       }
     }
   }
