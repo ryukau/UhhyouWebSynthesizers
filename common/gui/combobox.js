@@ -53,6 +53,8 @@ export class ComboBoxLine {
 
   get value() { return this.select.value; }
 
+  refresh() { this.select.value = this.options[this.param.ui].value; }
+
   random() {
     const index = Math.floor(Math.random() * this.options.length);
     this.select.value = this.options[index].value;

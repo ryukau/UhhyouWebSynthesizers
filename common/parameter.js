@@ -197,10 +197,10 @@ export class MenuItemScale {
   }
 
   get minUi() { return 0; }
-  get maxUi() { return this.items.length - 1; }
+  get maxUi() { return this.items.length; }
 
   get minDsp() { return 0; }
-  get maxDsp() { return this.items.length - 1; }
+  get maxDsp() { return this.items.length; }
 
   toDsp(index) { return Math.floor(index); }
   toUi(index) { return Math.floor(index); }

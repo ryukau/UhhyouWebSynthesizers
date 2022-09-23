@@ -6,10 +6,12 @@ import * as menuitems from "./menuitems.js";
 
 function randomize() {
   for (const key in param) {
+    if (key === "renderDuration") continue;
+    if (key === "fadeOut") continue;
     if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing for now.
+      param[key].normalized = Math.random();
     } else {
       param[key].normalized = Math.random();
     }
@@ -48,6 +50,7 @@ const scales = {
   noiseDecay: new parameter.DecibelScale(-80, 40, true),
   noiseMix: new parameter.DecibelScale(-60, 0, true),
   delayTime: new parameter.DecibelScale(-60, -20, true),
+  timeRandomness: new parameter.DecibelScale(-80, -20, true),
   feedback: new parameter.LinearScale(-1, 1),
   highpassHz: new parameter.MidiPitchScale(-37.0, 136.0, false),
   highpassQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
@@ -63,7 +66,8 @@ const param = {
   noiseDecay: new parameter.Parameter(1, scales.noiseDecay, true),
   noiseMix: new parameter.Parameter(0.05, scales.noiseMix),
   delayTime: new parameter.Parameter(0.01, scales.delayTime, true),
-  feedback: new parameter.Parameter(0.98, scales.feedback, true),
+  timeRandomness: new parameter.Parameter(0.001, scales.timeRandomness, true),
+  feedback: new parameter.Parameter(-0.98, scales.feedback, true),
   highpassHz: new parameter.Parameter(20, scales.highpassHz, true),
   highpassQ: new parameter.Parameter(Math.SQRT1_2, scales.highpassQ),
 };
@@ -130,6 +134,8 @@ const ui = {
   noiseMix: new widget.NumberInput(detailDelay, "Noise Mix [dB]", param.noiseMix, render),
   delayTime:
     new widget.NumberInput(detailDelay, "Delay Time [s]", param.delayTime, render),
+  timeRandomness:
+    new widget.NumberInput(detailDelay, "Time Randomness", param.timeRandomness, render),
   feedback: new widget.NumberInput(detailDelay, "Feedback", param.feedback, render),
   highpassHz:
     new widget.NumberInput(detailDelay, "Highpass Cutoff [Hz]", param.highpassHz, render),

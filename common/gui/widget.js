@@ -7,14 +7,13 @@ export {ToggleButton} from "./togglebutton.js";
 export {WaveView} from "./waveview.js";
 
 export function refresh(ui) {
-  let dest = {};
   for (const key in ui) {
     if (Array.isArray(ui[key])) {
-      dest[key] = ui[key].array.forEach(element => { element.refresh(); });
+      ui[key].array.forEach(element => { element.refresh(); });
     } else if (ui[key] instanceof ComboBoxLine) {
-      // Do nothing.
+      ui[key].refresh();
     } else {
-      dest[key] = ui[key].refresh();
+      ui[key].refresh();
     }
   }
 }

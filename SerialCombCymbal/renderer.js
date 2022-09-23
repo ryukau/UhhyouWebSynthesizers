@@ -7,32 +7,6 @@ import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
 
-class Comb {
-  #buffer;
-
-  constructor(sampleRate, maxTime) {
-    this.#buffer = 0;
-    this.gain = 0;
-    this.delay = new Delay(sampleRate, maxTime);
-  }
-
-  reset() {
-    this.#buffer = 0;
-    this.delay.reset();
-  }
-
-  // gain in [-1, 1].
-  prepare(timeInSample, gain) {
-    this.delay.setTime(timeInSample);
-    this.gain = gain;
-  }
-
-  process(input) {
-    this.#buffer = this.delay.process(input + this.gain * this.#buffer);
-    return this.#buffer;
-  }
-}
-
 function process(upFold, pv, dsp) {
   const upRate = upFold * pv.sampleRate;
 
@@ -64,11 +38,9 @@ onmessage = (event) => {
   };
 
   for (let i = 0; i < pv.nDelay; ++i) {
-    // let delay = new Comb(upRate, 0.1);
     let delay = new LongAllpass(upRate, 0.1);
-    // let timeInSeconds = pv.delayTime / pv.nDelay;
     let timeInSeconds = pv.delayTime / (i + 1);
-    timeInSeconds += 0.001 * dsp.rng.number();
+    timeInSeconds += pv.timeRandomness * dsp.rng.number();
     delay.prepare(upRate * timeInSeconds, pv.feedback);
     dsp.delay.push(delay);
 
