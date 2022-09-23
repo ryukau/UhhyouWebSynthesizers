@@ -1,6 +1,8 @@
 export class Audio {
   #source;
+  #gain;
   #rendererPath;
+  #fadeOutDuration = 0.01;
 
   constructor(channels, rendererPath, renderStatusElement, onRenderFinish) {
     this.audioContext = new AudioContext();
@@ -25,15 +27,25 @@ export class Audio {
       buffer.copyToChannel(new Float32Array(this.wave.data[i]), i, 0);
     }
 
-    if (this.#source !== undefined) this.#source.stop();
+    this.stop();
+
+    // Gain node is used to remove pop noise when stopping in the middle of sound.
+    this.#gain = this.audioContext.createGain();
+    this.#gain.gain.value = 1;
+    this.#gain.connect(this.audioContext.destination);
+
     this.#source = this.audioContext.createBufferSource();
     this.#source.buffer = buffer;
-    this.#source.connect(this.audioContext.destination);
-    this.#source.start();
+    this.#source.connect(this.#gain);
+    this.#source.start(this.audioContext.currentTime + this.#fadeOutDuration + 0.001);
   }
 
   stop() {
-    if (this.#source !== undefined) this.#source.stop();
+    if (this.#source === undefined) return;
+    this.#gain.gain.setValueAtTime(1, this.audioContext.currentTime);
+    this.#gain.gain.linearRampToValueAtTime(
+      0, this.audioContext.currentTime + this.#fadeOutDuration);
+    this.#source.stop(this.audioContext.currentTime + this.#fadeOutDuration + 0.001);
   }
 
   save() {
