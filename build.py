@@ -12,7 +12,8 @@ composed = env.get_template("template.html").render(
         "en": "English",
         "ja": "日本語",
     },
-    sections=data,
+    introduction=data["introduction"],
+    sections=data["sections"],
 )
 
 with open("index.html", "w", encoding="utf-8") as fi:

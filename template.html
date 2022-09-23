@@ -107,6 +107,7 @@
   {%- for lang, _ in languages.items() %}
   <div id="main">
     <div class="languageBlock" lang="{{ lang }}">
+      <p>{{ introduction[lang] }}</p>
       {%- for sect in sections %}
       <h2>{{ sect["title"][lang] }}</h2>
       {%- if sect["summary"][lang]|length != 0%}
