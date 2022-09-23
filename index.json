@@ -46,6 +46,14 @@
     },
     "list": [
       {
+        "href": "./SerialCombCymbal/synth.html",
+        "name": "SerialCombCymbal",
+        "description": {
+          "ja": "直列につないだコムフィルタによるシンバルのような音。 🚧 開発中。",
+          "en": "Serial comb filter cymbal-esque sound. 🚧 Under development."
+        }
+      },
+      {
         "href": "https://ryukau.github.io/WobblingMetalBoard/",
         "name": "WobblingMetalBoard",
         "description": {

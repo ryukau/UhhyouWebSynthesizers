@@ -24,7 +24,7 @@ export class FeedbackDelayNetwork {
     this.highpass = new Array(length);
     for (let i = 0; i < length; ++i) {
       this.delay[i] = new delay.Delay(sampleRate, maxSecond);
-      this.lowpass[i] = new smoo.DoubleEMAFilterKp();
+      this.lowpass[i] = new smoo.DoubleEMAFilter();
       this.highpass[i] = new smoo.EMAHighpass();
     }
   }

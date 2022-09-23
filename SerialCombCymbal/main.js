@@ -5,18 +5,7 @@ import * as wave from "../common/wave.js";
 import * as menuitems from "./menuitems.js";
 
 function randomize() {
-  // console.log(selectRandom.value);
-
   for (const key in param) {
-    if (key === "renderDuration") continue;
-    if (key === "matrixSize") continue;
-    if (key === "fadeOut") continue;
-    if (key === "lowpassCutoffHz") continue;
-    if (key === "highpassCutoffHz") continue;
-    if (key === "delayTime") {
-      param[key].forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; });
-      continue;
-    }
     if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
@@ -44,16 +33,9 @@ function render() {
       sampleRate: audio.audioContext.sampleRate,
       maxDelayTime: scales.delayTime.maxDsp,
     }),
-    "link",
+    "perChannel",
     togglebuttonQuickSave.state === 1,
   );
-}
-
-function onMatrixSizeChanged(value) {
-  ui.delayTime.setViewRange(0, value);
-  ui.lowpassCutoffHz.setViewRange(0, value);
-  ui.highpassCutoffHz.setViewRange(0, value);
-  render();
 }
 
 const scales = {
@@ -61,15 +43,14 @@ const scales = {
   fade: new parameter.DecibelScale(-60, 40, false),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
 
-  matrixSize: new parameter.IntScale(1, 256),
-  timeMultiplier: new parameter.LinearScale(0, 1),
-  feedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
-  matrixType: new parameter.MenuItemScale(menuitems.matrixTypeItems),
   seed: new parameter.IntScale(0, 2 ** 32),
-
-  delayTime: new parameter.DecibelScale(-60, 0, true),
-  lowpassCutoffHz: new parameter.MidiPitchScale(33.0, 136.0, false),
-  highpassCutoffHz: new parameter.MidiPitchScale(-37.0, 81.0, true),
+  nDelay: new parameter.IntScale(1, 256),
+  noiseDecay: new parameter.DecibelScale(-80, 40, true),
+  noiseMix: new parameter.DecibelScale(-60, 0, true),
+  delayTime: new parameter.DecibelScale(-60, -20, true),
+  feedback: new parameter.LinearScale(-1, 1),
+  highpassHz: new parameter.MidiPitchScale(-37.0, 136.0, false),
+  highpassQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
 };
 
 const param = {
@@ -77,28 +58,17 @@ const param = {
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   overSample: new parameter.Parameter(1, scales.overSample),
 
-  matrixSize: new parameter.Parameter(64, scales.matrixSize),
-  timeMultiplier: new parameter.Parameter(1.0, scales.timeMultiplier),
-  timeRandomAmount: new parameter.Parameter(0.01, scales.delayTime, true),
-  feedback: new parameter.Parameter(0.98, scales.feedback, true),
-  matrixType: new parameter.Parameter(0, scales.matrixType),
   seed: new parameter.Parameter(0, scales.seed),
-
-  delayTime: createArrayParameters(0.01, scales.delayTime),
-  lowpassCutoffHz:
-    createArrayParameters(scales.lowpassCutoffHz.maxDsp, scales.lowpassCutoffHz),
-  highpassCutoffHz: createArrayParameters(5, scales.highpassCutoffHz),
+  nDelay: new parameter.Parameter(8, scales.nDelay),
+  noiseDecay: new parameter.Parameter(1, scales.noiseDecay, true),
+  noiseMix: new parameter.Parameter(0.05, scales.noiseMix),
+  delayTime: new parameter.Parameter(0.01, scales.delayTime, true),
+  feedback: new parameter.Parameter(0.98, scales.feedback, true),
+  highpassHz: new parameter.Parameter(20, scales.highpassHz, true),
+  highpassQ: new parameter.Parameter(Math.SQRT1_2, scales.highpassQ),
 };
 
 // Add controls.
-const audio = new wave.Audio(
-  2,
-  "./renderer.js",
-  undefined,
-  (wave) => {
-    for (let i = 0; i < waveView.length; ++i) waveView[i].set(wave.data[i]);
-  },
-);
 
 const fontSize
   = parseFloat(getComputedStyle(document.body).getPropertyValue("font-size"));
@@ -109,15 +79,23 @@ const barboxHeight = 12 * fontSize;
 
 const pageTitle = widget.heading(document.body, 1, document.title, undefined, undefined);
 const divMain = widget.div(document.body, "main", undefined);
-
 const divLeft = widget.div(divMain, undefined, "controlBlock");
-const divRight = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, audio.wave.data[0], false),
-  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, audio.wave.data[1], false),
+  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, undefined, false),
 ];
+
+const audio = new wave.Audio(
+  2,
+  "./renderer.js",
+  undefined,
+  (wave) => {
+    for (let i = 0; i < waveView.length; ++i) waveView[i].set(wave.data[i]);
+  },
+);
+for (let i = 0; i < waveView.length; ++i) waveView[i].set(audio.wave.data[i]);
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
@@ -129,7 +107,6 @@ const selectRandom = widget.select(
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-// spanPlayControlFiller.textContent = " ";
 const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
 const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
@@ -137,8 +114,7 @@ const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
 const detailRender = widget.details(divLeft, "Render");
-const detailFdn = widget.details(divLeft, "FDN");
-const detailDelay = widget.details(divRight, "Delay & Filter");
+const detailDelay = widget.details(divLeft, "Delay");
 
 const ui = {
   renderDuration:
@@ -147,24 +123,17 @@ const ui = {
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
 
-  matrixSize: new widget.NumberInput(
-    detailFdn, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
-  timeMultiplier:
-    new widget.NumberInput(detailFdn, "Time Multiplier", param.timeMultiplier, render),
-  timeRandomAmount:
-    new widget.NumberInput(detailFdn, "Time Random", param.timeRandomAmount, render),
-  feedback: new widget.NumberInput(detailFdn, "Feedback", param.feedback, render),
-  matrixType: new widget.ComboBoxLine(detailFdn, "Matrix Type", param.matrixType, render),
-  seed: new widget.NumberInput(detailFdn, "Seed", param.seed, render),
-
-  delayTime: new widget.BarBox(
-    detailDelay, "Delay Time [s]", barboxWidth, barboxHeight, param.delayTime, render),
-  lowpassCutoffHz: new widget.BarBox(
-    detailDelay, "Lowpass Cutoff [Hz]", barboxWidth, barboxHeight, param.lowpassCutoffHz,
-    render),
-  highpassCutoffHz: new widget.BarBox(
-    detailDelay, "Highpass Cutoff [Hz]", barboxWidth, barboxHeight,
-    param.highpassCutoffHz, render),
+  seed: new widget.NumberInput(detailDelay, "Seed", param.seed, render),
+  nDelay: new widget.NumberInput(detailDelay, "nDelay", param.nDelay, render),
+  noiseDecay:
+    new widget.NumberInput(detailDelay, "Noise Decay [s]", param.noiseDecay, render),
+  noiseMix: new widget.NumberInput(detailDelay, "Noise Mix [dB]", param.noiseMix, render),
+  delayTime:
+    new widget.NumberInput(detailDelay, "Delay Time [s]", param.delayTime, render),
+  feedback: new widget.NumberInput(detailDelay, "Feedback", param.feedback, render),
+  highpassHz:
+    new widget.NumberInput(detailDelay, "Highpass Cutoff [Hz]", param.highpassHz, render),
+  highpassQ: new widget.NumberInput(detailDelay, "Highpass Q", param.highpassQ, render),
 };
 
-onMatrixSizeChanged(param.matrixSize.defaultDsp);
+render();

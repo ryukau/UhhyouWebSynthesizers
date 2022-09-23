@@ -58,7 +58,7 @@ export class Audio {
     }, 100);
   }
 
-  render(parameter, saveAfterRendering = false) {
+  render(parameter, normalize = "link", quickSave = false) {
     if (this.renderStatusElement !== undefined) {
       this.renderStatusElement.textContent = "⚠ Rendering ⚠";
     }
@@ -81,7 +81,7 @@ export class Audio {
           if (this.wave.channels === 1) this.wave.copyChannel(index);
 
           // TODO: get arguments from parameter.
-          this.finalize(true, false, 0, parameter.fadeOut, saveAfterRendering);
+          this.finalize(normalize, 0, parameter.fadeOut, quickSave);
         }
       };
     });
@@ -89,16 +89,18 @@ export class Audio {
 
   finalize(
     normalize,
-    quickSave,
     fadeInSeconds,
     fadeOutSeconds,
-    saveAfterRendering = false,
+    quickSave,
   ) {
-    if (normalize) this.wave.normalize();
+    if (normalize === "link") {
+      this.wave.normalize();
+    } else if (normalize === "perChannel") {
+      this.wave.normalizePerChannel();
+    }
+
     this.wave.declickIn(fadeInSeconds * this.audioContext.sampleRate);
     this.wave.declickOut(fadeOutSeconds * this.audioContext.sampleRate);
-
-    if (quickSave) this.save();
 
     this.onRenderFinish(this.wave);
 
@@ -106,7 +108,7 @@ export class Audio {
       this.renderStatusElement.textContent = "Rendering finished. ✓";
     }
 
-    if (saveAfterRendering) this.save();
+    if (quickSave) this.save();
   }
 }
 
@@ -169,6 +171,22 @@ export class Wave {
 
     for (let i = 0; i < this.data.length; ++i) {
       for (let j = 0; j < this.data[i].length; ++j) this.data[i][j] /= peakValue;
+    }
+  }
+
+  normalizePerChannel() {
+    for (let channel = 0; channel < this.data.length; ++channel) {
+      let max = -Number.MAX_VALUE;
+      for (let sample = 0; sample < this.data[channel].length; ++sample) {
+        const value = Math.abs(this.data[channel][sample]);
+        if (max < value) max = value;
+      }
+
+      if (max <= Number.EPSILON) continue;
+
+      for (let sample = 0; sample < this.data[channel].length; ++sample) {
+        this.data[channel][sample] /= max;
+      }
     }
   }
 

@@ -6,3 +6,13 @@ export function ampToDB(amplitude) { return 20 * Math.log10(amplitude); }
 
 export function midiPitchToFreq(pitch) { return 440 * Math.pow(2, (pitch - 69) / 12); }
 export function freqToMidiPitch(freq) { return 69 + 12 * Math.log2(freq / 440); }
+
+// `v1` and `v2` are in [0, 1).
+export function normalDistributionMap(v1, v2) {
+  return Math.sqrt(-2 * Math.log(1 - v1)) * Math.cos(2 * Math.PI * v2);
+}
+
+// `value` is in [0, 1).
+export function uniformDistributionMap(value, low, high) {
+  return low + value * (high - low);
+}

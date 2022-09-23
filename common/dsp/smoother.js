@@ -11,7 +11,35 @@ export function timeToOnePoleKp(samples) {
   return normalizedCutoffToOnePoleKp(1 / samples);
 }
 
-export class DoubleEMAFilterKp {
+export class EMAFilter {
+  constructor() {
+    this.kp = 1;
+    this.reset();
+  }
+
+  reset(value = 0) { this.value = value; }
+
+  // `cutoff` is normalized frequency in [0.0, 0.5].
+  setCutoff(cutoff) { this.kp = normalizedCutoffToOnePoleKp(cutoff); }
+  process(input) { return this.value += this.kp * (input - this.value); }
+}
+
+export class EMADecayEnvelope {
+  constructor(timeInSamples) {
+    this.kp = timeToOnePoleKp(timeInSamples);
+    this.reset();
+  }
+
+  reset() { this.value = 1; }
+
+  process() {
+    const out = this.value;
+    this.value -= this.kp * this.value;
+    return out;
+  }
+}
+
+export class DoubleEMAFilter {
   constructor() {
     this.kp = 1;
     this.reset();
