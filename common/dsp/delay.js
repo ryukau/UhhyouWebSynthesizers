@@ -7,7 +7,7 @@ export class IntDelay {
   constructor(sampleRate, maxSecond) {
     this.#wptr = 0;
 
-    const size = Math.floor(sampleRate * maxSecond) + 2;
+    const size = Math.ceil(sampleRate * maxSecond) + 2;
     this.#buf = new Array(size < 4 ? 4 : size);
 
     this.reset();
@@ -38,7 +38,7 @@ export class Delay {
   constructor(sampleRate, maxSecond) {
     this.#wptr = 0;
 
-    const size = Math.floor(sampleRate * maxSecond) + 2;
+    const size = Math.ceil(sampleRate * maxSecond) + 2;
     this.#buf = new Array(size < 4 ? 4 : size);
 
     this.reset();
