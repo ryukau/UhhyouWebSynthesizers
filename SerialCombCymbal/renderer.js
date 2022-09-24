@@ -1,4 +1,4 @@
-import {Delay, LongAllpass} from "../common/dsp/delay.js";
+import {Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
 import * as multirate from "../common/dsp/multirate.js";
 import {EMADecayEnvelope} from "../common/dsp/smoother.js";
 import {SVF} from "../common/dsp/svf.js";
@@ -61,47 +61,70 @@ onmessage = (event) => {
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
 
-  let dsp = {
-    noiseDecay: new EMADecayEnvelope(upRate * pv.noiseDecay),
-    rng: new PcgRandom(BigInt(pv.seed + pv.channel * 65537)),
-    delay: [],
-    highpass: [],
-    lowpass: [],
-    feedbackBuffer: 0,
-    inBuf: new Array(pv.nDelay).fill(0),
-    outBuf: new Array(pv.nDelay).fill(0),
-    delayProcessFunc: getDelayProcessFunc(pv),
-  };
-
-  const isOvertone = menuitems.timeDistribution[pv.timeDistribution] === "Overtone";
-  for (let i = 0; i < pv.nDelay; ++i) {
-    let timeInSeconds = isOvertone ? pv.delayTime / (i + 1) : pv.delayTime / pv.nDelay;
-    timeInSeconds += pv.timeRandomness * dsp.rng.number();
-    let delay = new LongAllpass(upRate, timeInSeconds);
-    delay.prepare(upRate * timeInSeconds, pv.feedback);
-    dsp.delay.push(delay);
-
-    const hpOffset = pv.highpassCutoffSlope * i * 8 / pv.nDelay;
-    const lpOffset = pv.lowpassCutoffSlope * i * 8 / pv.nDelay;
-    dsp.highpass.push(new SVF((hpOffset + 1) * pv.highpassHz / upRate, pv.highpassQ));
-    dsp.lowpass.push(new SVF((lpOffset + 1) * pv.lowpassHz / upRate, pv.lowpassQ));
-  }
-
-  // // TODO: Add parameter to reverse highpass order.
-  // dsp.delay.reverse();
-  dsp.highpass.reverse();
-  dsp.lowpass.reverse();
-
   let sound = new Array(Math.floor(pv.sampleRate * pv.renderDuration)).fill(0);
-  if (upFold == 2) {
-    let halfband = new multirate.HalfBandIIR();
-    for (let i = 0; i < sound.length; ++i) {
-      const hb0 = process(upFold, pv, dsp);
-      const hb1 = process(upFold, pv, dsp);
-      sound[i] = halfband.process(hb0, hb1);
+  for (let layer = 0; layer < pv.nLayer; ++layer) {
+    let dsp = {
+      noiseDecay: new EMADecayEnvelope(upRate * pv.noiseDecay),
+      rng: new PcgRandom(BigInt(pv.seed + pv.channel * 65537)),
+      delay: [],
+      highpass: [],
+      lowpass: [],
+      feedbackBuffer: 0,
+      inBuf: new Array(pv.nDelay).fill(0),
+      outBuf: new Array(pv.nDelay).fill(0),
+      delayProcessFunc: getDelayProcessFunc(pv),
+    };
+
+    const isOvertone = menuitems.timeDistribution[pv.timeDistribution] === "Overtone";
+    for (let i = 0; i < pv.nDelay; ++i) {
+      let timeInSeconds = isOvertone ? pv.delayTime / (i + 1) : pv.delayTime / pv.nDelay;
+      timeInSeconds += pv.timeRandomness * dsp.rng.number();
+
+      // `Delay` uses linear interpolation, and linear interpolation can be considered as
+      // FIR lowpass filter. With sufficiently high sampling rate, it's better to use
+      // `IntDelay` to prevent loss by linear interpolation, to preserve metalic high
+      // tones.
+      let delay = new LongAllpass(upRate, timeInSeconds, upRate < 8 ? Delay : IntDelay);
+      delay.prepare(upRate * timeInSeconds, pv.feedback);
+      dsp.delay.push(delay);
+
+      const hpOffset = pv.highpassCutoffSlope * i * 8 / pv.nDelay;
+      const lpOffset = pv.lowpassCutoffSlope * i * 8 / pv.nDelay;
+      dsp.highpass.push(new SVF((hpOffset + 1) * pv.highpassHz / upRate, pv.highpassQ));
+      dsp.lowpass.push(new SVF((lpOffset + 1) * pv.lowpassHz / upRate, pv.lowpassQ));
     }
-  } else {
-    for (let i = 0; i < sound.length; ++i) sound[i] = process(upFold, pv, dsp);
+
+    // // TODO: Add parameter to reverse highpass order.
+    // dsp.delay.reverse();
+    dsp.highpass.reverse();
+    dsp.lowpass.reverse();
+
+    if (upFold == 16) {
+      let decimationLowpass
+        = new multirate.DecimationLowpass(multirate.sos16FoldFirstStage);
+      let halfband = new multirate.HalfBandIIR();
+      let frame = [0, 0];
+      for (let i = 0; i < sound.length; ++i) {
+        for (let j = 0; j < 2; ++j) {
+          for (let k = 0; k < 8; ++k) decimationLowpass.push(process(upFold, pv, dsp));
+          frame[j] = decimationLowpass.output();
+        }
+        sound[i] += halfband.process(frame[0], frame[1]);
+      }
+    } else if (upFold == 2) {
+      let halfband = new multirate.HalfBandIIR();
+      for (let i = 0; i < sound.length; ++i) {
+        const hb0 = process(upFold, pv, dsp);
+        const hb1 = process(upFold, pv, dsp);
+        sound[i] += halfband.process(hb0, hb1);
+      }
+    } else {
+      for (let i = 0; i < sound.length; ++i) sound[i] += process(upFold, pv, dsp);
+    }
+
+    pv.delayTime *= pv.timeMultiplier;
+    pv.highpassHz *= pv.highpassCutoffMultiplier;
+    pv.lowpassHz *= pv.lowpassCutoffMultiplier;
   }
 
   postMessage(sound);

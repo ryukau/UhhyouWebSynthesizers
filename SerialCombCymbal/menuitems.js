@@ -1,6 +1,7 @@
 export const oversampleItems = [
   "1",
   "2",
+  "16",
 ];
 
 export const delayType = [

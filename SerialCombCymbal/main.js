@@ -10,6 +10,12 @@ function randomize() {
     if (key === "renderDuration") continue;
     if (key === "fadeIn") continue;
     if (key === "fadeOut") continue;
+    if (key === "nLayer") continue;
+    if (key === "timeMultiplier") continue;
+    if (key === "highpassCutoffMultiplier") continue;
+    if (key === "lowpassCutoffMultiplier") continue;
+    if (key === "noiseMix") continue;
+    if (key === "lowpassHz") continue;
     if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
@@ -49,6 +55,9 @@ const scales = {
   fade: new parameter.DecibelScale(-60, 40, true),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
 
+  nLayer: new parameter.IntScale(1, 8),
+  layerMultiplier: new parameter.LinearScale(0.5, 2),
+
   noiseDecay: new parameter.DecibelScale(-80, 40, true),
   noiseMix: new parameter.DecibelScale(-60, 0, true),
 
@@ -72,6 +81,11 @@ const param = {
   fadeIn: new parameter.Parameter(0.001, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   overSample: new parameter.Parameter(1, scales.overSample),
+
+  nLayer: new parameter.Parameter(1, scales.nLayer, true),
+  timeMultiplier: new parameter.Parameter(1, scales.layerMultiplier, true),
+  highpassCutoffMultiplier: new parameter.Parameter(1, scales.layerMultiplier, true),
+  lowpassCutoffMultiplier: new parameter.Parameter(1, scales.layerMultiplier, true),
 
   noiseDecay: new parameter.Parameter(1, scales.noiseDecay, true),
   noiseMix: new parameter.Parameter(0, scales.noiseMix),
@@ -141,7 +155,8 @@ const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
 const detailRender = widget.details(divLeft, "Render");
-const detailExciter = widget.details(divLeft, "Exciter");
+const detailLayer = widget.details(divLeft, "Layer");
+const detailExciter = widget.details(divRight, "Exciter");
 const detailDelay = widget.details(divRight, "Delay");
 const detailFilter = widget.details(divRight, "Filter");
 
@@ -152,6 +167,14 @@ const ui = {
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+
+  nLayer: new widget.NumberInput(detailLayer, "nLayer", param.nLayer, render),
+  timeMultiplier:
+    new widget.NumberInput(detailLayer, "Time", param.timeMultiplier, render),
+  highpassCutoffMultiplier: new widget.NumberInput(
+    detailLayer, "Highpass Cutoff", param.highpassCutoffMultiplier, render),
+  lowpassCutoffMultiplier: new widget.NumberInput(
+    detailLayer, "Lowpass Cutoff", param.lowpassCutoffMultiplier, render),
 
   noiseDecay:
     new widget.NumberInput(detailExciter, "Noise Decay [s]", param.noiseDecay, render),

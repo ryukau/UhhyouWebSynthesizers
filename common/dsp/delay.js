@@ -75,7 +75,7 @@ https://ccrma.stanford.edu/~jos/pasp/Allpass_Two_Combs.html
 export class LongAllpass {
   #buffer;
 
-  constructor(sampleRate, maxTime) {
+  constructor(sampleRate, maxTime, delayClass = Delay) {
     this.#buffer = 0;
     this.gain = 0;
     this.delay = new Delay(sampleRate, maxTime);

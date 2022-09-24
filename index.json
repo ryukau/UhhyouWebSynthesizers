@@ -54,8 +54,8 @@
           "href": "./SerialCombCymbal/synth.html",
           "name": "SerialCombCymbal",
           "description": {
-            "ja": "🚧 開発中。直列につないだコムフィルタによるシンバルのような音。",
-            "en": "🚧 Under development. Cymbal-esque sound using serial comb filter."
+            "ja": "直列につないだコムフィルタによるシンバルのような音。",
+            "en": "Cymbal-esque sound using serial comb filter."
           }
         },
         {

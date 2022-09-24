@@ -59,7 +59,20 @@ export class HalfBandIIR {
   }
 }
 
-const sos16FoldFirstStage = [
+/**
+Lowpass filter coefficient specialized for 16x oversampling.
+Sos stands for second order sections.
+
+```python
+import numpy
+from scipy import signal
+
+samplerate = 48000
+uprate = samplerate * 16 / 2
+sos = signal.butter(16, samplerate / 1.8, output="sos", fs=uprate)
+```
+*/
+export const sos16FoldFirstStage = [
   [
     3.5903469155931847e-12, 7.1806938311863695e-12, 3.5903469155931847e-12,
     -1.2759657610561284, 0.40787244610150275
@@ -92,12 +105,12 @@ export class DecimationLowpass {
   }
 
   reset() {
-    x0.fill(0);
-    x1.fill(0);
-    x2.fill(0);
-    y0.fill(0);
-    y1.fill(0);
-    y2.fill(0);
+    this.#x0.fill(0);
+    this.#x1.fill(0);
+    this.#x2.fill(0);
+    this.#y0.fill(0);
+    this.#y1.fill(0);
+    this.#y2.fill(0);
   }
 
   push(input) {
@@ -105,7 +118,7 @@ export class DecimationLowpass {
     this.#x0.unshift(input);
 
     for (let i = 0; i < this.co.length; ++i) {
-      y0[i]                            //
+      this.#y0[i]                      //
         = this.co[i][0] * this.#x0[i]  //
         + this.co[i][1] * this.#x1[i]  //
         + this.co[i][2] * this.#x2[i]  //
@@ -119,5 +132,5 @@ export class DecimationLowpass {
     this.#y1 = this.#y0.slice();
   }
 
-  output() { return y0[y0.length - 1]; }
-};
+  output() { return this.#y0[this.#y0.length - 1]; }
+}
