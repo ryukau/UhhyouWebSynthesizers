@@ -8,6 +8,7 @@ export function cutoffToOnePoleKp(sampleRate, cutoffHz) {
 }
 
 export function timeToOnePoleKp(samples) {
+  if (samples < Number.EPSILON) return 1;
   return normalizedCutoffToOnePoleKp(1 / samples);
 }
 
