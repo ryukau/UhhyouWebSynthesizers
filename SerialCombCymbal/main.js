@@ -1,5 +1,6 @@
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
+import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
@@ -7,6 +8,7 @@ import * as menuitems from "./menuitems.js";
 function randomize() {
   for (const key in param) {
     if (key === "renderDuration") continue;
+    if (key === "fadeIn") continue;
     if (key === "fadeOut") continue;
     if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
@@ -34,6 +36,8 @@ function render() {
     parameter.toMessage(param, {
       sampleRate: audio.audioContext.sampleRate,
       maxDelayTime: scales.delayTime.maxDsp,
+      maxHighpassHz: scales.highpassHz.maxDsp,
+      minLowpassHz: scales.lowpassHz.minDsp,
     }),
     "perChannel",
     togglebuttonQuickSave.state === 1,
@@ -42,34 +46,52 @@ function render() {
 
 const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
-  fade: new parameter.DecibelScale(-60, 40, false),
+  fade: new parameter.DecibelScale(-60, 40, true),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
 
-  seed: new parameter.IntScale(0, 2 ** 32),
-  nDelay: new parameter.IntScale(1, 256),
   noiseDecay: new parameter.DecibelScale(-80, 40, true),
   noiseMix: new parameter.DecibelScale(-60, 0, true),
-  delayTime: new parameter.DecibelScale(-60, -20, true),
-  timeRandomness: new parameter.DecibelScale(-80, -20, true),
+
+  nDelay: new parameter.IntScale(1, 256),
+  seed: new parameter.IntScale(0, 2 ** 32),
+  delayType: new parameter.MenuItemScale(menuitems.delayType),
+  timeDistribution: new parameter.MenuItemScale(menuitems.timeDistribution),
+  delayTime: new parameter.DecibelScale(-80, -20, true),
   feedback: new parameter.LinearScale(-1, 1),
-  highpassHz: new parameter.MidiPitchScale(-37.0, 136.0, false),
-  highpassQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
+
+  cutoffSlope: new parameter.LinearScale(0, 1),
+  highpassHz: new parameter.MidiPitchScale(
+    util.freqToMidiPitch(1), util.freqToMidiPitch(48000), true),
+  lowpassHz: new parameter.MidiPitchScale(
+    util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
+  filterQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
 };
 
 const param = {
   renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
+  fadeIn: new parameter.Parameter(0.001, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   overSample: new parameter.Parameter(1, scales.overSample),
 
-  seed: new parameter.Parameter(0, scales.seed),
-  nDelay: new parameter.Parameter(8, scales.nDelay),
   noiseDecay: new parameter.Parameter(1, scales.noiseDecay, true),
-  noiseMix: new parameter.Parameter(0.05, scales.noiseMix),
+  noiseMix: new parameter.Parameter(0, scales.noiseMix),
+
+  nDelay: new parameter.Parameter(8, scales.nDelay),
+  seed: new parameter.Parameter(0, scales.seed),
+  delayType:
+    new parameter.Parameter(menuitems.delayType.indexOf("Allpass"), scales.delayType),
+  timeDistribution: new parameter.Parameter(
+    menuitems.timeDistribution.indexOf("Overtone"), scales.timeDistribution),
   delayTime: new parameter.Parameter(0.01, scales.delayTime, true),
-  timeRandomness: new parameter.Parameter(0.001, scales.timeRandomness, true),
+  timeRandomness: new parameter.Parameter(0.001, scales.delayTime, true),
   feedback: new parameter.Parameter(-0.98, scales.feedback, true),
+
+  highpassCutoffSlope: new parameter.Parameter(0, scales.cutoffSlope),
   highpassHz: new parameter.Parameter(20, scales.highpassHz, true),
-  highpassQ: new parameter.Parameter(Math.SQRT1_2, scales.highpassQ),
+  highpassQ: new parameter.Parameter(Math.SQRT1_2, scales.filterQ),
+  lowpassCutoffSlope: new parameter.Parameter(0, scales.cutoffSlope),
+  lowpassHz: new parameter.Parameter(scales.lowpassHz.maxDsp, scales.lowpassHz, true),
+  lowpassQ: new parameter.Parameter(Math.SQRT1_2, scales.filterQ),
 };
 
 // Add controls.
@@ -84,6 +106,7 @@ const barboxHeight = 12 * fontSize;
 const pageTitle = widget.heading(document.body, 1, document.title, undefined, undefined);
 const divMain = widget.div(document.body, "main", undefined);
 const divLeft = widget.div(divMain, undefined, "controlBlock");
+const divRight = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
@@ -118,28 +141,44 @@ const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
 const detailRender = widget.details(divLeft, "Render");
-const detailDelay = widget.details(divLeft, "Delay");
+const detailExciter = widget.details(divLeft, "Exciter");
+const detailDelay = widget.details(divRight, "Delay");
+const detailFilter = widget.details(divRight, "Filter");
 
 const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
+  fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
 
-  seed: new widget.NumberInput(detailDelay, "Seed", param.seed, render),
-  nDelay: new widget.NumberInput(detailDelay, "nDelay", param.nDelay, render),
   noiseDecay:
-    new widget.NumberInput(detailDelay, "Noise Decay [s]", param.noiseDecay, render),
-  noiseMix: new widget.NumberInput(detailDelay, "Noise Mix [dB]", param.noiseMix, render),
+    new widget.NumberInput(detailExciter, "Noise Decay [s]", param.noiseDecay, render),
+  noiseMix:
+    new widget.NumberInput(detailExciter, "Noise Mix [dB]", param.noiseMix, render),
+
+  nDelay: new widget.NumberInput(detailDelay, "nDelay", param.nDelay, render),
+  seed: new widget.NumberInput(detailDelay, "Seed", param.seed, render),
+  delayType: new widget.ComboBoxLine(detailDelay, "Delay Type", param.delayType, render),
+  timeDistribution: new widget.ComboBoxLine(
+    detailDelay, "Time Distribution", param.timeDistribution, render),
   delayTime:
     new widget.NumberInput(detailDelay, "Delay Time [s]", param.delayTime, render),
   timeRandomness:
     new widget.NumberInput(detailDelay, "Time Randomness", param.timeRandomness, render),
   feedback: new widget.NumberInput(detailDelay, "Feedback", param.feedback, render),
-  highpassHz:
-    new widget.NumberInput(detailDelay, "Highpass Cutoff [Hz]", param.highpassHz, render),
-  highpassQ: new widget.NumberInput(detailDelay, "Highpass Q", param.highpassQ, render),
+
+  highpassCutoffSlope: new widget.NumberInput(
+    detailFilter, "Highpass Slope", param.highpassCutoffSlope, render),
+  highpassHz: new widget.NumberInput(
+    detailFilter, "Highpass Cutoff [Hz]", param.highpassHz, render),
+  highpassQ: new widget.NumberInput(detailFilter, "Highpass Q", param.highpassQ, render),
+  lowpassCutoffSlope: new widget.NumberInput(
+    detailFilter, "Lowpass Slope", param.lowpassCutoffSlope, render),
+  lowpassHz:
+    new widget.NumberInput(detailFilter, "Lowpass Cutoff [Hz]", param.lowpassHz, render),
+  lowpassQ: new widget.NumberInput(detailFilter, "Lowpass Q", param.lowpassQ, render),
 };
 
 render();
