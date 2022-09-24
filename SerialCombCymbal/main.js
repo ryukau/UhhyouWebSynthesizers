@@ -10,6 +10,7 @@ function randomize() {
     if (key === "renderDuration") continue;
     if (key === "fadeIn") continue;
     if (key === "fadeOut") continue;
+    if (key === "overSample") continue;
     if (key === "nLayer") continue;
     if (key === "timeMultiplier") continue;
     if (key === "highpassCutoffMultiplier") continue;
