@@ -1,3 +1,4 @@
+import {uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
 import * as wave from "../common/wave.js";
@@ -100,13 +101,6 @@ const audio = new wave.Audio(
   },
 );
 
-const fontSize
-  = parseFloat(getComputedStyle(document.body).getPropertyValue("font-size"));
-const waveViewWidth = 15 * fontSize;
-const waveViewHeight = 8 * fontSize;
-const barboxWidth = 32 * fontSize;
-const barboxHeight = 12 * fontSize;
-
 const pageTitle = widget.heading(document.body, 1, document.title, undefined, undefined);
 const divMain = widget.div(document.body, "main", undefined);
 
@@ -115,8 +109,10 @@ const divRight = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, audio.wave.data[0], false),
-  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, audio.wave.data[1], false),
+  new widget.WaveView(
+    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[0], false),
+  new widget.WaveView(
+    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
@@ -158,12 +154,13 @@ const ui = {
   seed: new widget.NumberInput(detailFdn, "Seed", param.seed, render),
 
   delayTime: new widget.BarBox(
-    detailDelay, "Delay Time [s]", barboxWidth, barboxHeight, param.delayTime, render),
+    detailDelay, "Delay Time [s]", uiSize.barboxWidth, uiSize.barboxHeight,
+    param.delayTime, render),
   lowpassCutoffHz: new widget.BarBox(
-    detailDelay, "Lowpass Cutoff [Hz]", barboxWidth, barboxHeight, param.lowpassCutoffHz,
-    render),
+    detailDelay, "Lowpass Cutoff [Hz]", uiSize.barboxWidth, uiSize.barboxHeight,
+    param.lowpassCutoffHz, render),
   highpassCutoffHz: new widget.BarBox(
-    detailDelay, "Highpass Cutoff [Hz]", barboxWidth, barboxHeight,
+    detailDelay, "Highpass Cutoff [Hz]", uiSize.barboxWidth, uiSize.barboxHeight,
     param.highpassCutoffHz, render),
 };
 

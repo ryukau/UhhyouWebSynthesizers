@@ -33,13 +33,11 @@ export class BarBox {
     this.label = document.createElement("label");
     this.label.classList.add("barbox");
     this.label.textContent = label;
-    this.label.style.textAlign = "left";
     this.divContainer.appendChild(this.label);
 
     this.spanIndex = document.createElement("span");
     this.spanIndex.classList.add("barbox");
     this.spanIndex.textContent = "Index";
-    this.spanIndex.style.textAlign = "left";
     this.divContainer.appendChild(this.spanIndex);
 
     this.inputIndex = document.createElement("input");
@@ -252,6 +250,8 @@ export class BarBox {
   }
 
   onMouseDown(event) {
+    event.preventDefault();
+
     this.#mouseButton = event.button;
 
     this.#mousePosition = this.#getMousePosition(event);

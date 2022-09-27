@@ -8,25 +8,36 @@ export class FeedbackDelayNetwork {
   #buf;
   #bufIndex;
 
-  constructor(length, sampleRate, maxSecond) {
+  constructor(
+    size,
+    sampleRate,
+    maxSecond,
+    lowpassType = smoo.DoubleEMAFilter,
+    highpassType = smoo.EMAHighpass,
+    delayType = delay.Delay,
+  ) {
     const create2dArray = (x, y) => {
       let a = new Array(x);
       for (let i = 0; i < a.length; ++i) a[i] = new Array(y).fill(0);
       return a;
     };
 
-    this.#matrix = create2dArray(length, length);
-    this.#buf = create2dArray(2, length);
+    this.#matrix = create2dArray(size, size);
+    this.#buf = create2dArray(2, size);
     this.#bufIndex = 0;
 
-    this.delay = new Array(length);
-    this.lowpass = new Array(length);
-    this.highpass = new Array(length);
-    for (let i = 0; i < length; ++i) {
-      this.delay[i] = new delay.Delay(sampleRate, maxSecond);
-      this.lowpass[i] = new smoo.DoubleEMAFilter();
-      this.highpass[i] = new smoo.EMAHighpass();
+    this.delay = new Array(size);
+    this.lowpass = new Array(size);
+    this.highpass = new Array(size);
+    for (let i = 0; i < size; ++i) {
+      this.delay[i] = new delayType(sampleRate, maxSecond);
+      this.lowpass[i] = new lowpassType();
+      this.highpass[i] = new highpassType();
     }
+  }
+
+  randomOrthogonal(seed, identityAmount) {
+    randomOrthogonal(this.#matrix, seed, false, identityAmount);
   }
 
   randomizeMatrix(type, seed) {

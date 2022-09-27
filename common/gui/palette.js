@@ -35,3 +35,14 @@ export const palette = {
   overlayFaint: rgbaStr("#0000000b"),
   waveform: rgbaStr("#303030ff"),
 };
+
+const fontSize
+  = parseFloat(getComputedStyle(document.body).getPropertyValue("font-size"));
+const controlWidth
+  = parseFloat(getComputedStyle(document.body).getPropertyValue("--controlWidth"));
+export const uiSize = {
+  waveViewWidth: controlWidth * 15 / 32 * fontSize,
+  waveViewHeight: controlWidth * 8 / 32 * fontSize,
+  barboxWidth: controlWidth * fontSize,
+  barboxHeight: controlWidth * 12 / 32 * fontSize,
+};

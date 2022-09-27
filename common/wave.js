@@ -268,69 +268,6 @@ export class Wave {
     const u16 = (value) => { return new Uint16Array([value]); };
     const u32 = (value) => { return new Uint32Array([value]); };
 
-    // const sampleSize = 32; // [bit/sample]. Fixed to 32 bit float.
-    // let fmt = {
-    //   sampleRate: sampleRate,
-    //   sampleSize: sampleSize,
-    //   channels: channels,
-    //   bytesPerFrame: channels * sampleSize / 8,
-    // };
-
-    // //
-    // // fmt_, 18 + 8 = 26 [byte]
-    // // fact, 4 + 8 = 12 [byte]
-    // // smpl, 36 + 24 * numLoop + 8 = 68 [byte]
-    // // data, 4 + bufferLength [byte]
-    // //
-    // let riffChunkSize = loop ? 110 : 42;
-
-    // let header = [
-    //   ascii("RIFF"),                           // # "riff" Chunk
-    //   u32(riffChunkSize + bufferLength),       // riffChunkSize
-    //   ascii("WAVE"),                           // # "wave" Chunk
-    //   ascii("fmt "),                           // # "fmt_" Chunk
-    //   u32(18),                                 // fmtChunkSize
-    //   u16(0x0003),                             // formatTag, 0x0003 = IEEE 32 bit float
-    //   u16(fmt.channels),                       // channels
-    //   u32(fmt.sampleRate),                     // samplePerSec
-    //   u32(fmt.sampleRate * fmt.bytesPerFrame), // bytesPerSec
-    //   u16(fmt.bytesPerFrame),                  // blockAlign
-    //   u16(fmt.sampleSize),                     // bitsPerSample
-    //   u16(0x0000),                             // cbSize
-    //   ascii("fact"),                           // fact
-    //   u32(4),                                  // factChunkSize
-    //   u32(bufferLength / fmt.bytesPerFrame),   // sampleLength
-    // ];
-
-    // if (loop) {
-    //   header.concat([
-    //     ascii("smpl"),                         // # "smpl" Chunk
-    //     u32(60),                               // smplChunkSize
-    //     u32(0),                                // manufacturer
-    //     u32(0),                                // product
-    //     u32(1e9 / fmt.sampleRate),             // samplePeriod
-    //     u32(60),                               // midiUnityNote
-    //     u32(0),                                // midiPitchFraction
-    //     u32(0),                                // smpteFormat
-    //     u32(0),                                // smpteOffset
-    //     u32(1),                                // numSampleLoops
-    //     u32(24),                               // samplerData
-    //     u32(0),                                // cuePointID
-    //     u32(0),                                // type
-    //     u32(0),                                // start
-    //     u32(bufferLength - fmt.bytesPerFrame), // end
-    //     u32(0),                                // fraction
-    //     u32(0),                                // playCount
-    //   ]);
-    // }
-
-    // header.concat([
-    //   ascii("data"),     // data
-    //   u32(bufferLength), // dataChunkSize
-    // ]);
-
-    // return this.#concatTypedArray(header);
-
     var sampleSize = 32;
     var fmt = {
       sampleRate: sampleRate,

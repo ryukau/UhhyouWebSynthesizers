@@ -15,7 +15,9 @@ export class SVF {
   #k;
 
   // normalizedFreq = cutoffHz / sampleRate.
-  constructor(normalizedFreq, Q) {
+  constructor(normalizedFreq, Q) { this.setCutoff(normalizedFreq, Q); }
+
+  setCutoff(normalizedFreq, Q) {
     this.#g = Math.tan(clamp(normalizedFreq, this.#minCutoff, this.#nyquist) * Math.PI);
     this.#k = 1 / Q;
   }
@@ -65,4 +67,12 @@ export class SVF {
     const [v1, v2] = this.tick(v0);
     return v0 - 2 * this.#k * v1;
   }
+}
+
+export class SVFLP extends SVF {
+  process(v0) { return this.lp(v0); }
+}
+
+export class SVFHP extends SVF {
+  process(v0) { return this.hp(v0); }
 }

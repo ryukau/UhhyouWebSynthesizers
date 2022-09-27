@@ -1,3 +1,4 @@
+import {uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
 import * as util from "../common/util.js";
@@ -111,13 +112,6 @@ const param = {
 
 // Add controls.
 
-const fontSize
-  = parseFloat(getComputedStyle(document.body).getPropertyValue("font-size"));
-const waveViewWidth = 15 * fontSize;
-const waveViewHeight = 8 * fontSize;
-const barboxWidth = 32 * fontSize;
-const barboxHeight = 12 * fontSize;
-
 const pageTitle = widget.heading(document.body, 1, document.title, undefined, undefined);
 const divMain = widget.div(document.body, "main", undefined);
 const divLeft = widget.div(divMain, undefined, "controlBlock");
@@ -125,8 +119,10 @@ const divRight = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, undefined, false),
-  new widget.WaveView(divLeft, waveViewWidth, waveViewHeight, undefined, false),
+  new widget.WaveView(
+    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(
+    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
 ];
 
 const audio = new wave.Audio(
