@@ -51,6 +51,14 @@
       },
       "list": [
         {
+          "href": "./ClangCymbal/synth.html",
+          "name": "ClangCymbal",
+          "description": {
+            "ja": "FDN を使ったシンバルシンセサイザ。ほぼ <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_ja.html\">VST 3 版</a>の移植。",
+            "en": "Cymbal synthesizer using FeedbackDelayNetwork. Almost same as <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_en.html\">VST 3 version</a>."
+          }
+        },
+        {
           "href": "./SerialCombCymbal/synth.html",
           "name": "SerialCombCymbal",
           "description": {
