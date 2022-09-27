@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 import {uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";

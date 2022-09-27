@@ -12,6 +12,7 @@ BraceWrapping:
   AfterControlStatement: MultiLine
 BreakConstructorInitializers: BeforeComma
 ColumnLimit: 90
+CommentPragmas: '^ SPDX-License-Identifier'
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 ConstructorInitializerIndentWidth: 2
 ContinuationIndentWidth: 2

@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 import {Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
 import * as multirate from "../common/dsp/multirate.js";
 import {EMADecayEnvelope} from "../common/dsp/smoother.js";

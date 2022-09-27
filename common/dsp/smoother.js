@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 export function normalizedCutoffToOnePoleKp(cutoff) {
   const y = 1 - Math.cos(2 * Math.PI * cutoff);
   return Math.sqrt((y + 2) * y) - y;

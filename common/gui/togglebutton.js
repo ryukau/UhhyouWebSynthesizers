@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 export class ToggleButton {
   constructor(parent, label, id, className, defaultState, onClickFunc) {
     this.className = className === undefined ? "" : className;

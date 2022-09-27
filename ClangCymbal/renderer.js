@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 import {Delay, IntDelay} from "../common/dsp/delay.js";
 import {DoubleEmaADEnvelope} from "../common/dsp/doubleemaenvelope.js";
 import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";

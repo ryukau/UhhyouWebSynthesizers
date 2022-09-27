@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 /**
 Brent's method to find local minimum of scalar function. Translated from
 `scipy.optimize.minimize_scalar`.

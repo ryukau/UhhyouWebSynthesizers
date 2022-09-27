@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 import {PcgRandom} from "../../lib/pcgrandom/pcgrandom.js";
 
 import * as delay from "./delay.js";

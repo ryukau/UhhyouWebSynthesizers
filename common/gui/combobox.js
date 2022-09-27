@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 export function select(parent, label, id, className, items, defaultValue, onChangeFunc) {
   let select = document.createElement("select");
   select.ariaLabel = label;

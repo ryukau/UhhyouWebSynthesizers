@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 import {ComboBoxLine, select} from "./combobox.js";
 
 export {BarBox} from "./barbox.js";
