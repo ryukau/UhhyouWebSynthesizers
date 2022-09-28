@@ -12,8 +12,6 @@ Rendering doesn't work on Firefox 104.0.2. It requires support for ECMAScript mo
 - [1247687 - Implement worker modules](https://bugzilla.mozilla.org/show_bug.cgi?id=1247687)
 
 # License
-Apache-2.0 except `lib` directory.
-
-`LICENSE.txt` contains complete Apache-2.0 license text.
+Apache-2.0 except `lib` directory. `LICENSE.txt` contains complete Apache-2.0 license text.
 
 All codes in `lib` follow licenses of original authors.
