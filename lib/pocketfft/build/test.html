@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<script type="module">
+  import PocketFFT from "./pocketfft.js";
+
+  async function main() {
+    const fft = await PocketFFT();
+
+    // Test r2c and c2r.
+    const resp = await fetch("./pocketfft.json");
+    const data = await resp.json();
+
+    let vec = new fft.vector_f64();
+    vec.resize(data.input.length, 0);
+    for (let i = 0; i < data.input.length; ++i) vec.set(i, data.input[i]);
+
+    let spectrum = fft.r2c(vec);
+    vec.delete();
+
+    const tolerance = 0 * Number.EPSILON;
+    for (let i = 0; i < data.spectrum.length; ++i) {
+      const dr = Math.abs(data.spectrum[i][0] - spectrum.get(i).real);
+      const di = Math.abs(data.spectrum[i][1] - spectrum.get(i).imag);
+      console.assert(dr <= tolerance, `Error at index ${i}, real`, new Error());
+      console.assert(di <= tolerance, `Error at index ${i}, imag`, new Error());
+    }
+
+    let output = fft.c2r(spectrum);
+    spectrum.delete();
+
+    for (let i = 0; i < data.output.length; ++i) {
+      const diff = Math.abs(data.output[i] - output.get(i));
+      console.assert(diff <= tolerance, `Error at index ${i}`, new Error());
+    }
+
+    output.delete();
+
+    // Test complex vector access bindings.
+    let cv = new fft.vector_complex128();
+    cv.resize(1);
+    console.assert(cv.getReal(0) === 0, new Error());
+    console.assert(cv.getImag(0) === 0, new Error());
+
+    cv.setReal(0, 10);
+    console.assert(cv.getReal(0) === 10, new Error());
+
+    cv.setImag(0, 22);
+    console.assert(cv.getImag(0) === 22, new Error());
+
+    cv.setValue(0, 3.3, 4.4);
+    console.assert(cv.getReal(0) === 3.3, new Error());
+    console.assert(cv.getImag(0) === 4.4, new Error());
+
+    cv.delete();
+  }
+
+  main();
+</script>
+
+</html>
