@@ -172,11 +172,18 @@ input[type="button"].toggleState1 {
   border: solid 1px #888888;
 
   color: #000000;
-  background-color: #ffc838;
+  background-color: #ffdc85;
 }
 
 input[type="button"].toggleState1:hover {
   border: solid 1px var(--highlight-color);
+}
+
+input[type="button"].toggleButtonLine {
+  font-weight: bold;
+  width: 100%;
+  box-sizing: border-box;
+  margin: var(--margin);
 }
 
 /* `inputLine` class is shared between controls that occupies a line. */

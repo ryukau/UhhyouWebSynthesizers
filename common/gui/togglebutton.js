@@ -32,3 +32,32 @@ export class ToggleButton {
     this.onClickFunc(this.state);
   }
 }
+
+export class ToggleButtonLine {
+  constructor(parent, items, parameter, onClickFunc) {
+    this.items = items;
+    this.param = parameter;
+    this.onClickFunc = onClickFunc;
+    this.button = new ToggleButton(
+      parent,
+      this.items[this.param.defaultUi],
+      undefined,
+      "toggleButtonLine",
+      this.param.defaultUi,
+      (state) => this.onClick(state),
+    );
+  }
+
+  refresh() {
+    this.button.button.value = this.items[this.param.ui];
+    this.button.button.ariaLabel = this.items[this.param.ui];
+    this.button.setState(this.param.ui);
+  }
+
+  onClick(state) {
+    this.param.ui = state;
+    this.button.button.value = this.items[this.param.ui];
+    this.button.button.ariaLabel = this.items[this.param.ui];
+    this.onClickFunc(state);
+  }
+}
