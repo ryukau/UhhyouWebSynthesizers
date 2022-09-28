@@ -114,17 +114,18 @@ const param = {
 };
 
 // Add controls.
-
 const pageTitle = widget.heading(document.body, 1, document.title, undefined, undefined);
 const divMain = widget.div(document.body, "main", undefined);
-const divRenverBlock = widget.div(divMain, undefined, "controlBlock");
 
-const headingWaveform = widget.heading(divRenverBlock, 6, "Waveform");
+const divLeft = widget.div(divMain, undefined, "controlBlock");
+// const divRight = widget.div(divMain, undefined, "controlBlock");
+
+const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
   new widget.WaveView(
-    divRenverBlock, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
   new widget.WaveView(
-    divRenverBlock, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
 ];
 
 const audio = new wave.Audio(
@@ -137,10 +138,10 @@ const audio = new wave.Audio(
 );
 for (let i = 0; i < waveView.length; ++i) waveView[i].set(audio.wave.data[i]);
 
-const pRenderStatus = widget.paragraph(divRenverBlock, "renderStatus", undefined);
+const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
-const divPlayControl = widget.div(divRenverBlock, "playControl", undefined);
+const divPlayControl = widget.div(divLeft, "playControl", undefined);
 const selectRandom = widget.select(
   divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
   (ev) => { randomize(); });
@@ -158,9 +159,9 @@ const createDetailInBlock = (name) => {
   return widget.details(div, name);
 };
 
-const detailRender = widget.details(divRenverBlock, "Render");
-const detailOsc = createDetailInBlock("Oscillator");
-const detailFDN = createDetailInBlock("FDN Matrix & Delay");
+const detailRender = widget.details(divLeft, "Render");
+const detailOsc = widget.details(divLeft, "Oscillator");
+const detailFDN = widget.details(divLeft, "FDN Matrix & Delay");
 const detailLP = createDetailInBlock("FDN Lowpass");
 const detailHP = createDetailInBlock("FDN Highpass");
 
