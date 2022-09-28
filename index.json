@@ -18,7 +18,7 @@
           "href": "./FDNReverb/synth.html",
           "name": "FDNReverb",
           "description": {
-            "ja": "Feedback delay network (FDN) を 1 つ使ったリバーブ。",
+            "ja": "Feedback delay network (FDN) を1つ使ったリバーブ。",
             "en": "Reverb using feedback delay network."
           }
         },
@@ -51,11 +51,19 @@
       },
       "list": [
         {
+          "href": "./PadCymbal2/synth.html",
+          "name": "PadCymbal2",
+          "description": {
+            "ja": "レイヤと直列コムフィルタを追加した改良版PADcymbal。",
+            "en": "Improved PADcymbal with the addition of layer and serial comb filter."
+          }
+        },
+        {
           "href": "./ClangCymbal/synth.html",
           "name": "ClangCymbal",
           "description": {
-            "ja": "FDN を使ったシンバルシンセサイザ。ほぼ <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_ja.html\">VST 3 版</a>の移植。",
-            "en": "Cymbal synthesizer using FeedbackDelayNetwork. Almost same as <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_en.html\">VST 3 version</a>."
+            "ja": "FDNを使ったシンバルシンセサイザ。FDNが発散しないように調整されている点がFDNCymbalと異なる。ほぼ<a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_ja.html\">VST 3版</a>と同じ。",
+            "en": "Cymbal synthesizer using FDN. Stable feedback is the difference to FDNCymbal. Mostly same as <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_en.html\">VST 3 version</a>."
           }
         },
         {
@@ -218,7 +226,7 @@
           "href": "https://ryukau.github.io/ECAC/",
           "name": "ECAC",
           "description": {
-            "ja": "Elementary Cellular Automatonに基づいて倍音を加算合成",
+            "ja": "Elementary Cellular Automatonに基づいて倍音を加算合成。",
             "en": "Additive synthesizer using elementary cellular automaton."
           }
         }
