@@ -1,3 +1,6 @@
+// Copyright 2022 Takamitsu Endo
+// SPDX-License-Identifier: Apache-2.0
+
 #include "pocketfft_hdronly.h"
 
 struct PocketFFTData {

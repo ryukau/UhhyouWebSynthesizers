@@ -5,5 +5,6 @@ em++.bat `
   -sALLOW_MEMORY_GROWTH=1 `
   -lembind `
   -O3 `
+  -flto `
   -o"pocketfft.js" `
   .\pocketfftbind.cpp
