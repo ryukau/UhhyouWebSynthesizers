@@ -181,7 +181,7 @@ export class Wave {
     if (!Number.isFinite(divisor)) {
       let peak = this.findPeak();
       if (peak === null || peak.value === 0) {
-        console.log("findPeak failed.");
+        console.warn("findPeak failed.");
         return;
       }
       this.peakValue = peak.value;
