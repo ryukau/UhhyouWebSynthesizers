@@ -10,8 +10,6 @@ import * as wave from "../common/wave.js";
 import * as menuitems from "./menuitems.js";
 
 function randomize() {
-  // console.log(selectRandom.value);
-
   for (const key in param) {
     if (key === "renderDuration") continue;
     if (key === "matrixSize") continue;
