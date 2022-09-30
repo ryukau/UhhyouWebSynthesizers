@@ -210,8 +210,8 @@ export class WaveView {
     // This is faster than connecting all samples with `lineTo`.
     //
 
-    const interval = this.#length / this.canvas.width;
-    let end = this.#offset;
+    const interval = Math.floor(this.#length / this.canvas.width);
+    let end = Math.floor(this.#offset);
 
     let minArray = new Array(this.canvas.width);
     let maxArray = new Array(this.canvas.width);
@@ -220,7 +220,7 @@ export class WaveView {
       let min = Number.MAX_VALUE;
       let max = -Number.MAX_VALUE;
 
-      let index = Math.floor(end);
+      let index = end;
       end += interval;
       while (index < end) {
         min = Math.min(min, this.#data[index]);
@@ -232,7 +232,7 @@ export class WaveView {
     }
     const path = minArray.concat(maxArray.reverse());
 
-    this.context.lineWidth = 0.1;
+    this.context.lineWidth = 0.5;
     this.context.beginPath();
     this.context.moveTo(path[0][0], path[0][1]);
     for (let i = 1; i < path.length; ++i) this.context.lineTo(path[i][0], path[i][1]);
