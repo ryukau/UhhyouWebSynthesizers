@@ -36,7 +36,7 @@ export class NumberInput {
       = "The value of this spin button is synchronized to the previous slider. Spin button usually provides control for raw DSP values. Spin button is precise, but might be unintuitive.";
     this.number.min = this.param.minDisplay;
     this.number.max = this.param.maxDisplay;
-    this.number.step = this.param.step;
+    this.number.step = this.param.step === "any" ? 0.01 : this.param.step;
     this.number.value = this.param.display;
     this.number.className = "numberInputNumber";
     this.div.appendChild(this.number);
