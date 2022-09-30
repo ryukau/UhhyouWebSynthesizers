@@ -1,9 +1,11 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
-import {ComboBoxLine, select} from "./combobox.js";
+import {BezierEnvelopeView} from "./bezierenvelopeview.js";
+import {ComboBoxLine} from "./combobox.js";
 
 export {BarBox} from "./barbox.js";
+export {BezierEnvelopeView} from "./bezierenvelopeview.js";
 export {ComboBoxLine, select} from "./combobox.js";
 export {NumberInput} from "./numberinput.js";
 export {ToggleButton, ToggleButtonLine} from "./togglebutton.js";
@@ -14,6 +16,8 @@ export function refresh(ui) {
     if (Array.isArray(ui[key])) {
       ui[key].array.forEach(element => { element.refresh(); });
     } else if (ui[key] instanceof ComboBoxLine) {
+      ui[key].refresh();
+    } else if (ui[key] instanceof BezierEnvelopeView) {
       ui[key].refresh();
     } else {
       ui[key].refresh();

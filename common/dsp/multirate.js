@@ -63,6 +63,33 @@ export class HalfBandIIR {
 }
 
 /**
+Lowpass filter coefficient specialized for 64x oversampling.
+Sos stands for second order sections.
+
+```python
+import numpy
+from scipy import signal
+
+samplerate = 2 * 48000
+uprate = samplerate * 32
+sos = signal.butter(16, samplerate / 4, output="sos", fs=uprate)
+```
+*/
+export const sos64FoldFirstStage = [
+  [
+    1.354163914584143e-26, 2.708327829168286e-26, 1.354163914584143e-26,
+    -1.9045872504279573, 0.9068841759295282
+  ],
+  [1.0, 2.0, 1.0, -1.908001035290007, 0.9103020778040721],
+  [1.0, 2.0, 1.0, -1.9147330871451047, 0.9170422484899456],
+  [1.0, 2.0, 1.0, -1.9245914935233015, 0.9269125440714382],
+  [1.0, 2.0, 1.0, -1.9372866598709455, 0.9396230207448886],
+  [1.0, 2.0, 1.0, -1.9524305274354947, 0.9547851517602688],
+  [1.0, 2.0, 1.0, -1.9695376181976627, 0.9719128736135145],
+  [1.0, 2.0, 1.0, -1.9880295377862067, 0.9904270943918131],
+];
+
+/**
 Lowpass filter coefficient specialized for 16x oversampling.
 Sos stands for second order sections.
 

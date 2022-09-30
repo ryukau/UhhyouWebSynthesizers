@@ -25,6 +25,7 @@ export class EMAFilter {
 
   // `cutoff` is normalized frequency in [0.0, 0.5].
   setCutoff(cutoff) { this.kp = normalizedCutoffToOnePoleKp(cutoff); }
+  setCutoffFromTime(samples) { this.kp = timeToOnePoleKp(samples); }
   process(input) { return this.value += this.kp * (input - this.value); }
 }
 
@@ -56,6 +57,7 @@ export class DoubleEMAFilter {
 
   // `cutoff` is normalized frequency in [0.0, 0.5].
   setCutoff(cutoff) { this.kp = normalizedCutoffToOnePoleKp(cutoff); }
+  setCutoffFromTime(samples) { this.kp = timeToOnePoleKp(samples); }
 
   process(input) {
     this.v1 += this.kp * (input - this.v1);

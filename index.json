@@ -51,6 +51,14 @@
       },
       "list": [
         {
+          "href": "./SingenBD3/synth.html",
+          "name": "SingenBD3",
+          "description": {
+            "ja": "ステレオ感が怪しい FM バスドラムシンセサイザ。",
+            "en": "FM bassdrum synthesizer with strange stereo image."
+          }
+        },
+        {
           "href": "./PadCymbal2/synth.html",
           "name": "PadCymbal2",
           "description": {

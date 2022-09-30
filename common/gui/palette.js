@@ -24,6 +24,7 @@ function rgbaStr(colorCode) {
 
 export const palette = {
   fontFamily: getComputedStyle(document.body).getPropertyValue("--font-family"),
+  fontSize: parseFloat(getComputedStyle(document.body).getPropertyValue("font-size")),
 
   foreground: rgbaStr("#000000ff"),
   background: rgbaStr("#ffffffff"),
@@ -39,13 +40,11 @@ export const palette = {
   waveform: rgbaStr("#303030ff"),
 };
 
-const fontSize
-  = parseFloat(getComputedStyle(document.body).getPropertyValue("font-size"));
 const controlWidth
   = parseFloat(getComputedStyle(document.body).getPropertyValue("--controlWidth"));
 export const uiSize = {
-  waveViewWidth: controlWidth * 15 / 32 * fontSize,
-  waveViewHeight: controlWidth * 8 / 32 * fontSize,
-  barboxWidth: controlWidth * fontSize,
-  barboxHeight: controlWidth * 12 / 32 * fontSize,
+  waveViewWidth: controlWidth * 15 / 32 * palette.fontSize,
+  waveViewHeight: controlWidth * 8 / 32 * palette.fontSize,
+  barboxWidth: controlWidth * palette.fontSize,
+  barboxHeight: controlWidth * 12 / 32 * palette.fontSize,
 };
