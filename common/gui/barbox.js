@@ -13,6 +13,7 @@ export class BarBox {
   #mousePosition;
 
   #sliderWidth;
+  #sliderZero;
   #indexL;
   #indexR;
   #indexRange;
@@ -100,7 +101,7 @@ export class BarBox {
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
-    this.sliderZero = 0;
+    this.#sliderZero = 0;
     this.indexOffset = 0;
     this.scrollSensitivity = 0.01;
     this.altScrollSensitivity = 0.001;
@@ -117,6 +118,11 @@ export class BarBox {
 
   refresh() {
     this.inputValue.value = this.param[this.inputIndex.value].dsp;
+    this.draw();
+  }
+
+  set sliderZero(value) {
+    this.#sliderZero = value;
     this.draw();
   }
 
@@ -160,7 +166,7 @@ export class BarBox {
     this.context.fillRect(0, 0, width, height);
 
     // Value bar.
-    const zeroLineHeight = height * (1 - this.sliderZero);
+    const zeroLineHeight = height * (1 - this.#sliderZero);
     this.context.fillStyle = palette.highlightMain;
     for (let i = this.#indexL; i < this.#indexR; ++i) {
       let top = height * (1 - this.param[i].normalized);
@@ -221,8 +227,8 @@ export class BarBox {
     }
 
     // Zero line.
-    this.context.strokeStyle = palette.overlay;
-    this.context.lineWidth = 1;
+    this.context.strokeStyle = "#c0c0c0";
+    this.context.lineWidth = 0.2;
     this.context.beginPath();
     this.context.moveTo(0, zeroLineHeight);
     this.context.lineTo(width, zeroLineHeight);
@@ -254,6 +260,7 @@ export class BarBox {
 
   onMouseDown(event) {
     event.preventDefault();
+    this.canvas.focus();
 
     this.#mouseButton = event.button;
 

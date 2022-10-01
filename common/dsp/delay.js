@@ -78,10 +78,10 @@ https://ccrma.stanford.edu/~jos/pasp/Allpass_Two_Combs.html
 export class LongAllpass {
   #buffer;
 
-  constructor(sampleRate, maxTime, delayClass = Delay) {
+  constructor(sampleRate, maxTime, DelayType = Delay) {
     this.#buffer = 0;
     this.gain = 0;
-    this.delay = new Delay(sampleRate, maxTime);
+    this.delay = new DelayType(sampleRate, maxTime);
   }
 
   reset() {
@@ -106,18 +106,22 @@ export class LongAllpass {
 export class NestedLongAllpass {
   #in;
   #buffer;
-  #allpass;
 
-  constructor(sampleRate, maxTime, size) {
+  constructor(
+    sampleRate,
+    maxTime,
+    size,
+    factoryFunc = (fs, time) => new LongAllpass(fs, time),
+  ) {
     this.#in = new Array(size).fill(0);
     this.#buffer = new Array(size).fill(0);
 
-    this.#allpass = new Array(size);
+    this.allpass = new Array(size);
     for (let i = 0; i < size; ++i) {
-      this.#allpass[i] = new LongAllpass(sampleRate, maxTime);
+      this.allpass[i] = factoryFunc(sampleRate, maxTime, size);
     }
 
-    this.outerFeed = new Array(size).fill(0); // in [-1, 1].
+    this.feed = new Array(size).fill(0); // in [-1, 1].
   }
 
   reset() {
@@ -128,16 +132,36 @@ export class NestedLongAllpass {
 
   process(input) {
     for (let idx = 0; idx < this.#buffer.length; ++idx) {
-      input -= this.outerFeed[idx] * this.#buffer[idx];
+      input -= this.feed[idx] * this.#buffer[idx];
       this.#in[idx] = input;
     }
 
     let out = this.#in.at(-1);
-    for (let idx = this.#allpass.length - 1; idx >= 0; --idx) {
-      const apOut = this.#allpass[idx].process(out);
-      out = this.#buffer[idx] + this.outerFeed[idx] * this.#in[idx];
+    for (let idx = this.allpass.length - 1; idx >= 0; --idx) {
+      const apOut = this.allpass[idx].process(out);
+      out = this.#buffer[idx] + this.feed[idx] * this.#in[idx];
       this.#buffer[idx] = apOut;
     }
     return out;
+  }
+}
+
+export class Lattice2 extends NestedLongAllpass {
+  constructor(sampleRate, maxTime, size) {
+    super(
+      sampleRate, maxTime, size,
+      (fs, time, size) => new NestedLongAllpass(fs, time, size));
+  }
+}
+
+export class Lattice3 extends NestedLongAllpass {
+  constructor(sampleRate, maxTime, size) {
+    super(sampleRate, maxTime, size, (fs, time, size) => new Lattice2(fs, time, size));
+  }
+}
+
+export class Lattice4 extends NestedLongAllpass {
+  constructor(sampleRate, maxTime, size) {
+    super(sampleRate, maxTime, size, (fs, time, size) => new Lattice3(fs, time, size));
   }
 }
