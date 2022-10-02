@@ -74,7 +74,7 @@ const scales = {
 
 const param = {
   renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
-  fadeIn: new parameter.Parameter(0.001, scales.fade, true),
+  fadeIn: new parameter.Parameter(0, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   overSample: new parameter.Parameter(0, scales.overSample),
 
