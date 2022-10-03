@@ -15,6 +15,14 @@
       },
       "list": [
         {
+          "href": "./ResonantBD/synth.html",
+          "name": "ResonantBD",
+          "description": {
+            "ja": "SVF の発振を使ったバスドラムシンセサイザ。",
+            "en": "Bassdrum synthesizer using oscillation of SVF."
+          }
+        },
+        {
           "href": "./L4Reverb/synth.html",
           "name": "L4Reverb",
           "description": {
