@@ -22,7 +22,6 @@ export class BezierEnvelopeView {
     this.canvas.addEventListener("mousemove", (event) => this.onMouseMove(event), false);
     this.canvas.addEventListener("mouseup", (event) => this.onMouseUp(event), false);
     this.canvas.addEventListener("mouseleave", (e) => this.onMouseLeave(e), false);
-    this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -127,10 +126,12 @@ export class BezierEnvelopeView {
     this.context.fillStyle = palette.background;
     this.context.fillRect(0, 0, width, height);
 
+    // Label.
     this.context.fillStyle = palette.overlay;
     this.context.font = `${palette.fontSize}px ${palette.fontFamily}`;
     this.context.fillText(this.label, palette.fontSize, height - palette.fontSize);
 
+    // Envelope curve.
     this.context.strokeStyle = palette.foreground;
     this.context.beginPath();
     this.context.moveTo(0, 0);
@@ -139,6 +140,7 @@ export class BezierEnvelopeView {
       height);
     this.context.stroke();
 
+    // Dashed lines to control points.
     this.context.strokeStyle = palette.overlay;
     this.context.setLineDash([2, 4]);
     this.context.beginPath();
