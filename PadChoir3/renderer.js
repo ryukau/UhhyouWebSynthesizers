@@ -21,6 +21,7 @@ function padsynth(
   padGain,
   bandWidthOctave,
   phaseRandomAmount,
+  formantPower,
 ) {
   lengthInSamples += lengthInSamples % 2;
   const spcSize = Math.floor(lengthInSamples / 2) + 1;
@@ -44,7 +45,7 @@ function padsynth(
     for (let j = start; j < end; ++j) {
       const x = (j / spcSize - normalizedFreq) / bwIndex;
       const profileGain = Math.exp(-x * x) / bwIndex;
-      const formantGain = getGainResponse(formantSos, 0.5 * j / spcSize);
+      const formantGain = getGainResponse(formantSos, 0.5 * j / spcSize, formantPower);
       spectrum.setReal(j, spectrum.getReal(j) + padGain[idx] * profileGain * formantGain);
     }
   }
@@ -67,7 +68,7 @@ function padsynth(
   return sound;
 }
 
-function getGainResponse(sos, normalizedFreq) {
+function getGainResponse(sos, normalizedFreq, power) {
   // Complex number functions.
   const add = (s, t) => {
     return {
@@ -90,6 +91,11 @@ function getGainResponse(sos, normalizedFreq) {
   };
   const rmul = (re, t) => { return {re: re * t.re, im: re * t.im}; };
   const radd = (re, t) => { return {re: re + t.re, im: t.im}; };
+  const pow = (s, re) => {
+    const len = Math.pow(s.re * s.re + s.im * s.im, re / 2);
+    const arg = re * Math.atan2(s.im, s.re);
+    return {re: len * Math.cos(arg), im: len * Math.sin(arg)};
+  };
 
   const omega = 2 * Math.PI * normalizedFreq;
   const z = {re: Math.cos(omega), im: Math.sin(omega)}; // exp(1j * omega).
@@ -102,8 +108,7 @@ function getGainResponse(sos, normalizedFreq) {
       add(radd(co[0], rmul(co[1], z)), rmul(co[2], z2)),
       add(radd(co[3], rmul(co[4], z)), rmul(co[5], z2)),
     );
-    gain = add(gain, H);
-    // gain = add(gain, mul(H, H));
+    gain = add(gain, pow(H, power));
   }
   return Math.sqrt(gain.re * gain.re + gain.im * gain.im); // abs(gain).
 }
@@ -149,10 +154,10 @@ function getFormantSos(sampleRate, baseFreq, pv, dsp) {
     }
   }
 
-  // f1 * x = baseFreq.
-  // x = baseFreq / f1.
   const trackRatio = (baseFreq / freq[0]) ** pv.formantTracking;
-  for (let i = 0; i < nFormant; ++i) freq[i] *= trackRatio;
+  for (let i = 0; i < nFormant; ++i) {
+    freq[i] *= util.lerp(trackRatio, 1, pv.formantTrackingSlope * i / (nFormant - 1));
+  }
 
   let sos = [];
   for (let idx = 0; idx < nFormant; ++idx) {
@@ -174,18 +179,20 @@ function layerPad(fft, buffer, chordPitch, upRate, pv, dsp) {
   let index = 1;
   const baseFreq = chordPitch * pv.baseFrequencyHz;
   let currentFreq = baseFreq;
-  const lowpassDenom = upRate / 2 - pv.lowpassHz;
-  const upperFreq = pv.highShelfGain <= 0 ? pv.highShelfHz : upRate / 2;
+  const nyquist = upRate / 2;
+  const lowpassDenom = nyquist - pv.lowpassHz;
+  const highshelfDenom = nyquist - pv.highShelfHz;
+  const upperFreq = pv.highShelfGain <= 0 ? pv.highShelfHz : nyquist;
   while (currentFreq < upperFreq) {
     let gain = 1 / (index * 0.5);
     if (currentFreq < pv.highpassHz) {
       gain *= (currentFreq / pv.highpassHz) ** pv.highpassPower;
     }
     if (currentFreq > pv.lowpassHz) {
-      gain *= ((currentFreq - pv.lowpassHz) / lowpassDenom) ** pv.lowpassPower;
+      gain *= ((nyquist - currentFreq) / lowpassDenom) ** pv.lowpassPower;
     }
     if (currentFreq > pv.highShelfHz) {
-      gain *= pv.highShelfGain;
+      gain *= pv.highShelfGain * ((currentFreq - pv.highShelfHz) / highshelfDenom);
     }
 
     padFreq.push(currentFreq);
@@ -199,7 +206,7 @@ function layerPad(fft, buffer, chordPitch, upRate, pv, dsp) {
 
   let pad = padsynth(
     fft, dsp.rngCh, sos, upRate, buffer.length, padFreq, padGain, pv.bandWidthOctave,
-    pv.phaseRandomAmount);
+    pv.phaseRandomAmount, pv.formantPower);
 
   for (let i = 0; i < buffer.length; ++i) buffer[i] += pad[i];
   return buffer;
@@ -229,6 +236,7 @@ onmessage = async (event) => {
       dsp.rngCh.number(), pitchRandLower, pitchRandUpper);
     layerPad(fft, buffer, ptRnd() * pv.chordPitch1 ** layer, upRate, pv, dsp);
     layerPad(fft, buffer, ptRnd() * pv.chordPitch2 ** layer, upRate, pv, dsp);
+    layerPad(fft, buffer, ptRnd() * pv.chordPitch3 ** layer, upRate, pv, dsp);
   }
 
   postMessage(buffer); // TODO: Remove this.
