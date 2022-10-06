@@ -59,6 +59,14 @@
       },
       "list": [
         {
+          "href": "./PadChoir3/synth.html",
+          "name": "PadChoir3",
+          "description": {
+            "ja": "フォルマントのデータを使ったPADchoir。",
+            "en": "PADchoir using formant data."
+          }
+        },
+        {
           "href": "./ResonantBD/synth.html",
           "name": "ResonantBD",
           "description": {

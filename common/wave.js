@@ -51,10 +51,10 @@ export class Audio {
     this.#source.stop(this.audioContext.currentTime + this.#fadeOutDuration + 0.001);
   }
 
-  save() {
+  save(loop = false) {
     let buffer = Wave.toBuffer(this.wave, this.wave.channels);
     let header = Wave.fileHeader(
-      this.audioContext.sampleRate, this.wave.channels, buffer.length, false);
+      this.audioContext.sampleRate, this.wave.channels, buffer.length, loop);
 
     let blob = new Blob([header, buffer], {type: "application/octet-stream"});
     let url = window.URL.createObjectURL(blob);
