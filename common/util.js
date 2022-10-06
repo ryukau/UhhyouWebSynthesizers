@@ -19,3 +19,11 @@ export function normalDistributionMap(v1, v2, mu = 0, sigma = 1) {
 export function uniformDistributionMap(value, low, high) {
   return low + value * (high - low);
 }
+
+// `x` in [0, 1].
+const superellipse = (x, n) => x < 0 ? 1 : (1 - x ** n) ** (1 / n);
+
+const chebyshev1_2 = (x) => 2 * x * x;
+const chebyshev1_3 = (x) => 4 * x * x * x - 3 * x;
+const chebyshev1_4 = (x) => 8 * x * x * x * x - 8 * x * x;
+const chebyshev1_5 = (x) => 16 * x * x * x * x * x - 20 * x * x * x + 5 * x;
