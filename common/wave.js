@@ -99,6 +99,7 @@ export class Audio {
             normalize,
             parameter.fadeIn === undefined ? 0 : parameter.fadeIn,
             parameter.fadeOut === undefined ? 0 : parameter.fadeOut,
+            parameter.stereoMerge === undefined ? 0 : parameter.stereoMerge,
             quickSave,
           );
         }
@@ -110,10 +111,12 @@ export class Audio {
     normalize,
     fadeInSeconds,
     fadeOutSeconds,
+    stereoMerge,
     quickSave,
   ) {
     this.wave.declickIn(fadeInSeconds * this.audioContext.sampleRate);
     this.wave.declickOut(fadeOutSeconds * this.audioContext.sampleRate);
+    this.wave.stereoMerge(stereoMerge);
 
     if (normalize === "link") {
       this.wave.normalize();
@@ -239,6 +242,22 @@ export class Wave {
       for (let sample = 0; sample < length; ++sample) {
         this.data[channel][last - sample] *= this.#fadeCurve(sample / length);
       }
+    }
+  }
+
+  // amount is in [0, 1]. 0 stays intact, 1 is merge to mono.
+  stereoMerge(amount) {
+    if (amount === 0) return;
+    if (this.data.length !== 2) return;
+
+    if (this.data[0].length !== this.data[1].length) return;
+
+    amount /= 2;
+    for (let i = 0; i < this.data[0].length; ++i) {
+      const s0 = this.data[0][i];
+      const s1 = this.data[1][i];
+      this.data[0][i] = s0 + amount * (s1 - s0);
+      this.data[1][i] = s1 + amount * (s0 - s1);
     }
   }
 
