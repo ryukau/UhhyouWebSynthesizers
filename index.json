@@ -59,6 +59,14 @@
       },
       "list": [
         {
+          "href": "./ClangSnare/synth.html",
+          "name": "ClangSnare",
+          "description": {
+            "ja": "ClangCymbal を改変したスネアドラム風の音。",
+            "en": "Snare drum like sound synthesizer based on ClangCymbal."
+          }
+        },
+        {
           "href": "./PadChoir3/synth.html",
           "name": "PadChoir3",
           "description": {
