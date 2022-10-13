@@ -301,7 +301,7 @@ const detailComb = createDetailInBlock("Serial Comb");
 // const detailFDN = widget.details(divLeft, "FDN Matrix & Delay");
 const detailFDN = createDetailInBlock("FDN Matrix & Delay");
 const detailHP = createDetailInBlock("FDN Highpass");
-const detailLP = createDetailInBlock("FDN Lowshelf");
+const detailLP = createDetailInBlock("FDN Highshelf");
 
 const ui = {
   renderDuration:
