@@ -343,9 +343,11 @@ export class BarBox {
 
   #getMousePosition(event) {
     if (document.pointerLockElement === this.canvas) {
+      const movementX = clamp(event.movementX, -24, 24);
+      const movementY = clamp(event.movementY, -24, 24);
       return {
-        x: clamp(this.#mousePosition.x + event.movementX, 0, this.canvas.width),
-        y: clamp(this.#mousePosition.y + event.movementY, 0, this.canvas.height)
+        x: clamp(this.#mousePosition.x + movementX, 0, this.canvas.width - 1),
+        y: clamp(this.#mousePosition.y + movementY, 0, this.canvas.height)
       };
     }
 
@@ -436,7 +438,7 @@ export class BarBox {
     let p0x = p0.x;
     let p1x = p1.x;
 
-    if (Math.abs(xR - xL) >= Number.EPSILON) { // Avoid 0 division on slope.
+    if (Math.abs(p0x - p1x) <= Number.EPSILON) { // Avoid 0 division on slope.
       p0x = xL;
       p1x = xR;
     }
