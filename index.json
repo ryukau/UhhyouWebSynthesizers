@@ -59,6 +59,14 @@
       },
       "list": [
         {
+          "href": "./CollidingWire/synth.html",
+          "name": "CollidingWire",
+          "description": {
+            "ja": "剛体の壁にぶつかる、ダンピングされた波動方程式による弦のシミュレーション。スネアのスナッピーの衝突のアイデアを得るための実験なので実用性は無い。",
+            "en": "Strings colliding into a rigid wall. Damped wave equation is used to simulate string. This is an experiment to get an idea for snare wire collision, and there's no practical use."
+          }
+        },
+        {
           "href": "./ClangSnare/synth.html",
           "name": "ClangSnare",
           "description": {
