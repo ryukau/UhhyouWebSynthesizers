@@ -30,8 +30,8 @@ function process(upRate, pv, dsp) {
 
     dsp.wave[i].step();
 
-    // sig += displacement[dsp.pickUpIndex[i]];
-    sig += displacement.reduce((p, c) => p + c, 0);
+    sig += displacement[dsp.pickUpIndex[i]];
+    // sig += displacement.reduce((p, c) => p + c, 0);
     dsp.feedbackL[i] = displacement[iL];
     dsp.feedbackR[i] = displacement[iR];
   }
@@ -85,14 +85,15 @@ onmessage = async (event) => {
       wd[i] = i < wPeak ? pv.pullUpDistance * (i - lower) / (wPeak - lower)
                         : pv.pullUpDistance * (upper - i) / (upper - wPeak);
     }
-    // wd[wPeak] = pv.pullUpDistance;
   }
 
   // Limiter setup.
   dsp.limiter.resize(Math.ceil(0.01 * upRate));
   dsp.limiter.prepare(upRate, 0.001, 0.0001, 0, pv.limiterThreshold, 0);
   const latency = upFold * dsp.limiter.latency(upFold);
-  for (let i = 0; i < latency; ++i) process(upRate, pv, dsp);
+  if (pv.limiterActive === 1) {
+    for (let i = 0; i < latency; ++i) process(upRate, pv, dsp);
+  }
 
   // Process.
   if (upFold == 64) {
