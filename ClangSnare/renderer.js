@@ -9,12 +9,12 @@ import * as svf from "../common/dsp/svf.js";
 import * as util from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
-import {SampleAndHoldNoise, SerialComb} from "./localdsp.js";
+import {SampleAndHoldNoise, SerialComb, TimeModulatedFDN} from "./localdsp.js";
 import * as menuitems from "./menuitems.js";
 
 function process(upFold, pv, dsp) {
   const upRate = upFold * pv.sampleRate;
-  const feedback = 1;
+  const feedback = pv.fdnFeedback;
 
   const noiseEnv = dsp.noiseEnvelope.process();
   const noise = dsp.noiseOsc.process(dsp.rngCh, noiseEnv);
@@ -57,10 +57,12 @@ onmessage = (event) => {
       pv.combTimeRandom, pv.combHighpassHz, 0.7, pv.combLowpassHz, pv.combLowpassQ,
       pv.combLowpassGain, 0, pv.combLowpassCutoffSlope, pv.combOvertoneStart,
       pv.combTimeUniformOvertoneRatio),
-    fdnBatter: new FeedbackDelayNetwork(
-      pv.matrixSize, upRate, 1 / pv.frequency, svf.SVFHighShelf, svf.SVFHP, delayType),
-    fdnSnare: new FeedbackDelayNetwork(
-      pv.matrixSize, upRate, 1 / pv.frequency, svf.SVFHighShelf, svf.SVFHP, delayType),
+    fdnBatter: new TimeModulatedFDN(
+      pv.matrixSize, upRate, 1 / pv.frequency, svf.SVFHighShelf, svf.SVFHP, delayType,
+      pv.fdnTimeModulation, pv.fdnTimeRateLimit),
+    fdnSnare: new TimeModulatedFDN(
+      pv.matrixSize, upRate, 1 / pv.frequency, svf.SVFHighShelf, svf.SVFHP, delayType,
+      pv.fdnTimeModulation, pv.fdnTimeRateLimit),
     bufBatter: 0,
     bufSnare: 0,
   };
@@ -91,13 +93,15 @@ onmessage = (event) => {
         / (i + 1 + pv.overtoneRandomization * dsp.rng.number());
     };
 
-    dsp.fdnBatter.delay[i].setTime(delaySamples());
+    // dsp.fdnBatter.delay[i].setTime(delaySamples());
+    dsp.fdnBatter.setTimeAt(i, delaySamples());
     dsp.fdnBatter.lowpass[i].setCutoff(
       pv.lowpassCutoffBatterHz * lpCutI, pv.lowpassQ[i], pv.lowpassGain[i]);
     dsp.fdnBatter.highpass[i].setCutoff(
       pv.highpassCutoffBatterHz * hpCutI, pv.highpassQ[i]);
 
-    dsp.fdnSnare.delay[i].setTime(delaySamples());
+    // dsp.fdnSnare.delay[i].setTime(delaySamples());
+    dsp.fdnSnare.setTimeAt(i, delaySamples());
     dsp.fdnSnare.lowpass[i].setCutoff(
       pv.lowpassCutoffSnareHz * lpCutI, pv.lowpassQ[i], pv.lowpassGain[i]);
     dsp.fdnSnare.highpass[i].setCutoff(

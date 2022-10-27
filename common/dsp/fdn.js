@@ -7,10 +7,6 @@ import * as delay from "./delay.js";
 import * as smoo from "./smoother.js";
 
 export class FeedbackDelayNetwork {
-  #matrix;
-  #buf;
-  #bufIndex;
-
   constructor(
     size,
     sampleRate,
@@ -25,9 +21,9 @@ export class FeedbackDelayNetwork {
       return a;
     };
 
-    this.#matrix = create2dArray(size, size);
-    this.#buf = create2dArray(2, size);
-    this.#bufIndex = 0;
+    this.matrix = create2dArray(size, size);
+    this.buf = create2dArray(2, size);
+    this.bufIndex = 0;
 
     this.delay = new Array(size);
     this.lowpass = new Array(size);
@@ -40,44 +36,44 @@ export class FeedbackDelayNetwork {
   }
 
   randomOrthogonal(seed, identityAmount) {
-    randomOrthogonal(this.#matrix, seed, false, identityAmount);
+    randomOrthogonal(this.matrix, seed, false, identityAmount);
   }
 
   randomizeMatrix(type, seed) {
     if (type === "SpecialOrthogonal") {
-      randomSpecialOrthogonal(this.#matrix, seed);
+      randomSpecialOrthogonal(this.matrix, seed);
     } else if (type === "CirculantOrthogonal") {
-      randomCirculantOrthogonal(this.#matrix, seed, this.#matrix.length);
+      randomCirculantOrthogonal(this.matrix, seed, this.matrix.length);
     } else if (type === "Circulant4") {
-      randomCirculantOrthogonal(this.#matrix, seed, 4);
+      randomCirculantOrthogonal(this.matrix, seed, 4);
     } else if (type === "Circulant8") {
-      randomCirculantOrthogonal(this.#matrix, seed, 8);
+      randomCirculantOrthogonal(this.matrix, seed, 8);
     } else if (type === "Circulant16") {
-      randomCirculantOrthogonal(this.#matrix, seed, 16);
+      randomCirculantOrthogonal(this.matrix, seed, 16);
     } else if (type === "Circulant32") {
-      randomCirculantOrthogonal(this.#matrix, seed, 32);
+      randomCirculantOrthogonal(this.matrix, seed, 32);
     } else if (type === "UpperTriangularPositive") {
-      randomUpperTriangular(this.#matrix, seed, 0, 1);
+      randomUpperTriangular(this.matrix, seed, 0, 1);
     } else if (type === "UpperTriangularNegative") {
-      randomUpperTriangular(this.#matrix, seed, -1, 0);
+      randomUpperTriangular(this.matrix, seed, -1, 0);
     } else if (type === "LowerTriangularPositive") {
-      randomLowerTriangular(this.#matrix, seed, 0, 1);
+      randomLowerTriangular(this.matrix, seed, 0, 1);
     } else if (type === "LowerTriangularNegative") {
-      randomLowerTriangular(this.#matrix, seed, -1, 0);
+      randomLowerTriangular(this.matrix, seed, -1, 0);
     } else if (type === "SchroederPositive") {
-      randomSchroeder(this.#matrix, seed, 0, 1);
+      randomSchroeder(this.matrix, seed, 0, 1);
     } else if (type === "SchroederNegative") {
-      randomSchroeder(this.#matrix, seed, -1, 0);
+      randomSchroeder(this.matrix, seed, -1, 0);
     } else if (type === "AbsorbentPositive") {
-      randomAbsorbent(this.#matrix, seed, 0, 1);
+      randomAbsorbent(this.matrix, seed, 0, 1);
     } else if (type === "AbsorbentNegative") {
-      randomAbsorbent(this.#matrix, seed, -1, 0);
+      randomAbsorbent(this.matrix, seed, -1, 0);
     } else if (type === "Hadamard") {
-      constructHadamardSylvester(this.#matrix);
+      constructHadamardSylvester(this.matrix);
     } else if (type === "Conference") {
-      constructConference(this.#matrix);
+      constructConference(this.matrix);
     } else { // type === "orthogonal", or default.
-      randomOrthogonal(this.#matrix, seed);
+      randomOrthogonal(this.matrix, seed);
     }
   }
 
@@ -91,12 +87,12 @@ export class FeedbackDelayNetwork {
   }
 
   process(input, feedback) {
-    this.#bufIndex ^= 1;
-    let front = this.#buf[this.#bufIndex];
-    let back = this.#buf[this.#bufIndex ^ 1];
+    this.bufIndex ^= 1;
+    let front = this.buf[this.bufIndex];
+    let back = this.buf[this.bufIndex ^ 1];
     front.fill(0);
     for (let i = 0; i < front.length; ++i) {
-      for (let j = 0; j < front.length; ++j) front[i] += this.#matrix[i][j] * back[j];
+      for (let j = 0; j < front.length; ++j) front[i] += this.matrix[i][j] * back[j];
     }
 
     for (let i = 0; i < front.length; ++i) {

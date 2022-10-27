@@ -2,8 +2,60 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Delay, LongAllpass} from "../common/dsp/delay.js";
+import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
+import {RateLimiter} from "../common/dsp/smoother.js";
 import {SVF, SVFHighShelf} from "../common/dsp/svf.js";
 import * as util from "../common/util.js";
+
+export class TimeModulatedFDN extends FeedbackDelayNetwork {
+  constructor(
+    size,
+    sampleRate,
+    maxSecond,
+    lowpassType,
+    highpassType,
+    delayType,
+    timeModulation,
+    rateLimit,
+  ) {
+    super(size, sampleRate, maxSecond, lowpassType, highpassType, delayType);
+
+    this.delayTime = new Array(size);
+    for (let i = 0; i < size; ++i) this.delayTime[i] = new RateLimiter(rateLimit);
+
+    this.neutralTime = new Array(size).fill(0);
+    this.timeModulation = timeModulation;
+  }
+
+  setTimeAt(index, timeInSamples) {
+    this.neutralTime[index] = timeInSamples;
+    this.delayTime[index].reset(timeInSamples);
+  }
+
+  process(input, feedback) {
+    this.bufIndex ^= 1;
+    let front = this.buf[this.bufIndex];
+    let back = this.buf[this.bufIndex ^ 1];
+    front.fill(0);
+    for (let i = 0; i < front.length; ++i) {
+      for (let j = 0; j < front.length; ++j) front[i] += this.matrix[i][j] * back[j];
+    }
+
+    for (let i = 0; i < front.length; ++i) {
+      front[i] = 8 * input + feedback * front[i];
+
+      const timeMod = 1 - this.timeModulation * Math.abs(front[i]);
+      const targetTime = this.neutralTime[i] * Math.max(0.1, timeMod);
+      this.delay[i].setTime(this.delayTime[i].process(targetTime));
+
+      front[i] = this.delay[i].process(front[i]);
+      front[i] = this.lowpass[i].process(front[i]);
+      front[i] = this.highpass[i].process(front[i]);
+    }
+
+    return front.reduce((sum, val) => sum + val, 0);
+  }
+}
 
 export class ParallelLowpassComb {
   constructor(sampleRate, nDelay) {

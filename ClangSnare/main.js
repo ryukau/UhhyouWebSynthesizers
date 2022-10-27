@@ -187,6 +187,9 @@ const scales = {
   filterCutoffOffsetOctave: new parameter.LinearScale(-1, 1),
   filterQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
   filterGain: new parameter.DecibelScale(-24, 0, false),
+  fdnTimeModulation: new parameter.DecibelScale(-20, 20, true),
+  fdnTimeRateLimit: new parameter.LinearScale(0, 1),
+  fdnFeedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
 };
 
 const param = {
@@ -227,6 +230,9 @@ const param = {
   identityAmount: new parameter.Parameter(0.5, scales.identityAmount, true),
   frequency: new parameter.Parameter(util.midiPitchToFreq(60), scales.frequency, true),
   overtoneRandomization: new parameter.Parameter(0.01, scales.defaultScale),
+  fdnTimeModulation: new parameter.Parameter(1, scales.fdnTimeModulation, true),
+  fdnTimeRateLimit: new parameter.Parameter(0.5, scales.fdnTimeRateLimit, true),
+  fdnFeedback: new parameter.Parameter(0.98, scales.fdnFeedback, true),
 
   lowpassCutoffBatterHz:
     new parameter.Parameter(2000, scales.filterCutoffBaseOctave, true),
@@ -361,6 +367,11 @@ const ui = {
   frequency: new widget.NumberInput(detailFDN, "Frequency [Hz]", param.frequency, render),
   overtoneRandomization: new widget.NumberInput(
     detailFDN, "Overtone Random", param.overtoneRandomization, render),
+  fdnTimeModulation:
+    new widget.NumberInput(detailFDN, "Time Modulation", param.fdnTimeModulation, render),
+  fdnTimeRateLimit:
+    new widget.NumberInput(detailFDN, "Time Rate Limit", param.fdnTimeRateLimit, render),
+  fdnFeedback: new widget.NumberInput(detailFDN, "Feedback", param.fdnFeedback, render),
 
   lowpassCutoffBatterHz: new widget.NumberInput(
     detailLP, "Cutoff Batter [Hz]", param.lowpassCutoffBatterHz, render),

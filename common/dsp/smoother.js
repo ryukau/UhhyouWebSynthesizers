@@ -84,23 +84,24 @@ export class EMAHighpass {
 }
 
 export class RateLimiter {
-  constructor() { this.reset(); }
+  constructor(rate, initialValue = 0) {
+    this.rate = rate;
+    this.reset(initialValue);
+  }
 
   reset(value = 0) {
     this.value = value;
     this.target = value;
   }
 
-  push(target) { this.target = target; }
-
-  process(rate) {
-    const diff = this.target - this.value;
-    if (diff > rate) {
-      this.value += rate;
-    } else if (diff < -rate) {
-      this.value -= rate;
+  process(target) {
+    const diff = target - this.value;
+    if (diff > this.rate) {
+      this.value += this.rate;
+    } else if (diff < -this.rate) {
+      this.value -= this.rate;
     } else {
-      this.value = this.target;
+      this.value = target;
     }
     return this.value;
   }
