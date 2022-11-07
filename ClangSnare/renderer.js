@@ -27,8 +27,8 @@ function process(upFold, pv, dsp) {
   const fdnOut1 = dsp.fdnBatter.process(
     (impulse + 0.1 * comb + dsp.bufBatter) / pv.matrixSize, feedback);
   const fdnOut2 = dsp.fdnSnare.process((comb + dsp.bufSnare) / pv.matrixSize, feedback);
-  dsp.bufBatter = pv.fdnCross * fdnOut2 / 2;
-  dsp.bufSnare = -pv.fdnCross * fdnOut1 / 2;
+  dsp.bufBatter = util.clamp(dsp.fdnCross * fdnOut2, -1000, 1000);
+  dsp.bufSnare = util.clamp(-dsp.fdnCross * fdnOut1, -1000, 1000);
 
   return util.lerp(comb, fdnOut1 + fdnOut2, pv.fdnMix);
 }
@@ -50,6 +50,7 @@ onmessage = (event) => {
     triggered: false,
     rng: rng,
     rngCh: rngCh,
+    fdnCross: pv.fdnCross / 2,
     noiseOsc: new SampleAndHoldNoise(pv.densityHz / upRate, upRate * pv.noiseDecay),
     noiseEnvelope: new DoubleEmaADEnvelope(),
     comb: new SerialComb(

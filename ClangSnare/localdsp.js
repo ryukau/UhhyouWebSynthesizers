@@ -42,7 +42,7 @@ export class TimeModulatedFDN extends FeedbackDelayNetwork {
     }
 
     for (let i = 0; i < front.length; ++i) {
-      front[i] = 8 * input + feedback * front[i];
+      front[i] = input + feedback * front[i];
 
       const timeMod = 1 - this.timeModulation * Math.abs(front[i]);
       const targetTime = this.neutralTime[i] * Math.max(0.1, timeMod);

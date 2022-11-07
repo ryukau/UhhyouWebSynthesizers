@@ -54,6 +54,7 @@ function randomize() {
         param[key].dsp = util.uniformDistributionMap(Math.random(), 0.25, 0.85);
         continue;
       }
+      if (key === "fdnCross") continue;
       // if (key === "matrixSize") continue;
       if (key === "matrixType") continue;
       if (key === "identityAmount") {
@@ -111,6 +112,7 @@ function randomize() {
       if (key === "oscAttack") continue;
       if (key === "combMix") continue;
       if (key === "fdnMix") continue;
+      if (key === "fdnCross") continue;
       if (key === "matrixType") continue;
       if (key === "frequency") continue;
       if (Array.isArray(param[key])) {
@@ -223,14 +225,14 @@ const param = {
   combLowpassCutoffSlope: new parameter.Parameter(0, scales.combLowpassCutoffSlope),
 
   fdnMix: new parameter.Parameter(0.82, scales.defaultScale, true),
-  fdnCross: new parameter.Parameter(0.2, scales.defaultScale, true),
+  fdnCross: new parameter.Parameter(0.05, scales.defaultScale, true),
   matrixSize: new parameter.Parameter(16, scales.matrixSize),
   matrixType: new parameter.Parameter(0, scales.matrixType),
   delayInterp: new parameter.Parameter(1, scales.delayInterp),
   identityAmount: new parameter.Parameter(0.5, scales.identityAmount, true),
   frequency: new parameter.Parameter(util.midiPitchToFreq(60), scales.frequency, true),
   overtoneRandomization: new parameter.Parameter(0.01, scales.defaultScale),
-  fdnTimeModulation: new parameter.Parameter(1, scales.fdnTimeModulation, true),
+  fdnTimeModulation: new parameter.Parameter(0.1, scales.fdnTimeModulation, true),
   fdnTimeRateLimit: new parameter.Parameter(0.5, scales.fdnTimeRateLimit, true),
   fdnFeedback: new parameter.Parameter(0.98, scales.fdnFeedback, true),
 
