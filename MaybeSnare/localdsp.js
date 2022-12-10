@@ -116,11 +116,7 @@ export class TimeModulatedFDN extends FeedbackDelayNetwork {
     this.inputGain = new Array(size);
     const start = 1 + impactPosition;
     const slope = -2 * impactPosition / (size - 1);
-    let sum = 0;
-    for (let i = 0; i < size; ++i) {
-      this.inputGain[i] = start + i * slope;
-      sum += start + i * slope;
-    }
+    for (let i = 0; i < size; ++i) this.inputGain[i] = start + i * slope;
   }
 
   setTimeAt(index, timeInSamples) {
