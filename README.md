@@ -12,6 +12,8 @@ Rendering doesn't work on Firefox 104.0.2. It requires support for ECMAScript mo
 - [1247687 - Implement worker modules](https://bugzilla.mozilla.org/show_bug.cgi?id=1247687)
 
 # How to Use without Internet
+**Important**: Old synthesizers are on different repositories. They require extra steps to use without the internet.
+
 1. Install [Python 3](https://www.python.org/).
 2. Download and extract (or unzip) this repository somewhere. Extracted directory is refered as `UhhyouWebSynthesizers` in following command.
 3. Open terminal (PowerShell on Windows), and run following command.
