@@ -31,7 +31,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/Pulseverb/",
+          "href": "./oldsynth/Pulseverb/index.html",
           "name": "Pulseverb",
           "description": {
             "ja": "インパルスを適当にモジュレーションしたリバーブ。",
@@ -39,7 +39,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/Freeverb/",
+          "href": "./oldsynth/Freeverb/index.html",
           "name": "Freeverb",
           "description": {
             "ja": "Freeverbアルゴリズムによるリバーブ。",
@@ -139,7 +139,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/WobblingMetalBoard/",
+          "href": "./oldsynth/WobblingMetalBoard/index.html",
           "name": "WobblingMetalBoard",
           "description": {
             "ja": "薄い金属板を揺らしたときのような音。",
@@ -147,7 +147,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/Bubbles/",
+          "href": "./oldsynth/Bubbles/index.html",
           "name": "Bubbles",
           "description": {
             "ja": "水滴が水面に落ちた時に生じる泡の音。",
@@ -155,7 +155,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/Singen0.3/",
+          "href": "./oldsynth/Singen0.3/index.html",
           "name": "Singen0.3",
           "description": {
             "ja": "FMシンセサイザ。",
@@ -163,7 +163,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/PADchoir2/",
+          "href": "./oldsynth/PADchoir2/index.html",
           "name": "PADchoir2",
           "description": {
             "ja": "UIを変更したPADchoir。",
@@ -171,7 +171,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/FDNCymbal/",
+          "href": "./oldsynth/FDNCymbal/index.html",
           "name": "FDNCymbal",
           "description": {
             "ja": "Feedback Delay Networkを使ったシンバルのような音。",
@@ -179,7 +179,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/PADchoir/",
+          "href": "./oldsynth/PADchoir/index.html",
           "name": "PADchoir",
           "description": {
             "ja": "PADsynthアルゴリズム。",
@@ -187,7 +187,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/WaveBox/",
+          "href": "./oldsynth/WaveBox/index.html",
           "name": "WaveBox",
           "description": {
             "ja": "3次元の波のシミュレーション。",
@@ -195,7 +195,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/WaveCymbal2/",
+          "href": "./oldsynth/WaveCymbal2/index.html",
           "name": "WaveCymbal2",
           "description": {
             "ja": "WaveCymbalの波のシミュレーションの解き方を変更。",
@@ -203,7 +203,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/WaveCymbal/",
+          "href": "./oldsynth/WaveCymbal/index.html",
           "name": "WaveCymbal",
           "description": {
             "ja": "1次元の波のシミュレーションとKarplus-Strongアルゴリズムの組み合わせ。シンバルというより紐につないだ空き缶を引きずったときのような音。",
@@ -211,7 +211,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/KSCymbal/",
+          "href": "./oldsynth/KSCymbal/index.html",
           "name": "KSCymbal",
           "description": {
             "ja": "2つのKarplus-Strongを使って弦をぶつけた時のような音を合成。",
@@ -219,7 +219,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/Pluck/",
+          "href": "./oldsynth/Pluck/index.html",
           "name": "Pluck",
           "description": {
             "ja": "Karplus-Strongアルゴリズム。",
@@ -227,7 +227,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/PADcymbal/",
+          "href": "./oldsynth/PADcymbal/index.html",
           "name": "PADcymbal",
           "description": {
             "ja": "ランダムな周波数成分をPADsynthアルゴリズムに入力してシンバルのような音を合成。",
@@ -235,7 +235,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/Singen0.2/",
+          "href": "./oldsynth/Singen0.2/index.html",
           "name": "Singen0.2",
           "description": {
             "ja": "FMシンセサイザ。",
@@ -243,7 +243,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/WebECAFM/",
+          "href": "./oldsynth/ECAFM/index.html",
           "name": "ECAFM",
           "description": {
             "ja": "ECAC + FM。",
@@ -251,7 +251,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/SingenBD2/",
+          "href": "./oldsynth/SingenBD2/index.html",
           "name": "SingenBD2",
           "description": {
             "ja": "FM バスドラムシンセサイザ。",
@@ -259,7 +259,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/Singen0.1/",
+          "href": "./oldsynth/Singen0.1/index.html",
           "name": "Singen0.1",
           "description": {
             "ja": "FMシンセサイザ。",
@@ -267,7 +267,7 @@
           }
         },
         {
-          "href": "https://ryukau.github.io/SinChord/",
+          "href": "./oldsynth/SinChord/index.html",
           "name": "SinChord",
           "description": {
             "ja": "エイリアスノイズが出る素朴なオシレータで適当なコードを合成。",
@@ -287,7 +287,7 @@
       },
       "list": [
         {
-          "href": "https://ryukau.github.io/ECAC/",
+          "href": "./oldsynth/ECAC/index.html",
           "name": "ECAC",
           "description": {
             "ja": "Elementary Cellular Automatonに基づいて倍音を加算合成。",

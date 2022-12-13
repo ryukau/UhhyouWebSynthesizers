@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset=utf-8>
+  <title>Bubbles</title>
+  <style type="text/css">
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0 0 64px 0;
+    }
+
+    h6 {
+      text-align: center;
+      margin: 16px 0 8px 0;
+
+      background-color: #e4e7e8;
+      border-left: #627f84 solid 4px;
+    }
+
+    img {
+      max-width: 100%;
+    }
+
+    #main {
+      max-width: 960px;
+      min-width: 450px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    #description {
+      margin: 0 auto;
+      display: inline-block;
+      width: 80%;
+      max-width: 1000px;
+    }
+
+    #description dt {
+      text-align: left;
+    }
+
+    #description dd {
+      text-align: left;
+    }
+
+    #waveform {
+      display: inline-block;
+      max-width: 960px;
+      min-width: 450px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    #renderControls {
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    canvas {
+      /* image-rendering: pixelated; */
+      display: inline-block;
+      border-style: solid;
+      border-width: 1px;
+      border-color: #627f84;
+    }
+
+    .controlBlock {
+      display: inline-block;
+      width: 450px;
+      text-align: left;
+      vertical-align: top;
+      margin-left: 4px;
+    }
+
+    input[type="button"] {
+      background-color: #ffffff;
+      border: 2px solid #aaaaaa;
+      font-size: 16px;
+      height: 32px;
+    }
+
+    input[type="button"]:hover {
+      background-color: #ffffff;
+      border: 2px solid #aaccff;
+    }
+
+    .synthControls {
+      display: inline-block;
+      min-width: 450px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    div.numberInput {
+      display: block;
+      white-space: nowrap;
+    }
+
+    div.numberInput:hover {
+      background-color: #e0ecff;
+    }
+
+    .numberInputLabel {
+      /* max 12 letter  */
+      display: inline-block;
+      margin: 0 8px 0 8px;
+      text-align: left;
+      vertical-align: middle;
+      width: 100px;
+
+      font-size: 10pt;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .numberInputNumber {
+      display: inline-block;
+      vertical-align: middle;
+      width: 120px;
+    }
+
+    .numberInputRange {
+      display: inline-block;
+      vertical-align: middle;
+      width: 160px;
+    }
+
+    .envelopeControl {
+      border: 1px solid #627f84;
+      margin-bottom: 4px;
+    }
+
+    .envelopeControl div {
+      display: inline-block;
+      width: 220px;
+      vertical-align: middle;
+    }
+
+    .envelopeControl div.splitter {
+      width: 4px;
+    }
+
+    .envelopeControl h6 {
+      margin: 0 0 8px 0;
+      background-color: white;
+      border-bottom: 1px dotted #627f84;
+    }
+
+    .envelopeControl canvas {
+      display: inline-block;
+      border-top: 0px;
+      border-left: 0px;
+      border-bottom: 0px;
+      border-right: 4px solid #627f84;
+      vertical-align: middle;
+    }
+
+    .envelopeControl .numberInputLabel {
+      display: inline-block;
+      margin: 0 4px 0 6px;
+      text-align: left;
+      width: 48px;
+
+      font-size: 10pt;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .envelopeControl .numberInputNumber {
+      display: inline-block;
+      width: 60px;
+    }
+
+    .envelopeControl .numberInputRange {
+      display: inline-block;
+      width: 84px;
+      margin-right: 4px;
+    }
+
+    .pullDownMenu {
+      display: inline-block;
+      text-align: center;
+    }
+
+    .pullDownMenu:hover {
+      background-color: #e0ecff;
+    }
+
+    select {
+      background-color: #ffffff;
+      border: 2px solid #aaaaaa;
+      height: 20px;
+      margin-top: 2px;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    select:hover {
+      background-color: #ffffff;
+      border: 2px solid #aaccff;
+    }
+
+    .checkbox {
+      display: inline-block;
+      margin: 8px;
+      text-align: center;
+
+      font-size: 10pt;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    input[type='checkbox'] {
+      border-style: solid;
+      border-width: 2px;
+      border-color: #000000;
+    }
+
+    #miscControls .checkbox {
+      margin: 4px;
+      text-align: center;
+    }
+
+    /* chordControls */
+
+    #chordControls>input[type="button"] {
+      background-color: #ffffff;
+      border: 1px solid #aaaaaa;
+      font-size: 12px;
+      height: 24px;
+      margin: 0 0 12px 0;
+    }
+
+    #chordControls>input[type="button"]:hover {
+      background-color: #ffffff;
+      border: 2px solid #aaccff;
+    }
+  </style>
+</head>
+
+<body>
+  <p id="unsupported">ブラウザが対応していない場合、このテキストが消えずに表示されます。</p>
+
+  <script src="lib/bezier-easing.js"></script>
+  <script src="lib/fft.js"></script>
+  <script src="lib/mersenne-twister.js"></script>
+  <script src="vec2.js"></script>
+  <script src="wave.js"></script>
+  <script src="canvas.js"></script>
+  <script src="waveview.js"></script>
+  <script src="index.js"></script>
+</body>
+
+</html>

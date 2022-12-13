@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset=utf-8>
+	<title>FDNCymbal</title>
+	<style type="text/css">
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0 0 64px 0;
+		}
+
+		h6 {
+			text-align: center;
+			margin: 16px 0 8px 0;
+
+			background-color: #e4e7e8;
+			border-left: #627f84 solid 4px;
+		}
+
+		#main {
+			max-width: 960px;
+			min-width: 450px;
+			margin: 0 auto;
+			text-align: center;
+		}
+
+		#description {
+			margin: 0 auto;
+			display: inline-block;
+			width: 80%;
+			max-width: 1000px;
+		}
+
+		#description dt {
+			text-align: left;
+		}
+
+		#description dd {
+			text-align: left;
+		}
+
+		#waveform {
+			display: inline-block;
+			max-width: 960px;
+			min-width: 450px;
+			margin: 0 auto;
+			text-align: center;
+		}
+
+		#envelopeView {
+			display: inline-block;
+			max-width: 960px;
+			min-width: 450px;
+			margin: 0 auto;
+			text-align: center;
+		}
+
+		#envelopeView div {
+			display: inline-block;
+		}
+
+		#renderControls {
+			margin-top: 24px;
+			text-align: center;
+		}
+
+		canvas {
+			/* image-rendering: pixelated; */
+			display: inline-block;
+			border-style: solid;
+			border-width: 1px;
+			border-color: #627f84;
+		}
+
+		.controlBlock {
+			display: inline-block;
+			width: 450px;
+			text-align: center;
+			vertical-align: top;
+		}
+
+		input[type="button"] {
+			background-color: #ffffff;
+			border: 2px solid #aaaaaa;
+			font-size: 16px;
+			height: 32px;
+		}
+
+		input[type="button"]:hover {
+			background-color: #ffffff;
+			border: 2px solid #aaccff;
+		}
+
+		.synthControls {
+			display: inline-block;
+			min-width: 450px;
+			margin: 0 auto;
+			text-align: left;
+		}
+
+		div.numberInput {
+			display: block;
+			white-space: nowrap;
+		}
+
+		div.numberInput:hover {
+			background-color: #e0ecff;
+		}
+
+		.numberInputLabel {
+			/* max 12 letter  */
+			display: inline-block;
+			margin: 0 8px 0 8px;
+			text-align: left;
+			width: 100px;
+
+			font-size: 10pt;
+			font-family: 'Courier New', Courier, monospace;
+		}
+
+		.numberInputNumber {
+			display: inline-block;
+			width: 120px;
+		}
+
+		.numberInputRange {
+			display: inline-block;
+			width: 160px;
+		}
+
+		.pullDownMenu {
+			display: inline-block;
+			margin: 8px;
+			text-align: center;
+		}
+
+		select.pullDownMenuSelect {
+			background-color: #ffffff;
+
+			font-size: 10pt;
+			font-family: 'Courier New', Courier, monospace;
+
+			border-style: solid;
+			border-width: 1px;
+			border-color: #d1d1d1;
+		}
+
+		.checkbox {
+			display: inline-block;
+			margin: 8px;
+			text-align: center;
+
+			font-size: 10pt;
+			font-family: 'Courier New', Courier, monospace;
+		}
+
+		input[type='checkbox'] {
+			border-style: solid;
+			border-width: 2px;
+			border-color: #000000;
+		}
+
+		#miscControls .checkbox {
+			margin: 4px;
+			text-align: center;
+		}
+
+		/* chordControls */
+
+		#chordControls>input[type="button"] {
+			background-color: #ffffff;
+			border: 1px solid #aaaaaa;
+			font-size: 12px;
+			height: 24px;
+			margin: 0 0 12px 0;
+		}
+
+		#chordControls>input[type="button"]:hover {
+			background-color: #ffffff;
+			border: 2px solid #aaccff;
+		}
+	</style>
+</head>
+
+<body>
+	<p id="unsupported">ブラウザが対応していない場合、このテキストが消えずに表示されます。</p>
+
+	<script src="lib/mersenne-twister.js"></script>
+	<script src="wave.js"></script>
+	<script src="vec2.js"></script>
+	<script src="canvas.js"></script>
+	<script src="waveview.js"></script>
+	<script src="envelope.js"></script>
+	<script src="envelopeview.js"></script>
+	<script src="index.js"></script>
+</body>
+
+</html>
