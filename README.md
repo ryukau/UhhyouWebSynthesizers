@@ -12,7 +12,7 @@ Rendering doesn't work on Firefox 104.0.2. It requires support for ECMAScript mo
 - [1247687 - Implement worker modules](https://bugzilla.mozilla.org/show_bug.cgi?id=1247687)
 
 # How to Use without Internet
-**Important**: Old synthesizers are on different repositories. They require extra steps to use without the internet.
+This section is written for non-programmer.
 
 1. Install [Python 3](https://www.python.org/).
 2. Download and extract (or unzip) this repository somewhere. Extracted directory is refered as `UhhyouWebSynthesizers` in following command.
@@ -26,6 +26,13 @@ python server.py
 - Replace `path/to` according to your environment.
 - `python server.py` automatically opens `index.html` on your browser.
 - If `python` line fails, try replacing `python` to `python3`.
+
+To update, delete existing `UhhyouWebSynthesizers` directory and download again. Or, install [Git](https://git-scm.com/) and run following command.
+
+```bash
+cd path/to/UhhyouWebSynthesizers
+git pull
+```
 
 # License
 Apache-2.0 except `lib` directory. `LICENSE.txt` contains complete Apache-2.0 license text.
