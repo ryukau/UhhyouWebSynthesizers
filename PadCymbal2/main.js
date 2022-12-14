@@ -14,6 +14,7 @@ function randomize() {
     if (key === "renderDuration") continue;
     if (key === "matrixSize") continue;
     if (key === "fadeOut") continue;
+    if (key === "outputDecayTo") continue;
     if (key === "attackSecond") continue;
     if (key === "stereoRandom") continue;
     if (key === "padMix") continue;
@@ -87,6 +88,7 @@ const scales = {
 const param = {
   renderDuration: new parameter.Parameter(1 / 3, scales.renderDuration, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
+  outputDecayTo: new parameter.Parameter(0.01, scales.decayTo, false),
   overSample: new parameter.Parameter(1, scales.overSample),
 
   nLayer: new parameter.Parameter(3, scales.nLayer),
@@ -94,7 +96,7 @@ const param = {
   jitter: new parameter.Parameter(0.1, scales.defaultScale),
   seed: new parameter.Parameter(0, scales.seed),
 
-  decayTo: new parameter.Parameter(0.01, scales.decayTo, false),
+  padDecayTo: new parameter.Parameter(0.01, scales.decayTo, false),
   attackSecond: new parameter.Parameter(0, scales.attackSecond, true),
   minFreq: new parameter.Parameter(80, scales.minFreq, true),
   numBin: new parameter.Parameter(1000, scales.numBin, true),
@@ -163,6 +165,8 @@ const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
+  outputDecayTo:
+    new widget.NumberInput(detailRender, "Decay To [dB]", param.outputDecayTo, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
 
@@ -171,7 +175,8 @@ const ui = {
   jitter: new widget.NumberInput(detailLayer, "Jitter", param.jitter, render),
   seed: new widget.NumberInput(detailLayer, "Seed", param.seed, render),
 
-  decayTo: new widget.NumberInput(detailPad, "Decay To [dB]", param.decayTo, render),
+  padDecayTo:
+    new widget.NumberInput(detailPad, "Decay To [dB]", param.padDecayTo, render),
   attackSecond:
     new widget.NumberInput(detailPad, "Attack [s]", param.attackSecond, render),
   minFreq:

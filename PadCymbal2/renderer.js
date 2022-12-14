@@ -109,7 +109,7 @@ onmessage = async (event) => {
 
     // Post effect.
     let gainEnv = 1;
-    let decay = Math.pow(pv.decayTo, 1.0 / (buf.length - delay));
+    let decay = Math.pow(pv.padDecayTo, 1.0 / (buf.length - delay));
     const attackEnd = Math.min(buf.length, delay + attackSamples);
     for (let i = delay; i < attackEnd; ++i) {
       const attack
@@ -157,6 +157,14 @@ onmessage = async (event) => {
     }
   } else {
     for (let i = 0; i < sound.length; ++i) sound[i] = processFunc(pv, dsp, buf[i]);
+  }
+
+  // Post effect.
+  let gainEnv = 1;
+  let decay = Math.pow(pv.outputDecayTo, 1.0 / sound.length);
+  for (let i = 0; i < sound.length; ++i) {
+    sound[i] *= gainEnv;
+    gainEnv *= decay;
   }
 
   postMessage(sound);
