@@ -1,7 +1,6 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
-import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import * as multirate from "../common/dsp/multirate.js";
 import {SVF, SVFBell, SVFHighShelf} from "../common/dsp/svf.js";
 import * as util from "../common/util.js";
