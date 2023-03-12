@@ -11,37 +11,47 @@ import {FormatXYPad} from "./formantxypad.js";
 import * as menuitems from "./menuitems.js";
 
 function randomize() {
-  for (const key in param) {
-    if (key === "renderDuration") continue;
-    if (key === "fade") continue;
+  if (selectRandom.value === "Chord") {
+    for (const key in param) {
+      if (key === "nChord") {
+        param[key].ui = Math.floor(1 + scales.nChord.maxUi * Math.random());
+      } else if (key.includes("chordPitch")) {
+        param[key].normalized = Math.random();
+      }
+    }
+  } else { // "Default"
+    for (const key in param) {
+      if (key === "renderDuration") continue;
+      if (key === "fade") continue;
 
-    if (key === "baseFrequencyHz") {
-      // param[key].dsp = util.uniformDistributionMap(Math.random(), 90, 1000);
-      continue;
-    }
-    if (key === "phaseRandomAmount") continue;
-    if (key === "pitchRandomOctave") continue;
-    if (key === "lowpassPower") {
-      param[key].dsp = util.uniformDistributionMap(Math.random(), 0, 2);
-      continue;
-    }
-    // if (key === "highShelfHz") continue;
-    // if (key === "highShelfGain") continue;
-    if (key === "formantTracking") {
-      param[key].dsp = util.uniformDistributionMap(Math.random(), 0, 0.6);
-      continue;
-    }
-    if (key === "formantPower") {
-      // param[key].dsp = util.uniformDistributionMap(Math.random(), 0.8, 1.3);
-      // continue;
-    }
+      if (key === "baseFrequencyHz") {
+        // param[key].dsp = util.uniformDistributionMap(Math.random(), 90, 1000);
+        continue;
+      }
+      if (key === "phaseRandomAmount") continue;
+      if (key === "pitchRandomOctave") continue;
+      if (key === "lowpassPower") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 0, 2);
+        continue;
+      }
+      // if (key === "highShelfHz") continue;
+      // if (key === "highShelfGain") continue;
+      if (key === "formantTracking") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 0, 0.6);
+        continue;
+      }
+      if (key === "formantPower") {
+        // param[key].dsp = util.uniformDistributionMap(Math.random(), 0.8, 1.3);
+        // continue;
+      }
 
-    if (Array.isArray(param[key])) {
-      param[key].forEach(e => { e.normalized = Math.random(); });
-    } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing for now.
-    } else {
-      param[key].normalized = Math.random();
+      if (Array.isArray(param[key])) {
+        param[key].forEach(e => { e.normalized = Math.random(); });
+      } else if (param[key].scale instanceof parameter.MenuItemScale) {
+        // Do nothing for now.
+      } else {
+        param[key].normalized = Math.random();
+      }
     }
   }
 
@@ -163,8 +173,8 @@ audio.renderStatusElement = pRenderStatus;
 
 const divPlayControl = widget.div(divLeft, "playControl", undefined);
 const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
-  (ev) => { randomize(); });
+  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default", "Chord"],
+  "Default", (ev) => { randomize(); });
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
