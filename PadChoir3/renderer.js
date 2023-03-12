@@ -239,5 +239,5 @@ onmessage = async (event) => {
     layerPad(fft, buffer, ptRnd() * pv.chordPitch3 * layer, upRate, pv, dsp);
   }
 
-  postMessage(buffer); // TODO: Remove this.
+  postMessage(buffer);
 };
