@@ -2,19 +2,43 @@ const TWO_PI = 2 * Math.PI
 
 // waveは普通のArray。
 function play(audioContext, wave) {
+  if (quickSave) {
+    save(wave)
+  }
+
   var channel = wave.channels
   var frame = wave.frames
   var buffer = audioContext.createBuffer(channel, frame, audioContext.sampleRate)
 
-  var waveFloat32 = new Float32Array(wave.left)
-  buffer.copyToChannel(waveFloat32, 0, 0)
-  waveFloat32 = new Float32Array(wave.right)
-  buffer.copyToChannel(waveFloat32, 1, 0)
+  for (var i = 0; i < wave.channels; ++i) {
+    var waveFloat32 = new Float32Array(wave.data[i])
+    buffer.copyToChannel(waveFloat32, i, 0)
+  }
 
   var source = audioContext.createBufferSource()
   source.buffer = buffer
   source.connect(audioContext.destination)
   source.start()
+}
+
+function save(wave) {
+  var buffer = Wave.toBuffer(wave, wave.channels)
+  var header = Wave.fileHeader(audioContext.sampleRate, wave.channels,
+    buffer.length)
+
+  var blob = new Blob([header, buffer], { type: "application/octet-stream" })
+  var url = window.URL.createObjectURL(blob)
+
+  var a = document.createElement("a")
+  document.body.appendChild(a)
+  a.style = "display: none"
+  a.href = url
+  a.download = "SinChord_" + Date.now() + ".wav"
+  a.click()
+  setTimeout(() => {
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }, 100)
 }
 
 // pitch は一番低い周波数。
@@ -269,7 +293,7 @@ function refresh() {
   wave.left = makeWave(inputDuration.value, chordLeft, audioContext.sampleRate)
   wave.right = makeWave(inputDuration.value, chordRight, audioContext.sampleRate)
   if (declick) {
-    wave.declick()
+    wave.declick(500)
   }
 
   waveViewLeft.set(wave.left)
@@ -280,6 +304,7 @@ var audioContext = new AudioContext()
 console.log(audioContext)
 
 var osc = new Oscillator("saw")
+var quickSave = false
 var declick = true
 var chordLeft = []
 var chordRight = []
@@ -308,29 +333,35 @@ description.add("ChangeChord", "基本となるコードの構成を変えて音
 var waveViewLeft = new WaveView(divMain.element, 512, 256, wave.left)
 var waveViewRight = new WaveView(divMain.element, 512, 256, wave.right)
 
-var radio = new RadioButton(divMain.element, "Oscillator", refresh)
+var divRenderControls = new Div(divMain.element, "renderControls")
+var buttonPlay = new Button(divRenderControls.element, "Play", () => play(audioContext, wave))
+var buttonRandom = new Button(divRenderControls.element, "Random", () => randomize())
+var buttonChangeChord = new Button(divRenderControls.element, "ChangeChord", () => changeChord())
+var buttonSave = new Button(divRenderControls.element, "Save",
+  () => save(wave))
+var checkboxQuickSave = new Checkbox(divRenderControls.element, "QuickSave",
+  quickSave, (checked) => { quickSave = checked })
+
+var divOscillatorControls = new Div(divMain.element, "oscillatorControls")
+var headingOscillator = new Heading(divOscillatorControls.element, 6, "Oscillator")
+var radio = new RadioButton(divOscillatorControls.element, "Type", refresh)
 radio.add("sin")
 radio.add("pulse")
 radio.add("trisaw")
-var inputWaveShape = new NumberInput(divMain.element, "WaveShape",
+var inputWaveShape = new NumberInput(divOscillatorControls.element, "WaveShape",
   0, 0, 1, 0.01, refresh)
-var inputBaseFrequency = new NumberInput(divMain.element, "BaseFrequency",
+var inputBaseFrequency = new NumberInput(divOscillatorControls.element, "BaseFrequency",
   110, 5, 1000, 1, refresh)
-var inputBaseNotes = new NumberInput(divMain.element, "BaseNotes",
+var inputBaseNotes = new NumberInput(divOscillatorControls.element, "BaseNotes",
   3, 1, 10, 1, refresh)
-var inputDuration = new NumberInput(divMain.element, "Duration",
+var inputDuration = new NumberInput(divOscillatorControls.element, "Duration",
   0.2, 0.02, 2, 0.02, refresh)
-
-var checkboxDeclick = new Checkbox(divMain.element, "Declick",
+var checkboxDeclick = new Checkbox(divOscillatorControls.element, "Declick",
   declick, (checked) => { declick = checked })
 
 var echos = new EchoGroup(divMain.element, refresh)
 echos.push()
 echos.push()
-
-var buttonPlay = new Button(divMain.element, "Play", () => play(audioContext, wave))
-var buttonRandom = new Button(divMain.element, "Random", () => randomize())
-var buttonChangeChord = new Button(divMain.element, "ChangeChord", () => changeChord())
 
 refresh()
 

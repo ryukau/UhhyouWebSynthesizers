@@ -223,7 +223,7 @@ class Oscillator {
           var sum = 0
           for (var i = 0; i < this._harmonics; ++i) {
             var gain = Math.pow(0.75, i) * this.eca[index].gainAt(i)
-            sum += gain * Math.sin(phase * i)
+            sum += gain * Math.sin(phase * (i + 1))
           }
           return sum * 0.4
         }
@@ -233,7 +233,7 @@ class Oscillator {
         this.harmoFunc = (phase, index) => {
           var sum = 0
           for (var i = 0; i < this._harmonics; ++i) {
-            sum += this.eca[index].gainAt(i) * Math.sin(phase * i)
+            sum += this.eca[index].gainAt(i) * Math.sin(phase * (i + 1))
           }
           return sum / this._harmonics
         }
@@ -370,7 +370,8 @@ description.add("", "気に入った音があればMaxStepを増やすことで�
 description.add("", "また、Saveを押すと32bitのwavファイルとして音を保存することができます。")
 description.add("仕組み", "ECAFMはElementary Cellular Automaton (ECA)を利用した加算合成 + FMシンセサイザーです。")
 description.add("", "Pitchの値から基音の高さを決めて、Harmonicsの値に応じて倍音を加算します。")
-description.add("", "Pitchの高さはMIDIノートナンバーに対応していて、Pitch = 69のとき440Hzとなります。")
+description.add("", "各倍音はECAの幅（画面では縦の列）に対応しており、セルが白い時はミュートされます。")
+description.add("", "Pitchの高さはMIDIノートナンバーに基づき、Pitch = 69のとき440Hzとなります。")
 description.add("", "さらにFM Stackの値だけ繰り返し変調を行います。時間tにおける加算合成部の出力をfn(t)とすると")
 description.add("", "(時間tでの出力) = f0(t + i * f1(t + i * f2( ... )))")
 description.add("", "ここでiはFM Indexの値です。また、変調波の基音の高さは以下の式で求まります。")

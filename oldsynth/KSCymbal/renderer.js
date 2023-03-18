@@ -46,11 +46,23 @@ class KSString {
 }
 
 class SimpleHat {
-  constructor(sampleRate, rnd, maxFrequency, filterBias, distance, stack) {
+  constructor(
+    sampleRate,
+    rnd,
+    minFrequency,
+    maxFrequency,
+    filterBias,
+    distance,
+    stack
+  ) {
+    var diffFrequency = maxFrequency - minFrequency
     this.string = []
     for (var i = 0; i < stack; ++i) {
       this.string.push(new KSString(
-        sampleRate, maxFrequency * (1.0 - rnd.random()), filterBias))
+        sampleRate,
+        minFrequency + diffFrequency * (1.0 - rnd.random()),
+        filterBias
+      ))
     }
 
     this.output = new Array(this.string.length).fill(0)
@@ -128,13 +140,13 @@ class RCHP {
 //   length,
 //   sampleRate,
 //   overSampling,
+//   minFrequency,
 //   maxFrequency,
+//   distance,
 //   seed,
 //   stack,
-//   pickTime,
 //   pickCombFB,
 //   pickCombTime,
-//   distance,
 // }
 
 onmessage = (event) => {
@@ -174,7 +186,14 @@ onmessage = (event) => {
 
   // Render string.
   var string = new SimpleHat(
-    sampleRate, rnd, params.maxFrequency, 0.5, params.distance, params.stack)
+    sampleRate,
+    rnd,
+    params.minFrequency,
+    params.maxFrequency,
+    0.5,
+    params.distance,
+    params.stack
+  )
   var waveLastIndex = wave.length - 1
   for (var i = 0; i < wave.length; ++i) {
     wave[i] += string.process(wave[i])

@@ -335,12 +335,12 @@ class NumberInput {
 
   addInput(type, value, min, max, step) {
     var input = document.createElement("input")
+    this.div.appendChild(input)
     input.type = type
-    input.value = value
     input.min = min
     input.max = max
     input.step = step
-    this.div.appendChild(input)
+    input.value = value
     return input
   }
 }

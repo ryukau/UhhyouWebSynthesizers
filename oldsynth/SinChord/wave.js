@@ -97,8 +97,7 @@ class Wave {
     }
   }
 
-  declick() {
-    var fadeLength = 400
+  declick(fadeLength) {
     for (var channel = 0; channel < this.data.length; ++channel) {
       var length = Math.min(fadeLength, this.data[channel].length)
       var coefficient = Math.pow(256, 1 / length)
@@ -118,72 +117,107 @@ class Wave {
   //   }
   // }
 
+  static fileHeader(sampleRate, channels, bufferLength) {
+    var format = this.fileFormat(sampleRate, 32, channels)
+
+    var riff = this.stringToAscii("RIFF")
+    var riffChunkSize = this.uint32buffer(50 + bufferLength)
+    var wave = this.stringToAscii("WAVE")
+    var fmt_ = this.stringToAscii("fmt ")
+    var fmtChunkSize = this.uint32buffer(18)
+    var formatTag = this.uint16buffer(0x0003) // IEEE 32bit float
+    var channels = this.uint16buffer(format.channels)
+    var samplePerSec = this.uint32buffer(format.sampleRate)
+    var bytesPerSec = this.uint32buffer(format.sampleRate * format.bytesPerFrame)
+    var blockAlign = this.uint16buffer(format.bytesPerFrame)
+    var bitsPerSample = this.uint16buffer(format.sampleSize)
+    var cbSize = this.uint16buffer(0x0000)
+    var fact = this.stringToAscii("fact")
+    var factChunkSize = this.uint32buffer(4)
+    var sampleLength = this.uint32buffer(bufferLength / format.bytesPerFrame)
+    var data = this.stringToAscii("data")
+    var dataChunkSize = this.uint32buffer(bufferLength)
+
+    return this.concatTypedArray(riff, riffChunkSize, wave, fmt_,
+      fmtChunkSize, formatTag, channels, samplePerSec, bytesPerSec,
+      blockAlign, bitsPerSample, cbSize, fact, factChunkSize, sampleLength,
+      data, dataChunkSize)
+  }
+
   // Wave ファイルの出力。Node.js 上でのみ動作。
   // 2チャンネルのデータまで対応。
   // フォーマットは IEEE 32bit float で固定。
   // http://www-mmsp.ece.mcgill.ca/documents/audioformats/wave/wave.html
-  static write(filename, audio, format) {
-    if (audio.data.length <= 0 || audio.data.length > 2) {
-      console.log("WaveFile Write failed: audio.data.length <= 0 || audio.data.length > 2.")
+  static write(filename, wave, sampleRate) {
+    if (wave.data.length <= 0 || wave.data.length > 2) {
+      console.log("WaveFile Write failed: wave.data.length <= 0 || wave.data.length > 2.")
     }
 
-    var buffer = this.arrayToBuffer(audio, format.channels)
-    if (buffer === null) {
-      console.log("WaveFile Write failed: buffer === null.")
-    }
+    var format = this.fileFormat(sampleRate, 32, wave.channels)
+    var buffer = this.toBuffer(wave, format.channels)
+    var header = wave.fileHeader(format.sampleRate, wave.channels,
+      buffer.length)
 
     var fs = require("fs")
     var wstream = fs.createWriteStream(filename)
-    var int32 = Buffer.alloc(4)
-    // ヘッダ。
-    wstream.write(Buffer.from("RIFF", "ascii"))
-    wstream.write(this.uint32buffer(50 + buffer.length))
-    wstream.write(Buffer.from("WAVE", "ascii"))
-    wstream.write(Buffer.from("fmt ", "ascii"))
-    wstream.write(this.uint32buffer(18))
-    wstream.write(this.uint16buffer(0x0003)) // IEEE 32bit float
-    wstream.write(this.uint16buffer(format.channels))
-    wstream.write(this.uint32buffer(format.sampleRate))
-    wstream.write(this.uint32buffer(format.sampleRate * format.bytesPerFrame))
-    wstream.write(this.uint16buffer(format.bytesPerFrame))
-    wstream.write(this.uint16buffer(format.sampleSize))
-    wstream.write(this.uint16buffer(0x0000))
-    wstream.write(Buffer.from("fact", "ascii"))
-    wstream.write(this.uint32buffer(4))
-    wstream.write(this.uint32buffer(buffer.length / format.bytesPerFrame))
-    wstream.write(Buffer.from("data", "ascii"))
-    wstream.write(this.uint32buffer(buffer.length))
-    // ヘッダ終わり。
-    wstream.write(buffer)
+    wstream.write(Buffer.from(header))
+    // いったん Uint8Array に直さないと Buffer.from() はうまく動かない。
+    wstream.write(Buffer.from(buffer))
     wstream.end()
   }
 
   static uint16buffer(value) {
-    var uint16 = Buffer.alloc(2)
-    uint16.writeInt16LE(value, 0)
-    return uint16
+    var array = new Uint16Array(1)
+    array[0] = value
+    return array
   }
 
   static uint32buffer(value) {
-    var uint32 = Buffer.alloc(4)
-    uint32.writeInt32LE(value, 0)
-    return uint32
+    var array = new Uint32Array(1)
+    array[0] = value
+    return array
   }
 
-  // 複数チャンネルの Audio を Wave の並び順にフォーマットする。
-  // いったん Uint8Array に直さないと Buffer.from() がうまくいかない。
-  static arrayToBuffer(audio, channels) {
-    audio.align()
-    var float = new Float32Array(audio.left.length * channels)
-    for (var i = 0, ic = 0; i < audio.left.length; ++i, ic += channels) {
-      for (var j = 0; j < channels; ++j) {
-        float[ic + j] = audio.data[j][i]
+  static stringToAscii(string) {
+    var ascii = new Uint8Array(string.length)
+    for (var i = 0; i < string.length; ++i) {
+      ascii[i] = string.charCodeAt(i)
+    }
+    return ascii
+  }
+
+  static concatTypedArray() {
+    var length = 0
+    for (var i = 0; i < arguments.length; ++i) {
+      length += arguments[i].byteLength
+    }
+    var array = new Uint8Array(length)
+    var index = 0
+    for (var i = 0; i < arguments.length; ++i) {
+      var uint8 = new Uint8Array(arguments[i].buffer)
+      for (var j = 0; j < uint8.length; ++j) {
+        array[index] = uint8[j]
+        ++index
       }
     }
-    return Buffer.from(new Uint8Array(float.buffer))
+    return array
   }
 
-  // write() で利用する format を生成。
+  // 複数チャンネルの wave の並び順をフォーマットする。
+  static toBuffer(wave, channels) {
+    wave.align()
+    var float = new Float32Array(wave.left.length * channels)
+    for (var i = 0, ic = 0; i < wave.left.length; ++i, ic += channels) {
+      for (var j = 0; j < channels; ++j) {
+        float[ic + j] = wave.data[j][i]
+      }
+    }
+    var buffer = new Uint8Array(float.buffer)
+    return buffer
+  }
+
+  // ヘッダで利用する format を生成。
+  // sampleSize は 1 サンプルのビット数。
   static fileFormat(sampleRate, sampleSize, channels) {
     return {
       sampleRate,

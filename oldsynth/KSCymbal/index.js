@@ -57,10 +57,10 @@ function makeWave() {
       sampleRate: audioContext.sampleRate,
       // overSampling: checkboxResample.value ? 16 : 1,
       overSampling: 1,
+      minFrequency: inputMinFrequency.value,
       maxFrequency: inputMaxFrequency.value,
       seed: inputSeed.value + inputSeed.max * ch,
       stack: inputStackCount.value,
-      pickTime: Math.pow(2, inputPickTime.value),
       pickCombFB: inputPickCombFeedback.value,
       pickCombTime: Math.pow(2, inputPickCombTime.value),
       distance: inputDistance.value,
@@ -113,13 +113,21 @@ function randomRange(min, max) {
 }
 
 function random() {
-  if (pullDownMenuRandomType.value === "something") {
+  if (pullDownMenuRandomType.value === "Seed") {
+    inputSeed.random()
   }
   else {
     // "All" case.
+    inputFadeIn.random()
+    inputFadeOut.random()
+
+    inputMinFrequency.random()
+    inputMaxFrequency.random()
+    inputDistance.random()
     inputSeed.random()
-    // inputPickTime.random()
-    // inputPickCombTime.random()
+    inputStackCount.random()
+    inputPickCombFeedback.random()
+    inputPickCombTime.random()
   }
   refresh()
 }
@@ -161,6 +169,7 @@ var buttonRandom = new Button(divRenderControls.element, "Random",
   () => random())
 var pullDownMenuRandomType = new PullDownMenu(divRenderControls.element, null,
   () => { })
+pullDownMenuRandomType.add("Seed")
 pullDownMenuRandomType.add("All")
 var buttonSave = new Button(divRenderControls.element, "Save",
   () => save(wave))
@@ -192,22 +201,20 @@ var inputFadeOut = new NumberInput(divEnvGainControls.element,
 
 var divPluckControls = new Div(divControlLeft.element, "pluckControls")
 var headingPluck = new Heading(divPluckControls.element, 6, "Pluck")
+var inputMinFrequency = new NumberInput(divPluckControls.element,
+  "MinFrequency", 0, 0, 1000, 0.001, refresh)
 var inputMaxFrequency = new NumberInput(divPluckControls.element,
-  "MaxFrequency", 200, 10, 1000, 0.01, refresh)
+  "MaxFrequency", 200, 10, 1000, 0.001, refresh)
+var inputDistance = new NumberInput(divPluckControls.element,
+  "Distance", 0.02, 0, 0.1, 0.0001, refresh)
 var inputSeed = new NumberInput(divPluckControls.element,
   "Seed", 0, 0, Math.floor(Number.MAX_SAFE_INTEGER / 2), 1, refresh)
 var inputStackCount = new NumberInput(divPluckControls.element,
   "Stack", 24, 2, 64, 1, refresh)
-var inputStackDetune = new NumberInput(divPluckControls.element,
-  "StackDetune", 1.3333, 1, 3, 0.0001, refresh)
-var inputPickTime = new NumberInput(divPluckControls.element,
-  "PickTime", 0, -2, 2, 0.001, refresh)
 var inputPickCombFeedback = new NumberInput(divPluckControls.element,
   "PickCombFB", 0.3, 0, 0.9999, 0.0001, refresh)
 var inputPickCombTime = new NumberInput(divPluckControls.element,
   "PickCombTime", 0, -2, 6, 0.1, refresh)
-var inputDistance = new NumberInput(divPluckControls.element,
-  "Distance", 0.02, 0, 0.1, 0.0001, refresh)
 
 refresh()
 

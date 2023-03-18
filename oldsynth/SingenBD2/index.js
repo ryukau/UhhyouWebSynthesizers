@@ -1,6 +1,10 @@
 const TWO_PI = 2 * Math.PI
 
 function play(audioContext, wave) {
+  if (quickSave) {
+    save(wave)
+  }
+
   var channel = wave.channels
   var frame = wave.frames
   var buffer = audioContext.createBuffer(channel, frame, audioContext.sampleRate)
@@ -17,6 +21,26 @@ function play(audioContext, wave) {
   this.source.buffer = buffer
   this.source.connect(audioContext.destination)
   this.source.start()
+}
+
+function save(wave) {
+  var buffer = Wave.toBuffer(wave, wave.channels)
+  var header = Wave.fileHeader(audioContext.sampleRate, wave.channels,
+    buffer.length)
+
+  var blob = new Blob([header, buffer], { type: "application/octet-stream" })
+  var url = window.URL.createObjectURL(blob)
+
+  var a = document.createElement("a")
+  a.style = "display: none"
+  a.href = url
+  a.download = "SingenBD2_" + Date.now() + ".wav"
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => {
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }, 100)
 }
 
 // lengthは秒数。
@@ -206,6 +230,7 @@ function refresh() {
 var audioContext = new AudioContext()
 
 var isFM = true
+var quickSave = false
 var oscBody = new Oscillator(audioContext)
 var oscHead = new Oscillator(audioContext)
 var oscHeadMod = new Oscillator(audioContext)
@@ -218,6 +243,7 @@ var headingTitle = new Heading(divMain.element, 1, "SingenBD2")
 
 var description = new Description(divMain.element)
 description.add("さくっと使う", "SingenBD2はバスドラムを作るシンセサイザーです。まずはRandomボタンを何回か押して音を試してみてください。おおまかな音の雰囲気が気に入ったら、RandomHaedボタンでアタックの質感だけを変えることができます。狙って音を作る場合はPlayボタンで試聴できます。")
+description.add("ファイルの保存", "Saveボタンで作った音をダウンロードして保存できます。ファイルの形式は32bit float、サンプリングレートは環境依存です。QuickSaveにチェックを入れると、Play、Random、RandomHeadボタンで音が再生されるたびにファイルが保存されます。")
 description.add("概説", "中身は3オペレータを直列につないだFMシンセです。出力 <- Body <- Head <- HeadModと接続されています。HeadModは直接操作できませんが、Headのパラメータにほぼ追従します。Body <- Headの変調インデックスがBodyFM、Head <- HeadModの変調インデックスがHeadFMです。")
 description.add("Tips", "TypeをPMにしたときは、BodyのFeedbackを0にしてみてください。また、DeclickInでアタックの鋭さを調整できます。")
 
@@ -244,6 +270,10 @@ var buttonRandom = new Button(divRenderControls.element, "Random",
   () => random(true))
 var buttonRandomHead = new Button(divRenderControls.element, "RandomHead",
   () => random(false))
+var buttonSave = new Button(divRenderControls.element, "Save",
+  () => save(wave))
+var checkboxQuickSave = new Checkbox(divRenderControls.element, "QuickSave",
+  quickSave, (checked) => { quickSave = checked })
 
 var oscBodyControls = new OscillatorControls(divMain.element, "Body",
   oscBody, 0.01, 1, 0.01, 1, 1, 1000, 100, refresh)

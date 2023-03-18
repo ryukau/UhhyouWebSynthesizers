@@ -11,10 +11,6 @@ class Envelope {
     this.easing = bezier(x, y, x, y)
   }
 
-  bezier(x1, y1, x2, y2) {
-
-  }
-
   attack(value) {
     return this.easing(value)
   }
