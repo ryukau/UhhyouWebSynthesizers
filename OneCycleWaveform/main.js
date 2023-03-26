@@ -54,6 +54,7 @@ const scales = {
   waveform: new parameter.LinearScale(0, 3),
   powerOf: new parameter.DecibelScale(-40, 40, false),
   skew: new parameter.DecibelScale(-40, 40, false),
+  sineRatio: new parameter.IntScale(1, 1024),
   hardSync: new parameter.DecibelScale(-20, 20, false),
   spectralSpread: new parameter.DecibelScale(-40, 40, true),
   phaseSlope: new parameter.DecibelScale(-60, 60, true),
@@ -69,6 +70,7 @@ const param = {
   powerOf: new parameter.Parameter(1, scales.powerOf, true),
   skew: new parameter.Parameter(1, scales.skew, true),
   sineShaper: new parameter.Parameter(0, scales.defaultScale, true),
+  sineRatio: new parameter.Parameter(1, scales.sineRatio, true),
   hardSync: new parameter.Parameter(1, scales.hardSync, true),
   mirrorRange: new parameter.Parameter(1, scales.defaultScale, true),
   mirrorRepeat: new parameter.Parameter(0, scales.defaultScale, true),
@@ -141,6 +143,7 @@ const ui = {
   skew: new widget.NumberInput(detailShape, "Skew", param.skew, render),
   sineShaper:
     new widget.NumberInput(detailShape, "Sine Shaper", param.sineShaper, render),
+  sineRatio: new widget.NumberInput(detailShape, "Sine Ratio", param.sineRatio, render),
   hardSync: new widget.NumberInput(detailShape, "Hard Sync.", param.hardSync, render),
   mirrorRange:
     new widget.NumberInput(detailShape, "Mirror Range", param.mirrorRange, render),

@@ -54,7 +54,7 @@ onmessage = async (event) => {
     let phase = pv.hardSync * idx / mid;
     phase = Math.pow(phase, pv.skew);
 
-    let sinePhase = 2 * Math.sin(Math.PI * phase);
+    let sinePhase = 2 * Math.sin(Math.PI * phase * pv.sineRatio);
 
     let sig = generateWave(phase + util.lerp(0, sinePhase, pv.sineShaper), pv.waveform);
 
