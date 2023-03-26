@@ -59,6 +59,14 @@
       },
       "list": [
         {
+          "href": "./OneCycleWaveform/synth.html",
+          "name": "OneCycleWaveform",
+          "description": {
+            "ja": "オシレータの 1 周期分の波形を生成。",
+            "en": "Single cycle waveform generator."
+          }
+        },
+        {
           "href": "./MaybeSnare/synth.html",
           "name": "MaybeSnare",
           "description": {
