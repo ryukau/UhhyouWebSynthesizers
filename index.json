@@ -59,6 +59,14 @@
       },
       "list": [
         {
+          "href": "./SalmonTube/synth.html",
+          "name": "SalmonTube",
+          "description": {
+            "ja": "Pink Trombone の移植。習作。",
+            "en": "Port of Pink Trombone. This one is made to understand the internals."
+          }
+        },
+        {
           "href": "./OneCycleWaveform/synth.html",
           "name": "OneCycleWaveform",
           "description": {
