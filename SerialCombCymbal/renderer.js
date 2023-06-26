@@ -103,8 +103,7 @@ onmessage = (event) => {
     dsp.lowpass.reverse();
 
     if (upFold == 16) {
-      let decimationLowpass
-        = new multirate.DecimationLowpass(multirate.sos16FoldFirstStage);
+      let decimationLowpass = new multirate.SosFilter(multirate.sos16FoldFirstStage);
       let halfband = new multirate.HalfBandIIR();
       let frame = [0, 0];
       for (let i = 0; i < sound.length; ++i) {

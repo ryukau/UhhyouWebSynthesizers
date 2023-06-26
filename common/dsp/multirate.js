@@ -116,7 +116,7 @@ export const sos16FoldFirstStage = [
   [1.0, 2.0, 1.0, -1.7405167001403739, 0.9204476945203488],
 ];
 
-export class DecimationLowpass {
+export class SosFilter {
   #x0;
   #x1;
   #x2;
@@ -125,7 +125,24 @@ export class DecimationLowpass {
   #y2;
 
   constructor(coefficent) {
+    //
+    // Transfer function of one section is:
+    //
+    // H(z) = (b0 + b1 * z^-1 + b2 * z^-2) / (1 + a1 * z^-1 + a2 * z^-2).
+    //
+    // Also this.co = [[b0, b1, b2, a1, a2], ...].
+    //
     this.co = structuredClone(coefficent);
+    if (typeof this.co[0] === "number") this.co = [this.co];
+
+    for (let i = 0; i < this.co.length; ++i) { // `scipy.signal` sos format case.
+      if (this.co[i].length == 6) this.co[i].splice(3, 1);
+    }
+
+    if (this.co[0].length != 5) {
+      console.error("SosFilter coefficient is ill formatted.", this.co);
+    }
+
     this.#x0 = new Array(this.co.length).fill(0);
     this.#x1 = new Array(this.co.length).fill(0);
     this.#x2 = new Array(this.co.length).fill(0);
@@ -163,4 +180,9 @@ export class DecimationLowpass {
   }
 
   output() { return this.#y0[this.#y0.length - 1]; }
+
+  process(input) {
+    this.push(input);
+    return this.output();
+  }
 }
