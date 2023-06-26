@@ -1,7 +1,7 @@
 {
   "introduction": {
-    "ja": "新しいシンセサイザは Firefox 104 では動作しません。現在のところは Chrome か Safari 、あるいは Blink か WebKit ベースのブラウザをご利用ください。詳細は<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers#known-issue\">このリンク先 (英語) </a>に掲載しています。",
-    "en": "Some of the recent generators don't work on Firefox 104. Currently recommending to use Chrome or Safari (Blink or WebKit based browser). See <a href=\"https://github.com/ryukau/UhhyouWebSynthesizers#known-issue\">this link</a> for more details."
+    "ja": "新しいシンセサイザは Firefox 113 以前のバージョンでは動作しません。 Firefox 114 以降では動作します。詳細は<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers#known-issue\">このリンク先 (英語) </a>に掲載しています。",
+    "en": "Some of the recent generators don't work on Firefox 113 or older. They work on Firefox 114 or later. See <a href=\"https://github.com/ryukau/UhhyouWebSynthesizers#known-issue\">this link</a> for more details."
   },
   "sections": [
     {

@@ -6,7 +6,7 @@ A collection of sample generators that run on browser.
 Generators in this collection outputs wav file to use on external DAW or sampler. If you are looking for instruments or effects that runs on real-time, take a look at [my plugin repository](https://github.com/ryukau/VSTPlugins).
 
 # Known Issue
-Rendering doesn't work on Firefox 111.0 by default. Follow the steps below to enable ECMAScript modules on Web Workers.
+Rendering doesn't work on Firefox 113.0 or older. On Firefox 111.0 to 113.0, follow the steps below to enable ECMAScript modules on Web Workers.
 
 1. Type `about:config` in address bar, then open the page.
 2. Press "Accept the Risk and Continue" to proceed.
