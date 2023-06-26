@@ -6,7 +6,7 @@ import {clamp} from "../common/util.js";
 
 import {hitTestTriangle, vowelMesh} from "./formant.js";
 
-export class FormatXYPad {
+export class FormantXYPad {
   #isMouseDown = false;
   #targetPos;
   #triangles;

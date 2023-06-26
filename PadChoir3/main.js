@@ -7,7 +7,7 @@ import * as parameter from "../common/parameter.js";
 import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
-import {FormatXYPad} from "./formantxypad.js";
+import {FormantXYPad} from "./formantxypad.js";
 import * as menuitems from "./menuitems.js";
 
 function randomize() {
@@ -220,7 +220,7 @@ const ui = {
   pitchRandomOctave: new widget.NumberInput(
     detailChord, "Random Pitch [oct]", param.pitchRandomOctave, render),
 
-  formant: new FormatXYPad(
+  formant: new FormantXYPad(
     detailFormant, uiSize.waveViewWidth, uiSize.waveViewWidth, "Vowel", param.formantX,
     param.formantY, render),
   vocalType: new widget.NumberInput(detailFormant, "Vocal Type", param.vocalType, render),
