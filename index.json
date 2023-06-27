@@ -15,6 +15,14 @@
       },
       "list": [
         {
+          "href": "./MaybeCabinetFIR/synth.html",
+          "name": "MaybeCabinetFIR",
+          "description": {
+            "ja": "ギターキャビネットに似せたインパルス応答。",
+            "en": "Fake guitar cabinet impulse responses."
+          }
+        },
+        {
           "href": "./L4Reverb/synth.html",
           "name": "L4Reverb",
           "description": {

@@ -20,6 +20,12 @@ export function uniformDistributionMap(value, low, high) {
   return low + value * (high - low);
 }
 
+export function exponentialMap(value, low, high) {
+  const logL = Math.log2(low);
+  const logH = Math.log2(high);
+  return Math.pow(2, logL + value * (logH - logL));
+}
+
 // `x` in [0, 1].
 const superellipse = (x, n) => x < 0 ? 1 : (1 - x ** n) ** (1 / n);
 

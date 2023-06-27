@@ -6,7 +6,10 @@ import {
   sosBiquadHighpass,
   sosBiquadHighShelf,
   sosBiquadLowpass,
-  sosBiquadPeak
+  sosBiquadPeak,
+  sosMatchedHighpass,
+  sosMatchedLowpass,
+  sosMatchedPeak
 } from "../common/dsp/sos.js";
 import {lerp, uniformDistributionMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
@@ -112,37 +115,43 @@ onmessage = async (event) => {
   const fft = await PocketFFT();
   const pv = event.data; // Parameter values.
 
-  const baseLength = Math.floor(pv.sampleRate * pv.renderDuration);
-  const spectrumLpCutoff = 4000 / pv.sampleRate;
-  const spectrumLpQ = 1;
+  const baseLength = Math.floor(pv.renderSamples);
+  const sourceLowpassCutoff = Math.min(pv.sourceLowpassCutoffHz / pv.sampleRate, 0.5);
 
   let rng = new PcgRandom(BigInt(pv.seed + pv.channel * 65537));
   let spectrumNoise = () => uniformDistributionMap(rng.number(), 0, 2);
 
   let real = new Array(baseLength).fill(0);
   for (let i = 0; i < real.length; ++i) real[i] = spectrumNoise();
-  real = sosfiltfilt(sosBiquadLowpass(spectrumLpCutoff, spectrumLpQ), real);
+
+  let sos = [];
+  sos.push(sosBiquadLowpass(sourceLowpassCutoff, pv.sourceLowpassQ));
+  real = sosfiltfilt(sos, real);
 
   let ir = irfft(fft, real, null);
   ir = rotate(ir, Math.floor(ir.length / 2));
 
-  let sos = [];
-  sos.push(sosBiquadPeak(120 / pv.sampleRate, 4, toAmp(20)));
-  sos.push(sosBiquadPeak(1800 / pv.sampleRate, 3, toAmp(20)));
-  sos.push(sosBiquadPeak(500 / pv.sampleRate, 0.05, toAmp(-30)));
-  sos.push(sosBiquadHighShelf(20000 / pv.sampleRate, 0.8, toAmp(-18)));
+  const peaking = prm => sosMatchedPeak(prm[0] / pv.sampleRate, prm[1], prm[2]);
+  const lowpass = prm => sosBiquadLowpass(prm[0] / pv.sampleRate, prm[1], prm[2]);
+  const highpass = prm => sosMatchedHighpass(prm[0] / pv.sampleRate, prm[1], prm[2]);
+
+  sos = [];
+  sos.push(peaking(pv.peak1));
+  sos.push(peaking(pv.peak2));
+  sos.push(peaking(pv.peak3));
+  sos.push(lowpass(pv.nyquistLowpass));
   ir = sosfiltfilt(sos, ir);
 
   ir = toMinPhase(fft, ir);
   sos = [];
-  sos.push(sosBiquadHighpass(100 / pv.sampleRate, 0.5));
+  sos.push(highpass(pv.dcHighpass));
   ir = sosfilt(sos, ir);
 
-  const fadeIn = Math.floor(pv.fadeIn * pv.sampleRate);
+  const fadeIn = Math.floor(pv.fadeIn);
   for (let idx = 0; idx < fadeIn; ++idx) {
     ir[idx] *= Math.sin(0.5 * Math.PI * idx / fadeIn);
   }
-  const fadeOut = Math.floor(pv.fadeOut * pv.sampleRate);
+  const fadeOut = Math.floor(pv.fadeOut);
   for (let idx = ir.length - fadeOut; idx < ir.length; ++idx) {
     const t = (idx - ir.length) / fadeOut;
     ir[idx] *= Math.cos(0.5 * Math.PI * t);
