@@ -15,8 +15,8 @@
       },
       "list": [
         {
-          "href": "./MaybeCabinetFIR/synth.html",
-          "name": "MaybeCabinetFIR",
+          "href": "./MaybeCabinetIR/synth.html",
+          "name": "MaybeCabinetIR",
           "description": {
             "ja": "ギターキャビネットに似せたインパルス応答。",
             "en": "Fake guitar cabinet impulse responses."
