@@ -22,6 +22,7 @@ function padsynth(
   bandWidthOctave,
   phaseRandomAmount,
   formantPower,
+  formantGainType,
 ) {
   lengthInSamples += lengthInSamples % 2;
   const spcSize = Math.floor(lengthInSamples / 2) + 1;
@@ -45,7 +46,8 @@ function padsynth(
     for (let j = start; j < end; ++j) {
       const x = (j / spcSize - normalizedFreq) / bwIndex;
       const profileGain = Math.exp(-x * x) / bwIndex;
-      const formantGain = getGainResponse(formantSos, 0.5 * j / spcSize, formantPower);
+      const formantGain
+        = getGainResponse(formantSos, 0.5 * j / spcSize, formantPower, formantGainType);
       spectrum.setReal(j, spectrum.getReal(j) + padGain[idx] * profileGain * formantGain);
     }
   }
@@ -68,7 +70,7 @@ function padsynth(
   return sound;
 }
 
-function getGainResponse(sos, normalizedFreq, power) {
+function getGainResponse(sos, normalizedFreq, power, oldVersion = false) {
   // Complex number functions.
   const add = (s, t) => {
     return {
@@ -100,7 +102,24 @@ function getGainResponse(sos, normalizedFreq, power) {
   const omega = 2 * Math.PI * normalizedFreq;
   const z = {re: Math.cos(omega), im: Math.sin(omega)}; // exp(1j * omega).
   const z2 = mul(z, z);
-  let gain = {re: 0, im: 0};
+
+  if (oldVersion) {
+    let gain = {re: 0, im: 0};
+    for (const co of sos) {
+      // Equivalent to:
+      // gain += (co[0] + co[1] * z + co[2] * z * z) / (co[3] + co[4] * z + co[5] * z *
+      // z);
+      const H = div(
+        add(radd(co[0], rmul(co[1], z)), rmul(co[2], z2)),
+        add(radd(co[3], rmul(co[4], z)), rmul(co[5], z2)),
+      );
+      gain = add(gain, pow(H, power));
+    }
+    return Math.sqrt(gain.re * gain.re + gain.im * gain.im); // abs(gain).
+  }
+
+  // Correct version.
+  let gain = {re: 1, im: 0};
   for (const co of sos) {
     // Equivalent to:
     // gain += (co[0] + co[1] * z + co[2] * z * z) / (co[3] + co[4] * z + co[5] * z * z);
@@ -108,8 +127,9 @@ function getGainResponse(sos, normalizedFreq, power) {
       add(radd(co[0], rmul(co[1], z)), rmul(co[2], z2)),
       add(radd(co[3], rmul(co[4], z)), rmul(co[5], z2)),
     );
-    gain = add(gain, pow(H, power));
+    gain = mul(gain, H);
   }
+  gain = pow(gain, (power / 4) ** 2);
   return Math.sqrt(gain.re * gain.re + gain.im * gain.im); // abs(gain).
 }
 
@@ -206,7 +226,7 @@ function layerPad(fft, buffer, chordPitch, upRate, pv, dsp) {
 
   let pad = padsynth(
     fft, dsp.rngCh, sos, upRate, buffer.length, padFreq, padGain, pv.bandWidthOctave,
-    pv.phaseRandomAmount, pv.formantPower);
+    pv.phaseRandomAmount, pv.formantPower, pv.formantGainType == 1);
 
   for (let i = 0; i < buffer.length; ++i) buffer[i] += pad[i];
   return buffer;

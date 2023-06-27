@@ -110,6 +110,7 @@ const scales = {
 
   vocalType: new parameter.LinearScale(0, 4),
   formantPower: new parameter.LinearScale(0, 4),
+  formantGainType: new parameter.MenuItemScale(menuitems.formantGainType),
 };
 
 const param = {
@@ -136,6 +137,7 @@ const param = {
 
   formantX: new parameter.Parameter(0, scales.defaultScale),
   formantY: new parameter.Parameter(0, scales.defaultScale),
+  formantGainType: new parameter.Parameter(0, scales.formantGainType),
   vocalType: new parameter.Parameter(0, scales.vocalType),
   formantTracking: new parameter.Parameter(0.3, scales.defaultScale),
   formantTrackingSlope: new parameter.Parameter(0, scales.defaultScale),
@@ -223,6 +225,8 @@ const ui = {
   formant: new FormantXYPad(
     detailFormant, uiSize.waveViewWidth, uiSize.waveViewWidth, "Vowel", param.formantX,
     param.formantY, render),
+  formantGainType:
+    new widget.ComboBoxLine(detailFormant, "Gain Type", param.formantGainType, render),
   vocalType: new widget.NumberInput(detailFormant, "Vocal Type", param.vocalType, render),
   formantTracking: new widget.NumberInput(
     detailFormant, "Formant Tracking", param.formantTracking, render),

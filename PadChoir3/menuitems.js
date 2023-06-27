@@ -12,3 +12,8 @@ export const overtoneRandomizeItems = [
   "Mono",
   "Stereo",
 ];
+
+export const formantGainType = [
+  "New",
+  "Old",
+];
