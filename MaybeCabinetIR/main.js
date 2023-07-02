@@ -101,7 +101,7 @@ const audio = new wave.Audio(
 );
 
 const scales = {
-  renderSamples: new parameter.IntScale(4, 2 ** 16, false),
+  renderSamples: new parameter.IntScale(0, 2 ** 16),
   seed: new parameter.IntScale(0, 2 ** 32),
 
   cutoffHz: new parameter.DecibelScale(ampToDB(10), ampToDB(30000), false),
