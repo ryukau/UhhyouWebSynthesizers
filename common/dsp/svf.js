@@ -17,11 +17,11 @@ export class SVF {
   #g;
   #k;
 
-  // normalizedFreq = cutoffHz / sampleRate.
-  constructor(normalizedFreq, Q) { this.setCutoff(normalizedFreq, Q); }
+  // cutoffNormalized = cutoffHz / sampleRate.
+  constructor(cutoffNormalized, Q) { this.setCutoff(cutoffNormalized, Q); }
 
-  setCutoff(normalizedFreq, Q) {
-    this.#g = Math.tan(clamp(normalizedFreq, minCutoff, nyquist) * Math.PI);
+  setCutoff(cutoffNormalized, Q) {
+    this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI);
     this.#k = 1 / Q;
   }
 
@@ -80,6 +80,10 @@ export class SVFHP extends SVF {
   process(v0) { return this.hp(v0); }
 }
 
+export class SVFNotch extends SVF {
+  process(v0) { return this.notch(v0); }
+}
+
 export class SVFBell {
   #ic1eq = 0;
   #ic2eq = 0;
@@ -88,8 +92,8 @@ export class SVFBell {
   #k;
   #A;
 
-  constructor(normalizedFreq, Q, shelvingGainAmp) {
-    this.setCutoff(normalizedFreq, Q, shelvingGainAmp);
+  constructor(cutoffNormalized, Q, shelvingGainAmp) {
+    this.setCutoff(cutoffNormalized, Q, shelvingGainAmp);
   }
 
   reset() {
@@ -97,9 +101,9 @@ export class SVFBell {
     this.#ic2eq = 0;
   }
 
-  setCutoff(normalizedFreq, Q, shelvingGainAmp) {
+  setCutoff(cutoffNormalized, Q, shelvingGainAmp) {
     this.#A = Math.sqrt(shelvingGainAmp);
-    this.#g = Math.tan(clamp(normalizedFreq, minCutoff, nyquist) * Math.PI);
+    this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI);
     this.#k = 1 / Q / this.#A;
   }
 
@@ -123,8 +127,8 @@ export class SVFLowShelf {
   #k;
   #A;
 
-  constructor(normalizedFreq, Q, shelvingGainAmp) {
-    this.setCutoff(normalizedFreq, Q, shelvingGainAmp);
+  constructor(cutoffNormalized, Q, shelvingGainAmp) {
+    this.setCutoff(cutoffNormalized, Q, shelvingGainAmp);
   }
 
   reset() {
@@ -132,9 +136,9 @@ export class SVFLowShelf {
     this.#ic2eq = 0;
   }
 
-  setCutoff(normalizedFreq, Q, shelvingGainAmp) {
+  setCutoff(cutoffNormalized, Q, shelvingGainAmp) {
     this.#A = Math.sqrt(shelvingGainAmp);
-    this.#g = Math.tan(clamp(normalizedFreq, minCutoff, nyquist) * Math.PI)
+    this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI)
       / Math.sqrt(this.#A);
     this.#k = 1 / Q;
   }
@@ -159,8 +163,8 @@ export class SVFHighShelf {
   #k;
   #A;
 
-  constructor(normalizedFreq, Q, shelvingGainAmp) {
-    this.setCutoff(normalizedFreq, Q, shelvingGainAmp);
+  constructor(cutoffNormalized, Q, shelvingGainAmp) {
+    this.setCutoff(cutoffNormalized, Q, shelvingGainAmp);
   }
 
   reset() {
@@ -168,9 +172,9 @@ export class SVFHighShelf {
     this.#ic2eq = 0;
   }
 
-  setCutoff(normalizedFreq, Q, shelvingGainAmp) {
+  setCutoff(cutoffNormalized, Q, shelvingGainAmp) {
     this.#A = Math.sqrt(shelvingGainAmp);
-    this.#g = Math.tan(clamp(normalizedFreq, minCutoff, nyquist) * Math.PI)
+    this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI)
       * Math.sqrt(this.#A);
     this.#k = 1 / Q;
   }

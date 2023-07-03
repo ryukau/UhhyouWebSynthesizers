@@ -27,9 +27,21 @@ export function exponentialMap(value, low, high) {
 }
 
 // `x` in [0, 1].
-const superellipse = (x, n) => x < 0 ? 1 : (1 - x ** n) ** (1 / n);
+export function superellipse(x, n) { return x < 0 ? 1 : (1 - x ** n) ** (1 / n); }
 
-const chebyshev1_2 = (x) => 2 * x * x;
-const chebyshev1_3 = (x) => 4 * x * x * x - 3 * x;
-const chebyshev1_4 = (x) => 8 * x * x * x * x - 8 * x * x;
-const chebyshev1_5 = (x) => 16 * x * x * x * x * x - 20 * x * x * x + 5 * x;
+export function chebyshev1_2(x) { return 2 * x * x; }
+export function chebyshev1_3(x) { return 4 * x * x * x - 3 * x; }
+export function chebyshev1_4(x) { return 8 * x * x * x * x - 8 * x * x; }
+export function chebyshev1_5(x) {
+  return 16 * x * x * x * x * x - 20 * x * x * x + 5 * x;
+}
+
+// Range of t is in [0, 1]. Interpoltes between y1 and y2.
+// y0 is current, y3 is earlier sample.
+export function lagrange3Interp(y0, y1, y2, y3, t) {
+  const u = 1 + t;
+  const d0 = y0 - y1;
+  const d1 = d0 - (y1 - y2);
+  const d2 = d1 - ((y1 - y2) - (y2 - y3));
+  return y0 - u * (d0 + (1 - u) / 2 * (d1 + (2 - u) / 3 * d2));
+}

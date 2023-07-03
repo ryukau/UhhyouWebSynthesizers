@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./GrowlSynth/synth.html",
+          "name": "GrowlSynth",
+          "description": {
+            "ja": "動物のうなり声のような音。",
+            "en": "Animal growl synthesizer."
+          }
+        },
+        {
           "href": "./SalmonTube/synth.html",
           "name": "SalmonTube",
           "description": {
