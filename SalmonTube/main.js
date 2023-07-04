@@ -125,6 +125,7 @@ const param = {
   tongue1X: new parameter.Parameter(0.9, scales.defaultScale, true),
   tongue1Y: new parameter.Parameter(0.6, scales.defaultScale, true),
   tongue1W: new parameter.Parameter(0.1, scales.defaultScale, true),
+  tubeMod: new parameter.Parameter(0, scales.defaultScale, true),
 
   nVoice: new parameter.Parameter(8, scales.nVoice, true),
   randomDetune: new parameter.Parameter(10, scales.randomDetune, true),
@@ -220,6 +221,7 @@ const ui = {
     detailVocalTract, "Tongue 0 Width", param.tongue0W, updateTongueWidth),
   tongue1W: new widget.NumberInput(
     detailVocalTract, "Tongue 1 Width", param.tongue1W, updateTongueWidth),
+  tubeMod: new widget.NumberInput(detailVocalTract, "Modulation", param.tubeMod, render),
 
   nVoice: new widget.NumberInput(detailChorus, "nVoice", param.nVoice, render),
   randomDetune:

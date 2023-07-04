@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import * as multirate from "../common/dsp/multirate.js";
+import {HP1, LP1} from "../common/dsp/onepole.js";
 import * as svf from "../common/dsp/svf.js"
 import * as util from "../common/util.js"
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
@@ -51,12 +52,15 @@ class Oscillator {
     this.phase = initialPhase - Math.floor(initialPhase);
     this.modulation = 0;
     this.aspiration = new BandNoiseGenerator(500 / sampleRate);
+
+    this.lowpass = new LP1(0.01);
+    this.highpass = new HP1(20 / sampleRate);
   }
 
   /**
   `freq` is normalized frequency (sampleRate / frequencyHz).
   */
-  process(freq, sigma, rng, pulseGain, noiseGain, tenseness) {
+  processNormalDist(freq, sigma, rng, pulseGain, noiseGain, tenseness) {
     this.phase += freq;
     this.phase -= Math.floor(this.phase);
 
@@ -72,10 +76,21 @@ class Oscillator {
 
     return pulseGain * pulse + noiseGain * noise;
   }
+
+  processBlit(freq) {
+    this.phase += freq;
+    this.phase -= Math.floor(this.phase);
+
+    const denom = Math.sin(Math.PI * this.phase);
+    if (Math.abs(denom) <= Number.EPSILON) return 1;
+    const M = 2 * Math.floor(0.5 / freq) + 1;
+    const blit = freq * Math.sin(Math.PI * M * this.phase) / denom;
+    return this.highpass.process(this.lowpass.process(blit));
+  }
 }
 
 class Tube {
-  constructor(diameter) {
+  constructor(diameter, tubeMod) {
     this.nSection = diameter.length - 1;
 
     this.bufF = new Array(this.nSection).fill(0);
@@ -89,6 +104,7 @@ class Tube {
       const area1 = this.area[i + 1];
       this.reflection[i] = area0 == 0 ? Sample(0.999) : (area0 - area1) / (area0 + area1);
     }
+    this.tubeMod = 16 * tubeMod;
   }
 
   reset() {
@@ -126,7 +142,15 @@ class Tube {
 
     for (let i = 1; i < this.nSection; ++i) {
       [input, this.bufF[i]] = [this.bufF[i], input];
-      const w = this.reflection[i] * (this.bufF[i] + this.bufB[i]);
+
+      // Modulated `w`.
+      const rf = this.reflection[i]
+        * Math.exp(-this.tubeMod * Math.abs(this.bufF[i] + this.bufB[i]));
+      const w = rf * (this.bufF[i] + this.bufB[i]);
+
+      // // Original `w`.
+      // const w = this.reflection[i] * (this.bufF[i] + this.bufB[i]);
+
       this.bufF[i] -= w;
       this.bufB[i - 1] = this.bufB[i] + w;
     }
@@ -170,7 +194,7 @@ function process(pv, voice) {
   for (let vc of voice) {
     let vibrato = 2 ** (vc.vibratoLfo.process(vc.rng) * pv.vibratoAmount / 1200);
 
-    let sig = vc.osc.process(
+    let sig = vc.osc.processNormalDist(
       vibrato * vc.frequency / vc.upRate, vc.sigma, vc.rng, vc.pulseGain, vc.noiseGain,
       vc.tenseness);
 
@@ -216,7 +240,7 @@ onmessage = (event) => {
     vc.noiseGain = 1 - Math.sqrt(vc.tenseness);
     vc.pulseGain = 0.08 * Math.pow(vc.tenseness, 0.25);
 
-    vc.nose = new Tube(pv.noseDiameter);
+    vc.nose = new Tube(pv.noseDiameter, pv.tubeMod);
 
     vc.fricativeNoise = new BandNoiseGenerator(1000 / vc.upRate);
     let diameter = pv.vocalTractDiameter.slice();
@@ -241,7 +265,7 @@ onmessage = (event) => {
       diameter[i] *= (1 - y) * pv.tubeDiameterMultiplier;
     }
     for (let i = 0; i < diameter.length; ++i) diameter[i] *= scale;
-    vc.vocalTract = new Tube(diameter);
+    vc.vocalTract = new Tube(diameter, pv.tubeMod);
 
     vc.turbulenceX = (diameter.length - 16) * pv.tongue0X + 12;
     vc.turbulenceDiameter = diameter[Math.floor(vc.turbulenceX)];
