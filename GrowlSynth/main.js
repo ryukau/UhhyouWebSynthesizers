@@ -17,7 +17,6 @@ function randomize() {
     if (key === "dcHighpassHz") continue;
     if (key === "impulseGain") continue;
     if (key === "pulseFormantOctave") continue;
-    if (key === "randomFrequencyHz") continue;
     if (key === "maxJitterSecond") continue;
     if (key === "feedbackGain") continue;
     if (key === "lowpassHz") {
@@ -28,6 +27,8 @@ function randomize() {
       param[key].dsp = util.exponentialMap(Math.random(), 10, 120);
       continue;
     }
+    if (key === "delayTimeSlewRate") continue;
+    // if (key === "randomFrequencyHz") continue;
     if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
@@ -73,8 +74,10 @@ const scales = {
 
   impactEnvelopeTime: new parameter.DecibelScale(-60, 40, true),
   impactEnvelopeAM: new parameter.DecibelScale(-100, 0, true),
-  pulseBendOct: new parameter.LinearScale(0, 8),
   pulseType: new parameter.LinearScale(0, 1),
+  pulseBendOct: new parameter.LinearScale(0, 8),
+  grainOverlap: new parameter.LinearScale(0, 0.99),
+  freqModMix: new parameter.LinearScale(0, 1),
   noiseDecayTime: new parameter.DecibelScale(-60, 40, true),
   noiseGain: new parameter.DecibelScale(-60, 20, true),
   formantOctave: new parameter.LinearScale(-6, 6),
@@ -83,13 +86,14 @@ const scales = {
   delayCount: new parameter.IntScale(1, 16),
   maxJitterSecond: new parameter.DecibelScale(-80, util.ampToDB(0.2), true),
   frequencyHz: new parameter.DecibelScale(util.ampToDB(10), 80, false),
-  frequencyRatio: new parameter.DecibelScale(-20, 20, false),
   feedbackGain: new parameter.NegativeDecibelScale(-80, 0, 1, true),
   feedbackMod: new parameter.LinearScale(0, 1),
   cutoffHz: new parameter.DecibelScale(20, 100, false),
+  frequencyRatio: new parameter.DecibelScale(-20, 20, false),
   filterQ: new parameter.DecibelScale(-20, 20, false),
   cutoffMod: new parameter.LinearScale(-4, 4),
-  highshelfGain: new parameter.DecibelScale(-20, 0, false),
+  energyLossThreshold: new parameter.DecibelScale(-20, 20, false),
+  delayTimeSlewRate: new parameter.DecibelScale(-40, 40, false),
 };
 
 const param = {
@@ -113,6 +117,8 @@ const param = {
   pulseBendOct: new parameter.Parameter(3.2, scales.pulseBendOct, true),
   pulseFormantOctave: new parameter.Parameter(0, scales.formantOctave, true),
   pulseFormantQRatio: new parameter.Parameter(1, scales.formantQRatio, true),
+  grainOverlap: new parameter.Parameter(0, scales.grainOverlap, true),
+  freqModMix: new parameter.Parameter(0, scales.freqModMix, true),
   noiseDecaySecond: new parameter.Parameter(0.03, scales.noiseDecayTime, true),
   noiseGain: new parameter.Parameter(0, scales.noiseGain, false),
   noiseFormantOctave: new parameter.Parameter(0, scales.formantOctave, true),
@@ -128,7 +134,9 @@ const param = {
   allpassCut: new parameter.Parameter(0.2, scales.frequencyRatio, true),
   allpassQ: new parameter.Parameter(0.2, scales.filterQ, true),
   allpassMod: new parameter.Parameter(1.0, scales.cutoffMod, true),
+  energyLossThreshold: new parameter.Parameter(4.0, scales.energyLossThreshold, true),
   delayTimeMod: new parameter.Parameter(1.0, scales.cutoffMod, true),
+  delayTimeSlewRate: new parameter.Parameter(0.25, scales.delayTimeSlewRate, true),
 };
 
 // Add controls.
@@ -211,6 +219,10 @@ const ui = {
     detailSource, "Pulse Formant [oct]", param.pulseFormantOctave, render),
   pulseFormantQRatio:
     new widget.NumberInput(detailSource, "Pulse Q", param.pulseFormantQRatio, render),
+  grainOverlap:
+    new widget.NumberInput(detailSource, "Grain Overlap", param.grainOverlap, render),
+  freqModMix:
+    new widget.NumberInput(detailSource, "Freq. Mod. Mix", param.freqModMix, render),
   noiseDecaySecond: new widget.NumberInput(
     detailSource, "Noise Decay [s]", param.noiseDecaySecond, render),
   noiseGain:
@@ -235,8 +247,12 @@ const ui = {
   allpassCut: new widget.NumberInput(detailDelay, "AP Cut", param.allpassCut, render),
   allpassQ: new widget.NumberInput(detailDelay, "AP Q", param.allpassQ, render),
   allpassMod: new widget.NumberInput(detailDelay, "AP Mod", param.allpassMod, render),
+  energyLossThreshold: new widget.NumberInput(
+    detailDelay, "Loss Threshold", param.energyLossThreshold, render),
   delayTimeMod:
     new widget.NumberInput(detailDelay, "Delay Mod", param.delayTimeMod, render),
+  delayTimeSlewRate: new widget.NumberInput(
+    detailDelay, "Mod. Slew Rate", param.delayTimeSlewRate, render),
 };
 
 render();

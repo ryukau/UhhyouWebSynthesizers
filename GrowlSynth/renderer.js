@@ -199,6 +199,7 @@ class Pluck {
     allpassQ,
     allpassMod,
     delayTimeMod,
+    delayTimeSlewRate,
   ) {
     this.outDelay = new delay.IntDelay(sampleRate, jitterSeconds);
     this.outDelay.setTime(sampleRate * jitterSeconds);
@@ -207,7 +208,7 @@ class Pluck {
     this.delayTime = sampleRate * delayTimeSeconds;
     this.delay.setTime(this.delayTime);
     this.timeMod = delayTimeMod;
-    this.timeLimiter = new RateLimiter(0.25, this.delayTime);
+    this.timeLimiter = new RateLimiter(delayTimeSlewRate, this.delayTime);
 
     this.lowpass = new LP1(lowpassCutoffNormalized);
     this.highpass = new HP1(highpassCutoffNormalized);
@@ -225,7 +226,7 @@ class Pluck {
     this.fbGain = feedbackGain;
   }
 
-  process(x0, delayTimeModulation, feedbackModulation) {
+  process(x0, lossThreshold, delayTimeModulation, feedbackModulation) {
     x0 += this.fbSig;
     x0 = this.highpass.process(x0);
     x0 = this.lowpass.process(x0);
@@ -236,7 +237,7 @@ class Pluck {
       this.allpass[idx].setCutoff(
         Math.min(this.allpassCut[idx] * apMod, maxCut), this.allpassQ);
       x0 = this.allpass[idx].ap(x0);
-      if (Math.abs(x0) >= 4) this.allpassMod *= 0.99;
+      if (Math.abs(x0) >= lossThreshold) this.allpassMod *= 0.99;
     }
 
     const timeMod = Math.pow(2, Math.min(this.timeMod * (x0 + delayTimeModulation), 1));
@@ -255,11 +256,12 @@ function process(upRate, pv, dsp) {
   let envAm = envOut * am;
 
   let pulsePitchRatio = 2 ** (pv.pulsePitchOct + pv.pulseBendOct * envAm);
-  let freq = pulsePitchRatio * pv.pulseStartHz / upRate;
-  let s0 = envAm * dsp.blitOsc.process(freq);
+  let s0 = envAm * dsp.blitOsc.process(pulsePitchRatio * pv.pulseStartHz / upRate);
   s0 = dsp.formant.process(s0, pulsePitchRatio / 16);
-  let grainFreq = freq / 4;
-  let s1 = envAm * envAm * dsp.grainOsc.process(grainFreq, 1);
+  let freqMod = pv.pulseBendOct * lerp(envAm, envOut, pv.freqModMix);
+  let grainFreq = (pv.pulseStartHz / upRate) * 2 ** (pv.pulsePitchOct + freqMod - 2);
+  let s1 = envAm * envAm * dsp.grainOsc.processAA(grainFreq, dsp.grainOverlap)
+    * dsp.grainOverlap;
   sig += 2 * lerp(s0, s1, pv.pulseType);
 
   let noise = uniformDistributionMap(dsp.rng.number(), -pv.noiseGain, pv.noiseGain);
@@ -270,7 +272,7 @@ function process(upRate, pv, dsp) {
   let sum = 0;
   let fbMod = lerp(1, envOut, pv.feedbackMod);
   for (let idx = 0; idx < dsp.pluck.length; ++idx) {
-    sum += dsp.pluck[idx].process(sig, -envAm, fbMod);
+    sum += dsp.pluck[idx].process(sig, pv.energyLossThreshold, -envAm, fbMod);
   }
   sig = sum;
 
@@ -307,6 +309,7 @@ onmessage = async (event) => {
     blitOsc: new BlitOscillator(0.95),
     formant: new MaybeFormant(rng, upRate, pv.pulseFormantOctave, pv.pulseFormantQRatio),
     grainOsc: new OverlapOscillator(fft, generateTable(upRate, pv, rng)),
+    grainOverlap: 1 - pv.grainOverlap,
 
     noiseEnvelope: new NoiseEnvelope(upRate, pv.noiseDecaySecond),
     noiseFormant:
@@ -334,6 +337,7 @@ onmessage = async (event) => {
       exponentialMap(dsp.rng.number(), 0.5, 2) * pv.allpassQ,
       pv.allpassMod,
       2 ** pv.delayTimeMod,
+      pv.delayTimeSlewRate,
       ));
   }
 
