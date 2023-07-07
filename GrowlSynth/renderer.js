@@ -172,7 +172,7 @@ class NoiseFormant {
       prm[2] /= this.bandpassParameters.length;
     }
 
-    this.lowpass = new SVF(6000 * cutScale, Math.SQRT1_2);
+    this.lowpass = new SVF(6000, Math.SQRT1_2);
   }
 
   process(x0, freqRatio) {
