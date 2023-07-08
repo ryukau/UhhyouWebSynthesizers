@@ -29,21 +29,6 @@ export class EMAFilter {
   process(input) { return this.value += this.kp * (input - this.value); }
 }
 
-export class EMADecayEnvelope {
-  constructor(timeInSamples) {
-    this.kp = timeToOnePoleKp(timeInSamples);
-    this.reset();
-  }
-
-  reset() { this.value = 1; }
-
-  process() {
-    const out = this.value;
-    this.value -= this.kp * this.value;
-    return out;
-  }
-}
-
 export class DoubleEMAFilter {
   constructor() {
     this.kp = 1;
