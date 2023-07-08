@@ -14,7 +14,10 @@ function randomize() {
     if (key === "renderDuration") continue;
     if (key === "fadeIn") continue;
     if (key === "fadeOut") continue;
+    if (key === "decayTo") continue;
     if (key === "overSample") continue;
+    if (key === "toneSlope") continue;
+    if (key === "slopeStartHz") continue;
     if (key === "nLayer") continue;
     if (key === "timeMultiplier") continue;
     if (key === "highpassCutoffMultiplier") continue;
@@ -58,7 +61,9 @@ function render() {
 const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
+  decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
+  toneSlope: new parameter.DecibelScale(-20, 20, true),
 
   nLayer: new parameter.IntScale(1, 8),
   layerMultiplier: new parameter.LinearScale(0.5, 2),
@@ -85,7 +90,10 @@ const param = {
   renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
   fadeIn: new parameter.Parameter(0.001, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
+  decayTo: new parameter.Parameter(1, scales.decayTo, false),
   overSample: new parameter.Parameter(1, scales.overSample),
+  toneSlope: new parameter.Parameter(1, scales.toneSlope),
+  slopeStartHz: new parameter.Parameter(1000, scales.lowpassHz, true),
 
   nLayer: new parameter.Parameter(1, scales.nLayer, true),
   timeMultiplier: new parameter.Parameter(1, scales.layerMultiplier, true),
@@ -165,8 +173,13 @@ const ui = {
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
+  decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  toneSlope:
+    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  slopeStartHz:
+    new widget.NumberInput(detailRender, "Slope Start [Hz]", param.slopeStartHz, render),
 
   nLayer: new widget.NumberInput(detailLayer, "nLayer", param.nLayer, render),
   timeMultiplier:

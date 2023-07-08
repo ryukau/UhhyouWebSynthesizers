@@ -56,6 +56,8 @@ class MatchedHighShelf1 {
 
 export class SlopeFilter {
   constructor(nCascade) {
+    nCascade = nCascade < 0 ? 1 : nCascade;
+
     this.filters = new Array(nCascade);
     for (let i = 0; i < this.filters.length; ++i) {
       this.filters[i] = new MatchedHighShelf1();

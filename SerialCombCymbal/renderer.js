@@ -3,6 +3,8 @@
 
 import {Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
 import * as multirate from "../common/dsp/multirate.js";
+import {SlopeFilter} from "../common/dsp/slopefilter.js"
+import {timeToOnePoleKp} from "../common/dsp/smoother.js"
 import {SVF} from "../common/dsp/svf.js";
 import * as util from "../common/util.js"
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
@@ -141,6 +143,16 @@ onmessage = (event) => {
     pv.delayTime *= pv.timeMultiplier;
     pv.highpassHz *= pv.highpassCutoffMultiplier;
     pv.lowpassHz *= pv.lowpassCutoffMultiplier;
+  }
+
+  // Post effect.
+  let gainEnv = 1;
+  let decay = Math.pow(pv.decayTo, 1.0 / sound.length);
+  let slopeFilter = new SlopeFilter(Math.floor(Math.log2(24000 / pv.slopeStartHz)));
+  slopeFilter.setCutoff(pv.sampleRate, pv.slopeStartHz, pv.toneSlope, true);
+  for (let i = 0; i < sound.length; ++i) {
+    sound[i] = gainEnv * slopeFilter.process(sound[i]);
+    gainEnv *= decay;
   }
 
   postMessage(sound);
