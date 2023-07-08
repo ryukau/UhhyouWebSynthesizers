@@ -79,7 +79,7 @@ export class IntScale {
   get minDsp() { return this.min; }
   get maxDsp() { return this.max; }
 
-  toDsp(uiValue) { return Math.floor(uiValue); }
+  toDsp(uiValue) { return Math.floor(uiValue + 0.5); }
   toUi(dspValue) { return Math.floor(dspValue); }
 }
 
