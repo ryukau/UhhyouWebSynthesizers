@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./MetalSqueak/synth.html",
+          "name": "MetalSqueak",
+          "description": {
+            "ja": "フィードバック経路にオールパスを備えた FDN による金属音。",
+            "en": "Metal squeaks from FDN with modulated allpass on feedback path."
+          }
+        },
+        {
           "href": "./GrowlSynth/synth.html",
           "name": "GrowlSynth",
           "description": {

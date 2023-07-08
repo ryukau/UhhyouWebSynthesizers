@@ -120,7 +120,7 @@ If `identityAmount` is close to 0, then the result becomes close to identity mat
 
 This algorithm is ported from `scipy.stats.ortho_group` in SciPy v1.8.0.
 */
-function randomOrthogonal(matrix, seed, fullRandom = true, identityAmount = 1) {
+export function randomOrthogonal(matrix, seed, fullRandom = true, identityAmount = 1) {
   let rng = new PcgRandom(BigInt(seed));
 
   for (let i = 0; i < matrix.length; ++i) {
@@ -164,7 +164,7 @@ function randomOrthogonal(matrix, seed, fullRandom = true, identityAmount = 1) {
 Randomize `matrix` as special orthogonal matrix. This algorithm is ported from
 `scipy.stats.special_ortho_group` in SciPy v1.8.0.
 */
-function randomSpecialOrthogonal(matrix, seed) {
+export function randomSpecialOrthogonal(matrix, seed) {
   let rng = new PcgRandom(BigInt(seed));
 
   for (let i = 0; i < matrix.length; ++i) {
@@ -227,7 +227,7 @@ This is an implementation of eq. (24) and (25) in following paper.
 networks for artificial reverberation." IEEE Transactions on Speech and Audio
 Processing 5.1 (1997): 51-63.
 */
-function randomCirculantOrthogonal(matrix, seed, band) {
+export function randomCirculantOrthogonal(matrix, seed, band) {
   let rng = new PcgRandom(BigInt(seed));
 
   let left = 0;
@@ -264,7 +264,7 @@ function randomCirculantOrthogonal(matrix, seed, band) {
 /**
 Using similar normalization technique of `randomCirculantOrthogonal`.
 */
-function randomUpperTriangular(matrix, seed, low, high) {
+export function randomUpperTriangular(matrix, seed, low, high) {
   let rng = new PcgRandom(BigInt(seed));
   if (low > high) [low, high] = [high, low];
 
@@ -290,7 +290,7 @@ function randomUpperTriangular(matrix, seed, low, high) {
 Using similar normalization technique of `randomCirculantOrthogonal`.
 Transpose of `randomUpperTriangular`.
 */
-function randomLowerTriangular(matrix, seed, low, high) {
+export function randomLowerTriangular(matrix, seed, low, high) {
   let rng = new PcgRandom(BigInt(seed));
   if (low > high) [low, high] = [high, low];
 
@@ -340,7 +340,7 @@ stability. Naive implementation is unstable with stereo cross when delay time is
 - Schlecht, Sebastian J., and Emanuel AP Habets. "On lossless feedback delay networks."
 IEEE Transactions on Signal Processing 65.6 (2016): 1554-1564.
 */
-function randomSchroeder(matrix, seed, low, high) {
+export function randomSchroeder(matrix, seed, low, high) {
   const dim = matrix.length;
   console.assert(
     dim >= 2, "FeedbackDelayNetwork.randomSchroeder(): length must be >= 2.",
@@ -386,7 +386,7 @@ used in `randomSchroeder`. Generated feedback matrix is equivalent to nested all
 - Schlecht, Sebastian J., and Emanuel AP Habets. "On lossless feedback delay networks."
 IEEE Transactions on Signal Processing 65.6 (2016): 1554-1564.
 */
-function randomAbsorbent(matrix, seed, low, high) {
+export function randomAbsorbent(matrix, seed, low, high) {
   console.assert(
     matrix.length >= 2, "FeedbackDelayNetwork.randomAbsorbent(): length must be >= 2.",
     new Error());
@@ -418,7 +418,7 @@ function randomAbsorbent(matrix, seed, low, high) {
 }
 
 /** Sylvester's construction of Hadamard matrix. */
-function constructHadamardSylvester(matrix) {
+export function constructHadamardSylvester(matrix) {
   // This static_assert condition is obtained from: https://stackoverflow.com/a/19399478
   console.assert(
     matrix.length && ((matrix.length & (matrix.length - 1)) == 0),
@@ -457,7 +457,7 @@ This implementation use the sequence from https://oeis.org/A000952 to determine 
 of matrix. It's possible to construct this kind of conference matrix greater than size
 of 398, but they are out of scope of FDNReverb.
 */
-function constructConference(matrix) {
+export function constructConference(matrix) {
   const candidates = [
     398, 390, 378, 374, 370, 366, 362, 354, 350, 338, 334, 326, 318, 314, 306, 294, 290,
     282, 278, 270, 266, 262, 258, 246, 242, 234, 230, 226, 222, 206, 198, 194, 186, 182,
