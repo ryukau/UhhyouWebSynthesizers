@@ -73,3 +73,9 @@ export function details(parent, summaryText, id, className, isOpen = true) {
 
   return details;
 }
+
+export function pageTitle(parent) {
+  const title = document.createElement("h1");
+  title.innerHTML = `<a href="../index.html">WebSynth</a> ➫ ${document.title}`;
+  parent.appendChild(title);
+}

@@ -124,7 +124,7 @@ const audio = new wave.Audio(
   },
 );
 
-const pageTitle = widget.heading(document.body, 1, document.title, undefined, undefined);
+const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
 
 const divLeft = widget.div(divMain, undefined, "controlBlock");
