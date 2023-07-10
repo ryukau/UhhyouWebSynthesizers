@@ -259,7 +259,7 @@
           }
         },
         {
-          "href": "./oldsynth/KSCymbal/index.html",
+          "href": "./KSCymbal/synth.html",
           "name": "KSCymbal",
           "description": {
             "ja": "2つのKarplus-Strongを使って弦をぶつけた時のような音を合成。",
