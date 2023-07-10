@@ -213,7 +213,9 @@ export class WaveformXYPad {
 
       for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
         if (idx == this.#grabbedPoint) continue;
-        if (this.#controlPoints[idx].x == point.x) point.x += 0.1;
+        if (Math.abs(this.#controlPoints[idx].x - point.x) > 1e-5) continue;
+        point.x += 0.1;
+        break;
       }
 
       this.#updateCoefficients();
