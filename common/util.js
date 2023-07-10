@@ -20,6 +20,12 @@ export function uniformDistributionMap(value, low, high) {
   return low + value * (high - low);
 }
 
+// `value` is in [0, 1).
+// `low` and `high` are integer. Output interval is [low, high].
+export function uniformIntDistributionMap(value, low, high) {
+  return Math.floor(low + value * (high + 1 - low));
+}
+
 export function exponentialMap(value, low, high) {
   const logL = Math.log2(low);
   const logH = Math.log2(high);

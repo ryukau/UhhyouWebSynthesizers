@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./GlitchSprinkler/synth.html",
+          "name": "GlitchSprinkler",
+          "description": {
+            "ja": "波形を多項式近似するオシレータ。",
+            "en": "Oscillator using polynomial approximation to draw waveform."
+          }
+        },
+        {
           "href": "./MetalSqueak/synth.html",
           "name": "MetalSqueak",
           "description": {
