@@ -8,10 +8,51 @@ import {AP1, HP1, LP1} from "../common/dsp/onepole.js"
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {RateLimiter} from "../common/dsp/smoother.js";
 import {SVF, SVFHighShelf} from "../common/dsp/svf.js";
-import {dbToAmp, exponentialMap, uniformDistributionMap} from "../common/util.js";
+import {
+  dbToAmp,
+  exponentialMap,
+  normalDistributionMap,
+  uniformDistributionMap
+} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
+
+class BandedNoise {
+  constructor(
+    sampleRate, rng, initialGain, durationSeconds, decaySeconds, band1Hz, band2Hz) {
+    this.envRandom = rng => exponentialMap(rng.number(), 1 / 8, 8);
+    this.baseTime = sampleRate * decaySeconds;
+    this.envCounter = 0;
+    this.envSamples = Math.floor(this.baseTime * this.envRandom(rng));
+    this.envelope = 1;
+    this.envDecay = Math.pow(Number.EPSILON, 1 / this.baseTime);
+    this.envLp = new LP1(0.475);
+
+    this.gain = 0.5 * initialGain;
+    this.decay = Math.pow(Number.EPSILON, 1 / (sampleRate * durationSeconds));
+
+    this.bandpass = new SVF(band1Hz / sampleRate, 3);
+    this.highpass = new SVF(band2Hz / sampleRate, Math.SQRT1_2);
+  }
+
+  process(rng) {
+    const env = this.envLp.process(this.gain * this.envelope);
+    this.gain *= this.decay;
+    if (this.envCounter >= this.envSamples) {
+      this.envCounter = 0;
+      this.envSamples = Math.floor(this.baseTime * this.envRandom(rng));
+      this.envelope = 1;
+      this.envDecay = Math.pow(Number.EPSILON, 1 / (this.baseTime * this.envRandom(rng)));
+    } else {
+      this.envelope *= this.envDecay;
+      ++this.envCounter;
+    }
+
+    let sig = env * normalDistributionMap(rng.number(), rng.number(), 0, 1 / 3);
+    return this.bandpass.bp(sig) + this.highpass.hp(sig);
+  }
+}
 
 class FDN {
   // `delaySeconds` is array.
@@ -126,7 +167,7 @@ class FDN {
 }
 
 function process(upRate, pv, dsp) {
-  let sig = dsp.impulse;
+  let sig = dsp.impulse + dsp.noise.process(dsp.rng);
   dsp.impulse = 0;
 
   sig = dsp.impulseLowpass.process(sig);
@@ -154,6 +195,9 @@ onmessage = async (event) => {
     rng: rng,
 
     impulse: pv.impulseGain,
+    noise: new BandedNoise(
+      upRate, rng, pv.noiseGain, pv.noiseDuration, pv.noiseDecaySeconds, pv.noiseBand1Hz,
+      pv.noiseBand2Hz),
     impulseLowpass: new LP1(pv.impulseLowpassHz / upRate),
     impulseHighpass: new HP1(pv.impulseHighpassHz / upRate),
 

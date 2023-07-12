@@ -15,6 +15,7 @@ function randomize() {
     if (key === "fadeIn") continue;
     if (key === "fadeOut") continue;
     if (key === "decayTo") continue;
+    if (key === "stereoMerge") continue;
     if (key === "dcHighpassHz") continue;
     if (key === "toneSlope") continue;
     // if (key === "impulseGain") continue;
@@ -63,6 +64,7 @@ const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
+  stereoMerge: new parameter.LinearScale(0, 1),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
   dcHighpassHz: new parameter.DecibelScale(-20, 40, true),
   toneSlope: new parameter.DecibelScale(-12, 0, false),
@@ -70,6 +72,9 @@ const scales = {
   seed: new parameter.IntScale(0, 2 ** 32),
 
   impulseGain: new parameter.DecibelScale(-40, 40, true),
+  noiseDuration: new parameter.DecibelScale(-80, 40, true),
+  noiseDecaySeconds: new parameter.DecibelScale(-100, -20, false),
+  noiseBandpassHz: new parameter.DecibelScale(40, 100, false),
   cutoffHz: new parameter.DecibelScale(0, 100, false),
 
   delayCount: new parameter.IntScale(1, 8),
@@ -88,6 +93,7 @@ const param = {
   fadeIn: new parameter.Parameter(0, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
+  stereoMerge: new parameter.Parameter(0.8, scales.stereoMerge),
   overSample: new parameter.Parameter(1, scales.overSample),
   dcHighpassHz: new parameter.Parameter(4, scales.dcHighpassHz, true),
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
@@ -95,6 +101,11 @@ const param = {
   seed: new parameter.Parameter(0, scales.seed),
 
   impulseGain: new parameter.Parameter(util.dbToAmp(-10), scales.impulseGain, false),
+  noiseGain: new parameter.Parameter(util.dbToAmp(-20), scales.impulseGain, false),
+  noiseDuration: new parameter.Parameter(0.5, scales.noiseDuration, true),
+  noiseDecaySeconds: new parameter.Parameter(0.001, scales.noiseDecaySeconds, true),
+  noiseBand1Hz: new parameter.Parameter(500, scales.noiseBandpassHz, true),
+  noiseBand2Hz: new parameter.Parameter(8000, scales.noiseBandpassHz, true),
   impulseLowpassHz: new parameter.Parameter(4000, scales.cutoffHz, true),
   impulseHighpassHz: new parameter.Parameter(20, scales.cutoffHz, true),
 
@@ -157,7 +168,7 @@ const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
 const detailRender = widget.details(divLeft, "Render");
-const detailRandom = widget.details(divLeft, "Random");
+const detailRandom = widget.details(divRightA, "Random");
 const detailSource = widget.details(divRightA, "Source");
 const detailDelay = widget.details(divRightB, "Delay");
 
@@ -167,6 +178,8 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
+  stereoMerge:
+    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
   dcHighpassHz:
@@ -178,6 +191,16 @@ const ui = {
 
   impulseGain:
     new widget.NumberInput(detailSource, "Impulse [dB]", param.impulseGain, render),
+  noiseGain:
+    new widget.NumberInput(detailSource, "Noise Gain [dB]", param.noiseGain, render),
+  noiseDuration: new widget.NumberInput(
+    detailSource, "Noise Duration [s]", param.noiseDuration, render),
+  noiseDecaySeconds: new widget.NumberInput(
+    detailSource, "Noise Decay [s]", param.noiseDecaySeconds, render),
+  noiseBand1Hz:
+    new widget.NumberInput(detailSource, "Noise Band 1 [Hz]", param.noiseBand1Hz, render),
+  noiseBand2Hz:
+    new widget.NumberInput(detailSource, "Noise Band 2 [Hz]", param.noiseBand2Hz, render),
   impulseLowpassHz:
     new widget.NumberInput(detailSource, "Lowpass [Hz]", param.impulseLowpassHz, render),
   impulseHighpassHz: new widget.NumberInput(
