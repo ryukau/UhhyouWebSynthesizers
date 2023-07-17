@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./IntegerArpeggio/synth.html",
+          "name": "IntegerArpeggio",
+          "description": {
+            "ja": "波形の周期が整数サンプルとなるスケールによるアルペジオ。スライサに読み込んで使用。",
+            "en": "Arpeggio generator that aligns the period of waveform to integer samples. Intended to used with slicer."
+          }
+        },
+        {
           "href": "./GlitchSprinkler/synth.html",
           "name": "GlitchSprinkler",
           "description": {
