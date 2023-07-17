@@ -4,7 +4,7 @@
 import {palette} from "../common/gui/palette.js";
 import {clamp, dbToAmp} from "../common/util.js";
 
-import {computePolynomial} from "./polynomial.js"
+import {computePolynomial} from "./shared.js"
 
 // Solve `A x = b` for `x`.
 function solve(A, b, size) {

@@ -7,6 +7,7 @@ import {ComboBoxLine} from "./combobox.js";
 export {BarBox} from "./barbox.js";
 export {BezierEnvelopeView} from "./bezierenvelopeview.js";
 export {ComboBoxLine, select} from "./combobox.js";
+export {MultiCheckBoxVertical} from "./multicheckbox.js"
 export {NumberInput} from "./numberinput.js";
 export {ToggleButton, ToggleButtonLine} from "./togglebutton.js";
 export {WaveView} from "./waveview.js";
