@@ -280,7 +280,7 @@ export class Wave {
 
   // References:
   // http://www.piclist.com/techref/io/serial/midi/wave.html
-  // https://sites.google.com/site/musicgapi/technical-documents/wav-file-format
+  // https://web.archive.org/web/20230108120912/https://sites.google.com/site/musicgapi/technical-documents/wav-file-format
   static fileHeader(sampleRate, channels, bufferLength, loop = false) {
     const ascii = (string) => {
       let ascii = new Uint8Array(string.length);
