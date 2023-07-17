@@ -10,7 +10,7 @@ import {
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
-import {computePolynomial, justIntonationTable} from "./shared.js"
+import {computePolynomial, constructIntJustScale} from "./shared.js"
 
 function process(upRate, pv, dsp) {
   if (++dsp.phase >= dsp.periodSamples) {
@@ -60,44 +60,6 @@ function setNote(upRate, pv, dsp) {
   dsp.gainDecay = Math.pow(pv.arpeggioDecayTo, 1.0 / dsp.baseNoteDuration);
 }
 
-function constructScale(pv) {
-  const basePeriod = parseInt(menuitems.basePeriodItems[pv.basePeriod]);
-  const startPeriod = basePeriod * (1 << (-pv.octaveStart));
-  const endPeriod = Math.max(2, startPeriod / (1 << (pv.octaveRange)));
-
-  const justSt12 = justIntonationTable.filter((_, index) => pv.arpeggioNotes[index] > 0)
-                     .map(v => 12 * Math.log2(v));
-
-  let periods = [startPeriod];
-  let currentPeriod = startPeriod;
-  let currentSt12 = 12 * (Math.log2(startPeriod / currentPeriod) % 1.0);
-  let jiIndex = 0;
-
-  while (currentPeriod >= endPeriod) {
-    let nextSt12 = 12 * (Math.log2(startPeriod / (currentPeriod - 1)) % 1.0);
-    if (nextSt12 == 0) nextSt12 = 12;
-    const midSt12 = (currentSt12 + nextSt12) / 2;
-
-    if (currentSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < midSt12) {
-      if (periods.at(-1) != currentPeriod) periods.push(currentPeriod);
-      do {
-        if (++jiIndex >= justSt12.length) jiIndex = 0;
-      } while (currentSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < midSt12);
-    }
-
-    if (midSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < nextSt12) {
-      periods.push(currentPeriod - 1);
-      do {
-        if (++jiIndex >= justSt12.length) jiIndex = 0;
-      } while (midSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < nextSt12);
-    }
-
-    --currentPeriod;
-    currentSt12 = nextSt12 == 12 ? 0 : nextSt12;
-  }
-  return periods;
-}
-
 onmessage = async (event) => {
   const pv = event.data; // Parameter values.
   if (pv.a === undefined) pv.a = [];
@@ -112,7 +74,9 @@ onmessage = async (event) => {
   dsp.rng = rng;
   dsp.noteSamples = 0;
   dsp.baseNoteDuration = Math.round(upRate * pv.arpeggioDurationSeconds);
-  dsp.targetScale = constructScale(pv);
+  dsp.targetScale = constructIntJustScale(
+    parseInt(menuitems.basePeriodItems[pv.basePeriod]), pv.octaveStart, pv.octaveRange,
+    pv.arpeggioNotes);
   dsp.scaleIndex = 0;
 
   // Process.

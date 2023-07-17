@@ -51,10 +51,10 @@ export class Audio {
     this.#source.stop(this.audioContext.currentTime + this.#fadeOutDuration + 0.001);
   }
 
-  save(loop = false) {
+  save(loop = false, cue = []) {
     let buffer = Wave.toBuffer(this.wave, this.wave.channels);
     let header = Wave.fileHeader(
-      this.audioContext.sampleRate, this.wave.channels, buffer.length, loop);
+      this.audioContext.sampleRate, this.wave.channels, buffer.length, loop, cue);
 
     let blob = new Blob([header, buffer], {type: "application/octet-stream"});
     let url = window.URL.createObjectURL(blob);
@@ -281,7 +281,7 @@ export class Wave {
   // References:
   // http://www.piclist.com/techref/io/serial/midi/wave.html
   // https://web.archive.org/web/20230108120912/https://sites.google.com/site/musicgapi/technical-documents/wav-file-format
-  static fileHeader(sampleRate, channels, bufferLength, loop = false) {
+  static fileHeader(sampleRate, channels, bufferLengthBytes, loop = false, cue = false) {
     const ascii = (string) => {
       let ascii = new Uint8Array(string.length);
       for (let i = 0; i < string.length; ++i) ascii[i] = string.charCodeAt(i);
@@ -290,26 +290,40 @@ export class Wave {
     const u16 = (value) => { return new Uint16Array([value]); };
     const u32 = (value) => { return new Uint32Array([value]); };
 
-    var sampleSize = 32;
-    var fmt = {
+    let sampleSize = 32;
+    let fmt = {
       sampleRate: sampleRate,
       sampleSize: sampleSize,
       channels: channels,
       bytesPerFrame: channels * sampleSize / 8,
     };
 
+    if (!Array.isArray(cue)) cue = [];
+
+    if (!Array.isArray(loop)) {
+      loop
+        = loop === true ? [{start: 0, end: bufferLengthBytes - fmt.bytesPerFrame}] : [];
+    }
+
+    //
+    // +8 is 4 byte ascii ID and following 4 byte chunk size.
     //
     // fmt_, 18 + 8 = 26 [byte]
     // fact, 4 + 8 = 12 [byte]
-    // smpl, 36 + 24 * numLoop + 8 = 68 [byte]
-    // data, 4 + bufferLength [byte]
+    // cue_, 4 + 8 + 24 * numCue [byte]
+    // smpl, 36 + 8 + 24 * numLoop [byte]
+    // data, 4 + bufferLengthBytes [byte]
     //
-    var riffChunkSize = loop ? 110 : 42;
+    const cueChunkSize = cue.length >= 1 ? 8 + 4 + 24 * cue.length : 0;
+    const smplChunkSize = loop.length >= 1 ? 8 + 36 + 24 * loop.length : 0;
+    let riffChunkSize = 42 + cueChunkSize + smplChunkSize;
 
-    var header = [
-      ascii("RIFF"),                     // # "riff" Chunk
-      u32(riffChunkSize + bufferLength), // riffChunkSize
-      ascii("WAVE"),                     // # "wave" Chunk
+    let cueId = 0; // To avoid duplicate of IDs in cue and smpl.
+
+    let header = [
+      ascii("RIFF"),                          // # "riff" Chunk
+      u32(riffChunkSize + bufferLengthBytes), // riffChunkSize
+      ascii("WAVE"),                          // # "wave" Chunk
 
       ascii("fmt "),                           // # "fmt_" Chunk
       u32(18),                                 // fmtChunkSize
@@ -321,15 +335,34 @@ export class Wave {
       u16(fmt.sampleSize),                     // bitsPerSample
       u16(0x0000),                             // cbSize
 
-      ascii("fact"),                         // fact
-      u32(4),                                // factChunkSize
-      u32(bufferLength / fmt.bytesPerFrame), // sampleLength
+      ascii("fact"),                              // fact
+      u32(4),                                     // factChunkSize
+      u32(bufferLengthBytes / fmt.bytesPerFrame), // sampleLength
     ];
 
-    if (loop) {
+    if (cue.length >= 1) {
+      header.push.apply(header, [
+        ascii("cue "),         // # "cue " Chunk
+        u32(cueChunkSize - 8), // cueChunkSize
+        u32(cue.length),       // numCuePoints
+      ]);
+      for (let index = 0; index < cue.length; ++index) {
+        header.push.apply(header, [
+          u32(cueId),                                          // ID
+          u32(0),                                              // position
+          ascii("data"),                                       // dataChunkID
+          u32(0),                                              // chunkStart
+          u32(cue[index].start),                               // blockStart
+          u32((cue.length - index) * 24 + smplChunkSize - 12), // sampleOffset
+        ]);
+        ++cueId;
+      }
+    }
+
+    if (loop.length >= 1) {
       header.push.apply(header, [
         ascii("smpl"),             // # "smpl" Chunk
-        u32(60),                   // smplChunkSize
+        u32(smplChunkSize - 8),    // smplChunkSize
         u32(0),                    // manufacturer
         u32(0),                    // product
         u32(1e9 / fmt.sampleRate), // samplePeriod
@@ -337,21 +370,26 @@ export class Wave {
         u32(0),                    // midiPitchFraction
         u32(0),                    // smpteFormat
         u32(0),                    // smpteOffset
-        u32(1),                    // numSampleLoops
-        u32(24),                   // samplerData
-
-        u32(0),                                // cuePointID
-        u32(0),                                // type
-        u32(0),                                // start
-        u32(bufferLength - fmt.bytesPerFrame), // end
-        u32(0),                                // fraction
-        u32(0),                                // playCount
+        u32(loop.length),          // numSampleLoops
+        u32(24 * loop.length),     // samplerData
       ]);
+
+      for (let index = 0; index < loop.length; ++index) {
+        header.push.apply(header, [
+          u32(cueId),             // cuePointID
+          u32(0),                 // type
+          u32(loop[index].start), // start
+          u32(loop[index].end),   // end
+          u32(0),                 // fraction
+          u32(0),                 // playCount
+        ]);
+        ++cueId;
+      }
     }
 
     header.push.apply(header, [
-      ascii("data"),     // data
-      u32(bufferLength), // dataChunkSize
+      ascii("data"),          // data
+      u32(bufferLengthBytes), // dataChunkSize
     ]);
 
     return this.#concatTypedArray(header)

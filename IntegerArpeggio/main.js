@@ -8,7 +8,7 @@ import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
-import {justIntonationTable} from "./shared.js"
+import {constructIntJustScale, justIntonationTable} from "./shared.js"
 import {WaveformXYPad} from "./waveformxypad.js";
 
 function randomize() {
@@ -170,7 +170,24 @@ const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", u
 // spanPlayControlFiller.textContent = " ";
 const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const buttonSave = widget.Button(divPlayControl, "Save", (ev) => {
+  const notes = constructIntJustScale(
+    parseInt(menuitems.basePeriodItems[param.basePeriod.dsp]), param.octaveStart.dsp,
+    param.octaveRange.dsp, param.arpeggioNotes.map(element => element.dsp));
+  const cue = new Array(notes.length);
+  const bytesPerFrame = audio.wave.channels * 4; // 4 bytes for 32 bit float.
+  const bufferLengthByte = bytesPerFrame * audio.wave.frames;
+  const noteDuration = Math.floor(bufferLengthByte / cue.length);
+  const lastFrameByte = bufferLengthByte - bytesPerFrame;
+  for (let idx = 0; idx < cue.length; ++idx) {
+    cue[idx] = {
+      start: idx * noteDuration,
+      end: Math.min((idx + 1) * noteDuration - bytesPerFrame, lastFrameByte),
+    }
+  }
+
+  audio.save(false, cue);
+});
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 

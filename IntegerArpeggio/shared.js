@@ -38,3 +38,45 @@ export const justIntonationTable = [
   15 / 8,  // 11
   13 / 7,  // 11 (17-limit)
 ];
+
+export function constructIntJustScale(
+  basePeriod,
+  octaveStart,
+  octaveRange,
+  arpeggioNotes,
+) {
+  const startPeriod = basePeriod * (1 << (-octaveStart));
+  const endPeriod = Math.max(2, startPeriod / (1 << (octaveRange)));
+
+  const justSt12 = justIntonationTable.filter((_, index) => arpeggioNotes[index] > 0)
+                     .map(v => 12 * Math.log2(v));
+
+  let periods = [startPeriod];
+  let currentPeriod = startPeriod;
+  let currentSt12 = 12 * (Math.log2(startPeriod / currentPeriod) % 1.0);
+  let jiIndex = 0;
+
+  while (currentPeriod >= endPeriod) {
+    let nextSt12 = 12 * (Math.log2(startPeriod / (currentPeriod - 1)) % 1.0);
+    if (nextSt12 == 0) nextSt12 = 12;
+    const midSt12 = (currentSt12 + nextSt12) / 2;
+
+    if (currentSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < midSt12) {
+      if (periods.at(-1) != currentPeriod) periods.push(currentPeriod);
+      do {
+        if (++jiIndex >= justSt12.length) jiIndex = 0;
+      } while (currentSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < midSt12);
+    }
+
+    if (midSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < nextSt12) {
+      periods.push(currentPeriod - 1);
+      do {
+        if (++jiIndex >= justSt12.length) jiIndex = 0;
+      } while (midSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < nextSt12);
+    }
+
+    --currentPeriod;
+    currentSt12 = nextSt12 == 12 ? 0 : nextSt12;
+  }
+  return periods;
+}
