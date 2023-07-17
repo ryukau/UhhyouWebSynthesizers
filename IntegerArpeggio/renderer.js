@@ -47,6 +47,9 @@ function setNote(upRate, pv, dsp) {
   dsp.wavetable.length = dsp.periodSamples;
   for (let idx = 0; idx < dsp.wavetable.length; ++idx) {
     dsp.wavetable[idx] = computePolynomial(idx * dsp.phaseScale, pv.a);
+    if (pv.saturationGain > 1) {
+      dsp.wavetable[idx] = Math.tanh(pv.saturationGain * dsp.wavetable[idx]);
+    }
   }
   const tableMax = dsp.wavetable.reduce((p, c) => Math.max(p, Math.abs(c)), 0);
   if (tableMax >= Number.EPSILON) {

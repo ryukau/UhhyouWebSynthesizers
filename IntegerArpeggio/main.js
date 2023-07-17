@@ -25,8 +25,8 @@ function randomize() {
     if (key === "arpeggioDurationSeconds") continue;
     if (key === "arpeggioDecayTo") continue;
     if (key === "arpeggioNotes") {
-      param[key].forEach(e => { e.normalized = Math.random(); });
-      param[key][0].normalized = 1;
+      // param[key].forEach(e => { e.normalized = Math.random(); });
+      // param[key][0].normalized = 1;
       continue;
     }
     if (Array.isArray(param[key])) {
@@ -76,6 +76,7 @@ const scales = {
   fmIndex: new parameter.DecibelScale(-60, 40, true),
   fmDecay: new parameter.DecibelScale(-60, 0, false),
   fmUpdateCycle: new parameter.IntScale(2, 16),
+  saturationGain: new parameter.DecibelScale(0, 40, true),
 
   arpeggioDurationSeconds: new parameter.DecibelScale(-40, 0, false),
   arpeggioDecayTo: new parameter.DecibelScale(-60, 0, false),
@@ -93,6 +94,7 @@ const param = {
   fmIndex: new parameter.Parameter(0, scales.fmIndex, true),
   fmDecay: new parameter.Parameter(1, scales.fmDecay, false),
   fmUpdateCycle: new parameter.Parameter(4, scales.fmUpdateCycle, false),
+  saturationGain: new parameter.Parameter(0, scales.saturationGain, false),
 
   arpeggioDurationSeconds:
     new parameter.Parameter(0.3, scales.arpeggioDurationSeconds, true),
@@ -196,6 +198,8 @@ const ui = {
   fmDecay: new widget.NumberInput(detailOsc, "FM Decay To [dB]", param.fmDecay, render),
   fmUpdateCycle:
     new widget.NumberInput(detailOsc, "FM Update Cycle", param.fmUpdateCycle, render),
+  saturationGain: new widget.NumberInput(
+    detailOsc, "Saturation Gain [dB]", param.saturationGain, render),
 
   waveform: new WaveformXYPad(
     detailWaveform, 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, "Waveform", 13,
