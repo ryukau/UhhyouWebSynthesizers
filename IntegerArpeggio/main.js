@@ -19,11 +19,16 @@ function randomize() {
       // param[key].normalized = Math.random();
       continue;
     }
-    if (key === "decayTo") continue;
+    if (key === "addSpace") continue;
     if (key === "oscSync") continue;
+    if (key === "fmDecay") continue;
     if (key === "arpeggioDurationSeconds") continue;
     if (key === "arpeggioDecayTo") continue;
-    if (key === "arpeggioNotes") continue;
+    if (key === "arpeggioNotes") {
+      param[key].forEach(e => { e.normalized = Math.random(); });
+      param[key][0].normalized = 1;
+      continue;
+    }
     if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
@@ -69,6 +74,8 @@ const scales = {
   seed: new parameter.IntScale(0, 2 ** 32),
   oscSync: new parameter.LinearScale(0, 1),
   fmIndex: new parameter.DecibelScale(-60, 40, true),
+  fmDecay: new parameter.DecibelScale(-60, 0, false),
+  fmUpdateCycle: new parameter.IntScale(2, 16),
 
   arpeggioDurationSeconds: new parameter.DecibelScale(-40, 0, false),
   arpeggioDecayTo: new parameter.DecibelScale(-60, 0, false),
@@ -79,13 +86,16 @@ const param = {
   octaveRange: new parameter.Parameter(4, scales.octaveRange, true),
   basePeriod: new parameter.Parameter(0, scales.basePeriod),
   overSample: new parameter.Parameter(0, scales.overSample),
+  addSpace: new parameter.Parameter(1, scales.boolean),
 
   seed: new parameter.Parameter(0, scales.seed, true),
-  oscSync: new parameter.Parameter(1, scales.oscSync, true),
+  oscSync: new parameter.Parameter(0, scales.oscSync, true),
   fmIndex: new parameter.Parameter(0, scales.fmIndex, true),
+  fmDecay: new parameter.Parameter(1, scales.fmDecay, false),
+  fmUpdateCycle: new parameter.Parameter(4, scales.fmUpdateCycle, false),
 
   arpeggioDurationSeconds:
-    new parameter.Parameter(0.1, scales.arpeggioDurationSeconds, true),
+    new parameter.Parameter(0.3, scales.arpeggioDurationSeconds, true),
   arpeggioDecayTo:
     new parameter.Parameter(util.dbToAmp(-6), scales.arpeggioDecayTo, false),
   arpeggioNotes: createArrayParameters(
@@ -176,10 +186,16 @@ const ui = {
     detailRender, "Base Period [sample]", param.basePeriod, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  addSpace: new widget.ToggleButtonLine(
+    detailRender, ["No Space Between Notes", "Add Space Between Notes"], param.addSpace,
+    render),
 
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   oscSync: new widget.NumberInput(detailOsc, "Sync.", param.oscSync, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
+  fmDecay: new widget.NumberInput(detailOsc, "FM Decay To [dB]", param.fmDecay, render),
+  fmUpdateCycle:
+    new widget.NumberInput(detailOsc, "FM Update Cycle", param.fmUpdateCycle, render),
 
   waveform: new WaveformXYPad(
     detailWaveform, 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, "Waveform", 13,

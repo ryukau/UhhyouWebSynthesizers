@@ -13,7 +13,14 @@ import * as menuitems from "./menuitems.js";
 import {computePolynomial, justIntonationTable} from "./shared.js"
 
 function process(upRate, pv, dsp) {
-  if (++dsp.phase >= dsp.periodSamples) dsp.phase = 0;
+  if (++dsp.phase >= dsp.periodSamples) {
+    dsp.phase = 0;
+
+    if (++dsp.decayCounter > pv.fmUpdateCycle) {
+      dsp.decayCounter = 0;
+      dsp.fmIndex *= dsp.fmDecay;
+    }
+  }
 
   let sig = dsp.wavetable[dsp.phase];
 
@@ -28,13 +35,14 @@ function process(upRate, pv, dsp) {
 }
 
 function setNote(upRate, pv, dsp) {
-  let oscSync = pv.oscSync;
-  let fmIndex = pv.fmIndex;
-
   dsp.phase = 0;
   dsp.periodSamples = dsp.targetScale[dsp.scaleIndex++];
-  dsp.phaseScale = 1 / (oscSync * dsp.periodSamples);
-  dsp.fmIndex = fmIndex;
+  dsp.phaseScale = 1 / (Math.exp(4 * pv.oscSync) * dsp.periodSamples);
+  dsp.fmIndex = pv.fmIndex;
+
+  dsp.decayCounter = 0;
+  dsp.fmDecay
+    = Math.pow(pv.fmDecay, pv.fmUpdateCycle * dsp.periodSamples / dsp.baseNoteDuration);
 
   dsp.wavetable.length = dsp.periodSamples;
   for (let idx = 0; idx < dsp.wavetable.length; ++idx) {
@@ -45,10 +53,8 @@ function setNote(upRate, pv, dsp) {
     for (let idx = 0; idx < dsp.wavetable.length; ++idx) dsp.wavetable[idx] /= tableMax;
   }
 
-  dsp.noteSamples += dsp.baseNoteDuration - dsp.noteSamples;
-
   dsp.gainEnv = 1;
-  dsp.gainDecay = Math.pow(pv.arpeggioDecayTo, 1.0 / dsp.noteSamples);
+  dsp.gainDecay = Math.pow(pv.arpeggioDecayTo, 1.0 / dsp.baseNoteDuration);
 }
 
 function constructScale(pv) {
@@ -103,17 +109,18 @@ onmessage = async (event) => {
   dsp.rng = rng;
   dsp.noteSamples = 0;
   dsp.baseNoteDuration = Math.round(upRate * pv.arpeggioDurationSeconds);
-
   dsp.targetScale = constructScale(pv);
   dsp.scaleIndex = 0;
 
   // Process.
+  let marginSamples = pv.addSpace ? Math.floor(upRate * 0.01) : 0;
   const noteCount = dsp.targetScale.length;
   const fadeOutLength = Math.floor(0.01 * upRate);
-  const renderDuration = dsp.baseNoteDuration * noteCount;
+  const noteDuration = dsp.baseNoteDuration + marginSamples;
+  const renderDuration = noteDuration * noteCount;
   let sound = new Array(Math.floor(renderDuration)).fill(0);
   for (let note = 0; note < noteCount; ++note) {
-    const noteStart = dsp.baseNoteDuration * note;
+    const noteStart = noteDuration * note;
 
     setNote(upRate, pv, dsp);
 
