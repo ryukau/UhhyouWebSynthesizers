@@ -66,14 +66,14 @@ export class SingleSideBandAmplitudeModulator {
   }
 
   // Upper side band.
-  processUpper(carrior, modulator) {
+  upper(carrior, modulator) {
     const c0 = this.carFilter.process(carrior);
     const m0 = this.modFilter.process(modulator);
     return c0.re * m0.re - c0.im * m0.im;
   }
 
   // Lower side band.
-  processLower(carrior, modulator) {
+  lower(carrior, modulator) {
     const c0 = this.carFilter.process(carrior);
     const m0 = this.modFilter.process(modulator);
     return c0.re * m0.re + c0.im * m0.im;
