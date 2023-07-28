@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Delay, IntDelay} from "../common/dsp/delay.js";
-import {DoubleEmaADEnvelope} from "../common/dsp/doubleemaenvelope.js";
+import {DoubleEmaADEnvelope} from "../common/dsp/envelope.js";
 import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import * as multirate from "../common/dsp/multirate.js";
 import * as svf from "../common/dsp/svf.js";

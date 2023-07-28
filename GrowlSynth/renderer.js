@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import * as delay from "../common/dsp/delay.js";
-import {DoubleEmaADEnvelope} from "../common/dsp/doubleemaenvelope.js"
+import {DoubleEmaADEnvelope} from "../common/dsp/envelope.js"
 import * as multirate from "../common/dsp/multirate.js";
 import {HP1, LP1} from "../common/dsp/onepole.js"
 import {normalizedCutoffToOnePoleKp, RateLimiter} from "../common/dsp/smoother.js";

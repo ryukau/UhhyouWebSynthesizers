@@ -255,3 +255,19 @@ export class DoubleEmaADEnvelope {
     return this.#gain * this.#v2_A * this.#v2_D;
   }
 };
+
+export class ExpPolyEnvelope {
+  constructor(sampleRate, attackSeconds, curve) {
+    this.a = attackSeconds * curve;
+    this.b = -curve;
+    this.gain = 1 / (Math.pow(attackSeconds, this.a) * Math.exp(this.b * attackSeconds));
+
+    this.delta = 1 / sampleRate;
+    this.t = 0; // Time elapsed in seconds.
+  }
+
+  process() {
+    this.t += this.delta;
+    return this.gain * Math.pow(this.t, this.a) * Math.exp(this.b * this.t);
+  }
+}
