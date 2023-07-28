@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./TechnoSnare/synth.html",
+          "name": "TechnoSnare",
+          "description": {
+            "ja": "古いリズムマシンのようなスネアドラム。",
+            "en": "A synthesizer that resembles snare drum of old rhythm machines."
+          }
+        },
+        {
           "href": "./IntegerArpeggio/synth.html",
           "name": "IntegerArpeggio",
           "description": {
