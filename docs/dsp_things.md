@@ -1,3 +1,8 @@
+# DSP Things
+I wrote some articles about DSP on following link. They are written in Japanese, so I'd recommend to use some machine translation.
+
+- [波ノート](https://ryukau.github.io/filter_notes/)
+
 ## Pitch Related Terms
 Some terms related to pitch:
 
