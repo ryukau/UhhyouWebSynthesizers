@@ -278,10 +278,7 @@ export class EqualizerXYPad {
     this.onChangeFunc();
   }
 
-  onMouseLeave(event) {
-    this.onChangeFunc();
-    this.draw();
-  }
+  onMouseLeave(event) { this.draw(); }
 
   onWheel(event) {
     event.preventDefault(); // Prevent page scrolling.
