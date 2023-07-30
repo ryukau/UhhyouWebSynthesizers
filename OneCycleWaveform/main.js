@@ -96,7 +96,8 @@ const divRight = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(divLeft, 512, 2 * uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(
+    divLeft, uiSize.controlWidth, 2 * uiSize.waveViewHeight, undefined, false),
 ];
 
 const audio = new wave.Audio(

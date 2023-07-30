@@ -46,10 +46,12 @@ export const palette = {
 };
 
 const controlWidth
-  = parseFloat(getComputedStyle(document.body).getPropertyValue("--controlWidth"));
+  = parseFloat(getComputedStyle(document.body).getPropertyValue("--controlWidth"))
+  * palette.fontSize;
 export const uiSize = {
-  waveViewWidth: controlWidth * 15 / 32 * palette.fontSize,
-  waveViewHeight: controlWidth * 8 / 32 * palette.fontSize,
-  barboxWidth: controlWidth * palette.fontSize,
-  barboxHeight: controlWidth * 12 / 32 * palette.fontSize,
+  controlWidth: controlWidth,
+  waveViewWidth: controlWidth * 15 / 32,
+  waveViewHeight: controlWidth * 8 / 32,
+  barboxWidth: controlWidth,
+  barboxHeight: controlWidth * 12 / 32,
 };
