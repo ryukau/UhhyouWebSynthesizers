@@ -57,16 +57,16 @@
       vertical-align: middle;
     }
 
+    span.bold {
+      font-weight: var(--font-weight-strong);
+    }
+
     div#main {
       margin-bottom: 2em;
     }
 
     li {
       padding: 0.1em;
-    }
-
-    li:hover {
-      background-color: #eeeeee;
     }
 
     div.languageBlock {
@@ -81,13 +81,17 @@
 
     div.description {
       display: flex;
-      width: 100%;
+      width: calc(100% - 1rem);
       box-sizing: border-box;
       padding: 0.1em 0;
     }
 
-    div.description:nth-child(odd) {
-      background-color: #eeeeee;
+    div.description:nth-child(3n+1) {
+      background-color: #fafafa;
+    }
+
+    div.description:nth-child(3n+2) {
+      background-color: #f4f4f4;
     }
 
     dt {
@@ -129,7 +133,7 @@
   </div>
   <div id="main">
     <div class="languageBlock" lang="en">
-      <p><ruby>Uhhyou <rp>(</rp><rt>うっひょう</rt><rp>)</rp></ruby> Web Synthesizers are musical synthesizers to render WAVE files.</p><h2>Basic Usage</h2><ul><li>Press <b>Random</b> button to change parameters.</li><li>Press <b>Play</b> button to audition.</li><li>Press <b>Save</b> button to download WAVE.</li><li>Select menu on the left of <b>Random</b> button to change randomization recipe.</li></ul><p>Instruction to use without internet is available on the <a href="https://github.com/ryukau/UhhyouWebSynthesizers">source code</a> page.</p>
+      <p><ruby>Uhhyou <rp>(</rp><rt>うっひょう</rt><rp>)</rp></ruby> Web Synthesizers are musical synthesizers to render WAVE files.</p><h2>Basic Usage</h2><ul><li>Press <span class="bold">Random</span> button to change parameters.</li><li>Press <span class="bold">Play</span> button to audition.</li><li>Press <span class="bold">Save</span> button to download WAVE.</li><li>Select menu on the left of <span class="bold">Random</span> button to change randomization recipe.</li></ul><p>Instruction to use without internet is available on the <a href="https://github.com/ryukau/UhhyouWebSynthesizers">source code</a> page.</p>
       <h2>Impulse Response</h2>
       <p>These are intended to be used with external IR convolver.</p>
       <dl>
@@ -307,7 +311,7 @@
     </div>
   <div id="main">
     <div class="languageBlock" lang="ja">
-      <p><ruby>Uhhyou Web Synthesizers</ruby> はブラウザ上で WAVE ファイルをレンダリングするシンセサイザです。</p><h2>使い方</h2><ul><li><b>Random</b> ボタンでパラメータ変更。</li><li><b>Play</b> ボタンで試聴。</li><li><b>Save</b> ボタンで WAVE ファイルをダウンロード。</li><li><b>Random</b> ボタンの左のメニューからランダマイズのレシピを選択。</li></ul><p>インターネット接続なしでの利用方法を<a href="https://github.com/ryukau/UhhyouWebSynthesizers">ソースコード</a>のページに掲載中。</p>
+      <p><ruby>Uhhyou Web Synthesizers</ruby> はブラウザ上で WAVE ファイルをレンダリングするシンセサイザです。</p><h2>使い方</h2><ul><li><span class="bold">Random</span> ボタンでパラメータ変更。</li><li><span class="bold">Play</span> ボタンで試聴。</li><li><span class="bold">Save</span> ボタンで WAVE ファイルをダウンロード。</li><li><span class="bold">Random</span> ボタンの左のメニューからランダマイズのレシピを選択。</li></ul><p>インターネット接続なしでの利用方法を<a href="https://github.com/ryukau/UhhyouWebSynthesizers">ソースコード</a>のページに掲載中。</p>
       <h2>インパルス応答</h2>
       <p>IRコンボルバに読み込んで使うインパルス応答を合成します。</p>
       <dl>

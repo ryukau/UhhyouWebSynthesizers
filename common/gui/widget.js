@@ -70,8 +70,6 @@ export function details(parent, summaryText, id, className, isOpen = true) {
   let summary = createGenericElement("summary", details, id, className);
   summary.textContent = summaryText;
 
-  div(details, undefined, "summaryBottomPad");
-
   return details;
 }
 

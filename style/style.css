@@ -22,6 +22,11 @@ body {
   height: 100%;
 }
 
+a:hover {
+  border-radius: var(--border-radius-mid);
+  box-shadow: 0 0 var(--margin) #000000;
+}
+
 #main {
   margin: 0 auto;
   width: fit-content;
@@ -86,25 +91,35 @@ details {
 
   box-sizing: border-box;
   width: 100%;
-  margin: 0.5em 0 0.5em 0;
 
   text-align: left;
   vertical-align: middle;
+
+  /* When closed. */
+  padding: 0;
+}
+
+details[open] {
+  padding: 0 0 var(--margin) 0;
+}
+
+details[open] summary {
+  margin: var(--margin) 0 var(--margin) 0;
+  padding: 0.25em 0 0.25em 0.125em;
+  box-shadow: none;
 }
 
 summary {
-  padding: 0.25em 0 0.25em 0em;
+  margin: 0;
+  box-shadow: inset 1px 1px 4px #000000;
+  --pad: calc(0.25em + var(--margin));
+  padding: var(--pad) 0 var(--pad) 0.125em;
   font-weight: var(--font-weight-base);
 }
 
-div.summaryBottomPad {
-  height: var(--margin);
-  box-sizing: border-box;
-  width: 100%;
-}
-
 summary:hover {
-  background-color: var(--highlight-color);
+  box-shadow: 1px 1px 4px #000000;
+  border-radius: var(--border-radius-small);
 }
 
 /* Canvas */
@@ -121,9 +136,7 @@ div.canvasMargin {
 }
 
 div.canvasMargin:hover {
-  margin: 1px;
-  border: solid var(--margin) var(--highlight-color);
-  border-radius: var(--border-radius-small);
+  box-shadow: 0 0 var(--margin) #000000;
 }
 
 /* Button. */
@@ -190,17 +203,14 @@ input[type="button"].toggleState1 {
 }
 
 input[type="button"].toggleState1:hover {
-  box-shadow: none;
+  box-shadow: inset 1px 1px 2px #000000;
   border: inset 2px var(--highlight-color);
 }
 
 input[type="button"].toggleButtonLine {
   width: calc(var(--controlWidth) - var(--margin));
   box-sizing: border-box;
-  margin-top: var(--margin);
-  margin-right: var(--margin);
-  margin-bottom: var(--margin);
-  margin-left: var(--margin);
+  margin: var(--margin);
 }
 
 /* `inputLine` class is shared between controls that occupies a line. */
