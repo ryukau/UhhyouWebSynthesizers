@@ -205,3 +205,4 @@ const ui = {
 ui.feedback.number.step = 0.01;
 
 render();
+window.addEventListener("load", (ev) => { widget.refresh(ui); });

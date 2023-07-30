@@ -146,3 +146,4 @@ const ui = {
 };
 
 render();
+window.addEventListener("load", (ev) => { widget.refresh(ui); });

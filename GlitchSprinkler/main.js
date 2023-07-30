@@ -194,10 +194,4 @@ const ui = {
 };
 
 render();
-
-// window.addEventListener("keydown", (event) => {
-//   if (event.key === " ") {
-//     event.preventDefault();
-//     audio.play();
-//   }
-// });
+window.addEventListener("load", (ev) => { widget.refresh(ui); });

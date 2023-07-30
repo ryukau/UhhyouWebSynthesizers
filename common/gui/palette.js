@@ -24,7 +24,12 @@ function rgbaStr(colorCode) {
 
 export const palette = {
   fontFamily: getComputedStyle(document.body).getPropertyValue("--font-family"),
+  fontMonospace: getComputedStyle(document.body).getPropertyValue("--monospace"),
   fontSize: parseFloat(getComputedStyle(document.body).getPropertyValue("font-size")),
+  fontWeightBase:
+    parseFloat(getComputedStyle(document.body).getPropertyValue("--font-weight-base")),
+  fontWeightStrong:
+    parseFloat(getComputedStyle(document.body).getPropertyValue("--font-weight-strong")),
 
   foreground: rgbaStr("#000000ff"),
   background: rgbaStr("#ffffffff"),

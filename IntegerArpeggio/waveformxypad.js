@@ -259,7 +259,8 @@ export class WaveformXYPad {
     this.context.lineWidth = 0.5;
     this.context.strokeStyle = "#f0f0f0";
     this.context.fillStyle = "#808080";
-    this.context.font = `bold ${palette.fontSize * 3 / 4}px ${palette.fontFamily}`;
+    // this.context.font
+    //   = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
     const nGrid = 12;
     for (let idx = 1; idx < nGrid; ++idx) {
       const ratio = idx / nGrid;
@@ -334,7 +335,8 @@ export class WaveformXYPad {
     this.nvCtx.stroke();
 
     this.nvCtx.fillStyle = "#00000080";
-    this.nvCtx.font = `${palette.fontSize}px ${palette.fontFamily}`;
+    this.nvCtx.font
+      = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
     this.nvCtx.textBaseline = "top";
     this.nvCtx.textAlign = "center";
     this.nvCtx.fillText("Normalized", nvWidth / 2, palette.fontSize);

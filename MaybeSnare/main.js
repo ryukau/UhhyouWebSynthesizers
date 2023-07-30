@@ -366,3 +366,4 @@ const ui = {
 
 onBatterMatrixSizeChanged(param.batterMatrixSize.defaultDsp);
 onSnareMatrixSizeChanged(param.snareMatrixSize.defaultDsp);
+window.addEventListener("load", (ev) => { widget.refresh(ui); });

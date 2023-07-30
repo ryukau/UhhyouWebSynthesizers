@@ -118,7 +118,7 @@ const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
 
 const divLeft = widget.div(divMain, undefined, "controlBlock");
-// const divRight = widget.div(divMain, undefined, "controlBlock");
+const divRight = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
@@ -160,8 +160,8 @@ const createDetailInBlock = (name) => {
 };
 
 const detailRender = widget.details(divLeft, "Render");
-const detailOsc = widget.details(divLeft, "Oscillator");
-const detailFDN = widget.details(divLeft, "FDN Matrix & Delay");
+const detailOsc = widget.details(divRight, "Oscillator");
+const detailFDN = widget.details(divRight, "FDN Matrix & Delay");
 const detailLP = createDetailInBlock("FDN Lowpass");
 const detailHP = createDetailInBlock("FDN Highpass");
 
@@ -214,3 +214,4 @@ const ui = {
 };
 
 onMatrixSizeChanged(param.matrixSize.defaultDsp);
+window.addEventListener("load", (ev) => { widget.refresh(ui); });

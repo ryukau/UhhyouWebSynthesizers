@@ -128,7 +128,8 @@ export class BezierEnvelopeView {
 
     // Label.
     this.context.fillStyle = palette.overlay;
-    this.context.font = `${palette.fontSize}px ${palette.fontFamily}`;
+    this.context.font
+      = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
     this.context.fillText(this.label, palette.fontSize, height - palette.fontSize);
 
     // Envelope curve.

@@ -317,7 +317,8 @@ export class EqualizerXYPad {
     this.context.lineWidth = 0.5;
     this.context.strokeStyle = "#f0f0f0";
     this.context.fillStyle = "#808080";
-    this.context.font = `bold ${palette.fontSize * 3 / 4}px ${palette.fontFamily}`;
+    this.context.font
+      = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
     let gridHz = this.leftHz;
     gridOuterLoop: while (gridHz <= this.rightHz) {
       const labelX = this.mapHzToX(gridHz);
@@ -390,7 +391,8 @@ export class EqualizerXYPad {
       this.context.fill();
 
       this.context.fillStyle = "#ffffff";
-      this.context.font = `bold ${palette.fontSize}px ${palette.fontFamily}`;
+      this.context.font
+        = `${palette.fontWeightStrong} ${palette.fontSize}px ${palette.fontFamily}`;
       this.context.textBaseline = "middle";
       this.context.textAlign = "center";
       let label = `${idx}`;

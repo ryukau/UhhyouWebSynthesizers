@@ -144,7 +144,8 @@ export class TongueXYPad {
     this.context.stroke();
 
     // Target point.
-    this.context.font = `bold ${palette.fontSize}px ${palette.fontFamily}`;
+    const fontSize = Math.ceil(1.5 * palette.fontSize);
+    this.context.font = `${palette.fontWeightStrong} ${fontSize}px ${palette.fontFamily}`;
     for (let idx = 0; idx < this.#position.length; ++idx) {
       this.context.fillStyle = idx == this.#grabbed ? "#3388ff"
         : idx == this.#pointingAt                   ? palette.highlightAccent
@@ -158,7 +159,7 @@ export class TongueXYPad {
       this.context.textAlign = "center";
       this.context.textBaseline = "middle";
       this.context.fillText(
-        `${idx}`, this.#position[idx].x, this.#position[idx].y - palette.fontSize);
+        `${idx}`, this.#position[idx].x, this.#position[idx].y - fontSize);
     }
   }
 }

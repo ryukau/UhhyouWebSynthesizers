@@ -52,13 +52,6 @@ function render() {
   );
 }
 
-function onMatrixSizeChanged(value) {
-  ui.delayTime.setViewRange(0, value);
-  ui.lowpassCutoffHz.setViewRange(0, value);
-  ui.highpassCutoffHz.setViewRange(0, value);
-  render();
-}
-
 const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
@@ -197,4 +190,4 @@ ui.l3Feed.sliderZero = 0.5;
 ui.l4Feed.sliderZero = 0.5;
 
 render();
-// onMatrixSizeChanged(param.latticeSize.defaultDsp);
+window.addEventListener("load", (ev) => { widget.refresh(ui); });

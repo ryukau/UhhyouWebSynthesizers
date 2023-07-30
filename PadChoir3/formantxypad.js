@@ -110,7 +110,8 @@ export class FormantXYPad {
 
     // Vowel.
     this.context.fillStyle = palette.foreground;
-    this.context.font = `bold ${palette.fontSize}px ${palette.fontFamily}`;
+    this.context.font = `${palette.fontWeightBase} ${
+      Math.ceil(palette.fontSize * 1.5)}px ${palette.fontMonospace}`;
     const margin = palette.fontSize / 4;
 
     this.context.textAlign = "left";

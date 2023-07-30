@@ -403,3 +403,4 @@ const ui = {
 param.highpassQ[0].dsp = 0.1;
 
 onMatrixSizeChanged(param.matrixSize.defaultDsp);
+window.addEventListener("load", (ev) => { widget.refresh(ui); });

@@ -15,6 +15,7 @@ reqHandler.extensions_map = {
     ".js": "application/x-javascript",
     ".json": "application/json",
     ".wasm": "application/wasm",
+    ".woff2": "application/font-woff2",
 }
 
 httpd = socketserver.TCPServer(("", port), reqHandler)

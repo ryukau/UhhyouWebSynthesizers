@@ -166,3 +166,4 @@ const ui = {
 };
 
 onMatrixSizeChanged(param.matrixSize.defaultDsp);
+window.addEventListener("load", (ev) => { widget.refresh(ui); });

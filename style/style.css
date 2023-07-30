@@ -1,7 +1,8 @@
+@import url("font.css");
+
 :root {
   --controlWidth: 32em;
   --margin: 0.5em;
-  --font-family: sans-serif;
   --highlight-color: #fbf1b4;
   --fill-color: #c0c0c0;
 }
@@ -12,6 +13,8 @@ html {
 
 body {
   font-family: var(--font-family);
+  font-weight: var(--font-weight-base);
+  font-size: 12px;
   margin: auto;
   height: 100%;
 }
@@ -52,6 +55,12 @@ h5 {
   width: 100%;
 }
 
+h1,
+h2 {
+  font-weight: var(--font-weight-strong);
+}
+
+
 h6 {
   display: inline-block;
 
@@ -61,6 +70,7 @@ h6 {
   padding: 0.25em 0 0.25em 0em;
 
   font-size: 1em;
+  font-weight: var(--font-weight-base);
 
   text-align: center;
   vertical-align: middle;
@@ -80,8 +90,7 @@ details {
 
 summary {
   padding: 0.25em 0 0.25em 0em;
-  font: 1em var(--font-family);
-  font-weight: bold;
+  font-weight: var(--font-weight-base);
 }
 
 div.summaryBottomPad {
@@ -158,6 +167,8 @@ select#randomRecipe {
 input[type="button"].toggleState0 {
   border-radius: 4px;
   border: solid 1px #888888;
+  margin: var(--margin) 0 var(--margin) 0;
+  padding: 2px;
 
   color: #606060;
   background-color: white;
@@ -170,6 +181,8 @@ input[type="button"].toggleState0:hover {
 input[type="button"].toggleState1 {
   border-radius: 4px;
   border: solid 1px #888888;
+  margin: var(--margin) 0 var(--margin) 0;
+  padding: 2px;
 
   color: #000000;
   background-color: #ffdc85;
@@ -180,10 +193,10 @@ input[type="button"].toggleState1:hover {
 }
 
 input[type="button"].toggleButtonLine {
-  font-weight: bold;
   width: 100%;
   box-sizing: border-box;
-  margin: var(--margin);
+  margin: var(--margin) 0 var(--margin) 0;
+  padding: 0;
 }
 
 /* `inputLine` class is shared between controls that occupies a line. */

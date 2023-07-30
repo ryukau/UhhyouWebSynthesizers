@@ -51,7 +51,8 @@ export class MultiCheckBoxVertical {
 
     // Text.
     const labelLeft = 2 * this.labelHeight;
-    this.context.font = `${palette.fontSize}px monospace`;
+    this.context.font
+      = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontMonospace}`;
     this.context.fillStyle = palette.foreground;
     this.context.textAlign = "start";
     this.context.textBaseline = "middle";

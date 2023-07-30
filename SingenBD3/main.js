@@ -268,3 +268,4 @@ ui.mod1PitchRatio.number.step = 1;
 ui.mod2PitchRatio.number.step = 1;
 
 render();
+window.addEventListener("load", (ev) => { widget.refresh(ui); });
