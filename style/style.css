@@ -5,6 +5,9 @@
   --margin: 0.5em;
   --highlight-color: #fbf1b4;
   --fill-color: #c0c0c0;
+  --font-size-body: 12px;
+  --border-radius-mid: 4px;
+  --border-radius-small: 1px;
 }
 
 html {
@@ -14,7 +17,7 @@ html {
 body {
   font-family: var(--font-family);
   font-weight: var(--font-weight-base);
-  font-size: 12px;
+  font-size: var(--font-size-body);
   margin: auto;
   height: 100%;
 }
@@ -42,6 +45,7 @@ div.controlBlock {
 }
 
 p#renderStatus {
+  height: calc(1.5 * var(--font-size-body));
   text-align: center;
 }
 
@@ -112,14 +116,14 @@ div.canvasMargin {
   display: inline-block;
   margin: var(--margin);
   border: solid 1px var(--fill-color);
-  border-radius: 1px;
+  border-radius: var(--border-radius-small);
   padding: 0px;
 }
 
 div.canvasMargin:hover {
   margin: 1px;
   border: solid var(--margin) var(--highlight-color);
-  border-radius: 1px;
+  border-radius: var(--border-radius-small);
 }
 
 /* Button. */
@@ -165,38 +169,38 @@ select#randomRecipe {
 
 /* ToggleButton */
 input[type="button"].toggleState0 {
-  border-radius: 4px;
+  border-radius: var(--border-radius-mid);
   border: solid 1px #888888;
-  margin: var(--margin) 0 var(--margin) 0;
-  padding: 2px;
 
   color: #606060;
   background-color: white;
 }
 
 input[type="button"].toggleState0:hover {
-  border: solid 1px var(--highlight-color);
+  box-shadow: 1px 1px 2px #000000;
+  border: outset 2px #e0e0e0;
 }
 
 input[type="button"].toggleState1 {
-  border-radius: 4px;
+  border-radius: var(--border-radius-mid);
   border: solid 1px #888888;
-  margin: var(--margin) 0 var(--margin) 0;
-  padding: 2px;
 
   color: #000000;
-  background-color: #ffdc85;
+  background-color: var(--highlight-color);
 }
 
 input[type="button"].toggleState1:hover {
-  border: solid 1px var(--highlight-color);
+  box-shadow: none;
+  border: inset 2px var(--highlight-color);
 }
 
 input[type="button"].toggleButtonLine {
-  width: 100%;
+  width: calc(var(--controlWidth) - var(--margin));
   box-sizing: border-box;
-  margin: var(--margin) 0 var(--margin) 0;
-  padding: 0;
+  margin-top: var(--margin);
+  margin-right: var(--margin);
+  margin-bottom: var(--margin);
+  margin-left: var(--margin);
 }
 
 /* `inputLine` class is shared between controls that occupies a line. */
@@ -204,12 +208,11 @@ div.inputLine {
   display: flex;
   text-align: center;
   width: auto;
-
   padding: var(--margin);
 }
 
 div.inputLine:hover {
-  background-color: var(--highlight-color);
+  box-shadow: 1px 1px 4px #000000;
 }
 
 label.inputLine {
@@ -222,19 +225,89 @@ label.inputLine {
   text-align: left;
 }
 
-/* NumberInput */
+/* NumberInput: <input type="range"> */
 input[type="range"] {
+  -webkit-appearance: none;
+
   flex-grow: 1;
   display: block;
   margin-right: var(--margin);
+  background: none;
 }
 
+input[type=range]::-moz-range-thumb {
+  box-shadow: 1px 1px #000000;
+  border: 2px ridge #000000;
+  height: var(--font-size-body);
+  width: var(--font-size-body);
+  border-radius: 3px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+input[type=range]::-moz-range-thumb:hover {
+  box-shadow: none;
+  background: #e0e0e0;
+}
+
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: calc(0.1 * var(--font-size-body));
+  background: #b0b0b0;
+  border: 1px #e0e0e0 inset;
+  cursor: pointer;
+}
+
+input[type=range]:hover::-moz-range-track {
+  border: 1px #808080 solid;
+  background: #808080;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: calc(-0.5 * var(--font-size-body));
+
+  box-shadow: 1px 1px #606060;
+  border: 2px ridge #b0b0b0;
+  height: var(--font-size-body);
+  width: var(--font-size-body);
+  border-radius: 3px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+input[type=range]::-webkit-slider-thumb:hover {
+  box-shadow: none;
+  background: #e0e0e0;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  width: 100%;
+  height: calc(0.1 * var(--font-size-body));
+  background: #b0b0b0;
+  border: 1px #e0e0e0 inset;
+  cursor: pointer;
+}
+
+input[type=range]:hover::-webkit-slider-runnable-track {
+  border: 1px #808080 solid;
+  background: #808080;
+}
+
+/* NumberInput: <input type="number"> */
 input[type="number"] {
+  appearance: textfield;
+
   display: block;
   font-size: inherit;
   font-family: inherit;
   width: 31.25%;
   margin: auto;
+}
+
+input[type="number"]:hover {
+  appearance: auto;
 }
 
 /* ComboBox */
