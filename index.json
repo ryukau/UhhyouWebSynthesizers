@@ -1,7 +1,7 @@
 {
   "introduction": {
-    "ja": "新しいシンセサイザは Firefox 113 以前のバージョンでは動作しません。 Firefox 114 以降では動作します。詳細は<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers#known-issue\">このリンク先 (英語) </a>に掲載しています。",
-    "en": "Some of the recent generators don't work on Firefox 113 or older. They work on Firefox 114 or later. See <a href=\"https://github.com/ryukau/UhhyouWebSynthesizers#known-issue\">this link</a> for more details."
+    "ja": "<p><ruby>Uhhyou Web Synthesizers</ruby> はブラウザ上で WAVE ファイルをレンダリングするシンセサイザです。</p><h2>使い方</h2><ul><li><b>Random</b> ボタンでパラメータ変更。</li><li><b>Play</b> ボタンで試聴。</li><li><b>Save</b> ボタンで WAVE ファイルをダウンロード。</li><li><b>Random</b> ボタンの左のメニューからランダマイズのレシピを選択。</li></ul><p>インターネット接続なしでの利用方法を<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers\">ソースコード</a>のページに掲載中。</p>",
+    "en": "<p><ruby>Uhhyou <rp>(</rp><rt>うっひょう</rt><rp>)</rp></ruby> Web Synthesizers are musical synthesizers to render WAVE files.</p><h2>Basic Usage</h2><ul><li>Press <b>Random</b> button to change parameters.</li><li>Press <b>Play</b> button to audition.</li><li>Press <b>Save</b> button to download WAVE.</li><li>Select menu on the left of <b>Random</b> button to change randomization recipe.</li></ul><p>Instruction to use without internet is available on the <a href=\"https://github.com/ryukau/UhhyouWebSynthesizers\">source code</a> page.</p>"
   },
   "sections": [
     {

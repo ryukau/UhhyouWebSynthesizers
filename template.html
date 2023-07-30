@@ -4,7 +4,8 @@
 <head>
   <meta charset=utf-8>
   <title>UhhyouWebSynthsizers</title>
-  <link rel="icon" href="style/favicon/favicon.png" />
+  <link rel="icon" type="image/svg+xml" href="style/favicon/favicon.svg">
+  <link rel="icon" type="image/png" href="style/favicon/favicon.png">
   <style>
     @import url("style/font.css");
 
@@ -38,6 +39,22 @@
       box-sizing: border-box;
       margin: 1em 0 0.5em 0;
       font-weight: var(--font-weight-strong);
+    }
+
+    div.titleContainer {
+      margin: 2rem 0 2rem 0;
+    }
+
+    div.titleContainer h1#title {
+      display: inline;
+      vertical-align: baseline;
+    }
+
+    div.titleContainer img {
+      display: inline;
+      margin: 1rem;
+      height: 8rem;
+      vertical-align: middle;
     }
 
     div#main {
@@ -107,11 +124,14 @@
     </p>
   </header>
 
-  <h1 id="title">Uhhyou Web Synths Collection</h1>
+  <div class="titleContainer">
+    <h1 id="title">Uhhyou Web Synthesizers</h1>
+    <img src="style/favicon/favicon.svg" alt="Logo image. This logo is a stylized all-pass filter block diagram." />
+  </div>
   {%- for lang, _ in languages.items() %}
   <div id="main">
     <div class="languageBlock" lang="{{ lang }}">
-      <p>{{ introduction[lang] }}</p>
+      {{ introduction[lang] }}
       {%- for sect in sections %}
       <h2>{{ sect["title"][lang] }}</h2>
       {%- if sect["summary"][lang]|length != 0%}

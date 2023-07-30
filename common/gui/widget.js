@@ -77,6 +77,32 @@ export function details(parent, summaryText, id, className, isOpen = true) {
 
 export function pageTitle(parent) {
   const title = document.createElement("h1");
-  title.innerHTML = `<a href="../index.html">WebSynth</a> ➫ ${document.title}`;
   parent.appendChild(title);
+
+  const link = document.createElement("a");
+  link.href = "../index.html";
+  title.appendChild(link);
+
+  const img = document.createElement("img");
+  img.src = "../style/favicon/favicon.svg";
+  img.alt = "Logo image.";
+  img.title = "Go back to index page."
+  img.style.height = "2rem";
+  img.style.verticalAlign = "middle";
+  img.style.marginRight = "0.25em";
+  link.appendChild(img);
+
+  const linkText = document.createElement("span");
+  linkText.textContent = "Index";
+  linkText.style.marginRight = "0.25em";
+  link.appendChild(linkText);
+
+  const separator = document.createElement("span");
+  separator.textContent = "/";
+  separator.style.marginRight = "0.25em";
+  title.appendChild(separator);
+
+  const pageName = document.createElement("span");
+  pageName.textContent = document.title;
+  title.appendChild(pageName);
 }
