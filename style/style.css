@@ -109,6 +109,10 @@ details[open] summary {
   box-shadow: none;
 }
 
+details[open] summary:hover {
+  box-shadow: 1px 1px 2px #000000;
+}
+
 summary {
   margin: 0;
   box-shadow: inset 1px 1px 4px #000000;
