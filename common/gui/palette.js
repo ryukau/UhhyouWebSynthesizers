@@ -46,7 +46,7 @@ export const palette = {
 };
 
 const controlWidth
-  = parseFloat(getComputedStyle(document.body).getPropertyValue("--controlWidth"))
+  = parseFloat(getComputedStyle(document.body).getPropertyValue("--control-width"))
   * palette.fontSize;
 export const uiSize = {
   controlWidth: controlWidth,

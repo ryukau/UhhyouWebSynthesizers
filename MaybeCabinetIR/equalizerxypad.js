@@ -55,43 +55,55 @@ export class EqualizerXYPad {
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
+    this.indexInputContainer = document.createElement("div");
+    this.indexInputContainer.classList.add("equalizerInputLine");
+    this.divContainer.appendChild(this.indexInputContainer);
     this.spanIndex = this.#addSpan("Index");
-    this.divContainer.appendChild(this.spanIndex);
+    this.indexInputContainer.appendChild(this.spanIndex);
     this.inputIndex = this.#addInput("Index", "Index of equalizer control point.");
     this.inputIndex.min = 0;
     this.inputIndex.max = 0;
     this.inputIndex.step = 1;
     this.inputIndex.value = 0;
-    this.divContainer.appendChild(this.inputIndex);
+    this.indexInputContainer.appendChild(this.inputIndex);
 
+    this.cutoffInputContainer = document.createElement("div");
+    this.cutoffInputContainer.classList.add("equalizerInputLine");
+    this.divContainer.appendChild(this.cutoffInputContainer);
     this.spanCutoffHz = this.#addSpan("Cutoff [Hz]");
-    this.divContainer.appendChild(this.spanCutoffHz);
+    this.cutoffInputContainer.appendChild(this.spanCutoffHz);
     this.inputCutoffHz
       = this.#addInput("Cutoff Hz", "Cutoff in Hz for an equalizer control point.");
     this.inputCutoffHz.min = this.scaleCutoffHz.minDsp;
     this.inputCutoffHz.max = this.scaleCutoffHz.maxDsp;
     this.inputCutoffHz.step = "any";
     this.inputCutoffHz.value = 100;
-    this.divContainer.appendChild(this.inputCutoffHz);
+    this.cutoffInputContainer.appendChild(this.inputCutoffHz);
 
+    this.qInputContainer = document.createElement("div");
+    this.qInputContainer.classList.add("equalizerInputLine");
+    this.divContainer.appendChild(this.qInputContainer);
     this.spanQ = this.#addSpan("Q");
-    this.divContainer.appendChild(this.spanQ);
+    this.qInputContainer.appendChild(this.spanQ);
     this.inputQ = this.#addInput("Q", "Q for an equalizer control point.");
     this.inputQ.min = this.scaleQ.minDsp;
     this.inputQ.max = this.scaleQ.maxDsp;
     this.inputQ.step = "any";
     this.inputQ.value = Math.SQRT1_2;
-    this.divContainer.appendChild(this.inputQ);
+    this.qInputContainer.appendChild(this.inputQ);
 
+    this.gainInputContainer = document.createElement("div");
+    this.gainInputContainer.classList.add("equalizerInputLine");
+    this.divContainer.appendChild(this.gainInputContainer);
     this.spanGainDB = this.#addSpan("Gain [dB]");
-    this.divContainer.appendChild(this.spanGainDB);
+    this.gainInputContainer.appendChild(this.spanGainDB);
     this.inputGainDB
       = this.#addInput("Gain dB", "Gain in decibel for an equalizer control point.");
     this.inputGainDB.min = this.scaleGain.minUi;
     this.inputGainDB.max = this.scaleGain.maxUi;
     this.inputGainDB.step = "any";
     this.inputGainDB.value = 0.0;
-    this.divContainer.appendChild(this.inputGainDB);
+    this.gainInputContainer.appendChild(this.inputGainDB);
 
     this.inputIndex.addEventListener("input", (e) => this.#inputCallback(e), false);
     this.inputCutoffHz.addEventListener("input", (e) => this.#inputCallback(e), false);

@@ -1,7 +1,7 @@
 @import url("font.css");
 
 :root {
-  --controlWidth: 32em;
+  --control-width: 32em;
   --margin: 0.5em;
   --highlight-color: #fbf1b4;
   --fill-color: #c0c0c0;
@@ -45,7 +45,7 @@ div.controlBlock {
   display: inline-block;
   vertical-align: top;
   width: 100%;
-  max-width: calc(var(--controlWidth) + var(--margin));
+  max-width: calc(var(--control-width) + var(--margin));
   margin: 0 var(--margin) 0 var(--margin);
 }
 
@@ -213,7 +213,7 @@ input[type="button"].toggleState1:hover {
 }
 
 input[type="button"].toggleButtonLine {
-  width: calc(var(--controlWidth) - var(--margin));
+  width: calc(var(--control-width) - var(--margin));
   box-sizing: border-box;
   margin: var(--margin);
 }
