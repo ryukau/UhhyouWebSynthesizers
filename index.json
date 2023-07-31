@@ -134,8 +134,8 @@
           "href": "./WireWireCollision/synth.html",
           "name": "WireWireCollision",
           "description": {
-            "ja": "2つの弦がぶつかるシミュレーション。 (<a href=\"/docs/Wave1DTest/test.html\">Visual demo</a>)",
-            "en": "Simulation of collision of 2 wires. (<a href=\"/docs/Wave1DTest/test.html\">Visual demo</a>)"
+            "ja": "2つの弦がぶつかるシミュレーション。 (<a href=\"docs/Wave1DTest/test.html\">Visual demo</a>)",
+            "en": "Simulation of collision of 2 wires. (<a href=\"docs/Wave1DTest/test.html\">Visual demo</a>)"
           }
         },
         {
