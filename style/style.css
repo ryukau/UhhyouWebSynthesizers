@@ -8,6 +8,8 @@
   --font-size-body: 12px;
   --border-radius-mid: 4px;
   --border-radius-small: 1px;
+  --input-line-label-width: 31.25%;
+  --input-range-width: 60%;
 }
 
 html {
@@ -29,8 +31,6 @@ a:hover {
 
 #main {
   margin: 0 auto;
-  width: fit-content;
-  height: 100%;
 
   writing-mode: vertical-lr;
   text-orientation: mixed;
@@ -50,6 +50,8 @@ div.controlBlock {
 }
 
 p#renderStatus {
+  writing-mode: initial;
+  text-orientation: initial;
   height: calc(1.5 * var(--font-size-body));
   text-align: center;
 }
@@ -176,7 +178,6 @@ select#randomRecipe {
   max-width: 28%;
   box-sizing: border-box;
 
-  display: inline-block;
   vertical-align: middle;
   font-size: inherit;
   font-family: inherit;
@@ -229,9 +230,16 @@ div.inputLine:hover {
   box-shadow: 1px 1px 4px #000000;
 }
 
+div.inputLineContainer {
+  margin: 0;
+  padding: 0;
+  width: calc(100% - var(--input-line-label-width));
+  display: flex;
+}
+
 label.inputLine {
   display: block;
-  width: 31.25%;
+  width: var(--input-line-label-width);
 
   margin: auto;
   padding-left: var(--margin);
@@ -243,8 +251,9 @@ label.inputLine {
 input[type="range"] {
   -webkit-appearance: none;
 
-  flex-grow: 1;
-  display: block;
+  width: var(--input-range-width);
+  margin: 0;
+  display: inline-block;
   margin-right: var(--margin);
   background: none;
 }
@@ -313,10 +322,10 @@ input[type=range]:hover::-webkit-slider-runnable-track {
 input[type="number"] {
   appearance: textfield;
 
-  display: block;
+  display: inline-block;
   font-size: inherit;
   font-family: inherit;
-  width: 31.25%;
+  width: calc(100% - var(--input-range-width));
   margin: auto;
 }
 

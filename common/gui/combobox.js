@@ -41,8 +41,12 @@ export class ComboBoxLine {
       this.div.appendChild(this.label);
     }
 
+    this.container = document.createElement("div");
+    this.container.className = "inputLineContainer";
+    this.div.appendChild(this.container);
+
     this.select = select(
-      this.div,
+      this.container,
       label,
       undefined,
       "inputLine",

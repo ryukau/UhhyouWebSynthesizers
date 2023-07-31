@@ -17,6 +17,10 @@ export class NumberInput {
     this.label.textContent = label;
     this.div.appendChild(this.label);
 
+    this.container = document.createElement("div");
+    this.container.className = "inputLineContainer";
+    this.div.appendChild(this.container);
+
     this.range = document.createElement("input");
     this.range.type = "range";
     this.range.ariaLabel = label + " Range Input";
@@ -27,7 +31,7 @@ export class NumberInput {
     this.range.step = this.param.step;
     this.range.value = this.param.defaultUi;
     this.range.className = "numberInputRange";
-    this.div.appendChild(this.range);
+    this.container.appendChild(this.range);
 
     this.number = document.createElement("input");
     this.number.type = "number";
@@ -39,7 +43,7 @@ export class NumberInput {
     this.number.step = this.param.step === "any" ? 0.01 : this.param.step;
     this.number.value = this.param.display;
     this.number.className = "numberInputNumber";
-    this.div.appendChild(this.number);
+    this.container.appendChild(this.number);
 
     this.range.addEventListener("input", (event) => this.onInputRange(event), false);
     this.number.addEventListener("change", (event) => this.onInputNumber(event), false);
