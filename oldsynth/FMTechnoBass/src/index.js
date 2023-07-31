@@ -42,15 +42,15 @@ class OscControl {
       pmIndex: this.inputPmIndex = new NumberInputLog(
         this.divTop.element, "PMIndex", 0, 0, 32, 0.0001, this.refreshFunc),
       sinPhase: this.inputSinPhase
-      = new NumberInput(this.divTop.element, "Phase", 0, 0, 1, 0.01, this.refreshFunc),
+        = new NumberInput(this.divTop.element, "Phase", 0, 0, 1, 0.01, this.refreshFunc),
       sinSkew: this.inputSinSkew = new NumberInput(
         this.divTop.element, "SinSkew", 1, 0.1, 3, 0.001, this.refreshFunc),
       sinShaper: this.inputSinShaper = new NumberInput(
         this.divTop.element, "SinShaper", 0, 0, 1, 0.01, this.refreshFunc),
       freqNumerator: this.inputFreqNumerator
-      = new NumberInput(this.divTop.element, "f0 * N", 3, 1, 100, 1, this.refreshFunc),
+        = new NumberInput(this.divTop.element, "f0 * N", 3, 1, 100, 1, this.refreshFunc),
       freqDenominator: this.inputFreqDenominator
-      = new NumberInput(this.divTop.element, "f0 / N", 3, 1, 10, 1, this.refreshFunc),
+        = new NumberInput(this.divTop.element, "f0 / N", 3, 1, 10, 1, this.refreshFunc),
     };
 
     this.hide();
@@ -256,7 +256,7 @@ class UI {
 
     // Define UI.
     this.divMain = new Div(parent, "main");
-    this.headingTitle = new Heading(this.divMain.element, 1, document.title);
+    this.headingTitle = pageTitle(this.divMain.element);
 
     this.description = new Description(this.divMain.element, [
       ["基本操作", "Playボタンかキーボードのスペースキーで音を再生します。"],
@@ -284,12 +284,12 @@ class UI {
     });
     this.pullDownMenuRandomType = new PullDownMenu(
       this.divRenderControls.element, null, ["Default", "HighFreq", "Unison", "All"],
-      () => {});
+      () => { });
 
     this.buttonSave
       = new Button(this.divRenderControls.element, "Save", () => this.save());
     this.checkboxQuickSave
-      = new Checkbox(this.divRenderControls.element, "QuickSave", false, (checked) => {});
+      = new Checkbox(this.divRenderControls.element, "QuickSave", false, (checked) => { });
 
     //// ControlLeft
     this.divControlLeft = new Div(this.divMain.element, "controlLeft", "controlBlock");
@@ -441,7 +441,7 @@ class UI {
     var header = Wave.fileHeader(
       this.audioContext.sampleRate, this.wave.channels, buffer.length, false);
 
-    var blob = new Blob([header, buffer], {type: "application/octet-stream"});
+    var blob = new Blob([header, buffer], { type: "application/octet-stream" });
     var url = window.URL.createObjectURL(blob);
 
     var a = document.createElement("a");

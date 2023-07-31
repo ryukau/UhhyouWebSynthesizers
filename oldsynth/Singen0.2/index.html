@@ -2,163 +2,166 @@
 <html>
 
 <head>
-	<meta charset=utf-8>
-	<title>Singen0.2</title>
-	<style type="text/css">
-		* {
-			box-sizing: border-box;
-		}
+  <meta charset=utf-8>
+  <title>Singen0.2</title>
+  <link rel="icon" type="image/svg+xml" href="/style/favicon/favicon.svg">
+  <link rel="icon" type="image/png" href="/style/favicon/favicon.png">
+  <style type="text/css">
+    * {
+      box-sizing: border-box;
+    }
 
-		body {
-			margin: 0 0 64px 0;
-		}
+    body {
+      margin: 0 0 64px 0;
+    }
 
-		h6 {
-			text-align: center;
-			margin: 16px 0 8px 0;
-		}
+    h6 {
+      text-align: center;
+      margin: 16px 0 8px 0;
+    }
 
-		#main {
-			max-width: 1050px;
-			min-width: 512px;
-			margin: 0 auto;
-			text-align: center;
-		}
+    #main {
+      max-width: 1050px;
+      min-width: 512px;
+      margin: 0 auto;
+      text-align: center;
+    }
 
-		#description {
-			margin: 0 auto;
-			display: inline-block;
-			width: 80%;
-			max-width: 1000px;
-		}
+    #description {
+      margin: 0 auto;
+      display: inline-block;
+      width: 80%;
+      max-width: 1000px;
+    }
 
-		#description dt {
-			text-align: left;
-		}
+    #description dt {
+      text-align: left;
+    }
 
-		#description dd {
-			text-align: left;
-		}
+    #description dd {
+      text-align: left;
+    }
 
-		#waveform {
-			display: inline-block;
-			max-width: 1050px;
-			min-width: 512px;
-			margin: 0 auto;
-			text-align: center;
-		}
+    #waveform {
+      display: inline-block;
+      max-width: 1050px;
+      min-width: 512px;
+      margin: 0 auto;
+      text-align: center;
+    }
 
-		#envelopeView {
-			display: inline-block;
-			max-width: 1050px;
-			min-width: 512px;
-			margin: 0 auto;
-			text-align: center;
-		}
+    #envelopeView {
+      display: inline-block;
+      max-width: 1050px;
+      min-width: 512px;
+      margin: 0 auto;
+      text-align: center;
+    }
 
-		#envelopeView div {
-			display: inline-block;
-		}
+    #envelopeView div {
+      display: inline-block;
+    }
 
-		#renderControls {
-			margin-top: 24px;
-		}
+    #renderControls {
+      margin-top: 24px;
+    }
 
-		canvas {
-			/* image-rendering: pixelated; */
-			display: inline-block;
-			border-style: solid;
-			border-width: 1px;
-			border-color: #627f84;
-		}
+    canvas {
+      /* image-rendering: pixelated; */
+      display: inline-block;
+      border-style: solid;
+      border-width: 1px;
+      border-color: #627f84;
+    }
 
-		input[type="button"] {
-			background-color: #ffffff;
-			border: 2px solid #aaaaaa;
-			font-size: 16px;
-			height: 32px;
-		}
+    input[type="button"] {
+      background-color: #ffffff;
+      border: 2px solid #aaaaaa;
+      font-size: 16px;
+      height: 32px;
+    }
 
-		input[type="button"]:hover {
-			background-color: #ffffff;
-			border: 2px solid #aaccff;
-		}
+    input[type="button"]:hover {
+      background-color: #ffffff;
+      border: 2px solid #aaccff;
+    }
 
-		.synthControls {
-			display: inline-block;
-			min-width: 512px;
-			margin: 0 auto;
-			text-align: left;
-		}
+    .synthControls {
+      display: inline-block;
+      min-width: 512px;
+      margin: 0 auto;
+      text-align: left;
+    }
 
-		.numberInputLabel {
-			display: inline-block;
-			text-align: right;
-			width: 120px;
-			margin-right: 10px;
-		}
+    .numberInputLabel {
+      display: inline-block;
+      text-align: right;
+      width: 120px;
+      margin-right: 10px;
+    }
 
-		.numberInputRange {
-			display: inline-block;
-			max-width: 280px;
-			width: 50%;
-		}
+    .numberInputRange {
+      display: inline-block;
+      max-width: 280px;
+      width: 50%;
+    }
 
-		.numberInputNumber {
-			display: inline-block;
-			max-width: 80px;
-			width: 20%;
-		}
+    .numberInputNumber {
+      display: inline-block;
+      max-width: 80px;
+      width: 20%;
+    }
 
-		.pullDownMenu {
-			display: inline-block;
-		}
+    .pullDownMenu {
+      display: inline-block;
+    }
 
-		.radioButton {
-			display: inline-block;
-			max-width: 1050px;
-			min-width: 512px;
-		}
+    .radioButton {
+      display: inline-block;
+      max-width: 1050px;
+      min-width: 512px;
+    }
 
-		.radioButtonLabel {
-			display: inline-block;
-			text-align: right;
-			width: 120px;
-			margin-right: 10px;
-		}
+    .radioButtonLabel {
+      display: inline-block;
+      text-align: right;
+      width: 120px;
+      margin-right: 10px;
+    }
 
-		.radioButtonControls {
-			display: inline-block;
-		}
+    .radioButtonControls {
+      display: inline-block;
+    }
 
-		.checkbox {
-			display: inline-block;
-		}
+    .checkbox {
+      display: inline-block;
+    }
 
-		.checkbox input {
-			margin: 0 4px 0 10px;
-		}
+    .checkbox input {
+      margin: 0 4px 0 10px;
+    }
 
-		#miscControls .checkbox {
-			text-align: center;
-			width: 100%;
-		}
-	</style>
+    #miscControls .checkbox {
+      text-align: center;
+      width: 100%;
+    }
+  </style>
 </head>
 
 <body>
-	<p id="unsupported">ブラウザが対応していない場合、このテキストが消えずに表示されます。</p>
+  <p id="unsupported">ブラウザが対応していない場合、このテキストが消えずに表示されます。</p>
 
-	<script src="resampler.js"></script>
-	<script src="wave.js"></script>
-	<script src="vec2.js"></script>
-	<script src="rnd.js"></script>
-	<script src="gaussian.js"></script>
-	<script src="canvas.js"></script>
-	<script src="bezier-easing.js"></script>
-	<script src="envelope.js"></script>
-	<script src="waveview.js"></script>
-	<script src="index.js"></script>
+  <script src="resampler.js"></script>
+  <script src="wave.js"></script>
+  <script src="vec2.js"></script>
+  <script src="rnd.js"></script>
+  <script src="gaussian.js"></script>
+  <script src="canvas.js"></script>
+  <script src="bezier-easing.js"></script>
+  <script src="envelope.js"></script>
+  <script src="waveview.js"></script>
+  <script src="/oldsynth/pagetitle.js"></script>
+  <script src="index.js"></script>
 </body>
 
 </html>

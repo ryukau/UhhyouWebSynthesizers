@@ -1,45 +1,45 @@
-const TWO_PI = 2 * Math.PI
+const TWO_PI = 2 * Math.PI;
 
 function randomRange(min, max) {
-  return (max - min) * Math.random() + min
+  return (max - min) * Math.random() + min;
 }
 
 function randomRangeInt(min, max) {
-  return Math.floor(randomRange(min, max + 1))
+  return Math.floor(randomRange(min, max + 1));
 }
 
 class WaveViewMulti {
   constructor(parent, wave) {
-    this.waveView = []
+    this.waveView = [];
     for (var ch = 0; ch < wave.channels; ++ch) {
-      this.waveView.push(new WaveView(parent, 450, 256, wave[ch], false))
+      this.waveView.push(new WaveView(parent, 450, 256, wave[ch], false));
     }
   }
 
   set(wave) {
     for (var ch = 0; ch < this.waveView.length; ++ch) {
-      this.waveView[ch].set(wave.data[ch])
+      this.waveView[ch].set(wave.data[ch]);
     }
   }
 }
 
 class UI {
   constructor(parent) {
-    this.audioContext = new AudioContext()
+    this.audioContext = new AudioContext();
 
-    this.source // AudioBufferSourceNode. play() と stop() で使用。
+    this.source; // AudioBufferSourceNode. play() と stop() で使用。
 
-    this.wave = new Wave(2)
-    this.workers = []
+    this.wave = new Wave(2);
+    this.workers = [];
     for (var ch = 0; ch < this.wave.channels; ++ch) {
       this.workers.push({
         worker: new Worker("renderer.js"),
         isRunning: false,
-      })
+      });
     }
 
-    this.divMain = new Div(parent, "main")
-    this.headingTitle = new Heading(this.divMain.element, 1, document.title)
+    this.divMain = new Div(parent, "main");
+    this.headingTitle = pageTitle(this.divMain.element);
 
     this.description = new Description(
       this.divMain.element,
@@ -51,105 +51,105 @@ class UI {
         ["", "Saveボタンで気に入った音を保存できます。"],
         ["", "QuickSaveにチェックを入れると音を再生するたびに音が保存されます。"]
       ]
-    )
+    );
 
-    this.divWaveform = new Div(this.divMain.element, "waveform")
-    this.headingWaveform = new Heading(this.divWaveform.element, 6, "Waveform")
-    this.waveView = new WaveViewMulti(this.divWaveform.element, this.wave)
+    this.divWaveform = new Div(this.divMain.element, "waveform");
+    this.headingWaveform = new Heading(this.divWaveform.element, 6, "Waveform");
+    this.waveView = new WaveViewMulti(this.divWaveform.element, this.wave);
 
-    this.divRenderControls = new Div(this.divMain.element, "renderControls")
+    this.divRenderControls = new Div(this.divMain.element, "renderControls");
     this.headingRenderStatus = new Heading(this.divRenderControls.element,
-      4, "Rendering status will be displayed here.")
+      4, "Rendering status will be displayed here.");
     this.buttonStop = new Button(this.divRenderControls.element,
-      "Stop", () => this.stop())
+      "Stop", () => this.stop());
     this.buttonPlay = new Button(this.divRenderControls.element,
-      "Play", () => this.play())
+      "Play", () => this.play());
     this.buttonRandom = new Button(this.divRenderControls.element,
-      "Random", () => { this.random(); this.stop() })
+      "Random", () => { this.random(); this.stop(); });
     this.pullDownMenuRandomType = new PullDownMenu(
       this.divRenderControls.element,
       null,
       ["Default", "All"],
       () => { }
-    )
+    );
 
     this.buttonSave = new Button(this.divRenderControls.element,
-      "Save", () => this.save())
+      "Save", () => this.save());
     this.checkboxQuickSave = new Checkbox(this.divRenderControls.element,
-      "QuickSave", false, (checked) => { })
+      "QuickSave", false, (checked) => { });
 
     //// ControlLeft
-    this.divControlLeft = new Div(this.divMain.element, "controlLeft", "controlBlock")
+    this.divControlLeft = new Div(this.divMain.element, "controlLeft", "controlBlock");
 
-    this.divMiscControls = new Div(this.divControlLeft.element, "MiscControls")
+    this.divMiscControls = new Div(this.divControlLeft.element, "MiscControls");
     this.headingRender = new Heading(this.divMiscControls.element,
-      6, "Render Settings")
+      6, "Render Settings");
     this.checkboxNormalize = new Checkbox(this.divMiscControls.element,
-      "Normalize", true, () => { this.refresh() })
+      "Normalize", true, () => { this.refresh(); });
     this.checkboxResample = new Checkbox(this.divMiscControls.element,
-      "4x Sampling", false, () => { this.refresh() })
+      "4x Sampling", false, () => { this.refresh(); });
     this.inputLength = new NumberInputLog(this.divMiscControls.element,
-      "Length", 1, 0.02, 16, 0.01, () => { this.refresh() })
+      "Length", 1, 0.02, 16, 0.01, () => { this.refresh(); });
     this.inputSeed = new NumberInput(this.divMiscControls.element,
       "Seed", 0, 0, Math.floor(Number.MAX_SAFE_INTEGER / 2), 1,
-      () => { this.refresh() })
+      () => { this.refresh(); });
     this.inputDeclickIn = new NumberInputLog(this.divMiscControls.element,
-      "DeclickIn", 0.001, 0, 0.01, 0.0001, () => { this.refresh() })
+      "DeclickIn", 0.001, 0, 0.01, 0.0001, () => { this.refresh(); });
 
-    this.divEnvelope = new Div(this.divControlLeft.element, "Envelope")
+    this.divEnvelope = new Div(this.divControlLeft.element, "Envelope");
     this.headingRender = new Heading(this.divEnvelope.element,
-      6, "Envelope")
+      6, "Envelope");
     this.inputAmpAttack = new NumberInputLog(this.divEnvelope.element,
-      "Amp.Attack", 1, 0.0001, 1, 0.0001, () => { this.refresh() })
+      "Amp.Attack", 1, 0.0001, 1, 0.0001, () => { this.refresh(); });
     this.inputBaseFrequency = new NumberInputLog(this.divEnvelope.element,
-      "BaseFreq", 100, 1, 10000, 0.0001, () => { this.refresh() })
+      "BaseFreq", 100, 1, 10000, 0.0001, () => { this.refresh(); });
     this.inputBendAttack = new NumberInputLog(this.divEnvelope.element,
-      "Bend.Attack", 0.1, 0.0001, 4, 0.0001, () => { this.refresh() })
+      "Bend.Attack", 0.1, 0.0001, 4, 0.0001, () => { this.refresh(); });
     this.inputBendCurve = new NumberInputLog(this.divEnvelope.element,
-      "Bend.Curve", 30, 0.0001, 50, 0.0001, () => { this.refresh() })
+      "Bend.Curve", 30, 0.0001, 50, 0.0001, () => { this.refresh(); });
     this.inputBendAmount = new NumberInputLog(this.divEnvelope.element,
-      "Bend.Amount", 1000, 1, 10000, 0.0001, () => { this.refresh() })
+      "Bend.Amount", 1000, 1, 10000, 0.0001, () => { this.refresh(); });
 
 
 
     //// ControlRight
-    this.divControlRight = new Div(this.divMain.element, "controlRight", "controlBlock")
+    this.divControlRight = new Div(this.divMain.element, "controlRight", "controlBlock");
 
-    this.divHarmonics = new Div(this.divControlRight.element, "Harmonics")
+    this.divHarmonics = new Div(this.divControlRight.element, "Harmonics");
     this.headingHarmonics = new Heading(this.divHarmonics.element,
-      6, "Harmonics")
+      6, "Harmonics");
     this.inputHarmonicsNumber = new NumberInput(this.divHarmonics.element,
-      "Number", 4, 1, 64, 1, () => { this.refresh() })
+      "Number", 4, 1, 64, 1, () => { this.refresh(); });
     this.inputHarmonicsAmp = new NumberInput(this.divHarmonics.element,
-      "Amp", 0.75, 0, 1.2, 0.0001, () => { this.refresh() })
+      "Amp", 0.75, 0, 1.2, 0.0001, () => { this.refresh(); });
     this.inputHarmonicsBend = new NumberInput(this.divHarmonics.element,
-      "Bend", 0.9, 0, 2, 0.0001, () => { this.refresh() })
+      "Bend", 0.9, 0, 2, 0.0001, () => { this.refresh(); });
 
-    this.divBounce = new Div(this.divControlRight.element, "Bounce")
+    this.divBounce = new Div(this.divControlRight.element, "Bounce");
     this.headingBounce = new Heading(this.divBounce.element,
-      6, "Bounce")
+      6, "Bounce");
     this.inputBounce = new NumberInput(this.divBounce.element,
-      "Number", 5, 1, 64, 1, () => { this.refresh() })
+      "Number", 5, 1, 64, 1, () => { this.refresh(); });
     this.inputInterval = new NumberInputLog(this.divBounce.element,
-      "Interval", 0.15, 0.0001, 4, 0.0001, () => { this.refresh() })
+      "Interval", 0.15, 0.0001, 4, 0.0001, () => { this.refresh(); });
     this.inputWander = new NumberInput(this.divBounce.element,
-      "Wander", 0.5, 0, 1, 0.0001, () => { this.refresh() })
+      "Wander", 0.5, 0, 1, 0.0001, () => { this.refresh(); });
     this.inputBounceAmpInit = new NumberInput(this.divBounce.element,
-      "AmpInit", 1, 0.0001, 4, 0.0001, () => { this.refresh() })
+      "AmpInit", 1, 0.0001, 4, 0.0001, () => { this.refresh(); });
     this.inputBounceAmp = new NumberInput(this.divBounce.element,
-      "Amp", 0.5, 0, 1, 0.0001, () => { this.refresh() })
+      "Amp", 0.5, 0, 1, 0.0001, () => { this.refresh(); });
     this.inputBounceBendInit = new NumberInput(this.divBounce.element,
-      "BendInit", 1, 0.0001, 16, 0.0001, () => { this.refresh() })
+      "BendInit", 1, 0.0001, 16, 0.0001, () => { this.refresh(); });
     this.inputBounceBend = new NumberInput(this.divBounce.element,
-      "Bend", 0.9, 0, 2, 0.0001, () => { this.refresh() })
+      "Bend", 0.9, 0, 2, 0.0001, () => { this.refresh(); });
 
-    this.refresh()
+    this.refresh();
 
     window.addEventListener("keydown", (event) => {
       if (event.keyCode === 32) {
-        this.play()
+        this.play();
       }
-    })
+    });
   }
 
   gatherParameters(channel) {
@@ -174,128 +174,128 @@ class UI {
       bounceAmp: this.inputBounceAmp.value,
       bounceBendInit: this.inputBounceBendInit.value,
       bounceBend: this.inputBounceBend.value,
-    }
+    };
   }
 
   random() {
     if (this.pullDownMenuRandomType.value === "Default") {
-      this.inputSeed.random()
-      this.inputBaseFrequency.value = randomRange(50, 800)
-      this.inputBendAttack.value = randomRange(0.001, 0.5) ** 2
-      this.inputBendCurve.random()
-      this.inputBendAmount.value = randomRange(400, 4000)
-      this.inputHarmonicsNumber.random()
-      this.inputHarmonicsAmp.value = randomRange(0.3, 0.7)
-      this.inputHarmonicsBend.value = randomRange(0, 1)
+      this.inputSeed.random();
+      this.inputBaseFrequency.value = randomRange(50, 800);
+      this.inputBendAttack.value = randomRange(0.001, 0.5) ** 2;
+      this.inputBendCurve.random();
+      this.inputBendAmount.value = randomRange(400, 4000);
+      this.inputHarmonicsNumber.random();
+      this.inputHarmonicsAmp.value = randomRange(0.3, 0.7);
+      this.inputHarmonicsBend.value = randomRange(0, 1);
     }
     else {
-      this.inputSeed.random()
-      this.inputBaseFrequency.random()
-      this.inputBendAttack.random()
-      this.inputBendCurve.random()
-      this.inputBendAmount.random()
-      this.inputHarmonicsNumber.random()
-      this.inputHarmonicsAmpDecay.random()
-      this.inputHarmonicsBendDecay.random()
+      this.inputSeed.random();
+      this.inputBaseFrequency.random();
+      this.inputBendAttack.random();
+      this.inputBendCurve.random();
+      this.inputBendAmount.random();
+      this.inputHarmonicsNumber.random();
+      this.inputHarmonicsAmpDecay.random();
+      this.inputHarmonicsBendDecay.random();
     }
-    this.refresh()
+    this.refresh();
   }
 
   refresh() {
-    this.render()
+    this.render();
   }
 
   play() {
     var buffer = this.audioContext.createBuffer(
-      this.wave.channels, this.wave.frames, this.audioContext.sampleRate)
+      this.wave.channels, this.wave.frames, this.audioContext.sampleRate);
 
     for (var i = 0; i < this.wave.channels; ++i) {
-      var waveFloat32 = new Float32Array(this.wave.data[i])
-      buffer.copyToChannel(waveFloat32, i, 0)
+      var waveFloat32 = new Float32Array(this.wave.data[i]);
+      buffer.copyToChannel(waveFloat32, i, 0);
     }
 
     if (this.source !== undefined) {
-      this.source.stop()
+      this.source.stop();
     }
-    this.source = this.audioContext.createBufferSource()
-    this.source.buffer = buffer
-    this.source.connect(this.audioContext.destination)
-    this.source.start()
+    this.source = this.audioContext.createBufferSource();
+    this.source.buffer = buffer;
+    this.source.connect(this.audioContext.destination);
+    this.source.start();
   }
 
   stop() {
     if (this.source !== undefined) {
-      this.source.stop()
+      this.source.stop();
     }
   }
 
   save() {
-    var buffer = Wave.toBuffer(this.wave, this.wave.channels)
+    var buffer = Wave.toBuffer(this.wave, this.wave.channels);
     var header = Wave.fileHeader(
-      this.audioContext.sampleRate, this.wave.channels, buffer.length, false)
+      this.audioContext.sampleRate, this.wave.channels, buffer.length, false);
 
-    var blob = new Blob([header, buffer], { type: "application/octet-stream" })
-    var url = window.URL.createObjectURL(blob)
+    var blob = new Blob([header, buffer], { type: "application/octet-stream" });
+    var url = window.URL.createObjectURL(blob);
 
-    var a = document.createElement("a")
-    a.style = "display: none"
-    a.href = url
-    a.download = document.title + "_" + Date.now() + ".wav"
-    document.body.appendChild(a)
-    a.click()
+    var a = document.createElement("a");
+    a.style = "display: none";
+    a.href = url;
+    a.download = document.title + "_" + Date.now() + ".wav";
+    document.body.appendChild(a);
+    a.click();
 
     // Firefoxでダウンロードできるようにするための遅延。
     setTimeout(() => {
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
-    }, 100)
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 100);
   }
 
   render() {
-    this.headingRenderStatus.element.textContent = "⚠ Rendering ⚠"
-    var channels = 2
+    this.headingRenderStatus.element.textContent = "⚠ Rendering ⚠";
+    var channels = 2;
     for (var ch = 0; ch < channels; ++ch) {
       if (this.workers[ch].isRunning) {
-        this.workers[ch].worker.terminate()
-        this.workers[ch].worker = new Worker("renderer.js")
+        this.workers[ch].worker.terminate();
+        this.workers[ch].worker = new Worker("renderer.js");
       }
       else {
-        this.workers[ch].isRunning = true
+        this.workers[ch].isRunning = true;
       }
-      this.workers[ch].worker.postMessage(this.gatherParameters(ch))
+      this.workers[ch].worker.postMessage(this.gatherParameters(ch));
     }
 
     this.workers.forEach((value, index) => {
       value.worker.onmessage = (event) => {
-        this.wave.data[index] = event.data
-        this.workers[index].isRunning = false
+        this.wave.data[index] = event.data;
+        this.workers[index].isRunning = false;
         if (this.workers.every((v) => !v.isRunning)) {
           if (channels === 1) {
-            this.wave.copyChannel(index)
+            this.wave.copyChannel(index);
           }
-          this.finalize()
+          this.finalize();
         }
-      }
-    })
+      };
+    });
   }
 
   finalize() {
     if (this.checkboxNormalize.value) {
-      this.wave.normalize()
+      this.wave.normalize();
     }
-    this.wave.declickIn(this.inputDeclickIn.value * this.audioContext.sampleRate)
-    this.wave.zeroOut(Math.floor(0.01 * this.audioContext.sampleRate))
-    this.waveView.set(this.wave)
+    this.wave.declickIn(this.inputDeclickIn.value * this.audioContext.sampleRate);
+    this.wave.zeroOut(Math.floor(0.01 * this.audioContext.sampleRate));
+    this.waveView.set(this.wave);
 
     if (this.checkboxQuickSave.value) {
-      this.save()
+      this.save();
     }
 
-    this.headingRenderStatus.element.textContent = "Rendering finished. ✓"
+    this.headingRenderStatus.element.textContent = "Rendering finished. ✓";
   }
 }
 
-var ui = new UI(document.body)
+var ui = new UI(document.body);
 
 // If startup is succeeded, remove "unsupported" paragaraph.
-document.getElementById("unsupported").outerHTML = ""
+document.getElementById("unsupported").outerHTML = "";
