@@ -6,11 +6,11 @@ function pageTitle(parent) {
   parent.appendChild(title);
 
   var link = document.createElement("a");
-  link.href = "/index.html";
+  link.href = "../../index.html";
   title.appendChild(link);
 
   var img = document.createElement("img");
-  img.src = "/style/favicon/favicon.svg";
+  img.src = "../../style/favicon/favicon.svg";
   img.alt = "Logo image.";
   img.title = "Go back to index page."
   img.style.height = "2rem";
