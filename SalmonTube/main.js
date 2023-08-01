@@ -29,14 +29,6 @@ function randomize() {
   widget.refresh(ui);
 }
 
-function createArrayParameters(defaultDspValue, scale) {
-  let arr = new Array(scales.matrixSize.max);
-  for (let i = 0; i < arr.length; ++i) {
-    arr[i] = new parameter.Parameter(defaultDspValue, scale, true);
-  }
-  return arr;
-}
-
 function createVocalTractParameters(scale) {
   let arr = new Array(44);
 

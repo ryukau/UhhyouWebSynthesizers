@@ -38,16 +38,6 @@ function randomize() {
   widget.refresh(ui);
 }
 
-function createArrayParameters(defaultDspValue, depth, scale) {
-  const base = scales.latticeSize.max;
-  const size = base ** (base + 1 - depth);
-  let arr = new Array(size);
-  for (let i = 0; i < arr.length; ++i) {
-    arr[i] = new parameter.Parameter(defaultDspValue, scale, true);
-  }
-  return arr;
-}
-
 function render() {
   audio.render(
     parameter.toMessage(param, {

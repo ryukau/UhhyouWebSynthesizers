@@ -43,14 +43,6 @@ function randomize() {
   widget.refresh(ui);
 }
 
-function createArrayParameters(defaultDspValue, scale) {
-  let arr = new Array(scales.matrixSize.max);
-  for (let i = 0; i < arr.length; ++i) {
-    arr[i] = new parameter.Parameter(defaultDspValue, scale, true);
-  }
-  return arr;
-}
-
 function createBezierEnvelopeParameters(x1 = 0.2, y1 = 0.2, x2 = 0.8, y2 = 0.8) {
   return [
     new parameter.Parameter(x1, scales.defaultScale),
