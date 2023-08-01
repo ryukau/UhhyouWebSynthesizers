@@ -88,7 +88,8 @@ h6 {
 }
 
 /* Collapsible. */
-details {
+details,
+.tabViewContentRegion {
   display: inline-block;
 
   box-sizing: border-box;
@@ -126,6 +127,56 @@ summary {
 summary:hover {
   box-shadow: 1px 1px 4px #000000;
   border-radius: var(--border-radius-small);
+}
+
+/* TabView */
+.tabViewButtonRegion {
+  display: flex;
+  align-items: center;
+
+  width: calc(100% - 2 * var(--margin));
+  padding: var(--margin);
+}
+
+label.tabRadioLabel {
+  display: flex;
+  align-items: center;
+
+  flex-grow: 1;
+  height: calc(var(--font-size-body) + 2 * var(--margin));
+  border-radius: var(--border-radius-mid);
+  border: outset 2px #e0e0e0;
+}
+
+label.tabRadioLabelActive {
+  border-radius: var(--border-radius-mid);
+  border: inset 2px #e0e0e0;
+  box-shadow: inset 1px 1px 2px #000000;
+  background-color: var(--highlight-color);
+}
+
+label.tabRadioLabelInactive {
+  border-radius: var(--border-radius-mid);
+  border: outset 2px #e0e0e0;
+  background-color: white;
+}
+
+label.tabRadioLabelInactive:hover {
+  border: outset 2px #e0e0e0;
+  box-shadow: 2px 2px 4px #000000;
+}
+
+div.tabViewButtonRegion>label>span {
+  display: inline-block;
+  --side-margin: calc(2 * var(--margin));
+  margin: 0 var(--side-margin) 0 var(--side-margin);
+}
+
+div.tabViewButtonRegion>label>input {
+  appearance: none;
+  display: inline-block;
+  height: 100%;
+  margin: 0;
 }
 
 /* Canvas */

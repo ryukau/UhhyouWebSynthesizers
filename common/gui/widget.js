@@ -9,19 +9,16 @@ export {BezierEnvelopeView} from "./bezierenvelopeview.js";
 export {ComboBoxLine, select} from "./combobox.js";
 export {MultiCheckBoxVertical} from "./multicheckbox.js"
 export {NumberInput} from "./numberinput.js";
+export {TabView} from "./tabview.js"
 export {ToggleButton, ToggleButtonLine} from "./togglebutton.js";
 export {WaveView} from "./waveview.js";
 
 export function refresh(ui) {
   for (const key in ui) {
     if (Array.isArray(ui[key])) {
-      ui[key].array.forEach(element => { element.refresh(); });
-    } else if (ui[key] instanceof ComboBoxLine) {
-      ui[key].refresh();
-    } else if (ui[key] instanceof BezierEnvelopeView) {
-      ui[key].refresh();
+      ui[key].array.forEach(element => { element?.refresh(); });
     } else {
-      ui[key].refresh();
+      ui[key]?.refresh();
     }
   }
 }
