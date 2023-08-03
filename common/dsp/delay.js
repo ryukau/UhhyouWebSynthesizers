@@ -71,6 +71,57 @@ export class Delay {
   }
 }
 
+export class MultiTapDelay {
+  #wptr;
+  #buf;
+  #timeInt;
+  #rFraction;
+
+  constructor(sampleRate, maxSecond, nTap) {
+    this.#wptr = 0;
+
+    const size = Math.ceil(sampleRate * maxSecond) + 2;
+    this.#buf = new Array(size < 4 ? 4 : size);
+
+    this.#timeInt = new Array(nTap).fill(0);
+    this.#rFraction = new Array(nTap).fill(0);
+
+    this.reset();
+  }
+
+  reset() { this.#buf.fill(0); }
+
+  // `timeInSamples` is an array.
+  setTime(timeInSamples) {
+    for (let idx = 0; idx < this.#timeInt.length; ++idx) {
+      const clamped = clamp(timeInSamples[idx], 0, this.#buf.length - 2);
+      this.#timeInt[idx] = Math.floor(clamped);
+      this.#rFraction[idx] = clamped - this.#timeInt[idx];
+    }
+  }
+
+  // Always call `setTime` before `process`.
+  process(input) {
+    // Write to buffer.
+    this.#buf[this.#wptr] = input;
+    if (++this.#wptr >= this.#buf.length) this.#wptr = 0;
+
+    let sum = 0;
+    for (let idx = 0; idx < this.#timeInt.length; ++idx) {
+      let rptr0 = this.#wptr - this.#timeInt[idx];
+      if (rptr0 < 0) rptr0 += this.#buf.length;
+
+      let rptr1 = rptr0 - 1;
+      if (rptr1 < 0) rptr1 += this.#buf.length;
+
+      // Read from buffer.
+      sum += this.#buf[rptr0]
+        + this.#rFraction[idx] * (this.#buf[rptr1] - this.#buf[rptr0]);
+    }
+    return sum;
+  }
+}
+
 /**
 Allpass filter with arbitrary length delay.
 https://ccrma.stanford.edu/~jos/pasp/Allpass_Two_Combs.html

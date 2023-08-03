@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./FMGlassyPad/synth.html",
+          "name": "FMGlassyPad",
+          "description": {
+            "ja": "ユニゾンした FM シンセサイザ。",
+            "en": "FM syntheiszer with unison."
+          }
+        },
+        {
           "href": "./TechnoSnare/synth.html",
           "name": "TechnoSnare",
           "description": {
