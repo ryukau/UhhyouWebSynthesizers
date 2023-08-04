@@ -23,6 +23,7 @@ function randomize() {
 
       if (key === "frequencyHz") continue;
       if (key === "nUnison") continue;
+      if (key === "chord1Ratio") continue;
       if (key === "unisonPitchSpreadCents") continue;
       if (key === "chord2Notes") continue;
 
