@@ -19,7 +19,13 @@ import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import * as menuitems from "./menuitems.js";
 import {justIntonationTable, maxReverbTimeSeconds} from "./shared.js"
 
-export class ModDelay {
+/**
+A variation of pitch shifter.
+
+When write-pointer is passing over read-pointer, the output fadeout to 0. This sounds
+unnatural.
+*/
+export class DentDelay {
   #wptr;
   #buf;
 
@@ -40,11 +46,30 @@ export class ModDelay {
     this.rFraction = clamped - this.timeInt;
   }
 
+  #distanceSamples(rptr) {
+    const d1 = this.#wptr - rptr;
+    if (d1 < 0) {
+      return Math.min(this.#buf.length + d1, rptr - this.#wptr);
+    }
+    const d2 = this.#buf.length + rptr - this.#wptr;
+    return Math.min(d1, d2);
+  }
+
+  #gain(rptr) {
+    const transitionSamples = 64;
+
+    const dist = this.#distanceSamples(rptr);
+    if (dist > transitionSamples) return 1.0;
+
+    return 0.5 - 0.5 * Math.cos(Math.PI * dist / transitionSamples);
+  }
+
   // Always call `setTime` before `process`.
   process(input) {
     let rptr0 = this.#wptr - this.timeInt;
-    let rptr1 = rptr0 - 1;
     if (rptr0 < 0) rptr0 += this.#buf.length;
+
+    let rptr1 = rptr0 - 1;
     if (rptr1 < 0) rptr1 += this.#buf.length;
 
     this.rFraction += 0.5;
@@ -54,14 +79,72 @@ export class ModDelay {
       if (this.timeInt >= this.#buf.length) this.timeInt = 0;
     }
 
-    // Write to buffer.
     this.#buf[this.#wptr] = input;
     if (++this.#wptr >= this.#buf.length) this.#wptr -= this.#buf.length;
 
-    // Read from buffer.
-    const front = rptr0 == this.#wptr ? 0 : this.#buf[rptr0];
-    const back = rptr1 == this.#wptr ? 0 : this.#buf[rptr1];
-    return front + this.rFraction * (back - front);
+    const output
+      = this.#buf[rptr0] + this.rFraction * (this.#buf[rptr1] - this.#buf[rptr0]);
+    return this.#gain(rptr0) * output;
+  }
+}
+
+/**
+A variation of pitch shifter.
+
+When write-pointer is passing over read-pointer, the output crossfades between old and new
+content of buffer. This crossfade sounds unnatural.
+*/
+export class CrossDelay {
+  #wptr = 0;
+  #fadeCounter = 0;
+  #buf;
+
+  constructor(sampleRate, maxSecond) {
+    const size = Math.ceil(sampleRate * maxSecond) + 2;
+    this.#buf = new Array(size < 4 ? 4 : size);
+
+    this.reset();
+  }
+
+  reset() { this.#buf.fill(0); }
+
+  setTime(timeInSample) { this.time = clamp(timeInSample, 0, this.#buf.length - 2); }
+
+  #read(time) {
+    const timeInt = Math.floor(time);
+    let rptr0 = this.#wptr - timeInt;
+    if (rptr0 < 0) rptr0 += this.#buf.length;
+
+    let rptr1 = rptr0 - 1;
+    if (rptr1 < 0) rptr1 += this.#buf.length;
+
+    const fraction = time - timeInt;
+    return this.#buf[rptr0] + fraction * (this.#buf[rptr1] - this.#buf[rptr0]);
+  }
+
+  // Always call `setTime` before `process`.
+  process(input) {
+    this.#buf[this.#wptr] = input;
+    if (++this.#wptr >= this.#buf.length) this.#wptr -= this.#buf.length;
+
+    this.time += 0.5;
+    if (this.time >= this.#buf.length) this.time %= this.#buf.length;
+
+    const transitionSamples = 64;
+    const distance = this.#buf.length - this.time;
+    if (distance >= transitionSamples) {
+      if (this.#fadeCounter > 0) {
+        this.time = 0.5 * this.#fadeCounter;
+        this.#fadeCounter = 0;
+      }
+      return this.#read(this.time);
+    }
+
+    const gain = 0.5 - 0.5 * Math.cos(Math.PI * distance / transitionSamples);
+    const v0 = this.#read(this.time);
+    const v1 = this.#read(0.5 * this.#fadeCounter);
+    this.#fadeCounter++;
+    return v1 + gain * (v0 - v1);
   }
 }
 
@@ -183,9 +266,10 @@ onmessage = async (event) => {
   dsp.rng = rng;
 
   // FDN.
+  // **Note**: Max memory consumption is approximately 256 MiB * 8 delay.
   dsp.fdn = new FeedbackDelayNetwork(
-    8, upRate, maxReverbTimeSeconds, smoother.DoubleEMAFilter, smoother.EMAHighpass,
-    ModDelay);
+    8, upRate, Math.min(pv.renderDuration, 2 ** 38 / upRate), smoother.DoubleEMAFilter,
+    smoother.EMAHighpass, DentDelay);
   dsp.fdn.randomizeMatrix(
     "SpecialOrthogonal", Math.floor(Number.MAX_SAFE_INTEGER * rng.number()));
   for (let i = 0; i < dsp.fdn.delay.length; ++i) {
@@ -210,7 +294,7 @@ onmessage = async (event) => {
   dsp.lfo = new SinOsc(pv.lfoInitialPhase + rng.number());
 
   dsp.openSmoother = new smoother.DoubleEMAFilter();
-  dsp.openSmoother.setCutoffFromTime(0.002 * upRate);
+  dsp.openSmoother.setCutoffFromTime(upRate * pv.gainAttackSeconds);
 
   // FM oscillators.
   //
@@ -249,7 +333,7 @@ onmessage = async (event) => {
 
       for (let idx = 0; idx < pv.chord1NoteCount; ++idx) {
         const envelope = new DelayedDecayEnvelope(
-          upRate, (idx + 1) * pv.attackSeconds, 0.25, pv.decaySeconds);
+          upRate, (idx + 1) * pv.modAttackSeconds, 0.25, pv.modDecaySeconds);
         const osc = new Oscillator(
           noteFreq * carrierRatios[idx], rng.number(), noteFreq * modulatorRatios[idx],
           rng.number(), envelope, pv.fmIndex);

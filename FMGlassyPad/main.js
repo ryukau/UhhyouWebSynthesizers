@@ -74,14 +74,15 @@ const scales = {
   toneSlope: new parameter.DecibelScale(-12, 0, false),
 
   seed: new parameter.IntScale(0, 2 ** 32),
+  gainAttackSeconds: new parameter.DecibelScale(-80, 40, false),
 
   frequencyHz: new parameter.DecibelScale(0, 100, false),
   octaveRandomize: new parameter.IntScale(0, 8),
   chord1NoteCount: new parameter.IntScale(1, 8),
   chord1Ratio: new parameter.LinearScale(1, 2),
   chord1OctaveWrap: new parameter.IntScale(1, 8),
-  attackSeconds: new parameter.DecibelScale(-40, 0, false),
-  decaySeconds: new parameter.DecibelScale(-60, 60, false),
+  modAttackSeconds: new parameter.DecibelScale(-40, 0, false),
+  modDecaySeconds: new parameter.DecibelScale(-60, 60, false),
   nUnison: new parameter.IntScale(1, 128),
   unisonPitchSpreadCents: new parameter.LinearScale(0, 500),
   fmIndex: new parameter.DecibelScale(util.ampToDB(1 / 4), util.ampToDB(16), true),
@@ -111,6 +112,7 @@ const param = {
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
 
   seed: new parameter.Parameter(0, scales.seed, true),
+  gainAttackSeconds: new parameter.Parameter(0.002, scales.gainAttackSeconds, true),
 
   frequencyHz:
     new parameter.Parameter(util.midiPitchToFreq(72), scales.frequencyHz, true),
@@ -125,8 +127,8 @@ const param = {
   chord1NoteCount: new parameter.Parameter(3, scales.chord1NoteCount, true),
   chord1Ratio: new parameter.Parameter(1.5, scales.chord1Ratio, true),
   chord1OctaveWrap: new parameter.Parameter(3, scales.chord1OctaveWrap, true),
-  attackSeconds: new parameter.Parameter(0.1, scales.attackSeconds, true),
-  decaySeconds: new parameter.Parameter(4, scales.decaySeconds, true),
+  modAttackSeconds: new parameter.Parameter(0.1, scales.modAttackSeconds, true),
+  modDecaySeconds: new parameter.Parameter(4, scales.modDecaySeconds, true),
   fmIndex: new parameter.Parameter(1, scales.fmIndex, true),
 
   reverbMix: new parameter.Parameter(0.1, scales.reverbMix, false),
@@ -230,6 +232,8 @@ const ui = {
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
 
   seed: new widget.NumberInput(detailMisc, "Seed", param.seed, render),
+  gainAttackSeconds: new widget.NumberInput(
+    detailMisc, "Gain Attack [s]", param.gainAttackSeconds, render),
 
   frequencyHz:
     new widget.NumberInput(detailFM, "Frequency [Hz]", param.frequencyHz, render),
@@ -246,9 +250,10 @@ const ui = {
     new widget.NumberInput(detailFM, "Chord 1 Pitch Ratio", param.chord1Ratio, render),
   chord1OctaveWrap: new widget.NumberInput(
     detailFM, "Chord 1 Pitch Wrap [oct]", param.chord1OctaveWrap, render),
-  attackSeconds:
-    new widget.NumberInput(detailFM, "Attack [s]", param.attackSeconds, render),
-  decaySeconds: new widget.NumberInput(detailFM, "Decay [s]", param.decaySeconds, render),
+  modAttackSeconds:
+    new widget.NumberInput(detailFM, "Mod Attack [s]", param.modAttackSeconds, render),
+  modDecaySeconds:
+    new widget.NumberInput(detailFM, "Mod Decay [s]", param.modDecaySeconds, render),
   fmIndex: new widget.NumberInput(detailFM, "FM Index", param.fmIndex, render),
 
   reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
