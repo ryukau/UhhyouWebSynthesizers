@@ -321,7 +321,7 @@ onmessage = async (event) => {
   }
 
   for (let unison = 0; unison < pv.nUnison; ++unison) {
-    const unisonRatio = unison / (pv.nUnison - 1);
+    const unisonRatio = pv.nUnison <= 1 ? 1 : unison / (pv.nUnison - 1);
     const baseFreq = pv.frequencyHz / upRate;
     const spreadCent = pv.unisonPitchSpreadCents * unisonRatio
       + uniformDistributionMap(rng.number(), 0, pv.centsRandomize);
