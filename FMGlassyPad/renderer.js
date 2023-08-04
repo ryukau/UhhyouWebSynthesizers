@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import * as delay from "../common/dsp/delay.js";
+import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import * as multirate from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
+import * as smoother from "../common/dsp/smoother.js"
 import {
+  clamp,
   exponentialMap,
   lagrange3Interp,
   lerp,
@@ -14,18 +17,53 @@ import {
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
-import {justIntonationTable} from "./shared.js"
+import {justIntonationTable, maxReverbTimeSeconds} from "./shared.js"
 
-/*
-base multipliers: 4, 6, 9
-modulators: 61, 61, 32
+export class ModDelay {
+  #wptr;
+  #buf;
 
-semitones:
-osc1, osc2: 38, 71.25
+  constructor(sampleRate, maxSecond) {
+    this.#wptr = 0;
 
-diff: 33.25
-diff wrapped: 9.25
-*/
+    const size = Math.ceil(sampleRate * maxSecond) + 2;
+    this.#buf = new Array(size < 4 ? 4 : size);
+
+    this.reset();
+  }
+
+  reset() { this.#buf.fill(0); }
+
+  setTime(timeInSample) {
+    const clamped = clamp(timeInSample, 0, this.#buf.length - 2);
+    this.timeInt = Math.floor(clamped);
+    this.rFraction = clamped - this.timeInt;
+  }
+
+  // Always call `setTime` before `process`.
+  process(input) {
+    let rptr0 = this.#wptr - this.timeInt;
+    let rptr1 = rptr0 - 1;
+    if (rptr0 < 0) rptr0 += this.#buf.length;
+    if (rptr1 < 0) rptr1 += this.#buf.length;
+
+    this.rFraction += 0.5;
+    if (this.rFraction >= 1) {
+      this.rFraction -= 1.0;
+      ++this.timeInt;
+      if (this.timeInt >= this.#buf.length) this.timeInt = 0;
+    }
+
+    // Write to buffer.
+    this.#buf[this.#wptr] = input;
+    if (++this.#wptr >= this.#buf.length) this.#wptr -= this.#buf.length;
+
+    // Read from buffer.
+    const front = rptr0 == this.#wptr ? 0 : this.#buf[rptr0];
+    const back = rptr1 == this.#wptr ? 0 : this.#buf[rptr1];
+    return front + this.rFraction * (back - front);
+  }
+}
 
 class DelayedDecayEnvelope {
   constructor(upRate, attackSeconds, attackHeight, decaySeconds) {
@@ -115,6 +153,7 @@ function process(upRate, pv, dsp) {
   let sig = 0;
   for (let i = 0; i < dsp.osc.length; ++i) sig += dsp.osc[i].process();
   sig /= dsp.osc.length;
+  sig *= dsp.openSmoother.process(1);
 
   const lfo = Math.exp(dsp.lfoScale * dsp.lfo.process(dsp.lfoFreq));
   for (let i = 0; i < dsp.times.length; ++i) {
@@ -123,6 +162,8 @@ function process(upRate, pv, dsp) {
   dsp.delay.setTime(dsp.times);
   const flanger = dsp.delay.process(sig) / pv.nTap;
   sig = lerp(sig, flanger, pv.flangerMix);
+
+  sig += pv.reverbMix * dsp.fdn.process(sig, pv.reverbFeedback);
 
   if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
   return sig;
@@ -141,6 +182,20 @@ onmessage = async (event) => {
   let dsp = {};
   dsp.rng = rng;
 
+  // FDN.
+  dsp.fdn = new FeedbackDelayNetwork(
+    8, upRate, maxReverbTimeSeconds, smoother.DoubleEMAFilter, smoother.EMAHighpass,
+    ModDelay);
+  dsp.fdn.randomizeMatrix(
+    "SpecialOrthogonal", Math.floor(Number.MAX_SAFE_INTEGER * rng.number()));
+  for (let i = 0; i < dsp.fdn.delay.length; ++i) {
+    dsp.fdn.delay[i].setTime(
+      upRate * pv.reverbSeconds * exponentialMap(rng.number(), 0.01, 1));
+    dsp.fdn.lowpass[i].setCutoff(exponentialMap(rng.number(), 4000 / upRate, 0.49998));
+    dsp.fdn.highpass[i].setCutoff(pv.reverbHighpassHz / upRate);
+  }
+
+  // Flanger.
   dsp.delay = new delay.MultiTapDelay(upRate, 0.1, pv.nTap);
   dsp.times = new Array(pv.nTap).fill(0);
   dsp.baseTimes = new Array(pv.nTap).fill(0);
@@ -150,15 +205,18 @@ onmessage = async (event) => {
       = exponentialMap(rng.number(), 1 / pv.delayRandomRatio, pv.delayRandomRatio);
     dsp.baseTimes[i] = ratio * upRate / (pv.delayBaseHz * randomPitch);
   }
-  // dsp.maxTime = dsp.baseTimes.reduce((p, c) => Math.max(p, c));
   dsp.lfoFreq = pv.lfoFreqHz / upRate;
   dsp.lfoScale = Math.log(2) * pv.lfoAmount;
-  dsp.lfo = new SinOsc(rng.number());
+  dsp.lfo = new SinOsc(pv.lfoInitialPhase + rng.number());
 
+  dsp.openSmoother = new smoother.DoubleEMAFilter();
+  dsp.openSmoother.setCutoffFromTime(0.002 * upRate);
+
+  // FM oscillators.
   //
   // Original recipe:
-  // const testRatios0 = [4 / 4, 6 / 4, 9 / 4];
-  // const testRatios1 = [61.4 / 4, 61.4 / 4, 32 / 4];
+  // const carrierRatios = [4 / 4, 6 / 4, 9 / 4];
+  // const modulatorRatios = [61.4 / 4, 61.4 / 4, 32 / 4];
   //
   dsp.osc = [];
 
@@ -167,7 +225,10 @@ onmessage = async (event) => {
   for (let i = 0; i < pv.chord1NoteCount; ++i) {
     const modRatio = 2 ** (Math.log2(pv.chord1Ratio ** i) % pv.chord1OctaveWrap);
     carrierRatios.push(modRatio);
-    modulatorRatios.push(2 ** (4 - Math.floor(Math.log2(modRatio))));
+
+    const modOctave = 2 ** (4 - Math.floor(Math.log2(modRatio)));
+    const modSemitone = uniformDistributionMap(rng.number(), -4 / 12, 2 / 12);
+    modulatorRatios.push(modOctave + modSemitone);
   }
 
   let chordRatios = [];

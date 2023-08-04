@@ -8,7 +8,7 @@ import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
-import {justIntonationTable} from "./shared.js"
+import {justIntonationTable, maxReverbTimeSeconds} from "./shared.js"
 
 function randomize() {
   if (selectRandom.value === "Default") {
@@ -27,7 +27,7 @@ function randomize() {
       if (key === "chord2Notes") continue;
 
       if (key === "lfoFreqHz") {
-        param[key].dsp = util.exponentialMap(Math.random(), 0.1, 10);
+        param[key].dsp = util.exponentialMap(Math.random(), 0.01, 4);
         continue;
       }
 
@@ -84,7 +84,13 @@ const scales = {
   decaySeconds: new parameter.DecibelScale(-60, 60, false),
   nUnison: new parameter.IntScale(1, 128),
   unisonPitchSpreadCents: new parameter.LinearScale(0, 500),
-  fmIndex: new parameter.DecibelScale(util.ampToDB(1 / 4), util.ampToDB(4), true),
+  fmIndex: new parameter.DecibelScale(util.ampToDB(1 / 4), util.ampToDB(16), true),
+
+  reverbMix: new parameter.DecibelScale(-60, 0, true),
+  reverbSeconds:
+    new parameter.DecibelScale(-60, util.ampToDB(maxReverbTimeSeconds), true),
+  reverbFeedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
+  reverbHighpassHz: new parameter.DecibelScale(0, 60, true),
 
   nTap: new parameter.IntScale(1, 128),
   mix: new parameter.LinearScale(0, 1),
@@ -92,6 +98,7 @@ const scales = {
   delayRandomRatio: new parameter.DecibelScale(0, util.ampToDB(16), false),
   lfoFreqHz: new parameter.DecibelScale(-40, 20, true),
   lfoAmount: new parameter.DecibelScale(-40, util.ampToDB(16), true),
+  phase: new parameter.LinearScale(0, 1),
 };
 
 const param = {
@@ -122,12 +129,18 @@ const param = {
   decaySeconds: new parameter.Parameter(4, scales.decaySeconds, true),
   fmIndex: new parameter.Parameter(1, scales.fmIndex, true),
 
+  reverbMix: new parameter.Parameter(0.1, scales.reverbMix, false),
+  reverbSeconds: new parameter.Parameter(0.01, scales.reverbSeconds, true),
+  reverbFeedback: new parameter.Parameter(0.98, scales.reverbFeedback, true),
+  reverbHighpassHz: new parameter.Parameter(4, scales.reverbHighpassHz, true),
+
   flangerMix: new parameter.Parameter(0.5, scales.mix, true),
   nTap: new parameter.Parameter(16, scales.nTap, true),
   delayBaseHz: new parameter.Parameter(1000, scales.delayBaseHz, true),
   delayRandomRatio: new parameter.Parameter(2, scales.delayRandomRatio, true),
   lfoFreqHz: new parameter.Parameter(1, scales.lfoFreqHz, true),
   lfoAmount: new parameter.Parameter(1, scales.lfoAmount, true),
+  lfoInitialPhase: new parameter.Parameter(0, scales.phase, true),
 
   chord2Notes: createArrayParameters(
     [
@@ -196,8 +209,10 @@ const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save();
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
+const detailPitchCalc = widget.details(divLeft, "Pitch Calculator");
 const detailRender = widget.details(divLeft, "Render");
 const detailMisc = widget.details(divLeft, "Misc.");
+const detailReverb = widget.details(divLeft, "Reverb");
 const detailFM = widget.details(divRightA, "FM");
 const detailFlanger = widget.details(divRightA, "Flanger");
 const detailFMChord2 = widget.details(divRightB, "FM - Chord2");
@@ -237,7 +252,16 @@ const ui = {
   decaySeconds: new widget.NumberInput(detailFM, "Decay [s]", param.decaySeconds, render),
   fmIndex: new widget.NumberInput(detailFM, "FM Index", param.fmIndex, render),
 
-  flangerMix: new widget.NumberInput(detailFlanger, "Mix", param.flangerMix, render),
+  reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
+  reverbSeconds:
+    new widget.NumberInput(detailReverb, "Max Delay [s]", param.reverbSeconds, render),
+  reverbFeedback:
+    new widget.NumberInput(detailReverb, "Feedback", param.reverbFeedback, render),
+  reverbHighpassHz:
+    new widget.NumberInput(detailReverb, "Highpass [Hz]", param.reverbHighpassHz, render),
+
+  flangerMix:
+    new widget.NumberInput(detailFlanger, "Mix [ratio]", param.flangerMix, render),
   nTap: new widget.NumberInput(detailFlanger, "nTap", param.nTap, render),
   delayBaseHz:
     new widget.NumberInput(detailFlanger, "Delay Base [Hz]", param.delayBaseHz, render),
@@ -246,6 +270,8 @@ const ui = {
   lfoFreqHz:
     new widget.NumberInput(detailFlanger, "LFO Frequency [Hz]", param.lfoFreqHz, render),
   lfoAmount: new widget.NumberInput(detailFlanger, "LFO Amount", param.lfoAmount, render),
+  lfoInitialPhase: new widget.NumberInput(
+    detailFlanger, "LFO Phase [rad/2π]", param.lfoInitialPhase, render),
 
   chord2Notes: new widget.MultiCheckBoxVertical(
     detailFMChord2, "Notes in Chord 2 (Just Intonation, Semitone)",

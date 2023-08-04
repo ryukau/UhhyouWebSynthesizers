@@ -1,6 +1,8 @@
 // Copyright 2023 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+export const maxReverbTimeSeconds = 0.2;
+
 export const justIntonationTable = [
   1 / 1,   // 0
   16 / 15, // 1
