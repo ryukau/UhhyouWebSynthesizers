@@ -209,7 +209,6 @@ const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save();
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
-const detailPitchCalc = widget.details(divLeft, "Pitch Calculator");
 const detailRender = widget.details(divLeft, "Render");
 const detailMisc = widget.details(divLeft, "Misc.");
 const detailReverb = widget.details(divLeft, "Reverb");
