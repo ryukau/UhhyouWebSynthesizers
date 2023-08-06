@@ -196,13 +196,8 @@ audio.renderStatusElement = pRenderStatus;
 
 const divPlayControl = widget.div(divLeft, "playControl", undefined);
 const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined,
-  ["Default", "Snare1", "Snare2", "Body", "Noise", "Full"], "Default", (ev) => {
-    if (ev.currentTarget.value === "Snare1" || ev.currentTarget.value === "Snare2") {
-      param["hightoneGain"].dsp = util.dbToAmp(-40);
-    }
-    randomize();
-  });
+  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
+  (ev) => { randomize(); });
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
