@@ -39,13 +39,20 @@ export class BarBox {
     this.label.textContent = label;
     this.divContainer.appendChild(this.label);
 
-    this.spanIndex = document.createElement("span");
-    this.spanIndex.classList.add("barbox");
-    this.spanIndex.textContent = "Index";
-    this.divContainer.appendChild(this.spanIndex);
+    this.divInputLine = document.createElement("div");
+    this.divInputLine.style.width = "100%";
+    this.divInputLine.style.display = "flex";
+    this.divInputLine.style.alignItems = "center";
+    this.divContainer.appendChild(this.divInputLine);
+
+    this.divIndexLabel = document.createElement("div");
+    this.divIndexLabel.classList.add("barbox");
+    this.divIndexLabel.textContent = "Index";
+    this.divInputLine.appendChild(this.divIndexLabel);
 
     this.inputIndex = document.createElement("input");
     this.inputIndex.classList.add("barbox");
+    this.inputIndex.style.flexGrow = 1;
     this.inputIndex.ariaLabel = label + ", index selector";
     this.inputIndex.ariaDescription
       = "Select index of bar box control. Each index corresponds to a value in an array. The value can be set at the next element.";
@@ -54,16 +61,16 @@ export class BarBox {
     this.inputIndex.max = parameters.length;
     this.inputIndex.step = 1;
     this.inputIndex.value = 0;
-    this.divContainer.appendChild(this.inputIndex);
+    this.divInputLine.appendChild(this.inputIndex);
 
-    this.spanValue = document.createElement("span");
-    this.spanValue.classList.add("barbox");
-    this.spanValue.textContent = "Value";
-    this.spanValue.style.textAlign = "left";
-    this.divContainer.appendChild(this.spanValue);
+    this.divValueLabel = document.createElement("div");
+    this.divValueLabel.classList.add("barbox");
+    this.divValueLabel.textContent = "Value";
+    this.divInputLine.appendChild(this.divValueLabel);
 
     this.inputValue = document.createElement("input");
     this.inputValue.classList.add("barbox");
+    this.inputValue.style.flexGrow = 1;
     this.inputValue.ariaLabel = label + ", value input";
     this.inputValue.ariaDescription
       = "Set value of bar box control. This value is a part of an array. The index of array can be set at the previous element.";
@@ -72,7 +79,7 @@ export class BarBox {
     this.inputValue.max = parameters[0].scale.maxDsp;
     this.inputValue.step = parameters[0].step;
     this.inputValue.value = parameters[0].dsp;
-    this.divContainer.appendChild(this.inputValue);
+    this.divInputLine.appendChild(this.inputValue);
 
     this.inputIndex.addEventListener("input", (e) => this.#inputCallback(e), false);
     this.inputValue.addEventListener("input", (e) => this.#inputCallback(e), false);
