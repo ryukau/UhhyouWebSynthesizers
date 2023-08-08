@@ -192,7 +192,7 @@ paragraphNote2.textContent
   = "Reducing `FDN -> Cross Feedback Gain` and `Comb -> Feedback Gain` also prevents blow up, but it also changes the character.";
 
 const detailRender = widget.details(divLeft, "Render");
-const detailLimiter = widget.details(divLeft, "Limiter");
+const detailLimiter = widget.details(divRightA, "Limiter");
 const detailOsc = widget.details(divRightA, "Oscillator");
 const detailFDN = widget.details(divRightA, "FDN");
 const detailPitch = widget.details(divRightB, "Pitch");
