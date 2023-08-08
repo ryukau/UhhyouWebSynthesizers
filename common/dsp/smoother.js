@@ -75,6 +75,7 @@ export class RateLimiter {
   }
 
   reset(value = 0) { this.value = value; }
+  add(rhs) { this.value += rhs; }
 
   process(target) {
     const diff = target - this.value;

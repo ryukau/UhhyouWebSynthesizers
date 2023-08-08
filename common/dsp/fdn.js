@@ -493,3 +493,38 @@ export function constructConference(matrix) {
 
   return matrix;
 }
+
+/**
+Householder matrix.
+
+`matrix` is 2D array of a square matrix.
+`seed` is 1D array of a vector which length is the same as `matrix`.
+
+Reference: https://nhigham.com/2020/09/15/what-is-a-householder-matrix/
+*/
+export function constructHouseholder(matrix, seed) {
+  let denom = seed.reduce((sum, val) => sum + val * val, 0);
+
+  if (denom <= Number.EPSILON) {
+    for (let i = 0; i < matrix.length; ++i) {
+      for (let j = 0; j < matrix[i].length; ++j) matrix[i][j] = 0;
+    }
+    return matrix;
+  }
+
+  const scale = -2 / denom;
+
+  for (let i = 0; i < seed.length; ++i) {
+    // Diagonal elements.
+    matrix[i][i] = 1 + scale * seed[i] * seed[i];
+
+    // Non-diagonal elements.
+    for (let j = i + 1; j < seed.length; ++j) {
+      const value = scale * seed[i] * seed[j];
+      matrix[i][j] = value;
+      matrix[j][i] = value;
+    }
+  }
+
+  return matrix;
+}

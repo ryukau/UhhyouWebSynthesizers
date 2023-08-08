@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./SlipOutComb/synth.html",
+          "name": "SlipOutComb",
+          "description": {
+            "ja": "発散からすり抜けるようにバンドパスのカットオフを変調するフィードバックコムフィルタ。",
+            "en": "Feedback comb filter that modulates bandpass cutoff to slip out from divergence."
+          }
+        },
+        {
           "href": "./FMGlassyPad/synth.html",
           "name": "FMGlassyPad",
           "description": {

@@ -32,6 +32,12 @@ export class IntDelay {
 
     return this.#buf[rptr];
   }
+
+  // Convenient method for audio-rate modulation.
+  processMod(input, timeInSample) {
+    this.setTime(timeInSample);
+    return this.process(input);
+  }
 }
 
 export class Delay {
@@ -68,6 +74,12 @@ export class Delay {
 
     // Read from buffer.
     return this.#buf[rptr0] + this.rFraction * (this.#buf[rptr1] - this.#buf[rptr0]);
+  }
+
+  // Convenient method for audio-rate modulation.
+  processMod(input, timeInSample) {
+    this.setTime(timeInSample);
+    return this.process(input);
   }
 }
 

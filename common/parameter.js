@@ -157,6 +157,61 @@ export class NegativeDecibelScale {
   toUi(amplitude) { return 1 - this.scale.toUi(this.offset - amplitude); }
 }
 
+// Similar to DecibelScale, but can have negative values when normalized value is below
+// 0.5.
+//
+// - When normalized value is in 0.5, `toDsp()` outputs 0.
+// - Same range is used for positive and negative values.
+//
+// This scale is added for FM or PM amount.
+export class BipolarExponentialScale {
+  #center = 0.5;
+
+  constructor(positiveMinValue, positiveMaxValue) {
+    console.assert(
+      Number.isFinite(positiveMinValue) && positiveMinValue > 0, new Error());
+    console.assert(
+      Number.isFinite(positiveMaxValue) && positiveMaxValue > 0, new Error());
+
+    this.minValue = positiveMinValue;
+    this.maxValue = positiveMaxValue;
+
+    this.minExp = Math.log(positiveMinValue);
+    this.diffExp = Math.log(positiveMaxValue) - this.minExp;
+
+    this.upperRangeStart = this.#center * (1 + Number.EPSILON);
+    this.lowerRangeEnd = this.#center * (1 - Number.EPSILON);
+  }
+
+  get minUi() { return 0; }
+  get maxUi() { return 1; }
+
+  get minDsp() { return -this.maxValue; }
+  get maxDsp() { return this.maxValue; }
+
+  toDsp(normalized) {
+    if (normalized >= this.upperRangeStart) {
+      const ratio = (normalized - this.upperRangeStart) / (1 - this.upperRangeStart);
+      return Math.exp(ratio * this.diffExp + this.minExp);
+    } else if (normalized <= this.lowerRangeEnd) {
+      const ratio = 1 - normalized / this.lowerRangeEnd;
+      return -Math.exp(ratio * this.diffExp + this.minExp);
+    }
+    return 0;
+  }
+
+  toUi(amplitude) {
+    if (amplitude > 0) {
+      const value = (Math.log(amplitude) - this.minExp) / this.diffExp;
+      return value * (1 - this.upperRangeStart) + this.upperRangeStart;
+    } else if (amplitude < 0) {
+      const value = (Math.log(-amplitude) - this.minExp) / this.diffExp;
+      return (1 - value) * this.lowerRangeEnd;
+    }
+    return this.#center;
+  }
+}
+
 export class MidiPitchScale {
   constructor(minPitch, maxPitch, minToZero) {
     console.assert(Number.isFinite(minPitch) || -Infinity === minPitch, new Error());

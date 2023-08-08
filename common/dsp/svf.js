@@ -190,3 +190,86 @@ export class SVFHighShelf {
     return this.#A * this.#A * (v0 - this.#k * v1 - v2) + this.#A * this.#k * v1 + v2;
   }
 }
+
+/**
+This is for audio-rate modulation. If cutoff is static, use the ones in `sos.js`.
+*/
+export class MatchedBiquad {
+  #x1 = 0;
+  #x2 = 0;
+  #y1 = 0;
+  #y2 = 0;
+
+  constructor() { this.reset(); }
+
+  reset() {
+    this.#x1 = 0;
+    this.#x2 = 0;
+    this.#y1 = 0;
+    this.#y2 = 0;
+  }
+
+  #preProcess(cutoffNormalized, Q) {
+    const ω0 = 2 * Math.PI * clamp(cutoffNormalized, minCutoff, nyquist);
+    const q = 0.5 / Q;
+    const a1 = -2 * Math.exp(-q * ω0)
+      * (q <= 1 ? Math.cos(Math.sqrt(1 - q * q) * ω0) : Math.cosh(Math.sqrt(q * q - 1) * ω0));
+    const a2 = Math.exp(-2 * q * ω0);
+    return [ω0, a1, a2];
+  }
+
+  #postProcess(x0, b0, b1, b2, a1, a2) {
+    const y0 = b0 * x0 + b1 * this.#x1 + b2 * this.#x2 - a1 * this.#y1 - a2 * this.#y2;
+    this.#x2 = this.#x1;
+    this.#x1 = x0;
+    this.#y2 = this.#y1;
+    this.#y1 = y0;
+    return y0;
+  }
+
+  lp(x0, cutoffNormalized, Q) {
+    const [ω0, a1, a2] = this.#preProcess(cutoffNormalized, Q);
+
+    const r0 = 1 + a1 + a2;
+    const ωQ = ω0 / Q;
+    const one_ωω = 1 - ω0 * ω0;
+    const r1 = ω0 * ω0 * (1 - a1 + a2) / Math.sqrt(one_ωω * one_ωω + ωQ * ωQ);
+
+    const b0 = 0.5 * (r0 + r1);
+    const b1 = r0 - b0;
+
+    const y0 = b0 * x0 + b1 * this.#x1 - a1 * this.#y1 - a2 * this.#y2;
+    this.#x1 = x0;
+    this.#y2 = this.#y1;
+    this.#y1 = y0;
+    return y0;
+  }
+
+  hp(x0, cutoffNormalized, Q) {
+    const [ω0, a1, a2] = this.#preProcess(cutoffNormalized, Q);
+
+    const ωQ = ω0 / Q;
+    const one_ωω = 1 - ω0 * ω0;
+    const r1 = (1 - a1 + a2) / Math.sqrt(one_ωω * one_ωω + ωQ * ωQ);
+
+    const b0 = 0.25 * r1;
+    const b1 = -2 * b0;
+
+    return this.#postProcess(x0, b0, b1, b0, a1, a2);
+  }
+
+  bp(x0, cutoffNormalized, Q) {
+    const [ω0, a1, a2] = this.#preProcess(cutoffNormalized, Q);
+
+    const r0 = (1 + a1 + a2) / (ω0 * Q);
+    const ωQ = ω0 / Q;
+    const one_ωω = 1 - ω0 * ω0;
+    const r1 = ωQ * (1 - a1 + a2) / Math.sqrt(one_ωω * one_ωω + ωQ * ωQ);
+
+    const b0 = 0.5 * r0 + 0.25 * r1;
+    const b1 = -0.5 * r1;
+    const b2 = -b0 - b1;
+
+    return this.#postProcess(x0, b0, b1, b2, a1, a2);
+  }
+}
