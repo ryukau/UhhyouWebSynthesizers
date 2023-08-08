@@ -134,8 +134,8 @@ class EasyFDN {
 }
 
 class Tanh {
-  constructor(gain) { this.gain = gain; }
-  process(input) { return Math.tanh(input * this.gain) / this.gain; }
+  constructor(gain) { this.invGain = 1 / Math.max(gain, Number.EPSILON); }
+  process(input) { return Math.tanh(input * this.invGain); }
 }
 
 class Bypass {
