@@ -185,10 +185,10 @@ const togglebuttonQuickSave = new widget.ToggleButton(
 
 const detailTips = widget.details(divLeft, "Tips");
 const paragraphNote1 = widget.paragraph(detailTips, undefined, undefined);
-paragraphNote.textContent
+paragraphNote1.textContent
   = "Reducing `FDN -> Cross Feedback Decay` or `Comb -> Feedback Decay` might stops feedback to blowing up. When the synth is blowing up, dashed line will appear in Waveform view.";
 const paragraphNote2 = widget.paragraph(detailTips, undefined, undefined);
-paragraphNote.textContent
+paragraphNote2.textContent
   = "Reducing `FDN -> Cross Feedback Gain` and `Comb -> Feedback Gain` also prevents blow up, but it also changes the character.";
 
 const detailRender = widget.details(divLeft, "Render");
