@@ -10,32 +10,77 @@ import * as wave from "../common/wave.js";
 import * as menuitems from "./menuitems.js";
 
 function randomize() {
-  for (const key in param) {
-    if (key === "renderDuration") {
-      param[key].dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.8);
-      continue;
-    }
-    if (key === "fadeIn") continue;
-    if (key === "fadeOut") continue;
-    if (key === "decayTo") {
-      param[key].ui = util.uniformDistributionMap(Math.random(), -40, 0);
-      continue;
-    }
-    if (key === "baseFreq") {
-      param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
-      continue;
-    }
-    if (key === "pitchSuperellipseCurve") continue;
-    if (key === "modCurve") continue;
-    if (key === "limiterAttack") continue;
-    if (key === "limiterRelease") continue;
+  if (selectRandom.value === "Dry BD") {
+    for (const key in param) {
+      if (key === "renderDuration") continue;
+      if (key === "fadeIn") continue;
+      if (key === "fadeOut") continue;
+      if (key === "decayTo") {
+        param[key].dsp = util.exponentialMap(Math.random(), util.dbToAmp(-20), 1);
+        continue;
+      }
+      if (key === "baseFreq") {
+        param[key].dsp = util.exponentialMap(Math.random(), 10, 90);
+        continue;
+      }
+      if (key === "pitchDropBezier") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 1, 10);
+        continue;
+      }
+      if (key === "pitchDropBezierPower") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.9, 1.1);
+        continue;
+      }
+      if (key === "pitchSuperellipseCurve") continue;
+      if (key === "modCurve") continue;
+      if (key === "overtoneRandomizeType") {
+        param[key].normalized = 0;
+        continue;
+      }
+      if (key === "limiterAttack") continue;
+      if (key === "limiterRelease") continue;
+      if (key === "limiterInputGain") continue;
+      if (key === "reverbMix") {
+        param[key].normalized = 0;
+        continue;
+      }
 
-    if (Array.isArray(param[key])) {
-      param[key].forEach(e => { e.normalized = Math.random(); });
-    } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing for now.
-    } else {
-      param[key].normalized = Math.random();
+      if (Array.isArray(param[key])) {
+        param[key].forEach(e => { e.normalized = Math.random(); });
+      } else if (param[key].scale instanceof parameter.MenuItemScale) {
+        // Do nothing for now.
+      } else {
+        param[key].normalized = Math.random();
+      }
+    }
+  } else { // "Default"
+    for (const key in param) {
+      if (key === "renderDuration") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.8);
+        continue;
+      }
+      if (key === "fadeIn") continue;
+      if (key === "fadeOut") continue;
+      if (key === "decayTo") {
+        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 0);
+        continue;
+      }
+      if (key === "baseFreq") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
+        continue;
+      }
+      if (key === "pitchSuperellipseCurve") continue;
+      if (key === "modCurve") continue;
+      if (key === "limiterAttack") continue;
+      if (key === "limiterRelease") continue;
+
+      if (Array.isArray(param[key])) {
+        param[key].forEach(e => { e.normalized = Math.random(); });
+      } else if (param[key].scale instanceof parameter.MenuItemScale) {
+        // Do nothing for now.
+      } else {
+        param[key].normalized = Math.random();
+      }
     }
   }
 
@@ -169,8 +214,8 @@ audio.renderStatusElement = pRenderStatus;
 
 const divPlayControl = widget.div(divLeft, "playControl", undefined);
 const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
-  (ev) => { randomize(); });
+  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default", "Dry BD"],
+  "Default", (ev) => { randomize(); });
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
