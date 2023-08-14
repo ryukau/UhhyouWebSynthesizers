@@ -49,6 +49,8 @@ export class AdaptiveNotchCPZ {
     this.mu = 1 / (stepSizeScale * sampleRate);
 
     this.rho = narrownessOfNotch;
+
+    initialGuessHz = Math.min(Math.max(initialGuessHz, 0), sampleRate / 2);
     this.a = -2 * Math.cos(2 * Math.PI * initialGuessHz / sampleRate);
 
     this.x1 = 0;
@@ -78,6 +80,8 @@ export class AdaptiveNotchCPZ {
   processNormalized(x0) {
     const a1 = this.rho * this.a;
     const a2 = this.rho * this.rho;
+    const gain
+      = this.a >= 0 ? (1 + a1 + a2) / (2 + this.a) : (1 - a1 + a2) / (2 - this.a);
 
     const y0 = x0 + this.a * this.x1 + this.x2 - a1 * this.y1 - a2 * this.y2;
     const s0 = this.x1 * (1 - this.rho * y0);
@@ -89,12 +93,6 @@ export class AdaptiveNotchCPZ {
     this.y1 = y0;
 
     // Normalize max output gain to 0 dB.
-    const zeroGain = 1 + a1 + a2;
-    const nyquistGain = 1 - a1 + a2;
-    const candidate = zeroGain >= nyquistGain ? zeroGain : nyquistGain;
-    const denom = Math.abs(candidate) <= Number.EPSILON
-      ? Math.sign(candidate) * Number.EPSILON
-      : candidate;
-    return y0 * (2 + this.a) / denom;
+    return y0 * 1;
   }
 }
