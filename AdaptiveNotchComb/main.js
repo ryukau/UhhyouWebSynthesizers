@@ -165,7 +165,7 @@ const togglebuttonQuickSave = new widget.ToggleButton(
 const detailTips = widget.details(divLeft, "Tips");
 const paragraphNote1 = widget.paragraph(detailTips, undefined, undefined);
 paragraphNote1.textContent
-  = "When the sound becomes inaudible, change `Oscillator -> BP Cut`, lower `Notch -> Narrowness`, or raise `Notch -> Step Size Scale`.";
+  = "When the sound becomes inaudible, change `Oscillator -> BP Cut`, `Notch -> Narrowness`, or `Notch -> Step Size Scale`.";
 const paragraphNote2 = widget.paragraph(detailTips, undefined, undefined);
 paragraphNote2.textContent
   = "To reduce clicks or spikes, lower `Comb -> Base Frequency`.";
