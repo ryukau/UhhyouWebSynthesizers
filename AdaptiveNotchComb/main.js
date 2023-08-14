@@ -20,6 +20,11 @@ function randomize() {
       if (key === "dcHighpassHz") continue;
       if (key === "toneSlope") continue;
 
+      if (key === "noiseDistribution") {
+        param[key].normalized = Math.random();
+        continue;
+      }
+
       if (key === "notchInvert") {
         param[key].normalized = Math.random();
         continue;
@@ -74,6 +79,7 @@ const scales = {
   combHz: new parameter.DecibelScale(util.ampToDB(20), util.ampToDB(4000), false),
   combRandomOctave: new parameter.LinearScale(0, 2),
   combFrequencySpread: new parameter.LinearScale(0, 1),
+  combNotchMix: new parameter.DecibelScale(-20, 0, false),
 
   notchCount: new parameter.IntScale(1, 32),
   notchNarrowness: new parameter.NegativeDecibelScale(-60, 0, 1, true),
@@ -99,6 +105,7 @@ const param = {
   combBaseHz: new parameter.Parameter(100, scales.combHz, true),
   combRandomOctave: new parameter.Parameter(1, scales.combRandomOctave, true),
   combFrequencySpread: new parameter.Parameter(1, scales.combFrequencySpread, true),
+  combNotchMix: new parameter.Parameter(0.5, scales.combNotchMix, true),
 
   notchCount: new parameter.Parameter(32, scales.notchCount, true),
   notchNarrowness: new parameter.Parameter(0.99, scales.notchNarrowness, true),
@@ -188,6 +195,8 @@ const ui = {
     detailComb, "Random Frequency [oct]", param.combRandomOctave, render),
   combFrequencySpread: new widget.NumberInput(
     detailComb, "Frequency Spread", param.combFrequencySpread, render),
+  combNotchMix:
+    new widget.NumberInput(detailComb, "Feedback Notch Mix", param.combNotchMix, render),
 
   notchCount: new widget.NumberInput(detailNotch, "Count", param.notchCount, render),
   notchNarrowness:

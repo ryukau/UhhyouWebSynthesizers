@@ -12,6 +12,7 @@ export const noiseDistributionItems = [
   "Binary",
   "Triangle",
   "Normal",
+  "Random Walk",
 ];
 
 export const notchInvertItems = [

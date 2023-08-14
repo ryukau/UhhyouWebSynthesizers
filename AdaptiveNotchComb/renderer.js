@@ -4,6 +4,7 @@
 import {AdaptiveNotchCPZ} from "../common/dsp/adaptivefilter.js";
 import * as delay from "../common/dsp/delay.js";
 import * as multirate from "../common/dsp/multirate.js";
+import {HP1} from "../common/dsp/onepole.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {MatchedBiquad} from "../common/dsp/svf.js";
 import {
@@ -11,7 +12,8 @@ import {
   exponentialMap,
   lerp,
   normalDistributionMap,
-  triangleDistributionMap
+  triangleDistributionMap,
+  uniformDistributionMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -20,7 +22,8 @@ import * as menuitems from "./menuitems.js";
 const exp2Scaler = Math.log(2);
 
 class AdaptiveNotchComb {
-  constructor(sampleRate, delaySeconds, notchNarrowness, notchStepSizeScale) {
+  constructor(
+    sampleRate, delaySeconds, notchNarrowness, notchStepSizeScale, notchMixGain) {
     this.delay = new delay.IntDelay(sampleRate, delaySeconds);
     this.delay.setTime(sampleRate * delaySeconds);
     this.fbGain = 1;
@@ -28,12 +31,27 @@ class AdaptiveNotchComb {
 
     this.notch = new AdaptiveNotchCPZ(
       sampleRate, 1 / delaySeconds, notchNarrowness, notchStepSizeScale);
+    this.mix = notchMixGain;
   }
 
   process(input, fbGain) {
-    this.fbSig = this.fbSig - this.notch.processNormalized(this.fbSig);
+    this.fbSig -= this.mix * this.notch.processNormalized(this.fbSig);
     this.fbSig = this.delay.process(input + fbGain * Math.tanh(this.fbSig));
     return this.fbSig;
+  }
+}
+
+class BrownNoise {
+  constructor(sampleRate, highpassCutoffHz) {
+    this.value = 0;
+    this.highpass = new HP1();
+    this.highpass.setCutoff(highpassCutoffHz / sampleRate);
+    this.maxStep = 1e-3;
+  }
+
+  process(rng) {
+    const noise = normalDistributionMap(rng.number(), rng.number(), 0, this.maxStep / 3);
+    return this.value = this.highpass.process(this.value + noise);
   }
 }
 
@@ -80,6 +98,9 @@ onmessage = async (event) => {
     dsp.noiseFunc = (rng) => triangleDistributionMap(rng.number(), rng.number(), -1, 1);
   } else if (distribution === "Normal") {
     dsp.noiseFunc = (rng) => normalDistributionMap(rng.number(), rng.number(), 0, 1 / 3);
+  } else if (distribution === "Random Walk") {
+    dsp.brownNoise = new BrownNoise(upRate, 1);
+    dsp.noiseFunc = (rng) => dsp.brownNoise.process(rng);
   } else {
     console.error(`Invalid noise distribution. pv.noiseDistribution is set to ${
       pv.noiseDistribution}`);
@@ -95,7 +116,7 @@ onmessage = async (event) => {
     const delayHz = pv.combBaseHz * freqSpread * freqRandom;
     combLatency += upRate / delayHz;
     dsp.combs.push(new AdaptiveNotchComb(
-      upRate, 1 / delayHz, pv.notchNarrowness, pv.notchStepSizeScale));
+      upRate, 1 / delayHz, pv.notchNarrowness, pv.notchStepSizeScale, pv.combNotchMix));
   }
   combLatency = Math.floor(combLatency) - pv.combCount;
 
