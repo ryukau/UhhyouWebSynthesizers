@@ -23,6 +23,11 @@ export function uniformDistributionMap(value, low, high) {
 }
 
 // `value` is in [0, 1).
+export function triangleDistributionMap(v1, v2, low, high) {
+  return low + 0.5 * (high - low) * (v1 + v2);
+}
+
+// `value` is in [0, 1).
 // `low` and `high` are integer. Output interval is [low, high].
 export function uniformIntDistributionMap(value, low, high) {
   return Math.floor(low + value * (high + 1 - low));

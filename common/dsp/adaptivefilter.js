@@ -39,29 +39,24 @@ export class AdaptiveFilterLMS {
 
 // Constrained poles and zeros-based adaptive notch filters (CPZ-ANF) described in section
 // II of following paper.
-// - http://www.apsipa.org/proceedings/2018/pdfs/0001355.pdf
-//   - "DSP Implementation of Adaptive Notch Filters With Overflow Avoidance in
-//   Fixed-Point Arithmetic" by Satoru Ishibashi, Shunsuke Koshita, Masahide Abe and
-//   Masayuki Kawamata.
-//
-// The above paper refers to a 1985 paper linked below.
-// - https://www.ese.wustl.edu/~nehorai/paper/ieeeac85-2.pdf
-//   - A. Nehorai, "A minimal parameter adaptive notch filter with constrained poles and
-//   zeros," IEEE Trans. Acoust., Speech, Signal Process., vol. 33, no. 4, pp. 983–996,
-//   Aug. 1985.
-//
-// Gain response of this notch filter looks not good for audio but maybe there's some
-// application. Gain normalization is added for this implementation.
-class AdaptiveNotchCPZ {
-  constructor(sampleRate, initialGuessHz, narrownessOfNotch = 0.99) {
-    this.mu = 1 / sampleRate; // Step size, but there's no specification for this value.
+// - "DSP Implementation of Adaptive Notch Filters With Overflow Avoidance in Fixed-Point
+//   Arithmetic" by Satoru Ishibashi, Shunsuke Koshita, Masahide Abe and Masayuki
+//   Kawamata. (http://www.apsipa.org/proceedings/2018/pdfs/0001355.pdf)
+export class AdaptiveNotchCPZ {
+  constructor(sampleRate, initialGuessHz, narrownessOfNotch = 0.99, stepSizeScale = 1) {
+    // `mu` means step size here. But there's no specification for this value. If `mu` is
+    // too large, cutoff moves too fast and the filter blows up.
+    this.mu = 1 / (stepSizeScale * sampleRate);
+
     this.rho = narrownessOfNotch;
-    this.a = -2 * Math.cos(2 * Math.pi * initialGuessFrequencyNormalized);
+    this.a = -2 * Math.cos(2 * Math.PI * initialGuessHz / sampleRate);
 
     this.x1 = 0;
     this.x2 = 0;
     this.y1 = 0;
     this.y2 = 0;
+
+    this.aBound = 1.98;
   }
 
   process(x0) {
@@ -69,8 +64,24 @@ class AdaptiveNotchCPZ {
     const a2 = this.rho * this.rho;
 
     const y0 = x0 + this.a * this.x1 + this.x2 - a1 * this.y1 - a2 * this.y2;
-    const s0 = this.x1 * (1 - this.rho * this.y0);
-    this.a = clamp(this.a - 2 * y0 * s0 * this.mu, -2, 2);
+    const s0 = this.x1 * (1 - this.rho * y0);
+    this.a = clamp(this.a - 2 * y0 * s0 * this.mu, -this.aBound, this.aBound);
+
+    this.x2 = this.x1;
+    this.x1 = x0;
+    this.y2 = this.y1;
+    this.y1 = y0;
+
+    return y0;
+  }
+
+  processNormalized(x0) {
+    const a1 = this.rho * this.a;
+    const a2 = this.rho * this.rho;
+
+    const y0 = x0 + this.a * this.x1 + this.x2 - a1 * this.y1 - a2 * this.y2;
+    const s0 = this.x1 * (1 - this.rho * y0);
+    this.a = clamp(this.a - 2 * y0 * s0 * this.mu, -this.aBound, this.aBound);
 
     this.x2 = this.x1;
     this.x1 = x0;

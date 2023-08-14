@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./AdaptiveNotchComb/synth.html",
+          "name": "AdaptiveNotchComb",
+          "description": {
+            "ja": "適応ノッチフィルタを用いたコムフィルタ。金属音。",
+            "en": "Comb filter with a adaptive notch filter on feedback path. Metallic sound."
+          }
+        },
+        {
           "href": "./SlipOutComb/synth.html",
           "name": "SlipOutComb",
           "description": {
