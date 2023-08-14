@@ -35,7 +35,7 @@ class AdaptiveNotchComb {
   }
 
   process(input, fbGain) {
-    this.fbSig -= this.mix * this.notch.processNormalized(this.fbSig);
+    this.fbSig = this.notch.processNormalized(this.fbSig) - this.mix * this.fbSig;
     this.fbSig = this.delay.process(input + fbGain * Math.tanh(this.fbSig));
     return this.fbSig;
   }
@@ -61,7 +61,7 @@ function process(upRate, pv, dsp) {
 
   let sig = source;
   for (let idx = 0; idx < dsp.combs.length; ++idx) {
-    sig = dsp.combs[idx].process(sig, 1);
+    sig = pv.combCascadeGain * dsp.combs[idx].process(sig, 1);
   }
 
   for (let idx = 0; idx < dsp.notches.length; ++idx) {

@@ -20,8 +20,14 @@ function randomize() {
       if (key === "dcHighpassHz") continue;
       if (key === "toneSlope") continue;
 
-      if (key === "noiseDistribution") {
-        param[key].normalized = Math.random();
+      // if (key === "noiseDistribution") {
+      //   param[key].normalized = Math.random();
+      //   continue;
+      // }
+
+      if (key === "combCascadeGain") {
+        // param[key].dsp = util.uniformDistributionMap(
+        //   Math.random(), scales.combCascadeGain.minDsp, 0.95);
         continue;
       }
 
@@ -80,6 +86,7 @@ const scales = {
   combRandomOctave: new parameter.LinearScale(0, 2),
   combFrequencySpread: new parameter.LinearScale(0, 1),
   combNotchMix: new parameter.DecibelScale(-20, 0, false),
+  combCascadeGain: new parameter.DecibelScale(util.ampToDB(0.5), 0, false),
 
   notchCount: new parameter.IntScale(1, 32),
   notchNarrowness: new parameter.NegativeDecibelScale(-60, 0, 1, true),
@@ -106,6 +113,7 @@ const param = {
   combRandomOctave: new parameter.Parameter(1, scales.combRandomOctave, true),
   combFrequencySpread: new parameter.Parameter(1, scales.combFrequencySpread, true),
   combNotchMix: new parameter.Parameter(0.5, scales.combNotchMix, true),
+  combCascadeGain: new parameter.Parameter(0.95, scales.combCascadeGain, true),
 
   notchCount: new parameter.Parameter(32, scales.notchCount, true),
   notchNarrowness: new parameter.Parameter(0.99, scales.notchNarrowness, true),
@@ -157,7 +165,7 @@ const togglebuttonQuickSave = new widget.ToggleButton(
 const detailTips = widget.details(divLeft, "Tips");
 const paragraphNote1 = widget.paragraph(detailTips, undefined, undefined);
 paragraphNote1.textContent
-  = "When the sound becomes inaudible, lower `Oscillator -> BP Cut` or raise `Notch -> Step Size Scale`.";
+  = "When the sound becomes inaudible, change `Oscillator -> BP Cut`, lower `Notch -> Narrowness`, or raise `Notch -> Step Size Scale`.";
 const paragraphNote2 = widget.paragraph(detailTips, undefined, undefined);
 paragraphNote2.textContent
   = "To reduce clicks or spikes, lower `Comb -> Base Frequency`.";
@@ -197,6 +205,8 @@ const ui = {
     detailComb, "Frequency Spread", param.combFrequencySpread, render),
   combNotchMix:
     new widget.NumberInput(detailComb, "Feedback Notch Mix", param.combNotchMix, render),
+  combCascadeGain:
+    new widget.NumberInput(detailComb, "Cascade Gain", param.combCascadeGain, render),
 
   notchCount: new widget.NumberInput(detailNotch, "Count", param.notchCount, render),
   notchNarrowness:
