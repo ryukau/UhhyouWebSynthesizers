@@ -92,7 +92,6 @@ export class AdaptiveNotchCPZ {
     this.y2 = this.y1;
     this.y1 = y0;
 
-    // Normalize max output gain to 0 dB.
-    return y0 * 1;
+    return y0 * gain;
   }
 }
