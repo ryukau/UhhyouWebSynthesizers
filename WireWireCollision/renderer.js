@@ -132,5 +132,5 @@ onmessage = async (event) => {
     gainEnv *= decay;
   }
 
-  postMessage(sound);
+  postMessage({sound: sound});
 }

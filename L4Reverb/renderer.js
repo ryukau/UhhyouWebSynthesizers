@@ -63,5 +63,5 @@ onmessage = (event) => {
     for (let i = 0; i < sound.length; ++i) sound[i] = l4.process(sound[i]);
   }
 
-  postMessage(sound);
+  postMessage({sound: sound});
 }

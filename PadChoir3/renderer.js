@@ -259,5 +259,5 @@ onmessage = async (event) => {
     layerPad(fft, buffer, ptRnd() * pv.chordPitch3 * layer, upRate, pv, dsp);
   }
 
-  postMessage(buffer);
+  postMessage({sound: buffer});
 };

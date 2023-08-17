@@ -91,5 +91,5 @@ onmessage = (event) => {
     gainEnv *= decay;
   }
 
-  postMessage(sound);
+  postMessage({sound: sound});
 }

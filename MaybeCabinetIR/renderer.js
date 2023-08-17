@@ -159,5 +159,5 @@ onmessage = async (event) => {
   const gain = 1 / ir.reduce((p, v) => p + Math.abs(v), 0);
   for (let idx = 0; idx < ir.length; ++idx) ir[idx] *= gain;
 
-  postMessage(ir);
+  postMessage({sound: ir});
 }

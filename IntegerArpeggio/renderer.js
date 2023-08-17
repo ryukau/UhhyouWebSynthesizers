@@ -135,5 +135,5 @@ onmessage = async (event) => {
   }
   sound = sound.slice(0, outputLength);
 
-  postMessage(sound);
+  postMessage({sound: sound});
 }

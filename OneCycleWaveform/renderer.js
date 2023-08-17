@@ -122,5 +122,5 @@ onmessage = async (event) => {
   for (let i = 0; i < outVec.size(); ++i) sound[i] = outVec.get(i);
   outVec.delete();
 
-  postMessage(sound);
+  postMessage({sound: sound});
 }

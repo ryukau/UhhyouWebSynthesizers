@@ -50,5 +50,5 @@ onmessage = (event) => {
     for (let i = 0; i < sound.length; ++i) sound[i] = fdn.process(sound[i], pv.feedback);
   }
 
-  postMessage(sound);
+  postMessage({sound: sound});
 }

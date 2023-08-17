@@ -90,7 +90,7 @@ export class Audio {
 
     this.workers.forEach((value, index) => {
       value.worker.onmessage = (event) => {
-        this.wave.data[index] = event.data;
+        this.wave.data[index] = event.data.sound;
         this.workers[index].isRunning = false;
         if (this.workers.every((v) => !v.isRunning)) {
           if (this.wave.channels === 1) this.wave.copyChannel(index);

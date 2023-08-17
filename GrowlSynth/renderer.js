@@ -376,5 +376,5 @@ onmessage = async (event) => {
     for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
   }
 
-  postMessage(sound);
+  postMessage({sound: sound});
 }

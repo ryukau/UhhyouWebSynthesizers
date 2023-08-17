@@ -233,5 +233,5 @@ onmessage = (event) => {
   }
   sound.length = Math.floor(pv.sampleRate * pv.renderDuration);
 
-  postMessage(sound);
+  postMessage({sound: sound});
 };
