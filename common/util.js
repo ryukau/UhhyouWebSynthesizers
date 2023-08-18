@@ -1,6 +1,10 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+//
+// Don't import any other code to avoid circular dependency.
+//
+
 export function clamp(value, low, high) { return Math.max(low, Math.min(value, high)); }
 export function lerp(v0, v1, t) { return v0 + t * (v1 - v0); }
 

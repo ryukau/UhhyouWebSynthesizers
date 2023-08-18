@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Cascaded exponential moving average filter.
-export class ReleaseFilter {
+class ReleaseFilter {
   constructor(timeSamples) {
     this.v1 = 0;
     this.v2 = 0;
@@ -49,7 +49,7 @@ class FixedIntDelay {
   }
 }
 
-class PeakHold {
+export class PeakHold {
   constructor(holdSamples) {
     this.delay = new FixedIntDelay(holdSamples);
     this.queue = [];
@@ -66,7 +66,42 @@ class PeakHold {
   }
 }
 
-class DoubleAverageFilter {
+// Operator +, but rounds floating point number towards 0.
+// Both `lhs` and `rhs` must be 0 or postive number.
+//
+// Details are written in `common/wasm/basiclimiter.cpp`.
+function fadd(lhs, rhs) {
+  if (lhs < rhs) [lhs, rhs] = [rhs, lhs];
+  if (rhs <= lhs * Number.EPSILON) return lhs;
+  const expL = Math.ceil(Math.log2(lhs));
+  const cut = 2 ** (expL - 53); // 53 is mantissa bits of double float.
+  const rounded = rhs - rhs % cut;
+  return lhs + rounded;
+}
+
+export class MovingAverageFilter {
+  constructor(smoothingSamples) {
+    this.delay = new FixedIntDelay(smoothingSamples);
+    this.scaler = 1 / smoothingSamples;
+    this.sum = 0;
+  }
+
+  process(input) {
+    input *= this.scaler;
+    this.sum = fadd(this.sum, input);
+    const d1 = this.delay.process(input);
+    return this.sum = Math.max(0, this.sum - d1);
+  }
+
+  processNaive(input) {
+    input *= this.scaler;
+    this.sum += input;
+    const d1 = this.delay.process(input);
+    return this.sum = this.sum - d1;
+  }
+}
+
+export class DoubleAverageFilter {
   // `smoothingSamples` must be even.
   constructor(smoothingSamples) {
     const half = smoothingSamples / 2;
@@ -79,27 +114,14 @@ class DoubleAverageFilter {
     this.buf = 0;
   }
 
-  // Operator +, but rounds floating point number towards 0.
-  // Both `lhs` and `rhs` must be 0 or postive number.
-  //
-  // Details are written in `common/wasm/basiclimiter.cpp`.
-  #add(lhs, rhs) {
-    if (lhs < rhs) [lhs, rhs] = [rhs, lhs];
-    if (rhs <= lhs * Number.EPSILON) return lhs;
-    const expL = Math.ceil(Math.log2(lhs));
-    const cut = 2 ** (expL - 53);
-    const rounded = rhs - rhs % cut;
-    return lhs + rounded;
-  }
-
   process(input) {
     input *= this.scaler;
 
-    this.sum1 = this.#add(this.sum1, input);
+    this.sum1 = fadd(this.sum1, input);
     const d1 = this.delay1.process(input);
     this.sum1 = Math.max(0, this.sum1 - d1);
 
-    this.sum2 = this.#add(this.sum2, this.sum1);
+    this.sum2 = fadd(this.sum2, this.sum1);
     const d2 = this.delay2.process(this.sum1);
     this.sum2 = Math.max(0, this.sum2 - d2);
 

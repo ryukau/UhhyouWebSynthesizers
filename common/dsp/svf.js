@@ -273,3 +273,111 @@ export class MatchedBiquad {
     return this.#postProcess(x0, b0, b1, b2, a1, a2);
   }
 }
+
+export class BiquadResonator {
+  #x1 = 0;
+  #x2 = 0;
+  #y1 = 0;
+  #y2 = 0;
+
+  constructor() { this.reset(); }
+
+  reset() {
+    this.#x1 = 0;
+    this.#x2 = 0;
+    this.#y1 = 0;
+    this.#y2 = 0;
+  }
+
+  // `resonance` in [0, 1).
+  process(x0, cutoffNormalized, resonance) {
+    const R = resonance;
+    const b0 = (1 - R * R) * 0.5;
+    const a1 = -2 * R * Math.cos(2 * Math.PI * cutoffNormalized);
+    const a2 = R * R;
+
+    const y0 = b0 * x0 - b0 * this.#x2 - a1 * this.#y1 - a2 * this.#y2;
+    this.#x2 = this.#x1;
+    this.#x1 = x0;
+    this.#y2 = this.#y1;
+    this.#y1 = y0;
+    return y0;
+  }
+}
+
+// Resonator (this ComplexResonator and BiquadResonator above) is basically a lowpass with
+// high Q. Perhaps useful for some musical tunings, but it's probably better to use other
+// SVF most of times.
+//
+// Complex transfer function:
+//
+// ```
+//         1
+// H(z) = ---------------
+//         1 - a1 * z^-1
+// ```
+//
+// Real part transfer function:
+//
+// ```
+//         1 - (a1im + a1re) * z^-1
+// H(z) = -----------------------------------------------------
+//         1 -      2 * a1re * z^-1 + (a1re^2 + a1im^2) * z^-2
+// ```
+//
+// Imaginary part transfer function:
+//
+// ```
+//         1 + (a1im - a1re) * z^-1
+// H(z) = -----------------------------------------------------
+//         1 -      2 * a1re * z^-1 + (a1re^2 + a1im^2) * z^-2
+// ```
+export class ComplexResonator {
+  #y1;
+  #output;
+
+  constructor() { this.reset(); }
+
+  reset() {
+    this.#y1 = {re: 0, im: 0};
+    this.#output = {re: 0, im: 0};
+  }
+
+  // `resonance` in [0, 1).
+  process(x0, cutoffNormalized, resonance) {
+    // Complex: a1 = resonance * exp(1j + omega);
+    const omega = 2 * Math.PI * clamp(cutoffNormalized, 0, 0.5);
+    const freqRe = Math.cos(omega);
+    const freqIm = Math.sin(omega);
+    const a1Re = resonance * freqRe;
+    const a1Im = resonance * freqIm;
+
+    // Complex: y1 = x0 + a1 * y1;
+    const y1re = this.#y1.re;
+    this.#y1.re = x0 + a1Re * y1re - a1Im * this.#y1.im;
+    this.#y1.im = x0 + a1Re * this.#y1.im + a1Im * y1re;
+    return this.#y1;
+  }
+
+  // Real output exceeds 0 dB at low frequencies.
+  processNormalized(x0, cutoffNormalized, resonance) {
+    const omega = 2 * Math.PI * clamp(cutoffNormalized, 0, 0.5);
+    const freqRe = Math.cos(omega);
+    const freqIm = Math.sin(omega);
+    const a1Re = resonance * freqRe;
+    const a1Im = resonance * freqIm;
+
+    // Complex: gainInversed = abs(1 - a1 * exp(1j + omega)).
+    const gRe = 1 - a1Re * freqRe;
+    const gIm = a1Im * freqIm;
+    const gainInv = Math.sqrt(gRe * gRe + gIm * gIm);
+
+    const y1re = this.#y1.re;
+    this.#y1.re = x0 + a1Re * y1re - a1Im * this.#y1.im;
+    this.#y1.im = x0 + a1Re * this.#y1.im + a1Im * y1re;
+
+    this.#output.re = gainInv * this.#y1.re;
+    this.#output.im = gainInv * this.#y1.im;
+    return this.#output;
+  }
+}

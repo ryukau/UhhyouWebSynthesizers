@@ -98,10 +98,14 @@ export class MultiTapDelay {
     this.#timeInt = new Array(nTap).fill(0);
     this.#rFraction = new Array(nTap).fill(0);
 
+    this.output = new Array(nTap).fill(0);
     this.reset();
   }
 
-  reset() { this.#buf.fill(0); }
+  reset() {
+    this.#buf.fill(0);
+    this.output.fill(0);
+  }
 
   // `timeInSamples` is an array.
   setTime(timeInSamples) {
@@ -131,6 +135,24 @@ export class MultiTapDelay {
         + this.#rFraction[idx] * (this.#buf[rptr1] - this.#buf[rptr0]);
     }
     return sum;
+  }
+
+  processSplit(input) {
+    this.#buf[this.#wptr] = input;
+    if (++this.#wptr >= this.#buf.length) this.#wptr = 0;
+
+    for (let idx = 0; idx < this.#timeInt.length; ++idx) {
+      let rptr0 = this.#wptr - this.#timeInt[idx];
+      if (rptr0 < 0) rptr0 += this.#buf.length;
+
+      let rptr1 = rptr0 - 1;
+      if (rptr1 < 0) rptr1 += this.#buf.length;
+
+      // Read from buffer.
+      this.output[idx]
+        = this.#buf[rptr0] + this.#rFraction[idx] * (this.#buf[rptr1] - this.#buf[rptr0]);
+    }
+    return this.output;
   }
 }
 

@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./ResonantDrop/synth.html",
+          "name": "ResonantDrop",
+          "description": {
+            "ja": "パラパラと小さな物が落ちるような音が出るシンセサイザ。レゾネータを使用。",
+            "en": "A synthesizer that uses a resonator to produce sounds like small falling objects."
+          }
+        },
+        {
           "href": "./AdaptiveNotchComb/synth.html",
           "name": "AdaptiveNotchComb",
           "description": {
