@@ -20,6 +20,7 @@ function randomize() {
       if (key === "dcHighpassHz") continue;
       if (key === "toneSlope") continue;
 
+      if (key === "negativeEnvelope") continue;
       if (key === "noteNumber") continue;
       if (key === "mainPwmAmount") continue;
       if (key === "chorusAM") continue;
@@ -68,12 +69,12 @@ const scales = {
   dcHighpassHz: new parameter.DecibelScale(-20, 40, true),
 
   envelopeTimeSeconds: new parameter.DecibelScale(-40, 60, false),
-  ratio: new parameter.LinearScale(0, 1),
   envelopeLevel: new parameter.LinearScale(0, 1),
   pitchEnvOctave: new parameter.DecibelScale(util.ampToDB(0.02), util.ampToDB(20), true),
+
   noteNumber: new parameter.MidiPitchScale(-24, 128, false),
-  frequencyHz: new parameter.DecibelScale(util.ampToDB(1), util.ampToDB(10000), false),
   lfoRateHz: new parameter.DecibelScale(-40, 40, true),
+  ratio: new parameter.LinearScale(0, 1),
 
   chorusAM: new parameter.DecibelScale(-30, 0, true),
   chorusTimeSeconds:
@@ -91,18 +92,19 @@ const param = {
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
   dcHighpassHz: new parameter.Parameter(16, scales.dcHighpassHz, true),
 
+  negativeEnvelope: new parameter.Parameter(0, scales.boolean, true),
   attackTimeSeconds: new parameter.Parameter(0.1, scales.envelopeTimeSeconds, true),
   attackLevel: new parameter.Parameter(0.5, scales.envelopeLevel, true),
   decayTimeSeconds: new parameter.Parameter(1, scales.envelopeTimeSeconds, true),
   decayLevel: new parameter.Parameter(0, scales.envelopeLevel, true),
+  pitchEnvOctave: new parameter.Parameter(1, scales.pitchEnvOctave, true),
+  pwmLfoRateEnvOctave: new parameter.Parameter(1, scales.pitchEnvOctave, true),
 
   noteNumber: new parameter.Parameter(util.midiPitchToFreq(36), scales.noteNumber, false),
-  mainPwmAmount: new parameter.Parameter(1, scales.ratio, true),
-  pitchEnvOctave: new parameter.Parameter(1, scales.pitchEnvOctave, true),
-  subExtraMix: new parameter.Parameter(0, scales.ratio, true),
-  subPwmAmount: new parameter.Parameter(0, scales.ratio, true),
   pwmLfoRateHz: new parameter.Parameter(1.5, scales.lfoRateHz, true),
-  pwmLfoRateEnvOctave: new parameter.Parameter(1, scales.pitchEnvOctave, true),
+  mainPwmAmount: new parameter.Parameter(1, scales.ratio, true),
+  subPwmAmount: new parameter.Parameter(0, scales.ratio, true),
+  subExtraMix: new parameter.Parameter(0, scales.ratio, true),
 
   chorusMix: new parameter.Parameter(1, scales.ratio, true),
   chorusAM: new parameter.Parameter(0, scales.chorusAM, true),
@@ -173,6 +175,8 @@ const ui = {
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
 
+  negativeEnvelope: new widget.ToggleButtonLine(
+    detailEnvelope, ["Positive", "Negative"], param.negativeEnvelope, render),
   attackTimeSeconds: new widget.NumberInput(
     detailEnvelope, "Attack Time [s]", param.attackTimeSeconds, render),
   attackLevel:

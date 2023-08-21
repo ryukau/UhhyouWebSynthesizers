@@ -163,7 +163,7 @@ class Envelope {
 function process(upRate, pv, dsp) {
   let sig = 0;
 
-  const env = dsp.envelope.process();
+  const env = dsp.envelopeGain * dsp.envelope.process();
   const pwmPeriod
     = upRate / (pv.pwmLfoRateHz * Math.exp(exp2Scaler * pv.pwmLfoRateEnvOctave * env));
   const pwmLfo = dsp.pwmLfo[0].process(pwmPeriod);
@@ -211,6 +211,7 @@ onmessage = async (event) => {
   dsp.slopeFilter.setCutoff(upRate, 1000, pv.toneSlope, true);
   dsp.dcHighpass = new SVF(pv.dcHighpassHz / upRate, Math.SQRT1_2);
 
+  dsp.envelopeGain = pv.negativeEnvelope === 0 ? 1 : -1;
   dsp.envelope = new Envelope(
     pv.attackLevel,
     Math.floor(upRate * pv.attackTimeSeconds),
