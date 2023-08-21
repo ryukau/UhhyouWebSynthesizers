@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./HooverSynth/synth.html",
+          "name": "HooverSynth",
+          "description": {
+            "ja": "フーバーサウンドに特化したシンセサイザ。",
+            "en": "Hoover sound synthesizer."
+          }
+        },
+        {
           "href": "./ResonantDrop/synth.html",
           "name": "ResonantDrop",
           "description": {

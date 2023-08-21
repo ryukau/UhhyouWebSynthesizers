@@ -14,6 +14,7 @@ export function ampToDB(amplitude) { return 20 * Math.log10(amplitude); }
 export function midiPitchToFreq(pitch) { return 440 * Math.pow(2, (pitch - 69) / 12); }
 export function freqToMidiPitch(freq) { return 69 + 12 * Math.log2(freq / 440); }
 
+export const syntonicCommaRatio = 81 / 80;
 export const syntonicCommaCents = Math.log2(81 / 80) * 1200;
 
 // `v1` and `v2` are in [0, 1).
