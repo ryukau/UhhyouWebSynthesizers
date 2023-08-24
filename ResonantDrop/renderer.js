@@ -53,6 +53,7 @@ function process(upRate, pv, dsp) {
   let sum = 0;
   for (let idx = 0; idx < dsp.resonators.length; ++idx) {
     const env = dsp.resonatorEnv[idx].process();
+    if (env <= Number.EPSILON) continue;
     const cutoffMod = Math.exp(
       dsp.resonatorCutMod[idx] * env + dsp.resonatorModGain[idx] * spread[idx]);
 
