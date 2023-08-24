@@ -1,7 +1,7 @@
 // Copyright 2023 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
-import * as multirate from "../common/dsp/multirate.js";
+import {downSampleIIR, downSampleLinearPhase} from "../common/dsp/multirate.js";
 import {
   exponentialMap,
   uniformDistributionMap,
@@ -102,38 +102,7 @@ onmessage = async (event) => {
   }
 
   // Down-sample.
-  const outputLength = Math.floor(renderDuration / upFold);
-  if (upFold == 64) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos64FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < outputLength; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 32; ++k) decimationLowpass.push(sound[64 * i + 32 * j + k]);
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] = halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 16) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos16FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < outputLength; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 8; ++k) decimationLowpass.push(sound[16 * i + 8 * j + k]);
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] = halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 2) {
-    let halfband = new multirate.HalfBandIIR();
-    for (let i = 0; i < outputLength; ++i) {
-      const hb0 = sound[2 * i];
-      const hb1 = sound[2 * i + 1];
-      sound[i] = halfband.process(hb0, hb1);
-    }
-  }
-  sound = sound.slice(0, outputLength);
+  sound = downSampleLinearPhase(sound, upFold);
 
   postMessage({sound: sound});
 }

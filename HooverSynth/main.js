@@ -25,6 +25,8 @@ function randomize() {
       if (key === "mainPwmAmount") continue;
       if (key === "chorusAM") continue;
 
+      if (key === "limiterEnable") continue;
+
       if (Array.isArray(param[key])) {
         param[key].forEach(e => { e.normalized = Math.random(); });
       } else if (param[key].scale instanceof parameter.MenuItemScale) {
@@ -80,6 +82,8 @@ const scales = {
   chorusTimeSeconds:
     new parameter.DecibelScale(util.ampToDB(1e-4), util.ampToDB(0.2), true),
   chorusDelayCount: new parameter.IntScale(1, 8),
+
+  limiterThreshold: new parameter.DecibelScale(-20, 20, false),
 };
 
 const param = {
@@ -112,6 +116,9 @@ const param = {
   chorusTimeModSeconds: new parameter.Parameter(0.01, scales.chorusTimeSeconds, true),
   chorusDelayCount: new parameter.Parameter(1, scales.chorusDelayCount, true),
   chorusLfoSpread: new parameter.Parameter(1, scales.ratio, true),
+
+  limiterEnable: new parameter.Parameter(0, scales.boolean, true),
+  limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
 };
 
 // Add controls.
@@ -156,6 +163,7 @@ const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
 const detailRender = widget.details(divLeft, "Render");
+const detailLimiter = widget.details(divLeft, "Limiter");
 const detailEnvelope = widget.details(divRightA, "Envelope");
 const detailOscillator = widget.details(divRightA, "Oscillator");
 const detailChorus = widget.details(divRightA, "Chorus");
@@ -174,6 +182,11 @@ const ui = {
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
+
+  limiterEnable: new widget.ToggleButtonLine(
+    detailLimiter, ["Off", "On"], param.limiterEnable, render),
+  limiterThreshold: new widget.NumberInput(
+    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
 
   negativeEnvelope: new widget.ToggleButtonLine(
     detailEnvelope, ["Positive", "Negative"], param.negativeEnvelope, render),

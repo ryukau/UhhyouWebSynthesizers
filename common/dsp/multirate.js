@@ -1,6 +1,70 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+import * as downsamplercoefficient from "./downsamplercoefficient.js";
+
+export const oversampleLinearPhaseItems = ["1", "2", "4", "8", "16"];
+export const oversampleIirItems = ["1", "2", "4", "8", "16", "32", "64"];
+
+export function downSampleLinearPhase(data, fold) {
+  if (fold === 1) return data;
+
+  const getCoefficient = (fold) => {
+    if (fold === 2) return downsamplercoefficient.firLinearPhase2;
+    if (fold === 4) return downsamplercoefficient.firLinearPhase4;
+    if (fold === 8) return downsamplercoefficient.firLinearPhase8;
+    if (fold === 16) return downsamplercoefficient.firLinearPhase16;
+    console.error(
+      `Coefficents not available for linear phase ${fold} fold down-sampling.`);
+  };
+
+  const targetDurationSamples = Math.floor(data.length / fold);
+  let decimationLowpass = new FirDownSampler(getCoefficient(fold));
+  let frame = new Array(fold).fill(0);
+  for (let i = 0; i < targetDurationSamples; ++i) {
+    for (let k = 0; k < fold; ++k) frame[k] = data[fold * i + k];
+    data[i] = decimationLowpass.process(frame);
+  }
+  return data.slice(0, targetDurationSamples);
+}
+
+export function downSampleIIR(data, fold) {
+  if (fold === 1) return data;
+
+  const targetDurationSamples = Math.floor(data.length / fold);
+  let halfband = new HalfBandIIR();
+
+  if (fold === 2) {
+    for (let i = 0; i < data.length; ++i) {
+      data[i] = halfband.process(data[2 * i], data[2 * i + 1]);
+    }
+    return data.slice(0, targetDurationSamples);
+  }
+
+  const getCoefficient = (fold) => {
+    if (fold === 4) return downsamplercoefficient.sos4FoldFirstStage;
+    if (fold === 8) return downsamplercoefficient.sos8FoldFirstStage;
+    if (fold === 16) return downsamplercoefficient.sos16FoldFirstStage;
+    if (fold === 32) return downsamplercoefficient.sos32FoldFirstStage;
+    if (fold === 64) return downsamplercoefficient.sos64FoldFirstStage;
+    console.error(`Coefficents not available for IIR ${fold} fold down-sampling.`);
+  };
+
+  let decimationLowpass = new SosFilter(getCoefficient(fold));
+  let frame = [0, 0];
+  const halfFold = Math.floor(fold / 2);
+  for (let i = 0; i < targetDurationSamples; ++i) {
+    for (let j = 0; j < 2; ++j) {
+      for (let k = 0; k < halfFold; ++k) {
+        decimationLowpass.push(data[fold * i + halfFold * j + k]);
+      }
+      frame[j] = decimationLowpass.output();
+    }
+    data[i] = halfband.process(frame[0], frame[1]);
+  }
+  return data.slice(0, targetDurationSamples);
+}
+
 class FirstOrderAllpass {
   #x1;
   #y1;
@@ -61,60 +125,6 @@ export class HalfBandIIR {
     return 0.5 * (input0 + input1);
   }
 }
-
-/**
-Lowpass filter coefficient specialized for 64x oversampling.
-Sos stands for second order sections.
-
-```python
-import numpy
-from scipy import signal
-
-samplerate = 2 * 48000
-uprate = samplerate * 32
-sos = signal.butter(16, samplerate / 4, output="sos", fs=uprate)
-```
-*/
-export const sos64FoldFirstStage = [
-  [
-    1.354163914584143e-26, 2.708327829168286e-26, 1.354163914584143e-26,
-    -1.9045872504279573, 0.9068841759295282
-  ],
-  [1.0, 2.0, 1.0, -1.908001035290007, 0.9103020778040721],
-  [1.0, 2.0, 1.0, -1.9147330871451047, 0.9170422484899456],
-  [1.0, 2.0, 1.0, -1.9245914935233015, 0.9269125440714382],
-  [1.0, 2.0, 1.0, -1.9372866598709455, 0.9396230207448886],
-  [1.0, 2.0, 1.0, -1.9524305274354947, 0.9547851517602688],
-  [1.0, 2.0, 1.0, -1.9695376181976627, 0.9719128736135145],
-  [1.0, 2.0, 1.0, -1.9880295377862067, 0.9904270943918131],
-];
-
-/**
-Lowpass filter coefficient specialized for 16x oversampling.
-Sos stands for second order sections.
-
-```python
-import numpy
-from scipy import signal
-
-samplerate = 48000
-uprate = samplerate * 16 / 2
-sos = signal.butter(16, samplerate / 1.8, output="sos", fs=uprate)
-```
-*/
-export const sos16FoldFirstStage = [
-  [
-    3.5903469155931847e-12, 7.1806938311863695e-12, 3.5903469155931847e-12,
-    -1.2759657610561284, 0.40787244610150275
-  ],
-  [1.0, 2.0, 1.0, -1.2906502176887378, 0.42407495130188644],
-  [1.0, 2.0, 1.0, -1.320459244427636, 0.456965573191349],
-  [1.0, 2.0, 1.0, -1.3662708320207162, 0.5075130673741699],
-  [1.0, 2.0, 1.0, -1.429387848302023, 0.5771549894497601],
-  [1.0, 2.0, 1.0, -1.5114943545116066, 0.6677494954045713],
-  [1.0, 2.0, 1.0, -1.6145439579130596, 0.7814521523555764],
-  [1.0, 2.0, 1.0, -1.7405167001403739, 0.9204476945203488],
-];
 
 export class SosFilter {
   #x0;
@@ -186,3 +196,32 @@ export class SosFilter {
     return this.output();
   }
 }
+
+export class FirDownSampler {
+  #coefficient;
+  #buf;
+
+  constructor(coefficient) {
+    this.#coefficient = coefficient;
+    this.#buf = new Array(coefficient.length);
+    for (let idx = 0; idx < this.#coefficient.length; ++idx) {
+      this.#buf[idx] = new Array(this.#coefficient[idx].length).fill(0);
+    }
+  }
+
+  // `input` is Array. Length equals to number of polyphase, that is
+  // `input.length == coefficient.length`.
+  process(input) {
+    for (let i = 0; i < this.#coefficient.length; ++i) {
+      this.#buf[i].pop();
+      this.#buf[i].unshift(input[i]);
+    }
+
+    let output = 0;
+    for (let i = 0; i < this.#coefficient.length; ++i) {
+      let phase = this.#coefficient[i];
+      for (let n = 0; n < phase.length; ++n) output += this.#buf[i][n] * phase[n];
+    }
+    return output;
+  }
+};

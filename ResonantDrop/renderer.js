@@ -5,7 +5,7 @@ import {MultiTapDelay} from "../common/dsp/delay.js";
 import {DoubleEmaADEnvelope} from "../common/dsp/envelope.js";
 import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import {MovingAverageFilter} from "../common/dsp/limiter.js";
-import * as multirate from "../common/dsp/multirate.js";
+import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {BiquadResonator, ComplexResonator, SVF} from "../common/dsp/svf.js";
 import {
@@ -139,39 +139,7 @@ onmessage = async (event) => {
   // Process.
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
   for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
-
-  // Down-sampling.
-  if (upFold == 64) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos64FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < sound.length; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 32; ++k) decimationLowpass.push(sound[64 * i + 32 * j + k]);
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] = halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 16) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos16FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < sound.length; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 8; ++k) decimationLowpass.push(sound[16 * i + 8 * j + k]);
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] = halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 2) {
-    let halfband = new multirate.HalfBandIIR();
-    for (let i = 0; i < sound.length; ++i) {
-      const hb0 = sound[2 * i];
-      const hb1 = sound[2 * i + 1];
-      sound[i] = halfband.process(hb0, hb1);
-    }
-  }
-  if (upFold > 1) sound = sound.slice(0, Math.floor(pv.sampleRate * pv.renderDuration));
+  sound = downSampleIIR(sound, upFold);
 
   // Post effect.
   let gainEnv = 1;

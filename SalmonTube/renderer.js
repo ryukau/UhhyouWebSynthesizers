@@ -1,7 +1,7 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
-import * as multirate from "../common/dsp/multirate.js";
+import {downSampleIIR} from "../common/dsp/multirate.js";
 import {HP1, LP1} from "../common/dsp/onepole.js";
 import * as svf from "../common/dsp/svf.js"
 import * as util from "../common/util.js"
@@ -216,8 +216,7 @@ function process(pv, voice) {
 onmessage = (event) => {
   const pv = event.data; // Parameter values.
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
-
-  let sound = new Array(Math.floor(pv.sampleRate * pv.renderDuration)).fill(0);
+  const upRate = upFold * pv.sampleRate;
 
   let voice = [];
   let rng = new PcgRandom(BigInt(pv.seed + pv.channel * 65537));
@@ -274,27 +273,9 @@ onmessage = (event) => {
   }
 
   // Process.
-  if (upFold == 16) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos16FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < sound.length; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 8; ++k) decimationLowpass.push(process(pv, voice));
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] += halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 2) {
-    let halfband = new multirate.HalfBandIIR();
-    for (let i = 0; i < sound.length; ++i) {
-      const hb0 = process(pv, voice);
-      const hb1 = process(pv, voice);
-      sound[i] += halfband.process(hb0, hb1);
-    }
-  } else {
-    for (let i = 0; i < sound.length; ++i) sound[i] += process(pv, voice);
-  }
+  let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
+  for (let i = 0; i < sound.length; ++i) sound[i] = process(pv, voice);
+  sound = downSampleIIR(sound, upFold);
 
   // Post effect.
   let gainEnv = 1;

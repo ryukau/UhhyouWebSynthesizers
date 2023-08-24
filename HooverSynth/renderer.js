@@ -1,68 +1,16 @@
 // Copyright 2023 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
-import {CompanderMuLaw} from "../common/dsp/compander.js";
 import * as delay from "../common/dsp/delay.js";
-import * as multirate from "../common/dsp/multirate.js";
-import {ResonantOnePole} from "../common/dsp/resonantfilter.js";
+import {Limiter} from "../common/dsp/limiter.js";
+import {downSampleLinearPhase} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {SVF} from "../common/dsp/svf.js";
-import {lerp, syntonicCommaRatio, uniformDistributionMap} from "../common/util.js";
-import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
+import {lerp, syntonicCommaRatio} from "../common/util.js";
 
 import * as menuitems from "./menuitems.js";
 
 const exp2Scaler = Math.log(2);
-
-// Lowpass filter coefficient specialized for 8x oversampling.
-// Sos stands for second order sections.
-//
-// ```python
-// import numpy
-// from scipy import signal
-//
-// samplerate = 48000
-// uprate = samplerate * 8
-// sos = signal.butter(16, (3 / 4) * samplerate / 2, output="sos", fs=uprate)
-// ```
-export const sos8FoldFullStage = [
-  [
-    1.2142602290438502e-14, 2.4285204580877004e-14, 1.2142602290438502e-14,
-    -1.4849097351631897, 0.5517265598664537
-  ],
-  [1.0, 2.0, 1.0, -1.4978110534673281, 0.5652084017560705],
-  [1.0, 2.0, 1.0, -1.5237803593822528, 0.5923462544990569],
-  [1.0, 2.0, 1.0, -1.5631259986229586, 0.6334623385134278],
-  [1.0, 2.0, 1.0, -1.6162421621831222, 0.6889685822956186],
-  [1.0, 2.0, 1.0, -1.6835103750365576, 0.7592636783863952],
-  [1.0, 2.0, 1.0, -1.765140744462037, 0.8445671883100514],
-  [1.0, 2.0, 1.0, -1.8609318131624575, 0.9446685897491758],
-];
-
-// Lowpass filter coefficient specialized for 8x oversampling.
-// Sos stands for second order sections.
-//
-// ```python
-// import numpy
-// from scipy import signal
-//
-// samplerate = 48000
-// uprate = samplerate * 4
-// sos = signal.butter(16, (5 / 6) * samplerate / 2, output="sos", fs=uprate)
-// ```
-export const sos4FoldFullStage = [
-  [
-    1.0166449033595567e-09, 2.0332898067191133e-09, 1.0166449033595567e-09,
-    -0.9880912706543798, 0.24546178918419576
-  ],
-  [1.0, 2.0, 1.0, -1.0026276064698627, 0.26378443948040126],
-  [1.0, 2.0, 1.0, -1.0324209065113787, 0.30133807230506304],
-  [1.0, 2.0, 1.0, -1.0789673566962448, 0.36000858873318975],
-  [1.0, 2.0, 1.0, -1.1446496629593417, 0.442799323866397],
-  [1.0, 2.0, 1.0, -1.2329028338243355, 0.554040011190656],
-  [1.0, 2.0, 1.0, -1.3484215583297854, 0.6996481767314274],
-  [1.0, 2.0, 1.0, -1.4973605900564557, 0.8873817175922948],
-];
 
 class PulseOscillator {
   constructor() {
@@ -195,6 +143,7 @@ function process(upRate, pv, dsp) {
 
   if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
   if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
+  if (pv.limiterEnable === 1) sig = dsp.limiter.process(sig);
   return sig;
 }
 
@@ -235,34 +184,12 @@ onmessage = async (event) => {
       = new Chorus(upRate, pv.chorusTimeBaseSeconds, pv.chorusTimeModSeconds);
   }
 
-  dsp.compander = new CompanderMuLaw(pv.companderMu);
-  dsp.resonantFilter = new ResonantOnePole();
+  dsp.limiter = new Limiter(
+    Math.floor(upRate * 0.002), Math.floor(upRate * 0.002), 0, pv.limiterThreshold);
 
   // Process.
   for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
-
-  // Down-sampling.
-  if (upFold == 8) {
-    let decimationLowpass = new multirate.SosFilter(sos8FoldFullStage);
-    for (let i = 0; i < sound.length; ++i) {
-      for (let k = 0; k < upFold; ++k) decimationLowpass.push(sound[upFold * i + k]);
-      sound[i] = decimationLowpass.output();
-    }
-  } else if (upFold == 4) {
-    let decimationLowpass = new multirate.SosFilter(sos4FoldFullStage);
-    for (let i = 0; i < sound.length; ++i) {
-      for (let k = 0; k < upFold; ++k) decimationLowpass.push(sound[upFold * i + k]);
-      sound[i] = decimationLowpass.output();
-    }
-  } else if (upFold == 2) {
-    let halfband = new multirate.HalfBandIIR();
-    for (let i = 0; i < sound.length; ++i) {
-      const hb0 = sound[2 * i];
-      const hb1 = sound[2 * i + 1];
-      sound[i] = halfband.process(hb0, hb1);
-    }
-  }
-  if (upFold > 1) sound = sound.slice(0, Math.floor(pv.sampleRate * pv.renderDuration));
+  sound = downSampleLinearPhase(sound, upFold);
 
   // Post effect.
   let gainEnv = 1;

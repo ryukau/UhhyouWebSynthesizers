@@ -1,7 +1,7 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
-import * as multirate from "../common/dsp/multirate.js";
+import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SVF, SVFBell, SVFHighShelf} from "../common/dsp/svf.js";
 import * as util from "../common/util.js";
 import BasicLimiter from "../common/wasm/basiclimiter.js";
@@ -99,7 +99,6 @@ onmessage = async (event) => {
 
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
-  let sound = new Array(Math.floor(pv.sampleRate * pv.renderDuration));
 
   const rngStereo = menuitems.noiseStereoItems[pv.noiseStereo] === "Mono" ? 0 : 65537;
   let dsp = {
@@ -143,38 +142,9 @@ onmessage = async (event) => {
   for (let i = 0; i < latency; ++i) process(upRate, pv, dsp);
 
   // Process.
-  if (upFold == 64) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos64FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < sound.length; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 32; ++k) decimationLowpass.push(process(upRate, pv, dsp));
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] = halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 16) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos16FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < sound.length; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 8; ++k) decimationLowpass.push(process(upRate, pv, dsp));
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] = halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 2) {
-    let halfband = new multirate.HalfBandIIR();
-    for (let i = 0; i < sound.length; ++i) {
-      const hb0 = process(upRate, pv, dsp);
-      const hb1 = process(upRate, pv, dsp);
-      sound[i] = halfband.process(hb0, hb1);
-    }
-  } else {
-    for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
-  }
+  let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
+  for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
+  sound = downSampleIIR(sound, upFold);
 
   // Delete wasm instance.
   dsp.limiter.delete();

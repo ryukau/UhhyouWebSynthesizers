@@ -73,7 +73,7 @@ const scales = {
   nNode: new parameter.IntScale(4, 1000),
   lengthMeter: new parameter.LinearScale(0.1, 1),
   waveSpeed: new parameter.DecibelScale(0, 80, false),
-  damping: new parameter.DecibelScale(-20, 60, true),
+  damping: new parameter.DecibelScale(-40, 60, true),
   wallDistance: new parameter.DecibelScale(-80, -40, true),
   restitution: new parameter.LinearScale(0, 2),
   pullUpDistance: new parameter.DecibelScale(-80, -40, false),
@@ -87,7 +87,7 @@ const param = {
   fadeIn: new parameter.Parameter(0.0, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
-  overSample: new parameter.Parameter(2, scales.overSample),
+  overSample: new parameter.Parameter(4, scales.overSample),
   seed: new parameter.Parameter(0, scales.seed),
 
   limiterActive: new parameter.Parameter(0, scales.limiterActive, true),

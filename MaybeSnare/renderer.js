@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Delay, IntDelay} from "../common/dsp/delay.js";
-import * as multirate from "../common/dsp/multirate.js";
+import {downSampleIIR} from "../common/dsp/multirate.js";
 import * as svf from "../common/dsp/svf.js";
 import * as util from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
@@ -55,8 +55,6 @@ onmessage = (event) => {
   const pv = event.data; // Parameter values.
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
-
-  let sound = new Array(Math.floor(pv.sampleRate * pv.renderDuration)).fill(0);
 
   const delayTypeMap = {None: IntDelay, Linear: Delay};
   const delayType = (index) => delayTypeMap[menuitems.delayInterpItems[index]];
@@ -123,27 +121,9 @@ onmessage = (event) => {
   }
 
   // Process.
-  if (upFold == 16) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos16FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < sound.length; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 8; ++k) decimationLowpass.push(process(upFold, pv, dsp));
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] += halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 2) {
-    let halfband = new multirate.HalfBandIIR();
-    for (let i = 0; i < sound.length; ++i) {
-      const hb0 = process(upFold, pv, dsp);
-      const hb1 = process(upFold, pv, dsp);
-      sound[i] += halfband.process(hb0, hb1);
-    }
-  } else {
-    for (let i = 0; i < sound.length; ++i) sound[i] += process(upFold, pv, dsp);
-  }
+  let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
+  for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
+  sound = downSampleIIR(sound, upFold);
 
   // Post effect decay.
   let gainEnv = 1;

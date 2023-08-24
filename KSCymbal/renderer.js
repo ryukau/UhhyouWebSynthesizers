@@ -4,7 +4,7 @@
 // Warning: This code is old. Don't use any component from here.
 //
 
-import * as multirate from "../common/dsp/multirate.js";
+import {downSampleIIR} from "../common/dsp/multirate.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
@@ -201,37 +201,7 @@ onmessage = (event) => {
   }
 
   // Down-sampling.
-  if (upFold == 64) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos64FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < sound.length; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 32; ++k) {
-          decimationLowpass.push(sound[upFold * i + 32 * j + k]);
-        }
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] = halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 16) {
-    let decimationLowpass = new multirate.SosFilter(multirate.sos16FoldFirstStage);
-    let halfband = new multirate.HalfBandIIR();
-    let frame = [0, 0];
-    for (let i = 0; i < sound.length; ++i) {
-      for (let j = 0; j < 2; ++j) {
-        for (let k = 0; k < 8; ++k) decimationLowpass.push(sound[upFold * i + 8 * j + k]);
-        frame[j] = decimationLowpass.output();
-      }
-      sound[i] = halfband.process(frame[0], frame[1]);
-    }
-  } else if (upFold == 2) {
-    let halfband = new multirate.HalfBandIIR();
-    for (let i = 0; i < sound.length; ++i) {
-      sound[i] = halfband.process(sound[upFold * i + 0], sound[upFold * i + 1]);
-    }
-  }
-  sound.length = Math.floor(pv.sampleRate * pv.renderDuration);
+  sound = downSampleIIR(sound, upFold);
 
   postMessage({sound: sound});
 };
