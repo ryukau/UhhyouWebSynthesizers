@@ -5,15 +5,14 @@ import {AdaptiveFilterLMS} from "../common/dsp/adaptivefilter.js"
 import {SingleSideBandAmplitudeModulator} from "../common/dsp/analyticsignalfilter.js"
 import * as delay from "../common/dsp/delay.js";
 import {ExpPolyEnvelope} from "../common/dsp/envelope.js";
+import {Limiter} from "../common/dsp/limiter.js"
 import {downSampleIIR, SosFilter} from "../common/dsp/multirate.js";
-import {AP1, HP1, LP1} from "../common/dsp/onepole.js"
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {normalizedCutoffToOnePoleKp} from "../common/dsp/smoother.js";
 import {sosMatchedBandpass} from "../common/dsp/sos.js"
 import {SVF} from "../common/dsp/svf.js";
 import {
   clamp,
-  dbToAmp,
   exponentialMap,
   lerp,
   normalDistributionMap,
@@ -186,7 +185,9 @@ function process(upRate, pv, dsp) {
   if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
   if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
   const error = dsp.adaptiveFilter.process(sig, sig);
-  return lerp(sig - error, error, pv.adaptiveFilterMix);
+  sig = lerp(sig - error, error, pv.adaptiveFilterMix);
+  if (pv.limiterEnable === 1) sig = dsp.limiter.process(sig);
+  return sig;
 }
 
 onmessage = async (event) => {
@@ -247,6 +248,8 @@ onmessage = async (event) => {
   dsp.slopeFilter = new SlopeFilter(Math.floor(Math.log2(24000 / 1000)));
   dsp.slopeFilter.setCutoff(upRate, 1000, pv.toneSlope, true);
   dsp.adaptiveFilter = new AdaptiveFilterLMS(256, 0.1);
+  dsp.limiter = new Limiter(
+    Math.floor(upRate * pv.limiterAttackSeconds), 0, 0, pv.limiterThreshold);
 
   // Process.
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);

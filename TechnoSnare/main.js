@@ -20,6 +20,7 @@ function randomize() {
       if (key === "dcHighpassHz") continue;
       if (key === "toneSlope") continue;
       if (key === "adaptiveFilterMix") continue;
+      if (key === "limiterEnable") continue;
       if (key === "bodyHighpassHz") continue;
       if (key === "noiseCombRandom") continue;
       if (Array.isArray(param[key])) {
@@ -47,6 +48,7 @@ function randomize() {
         continue;
       }
       if (key === "adaptiveFilterMix") continue;
+      if (key === "limiterEnable") continue;
       if (key === "bodyAttackSeconds") {
         param[key].dsp = util.exponentialMap(Math.random(), 1e-5, 1e-3);
         continue;
@@ -124,6 +126,7 @@ function randomize() {
         continue;
       }
       if (key === "adaptiveFilterMix") continue;
+      if (key === "limiterEnable") continue;
       if (key === "bodyAttackSeconds") {
         const value = util.exponentialMap(Math.random(), 1e-5, 1e-3);
         param[key].dsp = value;
@@ -305,6 +308,9 @@ const scales = {
   seed: new parameter.IntScale(0, 2 ** 32),
   mix: new parameter.LinearScale(0, 1),
 
+  limiterThreshold: new parameter.DecibelScale(-60, 20, false),
+  limiterAttackSeconds: new parameter.DecibelScale(-100, -40, false),
+
   attackSeconds: new parameter.DecibelScale(-80, -20, true),
   envelopeCurve: new parameter.DecibelScale(-20, 60, true),
   pitchDecaySeconds: new parameter.DecibelScale(-40, 40, true),
@@ -335,6 +341,10 @@ const param = {
 
   seed: new parameter.Parameter(0, scales.seed),
   bodyNoiseMix: new parameter.Parameter(0.5, scales.mix),
+
+  limiterEnable: new parameter.Parameter(0, scales.boolean),
+  limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
+  limiterAttackSeconds: new parameter.Parameter(0.001, scales.limiterAttackSeconds, true),
 
   bodyAttackSeconds: new parameter.Parameter(600 / 48000, scales.attackSeconds, true),
   bodyEnvelopeCurve: new parameter.Parameter(100, scales.envelopeCurve, true),
@@ -415,6 +425,7 @@ const togglebuttonQuickSave = new widget.ToggleButton(
 
 const detailRender = widget.details(divLeft, "Render");
 const detailMisc = widget.details(divLeft, "Misc.");
+const detailLimiter = widget.details(divRightA, "Limiter");
 const detailBody = widget.details(divRightA, "Body");
 const detailNoise = widget.details(divRightB, "Noise");
 const detailHightone = widget.details(divRightB, "Hightone");
@@ -439,6 +450,13 @@ const ui = {
     new widget.NumberInput(detailMisc, "Body/Noise Mix", param.bodyNoiseMix, render),
   adaptiveFilterMix: new widget.NumberInput(
     detailMisc, "Adaptive Filter Mix", param.adaptiveFilterMix, render),
+
+  limiterEnable: new widget.ToggleButtonLine(
+    detailLimiter, ["Off", "On"], param.limiterEnable, render),
+  limiterThreshold: new widget.NumberInput(
+    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterAttackSeconds: new widget.NumberInput(
+    detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
 
   bodyAttackSeconds:
     new widget.NumberInput(detailBody, "Attack [s]", param.bodyAttackSeconds, render),
