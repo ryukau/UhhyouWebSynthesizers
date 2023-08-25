@@ -21,6 +21,7 @@ function randomize() {
       if (key === "toneSlope") continue;
       if (key === "adaptiveFilterMix") continue;
       if (key === "limiterEnable") continue;
+      if (key === "limiterThreshold") continue;
       if (key === "bodyHighpassHz") continue;
       if (key === "noiseCombRandom") continue;
       if (Array.isArray(param[key])) {
@@ -49,6 +50,7 @@ function randomize() {
       }
       if (key === "adaptiveFilterMix") continue;
       if (key === "limiterEnable") continue;
+      if (key === "limiterThreshold") continue;
       if (key === "bodyAttackSeconds") {
         param[key].dsp = util.exponentialMap(Math.random(), 1e-5, 1e-3);
         continue;
@@ -127,6 +129,7 @@ function randomize() {
       }
       if (key === "adaptiveFilterMix") continue;
       if (key === "limiterEnable") continue;
+      if (key === "limiterThreshold") continue;
       if (key === "bodyAttackSeconds") {
         const value = util.exponentialMap(Math.random(), 1e-5, 1e-3);
         param[key].dsp = value;
@@ -220,6 +223,9 @@ function randomize() {
       if (key === "seed") continue;
       if (key === "bodyNoiseMix") continue;
       if (key === "adaptiveFilterMix") continue;
+      if (key === "limiterEnable") continue;
+      if (key === "limiterThreshold") continue;
+      if (key === "limiterAttackSeconds") continue;
       if (key === "noiseAttackSeconds") continue;
       if (key === "noiseEnvelopeCurve") continue;
       if (key === "noiseBandpassHz") continue;
@@ -253,6 +259,9 @@ function randomize() {
       if (key === "bodyNoiseMix") continue;
       if (key === "seed") continue;
       if (key === "adaptiveFilterMix") continue;
+      if (key === "limiterEnable") continue;
+      if (key === "limiterThreshold") continue;
+      if (key === "limiterAttackSeconds") continue;
       if (key === "bodyAttackSeconds") continue;
       if (key === "bodyEnvelopeCurve") continue;
       if (key === "bodyPitchDecaySeconds") continue;
