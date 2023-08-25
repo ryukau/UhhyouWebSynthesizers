@@ -77,6 +77,7 @@ const scales = {
   noteNumber: new parameter.MidiPitchScale(-24, 128, false),
   lfoRateHz: new parameter.DecibelScale(-40, 40, true),
   ratio: new parameter.LinearScale(0, 1),
+  octave: new parameter.IntScale(-1, 3),
 
   chorusAM: new parameter.DecibelScale(-30, 0, true),
   chorusTimeSeconds:
@@ -109,6 +110,8 @@ const param = {
   mainPwmAmount: new parameter.Parameter(1, scales.ratio, true),
   subPwmAmount: new parameter.Parameter(0, scales.ratio, true),
   subExtraMix: new parameter.Parameter(0, scales.ratio, true),
+  subOctave: new parameter.Parameter(0, scales.octave, true),
+  pwmSawOctave: new parameter.Parameter(1, scales.octave, true),
 
   chorusMix: new parameter.Parameter(1, scales.ratio, true),
   chorusAM: new parameter.Parameter(0, scales.chorusAM, true),
@@ -213,6 +216,10 @@ const ui = {
     new widget.NumberInput(detailOscillator, "Sub PWM", param.subPwmAmount, render),
   subExtraMix:
     new widget.NumberInput(detailOscillator, "Sub Extra", param.subExtraMix, render),
+  subOctave:
+    new widget.NumberInput(detailOscillator, "Sub Pitch [oct]", param.subOctave, render),
+  pwmSawOctave: new widget.NumberInput(
+    detailOscillator, "PWM Saw Pitch [oct]", param.pwmSawOctave, render),
 
   chorusMix: new widget.NumberInput(detailChorus, "Mix", param.chorusMix, render),
   chorusAM: new widget.NumberInput(detailChorus, "AM", param.chorusAM, render),

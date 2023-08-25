@@ -120,15 +120,15 @@ function process(upRate, pv, dsp) {
     = upRate / (pv.noteNumber * Math.exp(exp2Scaler * pv.pitchEnvOctave * env));
 
   // Extra sub oscillators.
-  sig += dsp.saw0.process(oscPeriod * 4 * syntonicCommaRatio, pv.subPwmAmount * pwmLfo);
-  sig += dsp.pulse0.process(oscPeriod * 2 * syntonicCommaRatio, 0.51);
+  sig += dsp.saw0.process(oscPeriod * 4 * dsp.subPitch, pv.subPwmAmount * pwmLfo);
+  sig += dsp.pulse0.process(oscPeriod * 2 * dsp.subPitch, 0.51);
   sig *= pv.subExtraMix;
 
   // Oscillators from original hoover sound recipe.
   const mainPulseWidth = pv.mainPwmAmount * pwmLfo;
   sig += dsp.pulse1.process(oscPeriod * 2, 0.5);
   sig += dsp.pulse2.process(oscPeriod, mainPulseWidth);
-  sig += dsp.saw1.process(oscPeriod / 2, mainPulseWidth);
+  sig += dsp.saw1.process(oscPeriod * dsp.saw0Pitch, mainPulseWidth);
 
   // Chorus.
   let chrs = dsp.chorus[0].process(sig, dsp.isChorusLfoInverted ? 1 - pwmLfo : pwmLfo);
@@ -171,8 +171,11 @@ onmessage = async (event) => {
   dsp.pulse0 = new PulseOscillator();
   dsp.pulse1 = new PulseOscillator();
   dsp.pulse2 = new PulseOscillator();
-  dsp.saw0 = new PulseOscillator();
+  dsp.saw0 = new SawOscillator();
   dsp.saw1 = new SawOscillator();
+
+  dsp.subPitch = syntonicCommaRatio / 2 ** pv.subOctave;
+  dsp.saw0Pitch = 1 / 2 ** pv.pwmSawOctave;
 
   dsp.pwmLfo = new Array(pv.chorusDelayCount);
   dsp.pwmLfoFreqRatio = new Array(pv.chorusDelayCount);
