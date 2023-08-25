@@ -24,14 +24,23 @@ function randomize() {
         continue;
       }
       if (key === "pitchDropBezier") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 1, 10);
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 1, 3);
         continue;
       }
       if (key === "pitchDropBezierPower") {
         param[key].dsp = util.uniformDistributionMap(Math.random(), 0.9, 1.1);
         continue;
       }
+      if (key === "pitchDropSuperellipse") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 3.0, 10.0);
+        continue;
+      }
       if (key === "pitchSuperellipseCurve") continue;
+      if (key === "pitchSuperellipseDuration") {
+        param[key].dsp
+          = util.exponentialMap(Math.random(), 0.1, scales.decaySecond.maxDsp);
+        continue;
+      }
       if (key === "modCurve") continue;
       if (key === "overtoneRandomizeType") {
         param[key].normalized = 0;
@@ -118,7 +127,7 @@ const scales = {
 
   seed: new parameter.IntScale(0, 2 ** 53),
   bezierPower: new parameter.DecibelScale(-20, util.ampToDB(128), true),
-  baseFreq: new parameter.MidiPitchScale(0, 96, false),
+  baseFreq: new parameter.MidiPitchScale(-24, 96, false),
   superellipseCurve: new parameter.DecibelScale(-20, 0, false),
   decaySecond: new parameter.DecibelScale(-60, util.ampToDB(10), true),
   pitchDropOctave: new parameter.DecibelScale(-40, 40, true),
