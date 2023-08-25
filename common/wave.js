@@ -22,9 +22,9 @@ export class Audio {
     }
   }
 
-  play() {
+  play(upFold = 1) {
     let buffer = this.audioContext.createBuffer(
-      this.wave.channels, this.wave.frames, this.audioContext.sampleRate);
+      this.wave.channels, this.wave.frames, upFold * this.audioContext.sampleRate);
 
     for (let i = 0; i < this.wave.channels; ++i) {
       buffer.copyToChannel(new Float32Array(this.wave.data[i]), i, 0);
@@ -51,10 +51,11 @@ export class Audio {
     this.#source.stop(this.audioContext.currentTime + this.#fadeOutDuration + 0.001);
   }
 
-  save(loop = false, cue = []) {
+  save(loop = false, cue = [], upFold = 1) {
     let buffer = Wave.toBuffer(this.wave, this.wave.channels);
     let header = Wave.fileHeader(
-      this.audioContext.sampleRate, this.wave.channels, buffer.length, loop, cue);
+      upFold * this.audioContext.sampleRate, this.wave.channels, buffer.length, loop,
+      cue);
 
     let blob = new Blob([header, buffer], {type: "application/octet-stream"});
     let url = window.URL.createObjectURL(blob);

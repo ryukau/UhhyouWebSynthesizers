@@ -17,6 +17,8 @@ function randomize() {
       if (key === "fadeOut") continue;
       if (key === "decayTo") continue;
       if (key === "stereoMerge") continue;
+      if (key === "overSample") continue;
+      if (key === "sampleRateMultiplier") continue;
       if (key === "dcHighpassHz") continue;
       if (key === "toneSlope") continue;
 
@@ -49,10 +51,14 @@ function createArrayParameters(defaultDspValues, scale, size) {
   return arr;
 }
 
+function getUpFold() {
+  return parseInt(menuitems.oversampleItems[param.sampleRateMultiplier.dsp]);
+}
+
 function render() {
   audio.render(
     parameter.toMessage(param, {
-      sampleRate: audio.audioContext.sampleRate,
+      sampleRate: audio.audioContext.sampleRate * getUpFold(),
     }),
     "perChannel",
     togglebuttonQuickSave.state === 1,
@@ -67,6 +73,7 @@ const scales = {
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   stereoMerge: new parameter.LinearScale(0, 1),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
+  sampleRateMultiplier: new parameter.MenuItemScale(menuitems.oversampleItems),
   toneSlope: new parameter.DecibelScale(-12, 0, false),
   dcHighpassHz: new parameter.DecibelScale(-20, 40, true),
 
@@ -94,6 +101,7 @@ const param = {
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
   stereoMerge: new parameter.Parameter(0.5, scales.stereoMerge),
   overSample: new parameter.Parameter(2, scales.overSample),
+  sampleRateMultiplier: new parameter.Parameter(0, scales.sampleRateMultiplier),
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
   dcHighpassHz: new parameter.Parameter(16, scales.dcHighpassHz, true),
 
@@ -159,9 +167,11 @@ const selectRandom = widget.select(
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const buttonPlay
+  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getUpFold()); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const buttonSave = widget.Button(
+  divPlayControl, "Save", (ev) => { audio.save(false, [], getUpFold()); });
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
@@ -181,6 +191,8 @@ const ui = {
     new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateMultiplier: new widget.ComboBoxLine(
+    detailRender, "Sample Rate x", param.sampleRateMultiplier, render),
   toneSlope:
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   dcHighpassHz:
