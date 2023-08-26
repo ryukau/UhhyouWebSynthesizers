@@ -17,6 +17,8 @@ function randomize() {
       if (key === "renderDuration") continue;
       if (key === "overSample") continue;
       if (key === "fadeOut") continue;
+      if (key === "overSample") continue;
+      if (key === "sampleRateScaler") continue;
       if (Array.isArray(param[key])) {
         param[key].forEach(e => { e.normalized = Math.random(); });
       } else if (param[key].scale instanceof parameter.MenuItemScale) {
@@ -31,10 +33,14 @@ function randomize() {
   widget.refresh(ui);
 }
 
+function getSampleRateScaler() {
+  return parseInt(menuitems.oversampleItems[param.sampleRateScaler.dsp]);
+}
+
 function render() {
   audio.render(
     parameter.toMessage(param, {
-      sampleRate: audio.audioContext.sampleRate,
+      sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
     }),
     "perChannel",
     togglebuttonQuickSave.state === 1,
@@ -47,6 +53,7 @@ const scales = {
 
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
+  sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   seed: new parameter.IntScale(0, Number.MAX_SAFE_INTEGER),
 
   stack: new parameter.IntScale(2, 64),
@@ -60,6 +67,7 @@ const scales = {
 const param = {
   renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
   overSample: new parameter.Parameter(0, scales.overSample),
+  sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   fadeOutRatio: new parameter.Parameter(0.6, scales.defaultScale, true),
   seed: new parameter.Parameter(0, scales.seed),
 
@@ -105,9 +113,11 @@ const selectRandom = widget.select(
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const buttonPlay
+  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const buttonSave = widget.Button(
+  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
@@ -123,6 +133,8 @@ const ui = {
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler: new widget.ComboBoxLine(
+    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   fadeOutRatio:
     new widget.NumberInput(detailRender, "Fade-out Ratio", param.fadeOutRatio, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),

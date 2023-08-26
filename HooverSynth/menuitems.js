@@ -4,4 +4,4 @@
 import {oversampleLinearPhaseItems} from "../common/dsp/multirate.js";
 
 export const oversampleItems = oversampleLinearPhaseItems;
-export const sampleRateMultiplierItems = ["1", "2", "4"];
+export const sampleRateScalerItems = ["1", "2", "4", "8", "16"];
