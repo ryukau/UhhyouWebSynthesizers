@@ -13,6 +13,8 @@ function randomize() {
     if (key === "renderDuration") continue;
     if (key === "matrixSize") continue;
     if (key === "fadeOut") continue;
+    if (key === "overSample") continue;
+    if (key === "sampleRateScaler") continue;
     if (key === "lowpassCutoffHz") continue;
     if (key === "highpassCutoffHz") continue;
     if (key === "delayTime") {
@@ -32,6 +34,10 @@ function randomize() {
   widget.refresh(ui);
 }
 
+function getSampleRateScaler() {
+  return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
+}
+
 function createArrayParameters(defaultDspValue, scale) {
   let arr = new Array(scales.matrixSize.max);
   for (let i = 0; i < arr.length; ++i) {
@@ -43,7 +49,7 @@ function createArrayParameters(defaultDspValue, scale) {
 function render() {
   audio.render(
     parameter.toMessage(param, {
-      sampleRate: audio.audioContext.sampleRate,
+      sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
       maxDelayTime: scales.delayTime.maxDsp,
     }),
     "link",
@@ -62,6 +68,7 @@ const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
+  sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
 
   matrixSize: new parameter.IntScale(1, 256),
   timeMultiplier: new parameter.LinearScale(0, 1),
@@ -78,6 +85,7 @@ const param = {
   renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   overSample: new parameter.Parameter(1, scales.overSample),
+  sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
 
   matrixSize: new parameter.Parameter(64, scales.matrixSize),
   timeMultiplier: new parameter.Parameter(1.0, scales.timeMultiplier),
@@ -126,10 +134,11 @@ const selectRandom = widget.select(
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-// spanPlayControlFiller.textContent = " ";
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const buttonPlay
+  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const buttonSave = widget.Button(
+  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
@@ -143,6 +152,8 @@ const ui = {
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler: new widget.ComboBoxLine(
+    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
   matrixSize: new widget.NumberInput(
     detailFdn, "Matrix Size", param.matrixSize, onMatrixSizeChanged),

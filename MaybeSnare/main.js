@@ -16,6 +16,8 @@ function randomize() {
       if (key === "fadeIn") continue;
       if (key === "fadeOut") continue;
       if (key === "expDecayTo") continue;
+      if (key === "overSample") continue;
+      if (key === "sampleRateScaler") continue;
       if (key === "stereoMerge") continue;
       if (key === "overSample") continue;
       if (key === "fdnMix") continue;
@@ -81,6 +83,8 @@ function randomize() {
       if (key === "fadeIn") continue;
       if (key === "fadeOut") continue;
       if (key === "expDecayTo") continue;
+      if (key === "overSample") continue;
+      if (key === "sampleRateScaler") continue;
       if (key === "stereoMerge") continue;
       if (key === "overSample") continue;
       if (key === "fdnCross") continue;
@@ -101,6 +105,10 @@ function randomize() {
   widget.refresh(ui);
 }
 
+function getSampleRateScaler() {
+  return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
+}
+
 function createArrayParameters(defaultDspValue, scale) {
   let arr = new Array(scales.matrixSize.max);
   for (let i = 0; i < arr.length; ++i) {
@@ -112,7 +120,7 @@ function createArrayParameters(defaultDspValue, scale) {
 function render() {
   audio.render(
     parameter.toMessage(param, {
-      sampleRate: audio.audioContext.sampleRate,
+      sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
     }),
     "perChannel",
     togglebuttonQuickSave.state === 1,
@@ -139,6 +147,7 @@ const scales = {
   fade: new parameter.DecibelScale(-60, 40, true),
   expDecayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
+  sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   seed: new parameter.IntScale(0, 2 ** 53),
 
   impactAmplitude: new parameter.DecibelScale(-20, 60, true),
@@ -169,6 +178,7 @@ const param = {
   expDecayTo: new parameter.Parameter(1, scales.expDecayTo, false),
   stereoMerge: new parameter.Parameter(0.8, scales.defaultScale),
   overSample: new parameter.Parameter(0, scales.overSample),
+  sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   seed: new parameter.Parameter(0, scales.seed),
 
   impactAmplitude: new parameter.Parameter(8, scales.impactAmplitude, true),
@@ -253,9 +263,11 @@ const selectRandom = widget.select(
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const buttonPlay
+  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const buttonSave = widget.Button(
+  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
@@ -281,6 +293,8 @@ const ui = {
     new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler: new widget.ComboBoxLine(
+    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
   impactAmplitude:

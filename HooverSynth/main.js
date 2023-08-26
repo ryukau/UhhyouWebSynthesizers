@@ -43,16 +43,8 @@ function randomize() {
   widget.refresh(ui);
 }
 
-function createArrayParameters(defaultDspValues, scale, size) {
-  let arr = new Array(size);
-  for (let i = 0; i < arr.length; ++i) {
-    arr[i] = new parameter.Parameter(defaultDspValues[i], scale, true);
-  }
-  return arr;
-}
-
 function getSampleRateScaler() {
-  return parseInt(menuitems.oversampleItems[param.sampleRateScaler.dsp]);
+  return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
 }
 
 function render() {

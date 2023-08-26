@@ -34,7 +34,7 @@ function randomize() {
 }
 
 function getSampleRateScaler() {
-  return parseInt(menuitems.oversampleItems[param.sampleRateScaler.dsp]);
+  return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
 }
 
 function render() {

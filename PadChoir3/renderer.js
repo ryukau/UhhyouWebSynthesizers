@@ -201,7 +201,7 @@ function layerPad(fft, buffer, chordPitch, upRate, pv, dsp) {
   let currentFreq = baseFreq;
   const nyquist = upRate / 2;
   const lowpassDenom = nyquist - pv.lowpassHz;
-  const highshelfDenom = nyquist - pv.highShelfHz;
+  const highshelfScale = pv.highShelfGain;
   const upperFreq = pv.highShelfGain <= 0 ? pv.highShelfHz : nyquist;
   while (currentFreq < upperFreq) {
     let gain = 1 / (index * 0.5);
@@ -212,11 +212,13 @@ function layerPad(fft, buffer, chordPitch, upRate, pv, dsp) {
       gain *= ((nyquist - currentFreq) / lowpassDenom) ** pv.lowpassPower;
     }
     if (currentFreq > pv.highShelfHz) {
-      gain *= pv.highShelfGain * ((currentFreq - pv.highShelfHz) / highshelfDenom);
+      gain *= highshelfScale;
     }
 
-    padFreq.push(currentFreq);
-    padGain.push(gain);
+    if (gain >= Number.EPSILON) {
+      padFreq.push(currentFreq);
+      padGain.push(gain);
+    }
 
     ++index;
     currentFreq += baseFreq;

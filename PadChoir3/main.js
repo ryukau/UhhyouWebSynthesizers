@@ -23,6 +23,7 @@ function randomize() {
     for (const key in param) {
       if (key === "renderDuration") continue;
       if (key === "fade") continue;
+      if (key === "sampleRateScaler") continue;
 
       if (key === "baseFrequencyHz") {
         // param[key].dsp = util.uniformDistributionMap(Math.random(), 90, 1000);
@@ -59,10 +60,14 @@ function randomize() {
   widget.refresh(ui);
 }
 
+function getSampleRateScaler() {
+  return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
+}
+
 function render() {
   audio.render(
     parameter.toMessage(param, {
-      sampleRate: audio.audioContext.sampleRate,
+      sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
       maxVocalType: scales.vocalType.maxDsp,
       fadeIn: param.fade.dsp,
       fadeOut: param.fade.dsp,
@@ -77,6 +82,7 @@ const scales = {
 
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
+  sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   seed: new parameter.IntScale(0, 2 ** 53),
 
   baseFrequencyHz: new parameter.MidiPitchScale(0, 136, false),
@@ -84,7 +90,7 @@ const scales = {
   spectralFilterPower:
     new parameter.DecibelScale(util.ampToDB(0.01), util.ampToDB(8), true),
   highShelfHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(1000), util.freqToMidiPitch(24000), false),
+    util.freqToMidiPitch(1000), util.freqToMidiPitch(768000), false),
   highShelfGain: new parameter.DecibelScale(-60, 0, true),
 
   nChord: new parameter.IntScale(0, 8),
@@ -99,6 +105,7 @@ const scales = {
 const param = {
   renderDuration: new parameter.Parameter(2, scales.renderDuration, true),
   fade: new parameter.Parameter(0, scales.fade, true),
+  sampleRateScaler: new parameter.Parameter(2, scales.sampleRateScaler),
   seed: new parameter.Parameter(0, scales.seed),
 
   baseFrequencyHz: new parameter.Parameter(220, scales.baseFrequencyHz, true),
@@ -163,9 +170,11 @@ const selectRandom = widget.select(
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const buttonPlay
+  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(true); });
+const buttonSave = widget.Button(
+  divPlayControl, "Save", (ev) => { audio.save(true, [], getSampleRateScaler()); });
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
@@ -178,6 +187,8 @@ const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fade: new widget.NumberInput(detailRender, "Fade [s]", param.fade, render),
+  sampleRateScaler: new widget.ComboBoxLine(
+    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
   baseFrequencyHz: new widget.NumberInput(

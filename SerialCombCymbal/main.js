@@ -16,6 +16,7 @@ function randomize() {
     if (key === "fadeOut") continue;
     if (key === "decayTo") continue;
     if (key === "overSample") continue;
+    if (key === "sampleRateScaler") continue;
     if (key === "toneSlope") continue;
     if (key === "slopeStartHz") continue;
     if (key === "nLayer") continue;
@@ -37,10 +38,14 @@ function randomize() {
   widget.refresh(ui);
 }
 
+function getSampleRateScaler() {
+  return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
+}
+
 function render() {
   audio.render(
     parameter.toMessage(param, {
-      sampleRate: audio.audioContext.sampleRate,
+      sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
       maxDelayTime: scales.delayTime.maxDsp,
       maxHighpassHz: scales.highpassHz.maxDsp,
       minLowpassHz: scales.lowpassHz.minDsp,
@@ -55,6 +60,7 @@ const scales = {
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
+  sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   toneSlope: new parameter.DecibelScale(-20, 20, true),
 
   nLayer: new parameter.IntScale(1, 8),
@@ -84,6 +90,7 @@ const param = {
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
   overSample: new parameter.Parameter(1, scales.overSample),
+  sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   toneSlope: new parameter.Parameter(1, scales.toneSlope),
   slopeStartHz: new parameter.Parameter(1000, scales.lowpassHz, true),
 
@@ -148,9 +155,11 @@ const selectRandom = widget.select(
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const buttonPlay
+  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const buttonSave = widget.Button(
+  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
@@ -168,6 +177,8 @@ const ui = {
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler: new widget.ComboBoxLine(
+    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   toneSlope:
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   slopeStartHz:

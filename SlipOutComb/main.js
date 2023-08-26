@@ -17,6 +17,8 @@ function randomize() {
       if (key === "fadeOut") continue;
       if (key === "decayTo") continue;
       if (key === "stereoMerge") continue;
+      if (key === "overSample") continue;
+      if (key === "sampleRateScaler") continue;
       if (key === "dcHighpassHz") continue;
       if (key === "toneSlope") continue;
 
@@ -34,6 +36,10 @@ function randomize() {
   widget.refresh(ui);
 }
 
+function getSampleRateScaler() {
+  return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
+}
+
 function createArrayParameters(defaultDspValues, scale, size) {
   let arr = new Array(size);
   for (let i = 0; i < arr.length; ++i) {
@@ -45,7 +51,7 @@ function createArrayParameters(defaultDspValues, scale, size) {
 function render() {
   audio.render(
     parameter.toMessage(param, {
-      sampleRate: audio.audioContext.sampleRate,
+      sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
     }),
     "perChannel",
     togglebuttonQuickSave.state === 1,
@@ -65,6 +71,7 @@ const scales = {
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   stereoMerge: new parameter.LinearScale(0, 1),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
+  sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   toneSlope: new parameter.DecibelScale(-12, 0, false),
 
   limiterType: new parameter.MenuItemScale(menuitems.limiterTypeItems),
@@ -101,6 +108,7 @@ const param = {
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
   stereoMerge: new parameter.Parameter(0, scales.stereoMerge),
   overSample: new parameter.Parameter(1, scales.overSample),
+  sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
 
   limiterType: new parameter.Parameter(1, scales.limiterType, true),
@@ -177,9 +185,11 @@ const selectRandom = widget.select(
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
+const buttonPlay
+  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
 const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
+const buttonSave = widget.Button(
+  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
 const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
@@ -205,6 +215,8 @@ const ui = {
     new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler: new widget.ComboBoxLine(
+    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   toneSlope:
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
 
