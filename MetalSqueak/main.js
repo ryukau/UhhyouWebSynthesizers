@@ -71,7 +71,7 @@ const scales = {
   noiseDuration: new parameter.DecibelScale(-80, 40, true),
   noiseDecaySeconds: new parameter.DecibelScale(-100, -20, false),
   noiseBandpassHz: new parameter.DecibelScale(40, 100, false),
-  cutoffHz: new parameter.DecibelScale(0, 100, false),
+  cutoffHz: new parameter.DecibelScale(0, 120, false),
 
   delayCount: new parameter.IntScale(1, 8),
   delayHz: new parameter.DecibelScale(util.ampToDB(200), util.ampToDB(22000), false),
@@ -109,7 +109,7 @@ const param = {
   fdnCount: new parameter.Parameter(4, scales.delayCount, true),
   minDelayHz: new parameter.Parameter(2000, scales.delayHz, true),
   maxDelayHz: new parameter.Parameter(8000, scales.delayHz, true),
-  lowpassHz: new parameter.Parameter(70000, scales.cutoffHz, true),
+  lowpassHz: new parameter.Parameter(700000, scales.cutoffHz, true),
   delayMod: new parameter.Parameter(0, scales.delayMod, true),
   allpass1Cut: new parameter.Parameter(0, scales.allpassCutRatio, true),
   allpass2Cut: new parameter.Parameter(0, scales.allpassCutRatio, true),
