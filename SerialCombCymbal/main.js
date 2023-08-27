@@ -80,7 +80,7 @@ const scales = {
   highpassHz: new parameter.MidiPitchScale(
     util.freqToMidiPitch(1), util.freqToMidiPitch(48000), true),
   lowpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
+    util.freqToMidiPitch(10), util.freqToMidiPitch(1000000), false),
   filterQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
 };
 
