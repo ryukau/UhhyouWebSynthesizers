@@ -186,6 +186,11 @@ export class LongAllpass {
     this.#buffer = this.delay.process(input);
     return output;
   }
+
+  processMod(input, timeInSample, gain) {
+    this.prepare(timeInSample, gain);
+    return this.process(input);
+  }
 }
 
 export class NestedLongAllpass {

@@ -502,12 +502,14 @@ Householder matrix.
 
 Reference: https://nhigham.com/2020/09/15/what-is-a-householder-matrix/
 */
-export function constructHouseholder(matrix, seed) {
+export function constructHouseholder(matrix, seed, nonZero = false) {
   let denom = seed.reduce((sum, val) => sum + val * val, 0);
 
   if (denom <= Number.EPSILON) {
     for (let i = 0; i < matrix.length; ++i) {
-      for (let j = 0; j < matrix[i].length; ++j) matrix[i][j] = 0;
+      for (let j = 0; j < matrix[i].length; ++j) {
+        matrix[i][j] = nonZero && i === j ? 1 : 0;
+      }
     }
     return matrix;
   }
