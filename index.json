@@ -67,6 +67,14 @@
       },
       "list": [
         {
+          "href": "./GenericDrum/synth.html",
+          "name": "GenericDrum",
+          "description": {
+            "ja": "ClangSnare を基に使い易く調整した汎用ドラムシンセサイザ。",
+            "en": "Generic drum synthesizer based on ClangSnare. Tuned for ease of use."
+          }
+        },
+        {
           "href": "./HooverSynth/synth.html",
           "name": "HooverSynth",
           "description": {
