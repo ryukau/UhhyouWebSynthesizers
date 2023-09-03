@@ -80,6 +80,10 @@ export class SVFHP extends SVF {
   process(v0) { return this.hp(v0); }
 }
 
+export class SVFBP extends SVF {
+  process(v0) { return this.bp(v0); }
+}
+
 export class SVFNotch extends SVF {
   process(v0) { return this.notch(v0); }
 }
