@@ -101,6 +101,10 @@ export class Audio {
             parameter.fadeIn === undefined ? 0 : parameter.fadeIn,
             parameter.fadeOut === undefined ? 0 : parameter.fadeOut,
             parameter.stereoMerge === undefined ? 0 : parameter.stereoMerge,
+            //
+            // Making assumption that `sampleRateScaler` is always power of 2. :(
+            parameter.sampleRateScaler === undefined ? 1
+                                                     : (1 << parameter.sampleRateScaler),
             quickSave,
           );
         }
@@ -113,10 +117,12 @@ export class Audio {
     fadeInSeconds,
     fadeOutSeconds,
     stereoMerge,
+    sampleRateScaler,
     quickSave,
   ) {
-    this.wave.declickIn(fadeInSeconds * this.audioContext.sampleRate);
-    this.wave.declickOut(fadeOutSeconds * this.audioContext.sampleRate);
+    const upRate = sampleRateScaler * this.audioContext.sampleRate;
+    this.wave.declickIn(fadeInSeconds * upRate);
+    this.wave.declickOut(fadeOutSeconds * upRate);
     this.wave.stereoMerge(stereoMerge);
 
     if (normalize === "link") {
