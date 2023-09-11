@@ -28,7 +28,10 @@ function randomize() {
         param[key].normalized = Math.random();
         continue;
       }
-      if (key === "delayTimeSlewRate") continue;
+      if (key === "delayTimeModAmount") {
+        param[key].dsp = util.exponentialMap(Math.random(), 0.1, 10000);
+        continue;
+      }
 
       if (Array.isArray(param[key])) {
         param[key].forEach(e => { e.normalized = Math.random(); });
@@ -93,7 +96,7 @@ const scales = {
   matrixSize: new parameter.IntScale(1, 16),
   crossFeedbackGain: new parameter.DecibelScale(-3, 3, false),
   feedbackDecaySeconds: new parameter.DecibelScale(-40, 20, false),
-  crossFeedbackRatio: new parameter.LinearScale(-1, 1),
+  crossFeedbackRatio: new parameter.LinearScale(0, 1),
 
   pitchSpread: new parameter.LinearScale(0, 1),
   pitchRandomCent: new parameter.LinearScale(0, 1200),
@@ -102,7 +105,7 @@ const scales = {
 
   pitchType: new parameter.MenuItemScale(menuitems.pitchTypeItems),
   delayTimeHz: new parameter.DecibelScale(util.ampToDB(2), util.ampToDB(10000), false),
-  delayTimeModAmount: new parameter.DecibelScale(-20, 80, true),
+  delayTimeModAmount: new parameter.DecibelScale(-20, 100, true),
   bandpassCutRatio: new parameter.LinearScale(-8, 8),
   bandpassQ: new parameter.DecibelScale(-40, 40, false),
 };
@@ -147,7 +150,6 @@ const param = {
   pitchType: new parameter.Parameter(0, scales.pitchType, true),
   delayTimeHz: new parameter.Parameter(100, scales.delayTimeHz, true),
   delayTimeModAmount: new parameter.Parameter(0.0, scales.delayTimeModAmount, true),
-  delayTimeSlewRate: new parameter.Parameter(0.5, scales.delayTimeModAmount, true),
   bandpassCutRatio: new parameter.Parameter(0, scales.bandpassCutRatio, true),
   bandpassQ: new parameter.Parameter(Math.SQRT1_2, scales.bandpassQ, true),
 };
@@ -233,7 +235,7 @@ const ui = {
   allpassMaxTimeHz: new widget.NumberInput(
     detailOsc, "Allpass Time [Hz]", param.allpassMaxTimeHz, render),
 
-  // // `matrixSize` is unused, but not deleted for further experiment.
+  // // `matrixSize` is not displayed, but still active for further experiment.
   // matrixSize: new widget.NumberInput(
   //   detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
   crossFeedbackGain: new widget.NumberInput(
@@ -262,14 +264,10 @@ const ui = {
     new widget.NumberInput(detailComb, "Delay [Hz]", param.delayTimeHz, render),
   delayTimeModAmount: new widget.NumberInput(
     detailComb, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
-  delayTimeSlewRate: new widget.NumberInput(
-    detailComb, "Delay Slew Rate [sample]", param.delayTimeSlewRate, render),
   bandpassCutRatio:
     new widget.NumberInput(detailComb, "BP Cut [oct]", param.bandpassCutRatio, render),
   bandpassQ: new widget.NumberInput(detailComb, "BP Q", param.bandpassQ, render),
 };
-
-ui.crossFeedbackRatio.sliderZero = 0.5;
 
 onMatrixSizeChanged(param.matrixSize.defaultDsp);
 window.addEventListener("load", (ev) => { widget.refresh(ui); });

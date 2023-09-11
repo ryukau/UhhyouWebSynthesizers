@@ -48,7 +48,6 @@ class FilteredDelay {
     sampleRate,
     delaySamples,
     delayTimeModAmount,
-    delayTimeSlewRate,
     bandpassCut,
     bandpassQ,
   ) {
@@ -57,7 +56,7 @@ class FilteredDelay {
     this.bpQ = bandpassQ;
 
     this.delayTimeModAmount = delayTimeModAmount;
-    this.timeSlew = new RateLimiter(delayTimeSlewRate);
+    this.timeSlew = new RateLimiter(0.5);
 
     this.delay = new IntDelay(sampleRate, 2 * delaySamples / sampleRate);
     this.bandpass = new MatchedBiquad();
@@ -73,7 +72,7 @@ class FilteredDelay {
 }
 
 class EasyFDN {
-  constructor(sampleRate, crossGain, crossfeeds, delays) {
+  constructor(sampleRate, upFold, crossGain, crossfeeds, delays) {
     const create2dArray = (x, y) => {
       let a = new Array(x);
       for (let i = 0; i < a.length; ++i) a[i] = new Array(y).fill(0);
@@ -82,6 +81,7 @@ class EasyFDN {
 
     this.crossGainBase = crossGain;
     this.crossGain = crossGain;
+    this.crossGainRate = 0.9 ** (1 / upFold);
 
     const size = crossfeeds.length;
 
@@ -110,7 +110,9 @@ class EasyFDN {
     }
 
     const sum = front.reduce((sum, val) => sum + val, 0);
-    if (this.threshold < sum) this.crossGain *= sum > 1000 ? 0.9 : this.crossDecay;
+    if (this.threshold < sum) {
+      this.crossGain *= sum > 1000 ? this.crossGainRate : this.crossDecay;
+    }
     return sum;
   }
 }
@@ -169,10 +171,10 @@ function getPitchFunc(pv) {
     return (index) => index + 1;
   } else if (pitchType === "Harmonic+12") {
     const series = [1, 4, 5, 12, 13, 15, 16, 24, 25, 31, 32, 33, 48, 49, 63, 64];
-    return (index) => series[index];
+    return (index) => series[index % series.length];
   } else if (pitchType === "Harmonic*5") {
     const series = [1, 5, 8, 10, 15, 16, 20, 24, 25, 30, 32, 35, 40, 45, 50, 55, 60];
-    return (index) => series[index];
+    return (index) => series[index % series.length];
   } else if (pitchType === "Harmonic Cycle(1, 5)") {
     const series = [1, 5];
     return (index) => series[index % 2];
@@ -224,7 +226,6 @@ onmessage = async (event) => {
   const crossFeedbackGain = pv.crossFeedbackGain <= 1
     ? pv.crossFeedbackGain
     : pv.crossFeedbackGain ** (1 / (upFold * sampleRateScaler));
-  const nFdn = 1;
   const pitchFunc = getPitchFunc(pv);
   const bandpassCutHz = pv.delayTimeHz * 2 ** pv.bandpassCutRatio;
   let combs = new Array(pv.matrixSize);
@@ -242,13 +243,13 @@ onmessage = async (event) => {
       upRate,
       upRate / (pv.delayTimeHz * delayCutRatio),
       pv.delayTimeModAmount,
-      pv.delayTimeSlewRate,
       bandpassCutHz * bpCutRatio / upRate,
       pv.bandpassQ,
     );
   }
   dsp.fdn = new EasyFDN(
     upRate,
+    upFold,
     crossFeedbackGain,
     pv.crossFeedbackRatio.slice(0, pv.matrixSize).map(v => v * v),
     combs,
