@@ -96,7 +96,7 @@ const scales = {
   matrixSize: new parameter.IntScale(1, 16),
   crossFeedbackGain: new parameter.DecibelScale(-3, 3, false),
   feedbackDecaySeconds: new parameter.DecibelScale(-40, 20, false),
-  crossFeedbackRatio: new parameter.LinearScale(0, 1),
+  crossFeedbackRatio: new parameter.LinearScale(-1, 1),
 
   pitchSpread: new parameter.LinearScale(0, 1),
   pitchRandomCent: new parameter.LinearScale(0, 1200),
@@ -268,6 +268,8 @@ const ui = {
     new widget.NumberInput(detailComb, "BP Cut [oct]", param.bandpassCutRatio, render),
   bandpassQ: new widget.NumberInput(detailComb, "BP Q", param.bandpassQ, render),
 };
+
+ui.crossFeedbackRatio.sliderZero = 0.5;
 
 onMatrixSizeChanged(param.matrixSize.defaultDsp);
 window.addEventListener("load", (ev) => { widget.refresh(ui); });
