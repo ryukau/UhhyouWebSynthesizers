@@ -242,7 +242,7 @@ onmessage = async (event) => {
     combs[idx] = new FilteredDelay(
       upRate,
       upRate / (pv.delayTimeHz * delayCutRatio),
-      pv.delayTimeModAmount,
+      pv.delayTimeModAmount * upFold,
       bandpassCutHz * bpCutRatio / upRate,
       pv.bandpassQ,
     );
