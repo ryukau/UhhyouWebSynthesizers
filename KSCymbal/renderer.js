@@ -75,7 +75,7 @@ class KSString {
   }
 
   process(input) {
-    var output = this.delay.process(input + this.feedback);
+    const output = this.delay.process(input + this.feedback);
     this.feedback = this.lowpass.process(output);
     return this.highpass.process(output);
   }
