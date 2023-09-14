@@ -213,14 +213,30 @@ onmessage = async (event) => {
     pv.envelopeModAmount * exp2Scaler, upRate * pv.envelopeAttackSeconds,
     upRate * pv.envelopeDecaySeconds);
 
-  const nLongAllpass = 5;
-  const maxLongApSeconds = 1 / pv.allpassMaxTimeHz;
-  const maxLongApSamples = Math.ceil(maxLongApSeconds * upRate);
+  const nLongAllpass = 4;
+  let longApSamples = new Array(nLongAllpass).fill(0);
+  {
+    const minSamples = 2 * nLongAllpass;
+    let scaler = Math.ceil(upRate * nLongAllpass / pv.allpassMaxTimeHz);
+    scaler = minSamples > scaler ? minSamples : scaler - minSamples;
+
+    let longApSamplesSum = 0;
+    for (let idx = 0; idx < nLongAllpass; ++idx) {
+      longApSamples[idx] = rng.number();
+      longApSamplesSum += longApSamples[idx];
+    }
+    let sumFraction = 0;
+    for (let idx = 0; idx < nLongAllpass; ++idx) {
+      const samples = 2 + scaler * longApSamples[idx] / longApSamplesSum;
+      longApSamples[idx] = Math.floor(samples);
+      sumFraction += samples - longApSamples[idx];
+    }
+    longApSamples[0] += Math.round(sumFraction);
+  }
   dsp.longAllpass = new Array(nLongAllpass);
   for (let idx = 0; idx < nLongAllpass; ++idx) {
-    dsp.longAllpass[idx] = new LongAllpass(upRate, maxLongApSeconds);
-    dsp.longAllpass[idx].prepare(
-      uniformDistributionMap(rng.number(), 2, maxLongApSamples), 0.95);
+    dsp.longAllpass[idx] = new LongAllpass(upRate, longApSamples[idx] / upRate);
+    dsp.longAllpass[idx].prepare(longApSamples[idx], 0.95);
   }
 
   const crossFeedbackGain = pv.crossFeedbackGain <= 1
@@ -242,7 +258,7 @@ onmessage = async (event) => {
     combs[idx] = new FilteredDelay(
       upRate,
       upRate / (pv.delayTimeHz * delayCutRatio),
-      pv.delayTimeModAmount * upFold,
+      pv.delayTimeModAmount * upFold * sampleRateScaler,
       bandpassCutHz * bpCutRatio / upRate,
       pv.bandpassQ,
     );

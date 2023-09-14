@@ -93,7 +93,7 @@ const scales = {
   seed: new parameter.IntScale(0, 2 ** 32),
   noiseDecaySeconds: new parameter.DecibelScale(-40, util.ampToDB(0.5), false),
 
-  matrixSize: new parameter.IntScale(1, 16),
+  matrixSize: new parameter.IntScale(1, 32),
   crossFeedbackGain: new parameter.DecibelScale(-3, 3, false),
   feedbackDecaySeconds: new parameter.DecibelScale(-40, 20, false),
   crossFeedbackRatio: new parameter.LinearScale(-1, 1),
@@ -235,9 +235,8 @@ const ui = {
   allpassMaxTimeHz: new widget.NumberInput(
     detailOsc, "Allpass Time [Hz]", param.allpassMaxTimeHz, render),
 
-  // // `matrixSize` is not displayed, but still active for further experiment.
-  // matrixSize: new widget.NumberInput(
-  //   detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
+  matrixSize: new widget.NumberInput(
+    detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
   crossFeedbackGain: new widget.NumberInput(
     detailFDN, "Cross Feedback Gain [dB]", param.crossFeedbackGain, render),
   crossFeedbackRatio: new widget.BarBox(
