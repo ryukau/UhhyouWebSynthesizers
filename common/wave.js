@@ -137,7 +137,10 @@ export class Audio {
       this.renderStatusElement.textContent = "Rendering finished. ✓";
     }
 
-    if (quickSave) this.save();
+    // TODO: Refactor. This `quickSave` implementation is bad because synth can't provide
+    // loop or cue information. Perhaps a better way is to get the info from renderer,
+    // then hold that info until next rendering.
+    if (quickSave) this.save(false, [], sampleRateScaler);
   }
 }
 
