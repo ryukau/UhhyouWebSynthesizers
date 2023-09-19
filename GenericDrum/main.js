@@ -94,7 +94,7 @@ const scales = {
   noiseDecaySeconds: new parameter.DecibelScale(-40, util.ampToDB(0.5), false),
 
   matrixSize: new parameter.IntScale(1, 32),
-  crossFeedbackGain: new parameter.DecibelScale(-3, 3, false),
+  crossFeedbackGain: new parameter.DecibelScale(-12, 3, false),
   feedbackDecaySeconds: new parameter.DecibelScale(-40, 20, false),
   crossFeedbackRatio: new parameter.LinearScale(-1, 1),
 
@@ -108,6 +108,9 @@ const scales = {
   delayTimeModAmount: new parameter.DecibelScale(-20, 100, true),
   bandpassCutRatio: new parameter.LinearScale(-8, 8),
   bandpassQ: new parameter.DecibelScale(-40, 40, false),
+
+  fdnMix: new parameter.LinearScale(0, 1),
+  collisionDistance: new parameter.DecibelScale(-80, 20, true),
 };
 
 const param = {
@@ -138,10 +141,8 @@ const param = {
     scales.matrixSize.max),
 
   delayTimeSpread: new parameter.Parameter(1, scales.pitchSpread, true),
-  delayTimeRandomCent:
-    new parameter.Parameter(util.syntonicCommaCents, scales.pitchRandomCent, true),
   bandpassCutSpread: new parameter.Parameter(1, scales.pitchSpread, true),
-  bandpassCutRandomCent:
+  pitchRandomCent:
     new parameter.Parameter(util.syntonicCommaCents, scales.pitchRandomCent, true),
   envelopeAttackSeconds: new parameter.Parameter(0.5, scales.envelopeSeconds, true),
   envelopeDecaySeconds: new parameter.Parameter(4, scales.envelopeSeconds, true),
@@ -152,6 +153,10 @@ const param = {
   delayTimeModAmount: new parameter.Parameter(0.0, scales.delayTimeModAmount, true),
   bandpassCutRatio: new parameter.Parameter(0, scales.bandpassCutRatio, true),
   bandpassQ: new parameter.Parameter(Math.SQRT1_2, scales.bandpassQ, true),
+
+  fdnMix: new parameter.Parameter(0, scales.fdnMix, true),
+  secondaryDelayOffset: new parameter.Parameter(0, scales.bandpassCutRatio, true),
+  collisionDistance: new parameter.Parameter(0.1, scales.collisionDistance, true),
 };
 
 // Add controls.
@@ -203,6 +208,7 @@ const detailOsc = widget.details(divRightA, "Oscillator");
 const detailFDN = widget.details(divRightA, "FDN");
 const detailPitch = widget.details(divRightB, "Pitch");
 const detailComb = widget.details(divRightB, "Comb");
+const detailSecondary = widget.details(divRightB, "Secondary");
 
 const ui = {
   renderDuration:
@@ -245,12 +251,10 @@ const ui = {
 
   delayTimeSpread: new widget.NumberInput(
     detailPitch, "Delay Time Spread", param.delayTimeSpread, render),
-  delayTimeRandomCent: new widget.NumberInput(
-    detailPitch, "Delay Time Random [cent]", param.delayTimeRandomCent, render),
   bandpassCutSpread:
     new widget.NumberInput(detailPitch, "BP Cut Spread", param.bandpassCutSpread, render),
-  bandpassCutRandomCent: new widget.NumberInput(
-    detailPitch, "BP Cut Random [cent]", param.bandpassCutRandomCent, render),
+  pitchRandomCent: new widget.NumberInput(
+    detailPitch, "Pitch Random [cent]", param.pitchRandomCent, render),
   envelopeAttackSeconds: new widget.NumberInput(
     detailPitch, "Envelope Attack [s]", param.envelopeAttackSeconds, render),
   envelopeDecaySeconds: new widget.NumberInput(
@@ -266,6 +270,12 @@ const ui = {
   bandpassCutRatio:
     new widget.NumberInput(detailComb, "BP Cut [oct]", param.bandpassCutRatio, render),
   bandpassQ: new widget.NumberInput(detailComb, "BP Q", param.bandpassQ, render),
+
+  fdnMix: new widget.NumberInput(detailSecondary, "Mix", param.fdnMix, render),
+  secondaryDelayOffset: new widget.NumberInput(
+    detailSecondary, "Delay Offset [oct]", param.secondaryDelayOffset, render),
+  collisionDistance: new widget.NumberInput(
+    detailSecondary, "Collision Distance", param.collisionDistance, render),
 };
 
 ui.crossFeedbackRatio.sliderZero = 0.5;
