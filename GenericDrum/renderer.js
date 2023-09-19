@@ -139,34 +139,51 @@ class EnergyStoreNoise {
   }
 }
 
-//
-// `EnergyStore` is an implementation of the `collide` function described below. My
-// understanding is that when energy doesn't increase, the system won't blow up. So I'm
-// hoping that this acts as a mitigation to not blow up FDN with collision.
-//
-// Energy of a signal is defined as following:
-//
-// ```
-// energy = sum from i=0 to N for x[i] * x[i], where x is a signal.
-// ```
-//
-// This implies that when exchanging amplitude between 2 signals, energy remains intact
-// when following condition is met:
-//
-// ```
-// abs(x_a) + abs(x_b) = abs(y_a) + abs(y_b),
-//   where x_a and x_b are input  signals,
-//   and   y_a and y_b are output signals.
-// ```
-//
-// Collision of signals can be written as following:
-//
-// ```
-// [y_a, y_b] = collide(x_a, x_b).
-// ```
-//
-// - Reference: https://www.gaussianwaves.com/2013/12/power-and-energy-of-a-signal/
-//
+/*
+`EnergyStore` thinly spreads the energy of collisions over time. This is a part of an
+implementation of the `collide` function described below. My understanding is that when
+energy doesn't increase, the system won't blow up. So I'm hoping that this acts as a
+mitigation to not blow up FDN with collision.
+
+Energy of a signal is defined as following:
+
+```
+energy = sum from i=0 to N for x[i] * x[i], where x is a signal.
+```
+
+- Reference: https://www.gaussianwaves.com/2013/12/power-and-energy-of-a-signal/
+
+This implies that when exchanging amplitude between 2 signals, energy remains intact
+when following condition is met:
+
+```
+abs(x_a) + abs(x_b) = abs(y_a) + abs(y_b),
+  where x_a and x_b are input  signals,
+  and   y_a and y_b are output signals.
+```
+
+On collision, amplitude is exchanged between input signals:
+
+```
+d_a = ratio_a * displacement_of_collision(x_a, x_b),
+d_b = ratio_b * displacement_of_collision(x_a, x_b),
+  where abs(ratio_a) + abs(ratio_b) <= 1.
+```
+
+A naive implementation of collision is following:
+
+```
+y_a = x_a + d_a,
+y_b = x_b - d_b.
+```
+
+The above implementation didn't sound good. So `EnergyStore` is introduced as following:
+
+```
+y_a = x_a + energyStore_a.process(d_a),
+y_b = x_b - energyStore_b.process(d_b).
+```
+*/
 class EnergyStore {
   constructor(decaySamples) {
     this.sum = 0;
