@@ -118,6 +118,38 @@ class EasyFDN {
   }
 }
 
+class SerialAllpass {
+  constructor(upRate, gain, delaySamples) {
+    this.allpass = new Array(delaySamples.length);
+    for (let idx = 0; idx < delaySamples.length; ++idx) {
+      this.allpass[idx] = new LongAllpass(upRate, delaySamples[idx] / upRate);
+      this.allpass[idx].prepare(delaySamples[idx], gain);
+    }
+  }
+
+  process(input) {
+    let sum = 0;
+    for (let idx = 0; idx < this.allpass.length; ++idx) {
+      input = this.allpass[idx].process(input);
+      sum += input;
+    }
+    return sum;
+  }
+}
+
+class WireEnvelope {
+  constructor(decaySamples, decayCurve) {
+    this.gain = Math.exp(exp2Scaler * decayCurve);
+    this.decay = Math.pow(Number.EPSILON, 1 / decaySamples);
+  }
+
+  process() {
+    const out = this.gain;
+    this.gain *= this.decay;
+    return Math.tanh(out);
+  }
+}
+
 class Tanh {
   constructor(gain) { this.invGain = 1 / Math.max(gain, Number.EPSILON); }
   process(input) { return Math.tanh(input * this.invGain); }
@@ -139,51 +171,10 @@ class EnergyStoreNoise {
   }
 }
 
-/*
-`EnergyStore` thinly spreads the energy of collisions over time. This is a part of an
-implementation of the `collide` function described below. My understanding is that when
-energy doesn't increase, the system won't blow up. So I'm hoping that this acts as a
-mitigation to not blow up FDN with collision.
-
-Energy of a signal is defined as following:
-
-```
-energy = sum from i=0 to N for x[i] * x[i], where x is a signal.
-```
-
-- Reference: https://www.gaussianwaves.com/2013/12/power-and-energy-of-a-signal/
-
-This implies that when exchanging amplitude between 2 signals, energy remains intact
-when following condition is met:
-
-```
-abs(x_a) + abs(x_b) = abs(y_a) + abs(y_b),
-  where x_a and x_b are input  signals,
-  and   y_a and y_b are output signals.
-```
-
-On collision, amplitude is exchanged between input signals:
-
-```
-d_a = ratio_a * displacement_of_collision(x_a, x_b),
-d_b = ratio_b * displacement_of_collision(x_a, x_b),
-  where abs(ratio_a) + abs(ratio_b) <= 1.
-```
-
-A naive implementation of collision is following:
-
-```
-y_a = x_a + d_a,
-y_b = x_b - d_b.
-```
-
-The above implementation didn't sound good. So `EnergyStore` is introduced as following:
-
-```
-y_a = x_a + energyStore_a.process(d_a),
-y_b = x_b - energyStore_b.process(d_b).
-```
-*/
+// `EnergyStore` thinly spreads the energy of collisions over time. This acts as a
+// mitigation to not blow up FDN with collision.
+//
+// - Reference: https://www.gaussianwaves.com/2013/12/power-and-energy-of-a-signal/
 class EnergyStore {
   constructor(decaySamples) {
     this.sum = 0;
@@ -193,9 +184,20 @@ class EnergyStore {
 
   process(value) {
     const absed = Math.abs(value);
-    if (absed > Number.EPSILON) this.sum = (this.sum + absed) * this.decay;
+    if (absed > Number.EPSILON) this.sum = (this.sum + value) * this.decay;
     return this.sum *= this.gain;
   }
+}
+
+function solveCollision(pos0, pos1, vel0, vel1, distance) {
+  const dist = pos0 - pos1;
+  if (dist >= distance) return [0, 0];
+
+  let sum = Math.abs(pos0) + Math.abs(pos1);
+  const v0 = Math.abs(vel0);
+  const v1 = Math.abs(vel1);
+  if (v0 + v1 >= Number.EPSILON) sum /= v0 + v1;
+  return [sum * v1, -sum * v0];
 }
 
 function process(upRate, pv, dsp) {
@@ -209,30 +211,23 @@ function process(upRate, pv, dsp) {
 
   const env = dsp.envelope.process();
 
-  {
-    let sum = 0;
-    for (let idx = 0; idx < dsp.longAllpass.length; ++idx) {
-      sum += dsp.longAllpass[idx].process(sig);
-    }
-    sig = Math.tanh(sum);
-  }
+  const hit = Math.tanh(dsp.longAllpass.process(sig));
+  const wire = dsp.wireAllpass.process(hit) * dsp.wireEnvelope.process();
+  sig = lerp(hit, wire, pv.wireMix);
 
   if (pv.fdnMix > Number.EPSILON) {
     for (let idx = 0; idx < dsp.position.length - 1; ++idx) {
-      const dist = dsp.position[idx] - dsp.position[idx + 1];
-      if (dist >= pv.collisionDistance) continue;
-
-      const energySquared = Math.abs(dsp.position[idx]) + Math.abs(dsp.position[idx + 1]);
-
-      const v0 = Math.abs(dsp.velocity[idx]);
-      const v1 = Math.abs(dsp.velocity[idx + 1]);
-      let ratioDenom = v0 + v1 >= Number.EPSILON ? v0 + v1 : 1;
-      dsp.position[idx] += energySquared * v1 / ratioDenom;
-      dsp.position[idx + 1] -= energySquared * v0 / ratioDenom;
+      [dsp.position[idx], dsp.position[idx + 1]] = solveCollision(
+        dsp.position[idx],
+        dsp.position[idx + 1],
+        dsp.velocity[idx],
+        dsp.velocity[idx + 1],
+        pv.collisionDistance,
+      );
     }
 
     for (let idx = 0; idx < dsp.fdn.length; ++idx) {
-      const collision = dsp.energyStore[idx].process(dsp.position[idx], dsp.rng);
+      const collision = dsp.energyStore[idx].process(dsp.position[idx]);
       const p0 = dsp.fdn[idx].process(sig * pv.matrixSize + collision, env);
       dsp.velocity[idx] = p0 - dsp.position[idx];
       dsp.position[idx] = p0;
@@ -302,11 +297,11 @@ function prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, isSecondary) {
     return freqSpread
       * Math.exp(uniformDistributionMap(rng.number(), rndRange, rndRange));
   };
+
   let combs = new Array(pv.matrixSize);
   for (let idx = 0; idx < combs.length; ++idx) {
     const delayCutRatio = pitchRatio(idx, pv.delayTimeSpread, pv.pitchRandomCent);
     const bpCutRatio = pitchRatio(idx, pv.bandpassCutSpread, pv.pitchRandomCent);
-
     combs[idx] = new FilteredDelay(
       upRate,
       upRate / (delayTimeHz * delayCutRatio),
@@ -326,6 +321,28 @@ function prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, isSecondary) {
     pv.crossFeedbackRatio.slice(0, pv.matrixSize).map(v => v * v),
     combs,
   );
+}
+
+function prepareSerialAllpass(upRate, nAllpass, allpassMaxTimeHz, rng) {
+  // Randomly set `delaySamples` with following conditions:
+  // - The sum of `delaySamples` equals to `scaler`.
+  // - Minimum delay time is 2 samples for each all-pass.
+  let delaySamples = new Array(nAllpass).fill(0);
+  const scaler
+    = Math.max(0, Math.ceil(upRate * nAllpass / allpassMaxTimeHz) - 2 * nAllpass);
+  let sumSamples = 0;
+  for (let idx = 0; idx < nAllpass; ++idx) {
+    delaySamples[idx] = rng.number();
+    sumSamples += delaySamples[idx];
+  }
+  let sumFraction = 0;
+  for (let idx = 0; idx < nAllpass; ++idx) {
+    const samples = 2 + scaler * delaySamples[idx] / sumSamples;
+    delaySamples[idx] = Math.floor(samples);
+    sumFraction += samples - delaySamples[idx];
+  }
+  delaySamples[0] += Math.round(sumFraction);
+  return new SerialAllpass(upRate, 0.95, delaySamples);
 }
 
 onmessage = async (event) => {
@@ -349,31 +366,12 @@ onmessage = async (event) => {
     pv.envelopeModAmount * exp2Scaler, upRate * pv.envelopeAttackSeconds,
     upRate * pv.envelopeDecaySeconds);
 
-  const nLongAllpass = 4;
-  let longApSamples = new Array(nLongAllpass).fill(0);
-  {
-    const minSamples = 2 * nLongAllpass;
-    let scaler = Math.ceil(upRate * nLongAllpass / pv.allpassMaxTimeHz);
-    scaler = minSamples > scaler ? minSamples : scaler - minSamples;
+  dsp.longAllpass = prepareSerialAllpass(upRate, 4, pv.allpassMaxTimeHz, dsp.rng);
 
-    let longApSamplesSum = 0;
-    for (let idx = 0; idx < nLongAllpass; ++idx) {
-      longApSamples[idx] = rng.number();
-      longApSamplesSum += longApSamples[idx];
-    }
-    let sumFraction = 0;
-    for (let idx = 0; idx < nLongAllpass; ++idx) {
-      const samples = 2 + scaler * longApSamples[idx] / longApSamplesSum;
-      longApSamples[idx] = Math.floor(samples);
-      sumFraction += samples - longApSamples[idx];
-    }
-    longApSamples[0] += Math.round(sumFraction);
-  }
-  dsp.longAllpass = new Array(nLongAllpass);
-  for (let idx = 0; idx < nLongAllpass; ++idx) {
-    dsp.longAllpass[idx] = new LongAllpass(upRate, longApSamples[idx] / upRate);
-    dsp.longAllpass[idx].prepare(longApSamples[idx], 0.95);
-  }
+  dsp.nWireAllpass = 4;
+  dsp.wireAllpass
+    = prepareSerialAllpass(upRate, dsp.nWireAllpass, pv.wireFrequencyHz, dsp.rng);
+  dsp.wireEnvelope = new WireEnvelope(pv.wireDecaySeconds * upRate, 2);
 
   dsp.fdn = [prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, false)];
   if (pv.fdnMix > Number.EPSILON) {
@@ -391,20 +389,15 @@ onmessage = async (event) => {
   if (pv.limiterType === 1) {
     dsp.limiter = new Limiter(
       pv.limiterSmoothingSeconds * upRate, 0.001 * upRate, 0, pv.limiterThreshold);
-
-    // Discard latency part.
-    for (let i = 0; i < dsp.limiter.latency; ++i) process(upRate, pv, dsp);
   } else if (pv.limiterType === 2) {
     dsp.limiter = new Tanh(pv.limiterThreshold);
   } else {
     dsp.limiter = new Bypass();
   }
 
-  // Discard silence of delay at start.
+  // Discard silence at start.
   let sig = 0;
-  do {
-    sig = process(upRate, pv, dsp);
-  } while (sig === 0);
+  while (sig === 0) sig = process(upRate, pv, dsp);
 
   // Process.
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);

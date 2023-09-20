@@ -90,8 +90,12 @@ const scales = {
   limiterThreshold: new parameter.DecibelScale(-60, 40, false),
   limiterSmoothingSeconds: new parameter.DecibelScale(-80, -20, false),
 
+  mix: new parameter.LinearScale(0, 1),
   seed: new parameter.IntScale(0, 2 ** 32),
   noiseDecaySeconds: new parameter.DecibelScale(-40, util.ampToDB(0.5), false),
+
+  wireFrequencyHz: new parameter.DecibelScale(0, util.ampToDB(1000), false),
+  wireDecaySeconds: new parameter.DecibelScale(-40, 40, false),
 
   matrixSize: new parameter.IntScale(1, 32),
   crossFeedbackGain: new parameter.DecibelScale(-12, 3, false),
@@ -109,7 +113,6 @@ const scales = {
   bandpassCutRatio: new parameter.LinearScale(-8, 8),
   bandpassQ: new parameter.DecibelScale(-40, 40, false),
 
-  fdnMix: new parameter.LinearScale(0, 1),
   collisionDistance: new parameter.DecibelScale(-80, 20, true),
 };
 
@@ -134,6 +137,10 @@ const param = {
   noiseLowpassHz: new parameter.Parameter(1000.0, scales.delayTimeHz, true),
   allpassMaxTimeHz: new parameter.Parameter(100, scales.delayTimeHz, true),
 
+  wireMix: new parameter.Parameter(0, scales.mix, true),
+  wireFrequencyHz: new parameter.Parameter(20, scales.wireFrequencyHz, true),
+  wireDecaySeconds: new parameter.Parameter(1, scales.wireDecaySeconds, true),
+
   matrixSize: new parameter.Parameter(5, scales.matrixSize, true),
   crossFeedbackGain: new parameter.Parameter(1, scales.crossFeedbackGain, false),
   crossFeedbackRatio: createArrayParameters(
@@ -154,7 +161,7 @@ const param = {
   bandpassCutRatio: new parameter.Parameter(0, scales.bandpassCutRatio, true),
   bandpassQ: new parameter.Parameter(Math.SQRT1_2, scales.bandpassQ, true),
 
-  fdnMix: new parameter.Parameter(0, scales.fdnMix, true),
+  fdnMix: new parameter.Parameter(0, scales.mix, true),
   secondaryDelayOffset: new parameter.Parameter(0, scales.bandpassCutRatio, true),
   collisionDistance: new parameter.Parameter(0.1, scales.collisionDistance, true),
 };
@@ -203,12 +210,13 @@ const togglebuttonQuickSave = new widget.ToggleButton(
   divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
 
 const detailRender = widget.details(divLeft, "Render");
-const detailLimiter = widget.details(divRightA, "Limiter");
+const detailLimiter = widget.details(divLeft, "Limiter");
 const detailOsc = widget.details(divRightA, "Oscillator");
+const detailWire = widget.details(divRightA, "Wire");
 const detailFDN = widget.details(divRightA, "FDN");
 const detailPitch = widget.details(divRightB, "Pitch");
 const detailComb = widget.details(divRightB, "Comb");
-const detailSecondary = widget.details(divRightB, "Secondary");
+const detailSecondary = widget.details(divRightB, "Secondary Membrane");
 
 const ui = {
   renderDuration:
@@ -240,6 +248,12 @@ const ui = {
     new widget.NumberInput(detailOsc, "Noise Lowpass [Hz]", param.noiseLowpassHz, render),
   allpassMaxTimeHz: new widget.NumberInput(
     detailOsc, "Allpass Time [Hz]", param.allpassMaxTimeHz, render),
+
+  wireMix: new widget.NumberInput(detailWire, "Mix", param.wireMix, render),
+  wireFrequencyHz:
+    new widget.NumberInput(detailWire, "Frequency [Hz]", param.wireFrequencyHz, render),
+  wireDecaySeconds:
+    new widget.NumberInput(detailWire, "Decay [s]", param.wireDecaySeconds, render),
 
   matrixSize: new widget.NumberInput(
     detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
