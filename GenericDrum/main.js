@@ -113,7 +113,7 @@ const scales = {
   bandpassCutRatio: new parameter.LinearScale(-8, 8),
   bandpassQ: new parameter.DecibelScale(-40, 40, false),
 
-  collisionDistance: new parameter.DecibelScale(-80, 20, true),
+  collisionDistance: new parameter.DecibelScale(-80, 40, true),
 };
 
 const param = {
@@ -140,6 +140,8 @@ const param = {
   wireMix: new parameter.Parameter(0, scales.mix, true),
   wireFrequencyHz: new parameter.Parameter(20, scales.wireFrequencyHz, true),
   wireDecaySeconds: new parameter.Parameter(1, scales.wireDecaySeconds, true),
+  wireDistance: new parameter.Parameter(1, scales.collisionDistance, true),
+  wireCollisionTypeMix: new parameter.Parameter(0, scales.mix, true),
 
   matrixSize: new parameter.Parameter(5, scales.matrixSize, true),
   crossFeedbackGain: new parameter.Parameter(1, scales.crossFeedbackGain, false),
@@ -254,6 +256,10 @@ const ui = {
     new widget.NumberInput(detailWire, "Frequency [Hz]", param.wireFrequencyHz, render),
   wireDecaySeconds:
     new widget.NumberInput(detailWire, "Decay [s]", param.wireDecaySeconds, render),
+  wireDistance:
+    new widget.NumberInput(detailWire, "Collision Distance", param.wireDistance, render),
+  wireCollisionTypeMix: new widget.NumberInput(
+    detailWire, "Collision Type", param.wireCollisionTypeMix, render),
 
   matrixSize: new widget.NumberInput(
     detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),

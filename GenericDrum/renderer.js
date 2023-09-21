@@ -10,7 +10,7 @@ import {nextPrime} from "../common/dsp/prime.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {RateLimiter} from "../common/dsp/smoother.js";
 import {MatchedBiquad, SVFHP} from "../common/dsp/svf.js";
-import {circularModes, lerp, uniformDistributionMap} from "../common/util.js";
+import {circularModes, DebugProbe, lerp, uniformDistributionMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
@@ -114,6 +114,7 @@ class EasyFDN {
     if (this.threshold < sum) {
       this.crossGain *= sum > 100 ? this.crossGainRate : this.crossDecay;
     }
+    // return sum + input;
     return sum;
   }
 }
@@ -128,7 +129,7 @@ class SerialAllpass {
   }
 
   process(input) {
-    let sum = 0;
+    let sum = input;
     for (let idx = 0; idx < this.allpass.length; ++idx) {
       input = this.allpass[idx].process(input);
       sum += input;
@@ -146,7 +147,7 @@ class WireEnvelope {
   process() {
     const out = this.gain;
     this.gain *= this.decay;
-    return Math.tanh(out);
+    return out;
   }
 }
 
@@ -189,59 +190,15 @@ class EnergyStore {
   }
 }
 
-function solveCollision(pos0, pos1, vel0, vel1, distance) {
-  const dist = pos0 - pos1;
-  if (dist >= distance) return [0, 0];
+function solveCollision(p0, p1, v0, v1, distance) {
+  const diff = p0 - p1 + distance;
+  if (diff >= 0) return [0, 0];
 
-  let sum = Math.abs(pos0) + Math.abs(pos1);
-  const v0 = Math.abs(vel0);
-  const v1 = Math.abs(vel1);
-  if (v0 + v1 >= Number.EPSILON) sum /= v0 + v1;
-  return [sum * v1, -sum * v0];
-}
-
-function process(upRate, pv, dsp) {
-  let sig = 0;
-
-  if (dsp.noiseGain > Number.EPSILON) {
-    const noise = dsp.noiseGain * uniformDistributionMap(dsp.rng.number(), -1, 1);
-    dsp.noiseGain *= dsp.noiseDecay;
-    sig += dsp.noiseLowpass.process(noise);
-  }
-
-  const env = dsp.envelope.process();
-
-  const hit = Math.tanh(dsp.longAllpass.process(sig));
-  const wire = dsp.wireAllpass.process(hit) * dsp.wireEnvelope.process();
-  sig = lerp(hit, wire, pv.wireMix);
-
-  if (pv.fdnMix > Number.EPSILON) {
-    for (let idx = 0; idx < dsp.position.length - 1; ++idx) {
-      [dsp.position[idx], dsp.position[idx + 1]] = solveCollision(
-        dsp.position[idx],
-        dsp.position[idx + 1],
-        dsp.velocity[idx],
-        dsp.velocity[idx + 1],
-        pv.collisionDistance,
-      );
-    }
-
-    for (let idx = 0; idx < dsp.fdn.length; ++idx) {
-      const collision = dsp.energyStore[idx].process(dsp.position[idx]);
-      const p0 = dsp.fdn[idx].process(sig * pv.matrixSize + collision, env);
-      dsp.velocity[idx] = p0 - dsp.position[idx];
-      dsp.position[idx] = p0;
-    }
-
-    sig = lerp(dsp.position[0], dsp.position[1], pv.fdnMix);
-  } else {
-    sig = dsp.fdn[0].process(sig * pv.matrixSize, env);
-  }
-
-  if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
-  if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
-  sig = dsp.limiter.process(sig);
-  return sig;
+  let sum = -diff;
+  const r0 = Math.abs(v0);
+  const r1 = Math.abs(v1);
+  if (r0 + r1 >= Number.EPSILON) sum /= r0 + r1;
+  return [sum * r1, -sum * r0];
 }
 
 function getPrimeRatios(length, octaveWrap = 0) {
@@ -323,7 +280,7 @@ function prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, isSecondary) {
   );
 }
 
-function prepareSerialAllpass(upRate, nAllpass, allpassMaxTimeHz, rng) {
+function prepareSerialAllpass(upRate, nAllpass, allpassMaxTimeHz, gain, rng) {
   // Randomly set `delaySamples` with following conditions:
   // - The sum of `delaySamples` equals to `scaler`.
   // - Minimum delay time is 2 samples for each all-pass.
@@ -342,7 +299,67 @@ function prepareSerialAllpass(upRate, nAllpass, allpassMaxTimeHz, rng) {
     sumFraction += samples - delaySamples[idx];
   }
   delaySamples[0] += Math.round(sumFraction);
-  return new SerialAllpass(upRate, 0.95, delaySamples);
+  return new SerialAllpass(upRate, gain, delaySamples);
+}
+
+function process(upRate, pv, dsp) {
+  let sig = 0;
+
+  if (dsp.noiseGain > Number.EPSILON) {
+    const noise = dsp.noiseGain * uniformDistributionMap(dsp.rng.number(), -1, 1);
+    dsp.noiseGain *= dsp.noiseDecay;
+    sig += dsp.noiseLowpass.process(noise);
+  }
+
+  sig = Math.tanh(dsp.longAllpass.process(sig));
+
+  [dsp.wirePosition, dsp.position[0]] = solveCollision(
+    dsp.wirePosition, dsp.position[0], dsp.wireVelocity, dsp.velocity[0],
+    pv.wireDistance);
+
+  // dsp.probe1.process(dsp.wirePosition); // debug
+  // dsp.probe2.process(dsp.position[0]);  // debug
+
+  let wireCollision = lerp(
+    dsp.wireEnergyNoise.process(dsp.wirePosition, dsp.rng),
+    dsp.wireEnergyDecay.process(dsp.wirePosition), pv.wireCollisionTypeMix);
+  wireCollision = 8 * Math.tanh(0.125 * wireCollision);
+  // const wireIn = 0.995 * dsp.wireFilter.process(sig + wireCollision); // Unused.
+  const wireIn = 0.995 * (sig + wireCollision);
+  const wirePos = dsp.wireAllpass.process(wireIn) * dsp.wireEnvelope.process();
+  dsp.wireVelocity = wirePos - dsp.wirePosition;
+  dsp.wirePosition = wirePos;
+
+  sig = lerp(sig, dsp.wirePosition, pv.wireMix);
+
+  const env = dsp.envelope.process();
+  if (pv.fdnMix > Number.EPSILON) {
+    for (let idx = 0; idx < dsp.position.length - 1; ++idx) {
+      [dsp.position[idx], dsp.position[idx + 1]] = solveCollision(
+        dsp.position[idx], dsp.position[idx + 1], dsp.velocity[idx],
+        dsp.velocity[idx + 1], pv.collisionDistance);
+    }
+
+    for (let idx = 0; idx < dsp.fdn.length; ++idx) {
+      const collision = dsp.energyStore[idx].process(dsp.position[idx]);
+      const p0 = dsp.fdn[idx].process(sig * pv.matrixSize + collision, env);
+      dsp.velocity[idx] = p0 - dsp.position[idx];
+      dsp.position[idx] = p0;
+    }
+
+    sig = lerp(dsp.position[0], dsp.position[1], pv.fdnMix);
+  } else {
+    const collision = dsp.energyStore[0].process(dsp.position[0]);
+    const p0 = dsp.fdn[0].process(sig * pv.matrixSize + collision, env);
+    dsp.velocity[0] = p0 - dsp.position[0];
+    dsp.position[0] = p0;
+    sig = p0;
+  }
+
+  if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
+  if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
+  sig = dsp.limiter.process(sig);
+  return sig;
 }
 
 onmessage = async (event) => {
@@ -366,21 +383,26 @@ onmessage = async (event) => {
     pv.envelopeModAmount * exp2Scaler, upRate * pv.envelopeAttackSeconds,
     upRate * pv.envelopeDecaySeconds);
 
-  dsp.longAllpass = prepareSerialAllpass(upRate, 4, pv.allpassMaxTimeHz, dsp.rng);
+  dsp.longAllpass = prepareSerialAllpass(upRate, 4, pv.allpassMaxTimeHz, 0.95, dsp.rng);
 
   dsp.nWireAllpass = 4;
   dsp.wireAllpass
-    = prepareSerialAllpass(upRate, dsp.nWireAllpass, pv.wireFrequencyHz, dsp.rng);
-  dsp.wireEnvelope = new WireEnvelope(pv.wireDecaySeconds * upRate, 2);
+    = prepareSerialAllpass(upRate, dsp.nWireAllpass, pv.wireFrequencyHz, 0.5, dsp.rng);
+  dsp.wireEnvelope = new WireEnvelope(pv.wireDecaySeconds * upRate, 1);
+  // dsp.wireFilter = new SVFHP(20 / upRate, Math.SQRT1_2); // Unused.
+  dsp.wirePosition = 0;
+  dsp.wireVelocity = 0;
+  dsp.wireEnergyNoise = new EnergyStoreNoise();
+  dsp.wireEnergyDecay = new EnergyStore(upRate * 0.001);
 
   dsp.fdn = [prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, false)];
   if (pv.fdnMix > Number.EPSILON) {
     dsp.fdn.push(prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, true));
-    dsp.position = [0, 0];
-    dsp.velocity = [0, 0];
-    const decaySamples = upRate * 0.001;
-    dsp.energyStore = [new EnergyStore(decaySamples), new EnergyStore(decaySamples)];
   }
+  dsp.position = [0, 0];
+  dsp.velocity = [0, 0];
+  const decaySamples = upRate * 0.001;
+  dsp.energyStore = [new EnergyStore(decaySamples), new EnergyStore(decaySamples)];
 
   dsp.slopeFilter = new SlopeFilter(Math.floor(Math.log2(24000 / 1000)));
   dsp.slopeFilter.setCutoff(upRate, 1000, pv.toneSlope, true);
@@ -389,11 +411,17 @@ onmessage = async (event) => {
   if (pv.limiterType === 1) {
     dsp.limiter = new Limiter(
       pv.limiterSmoothingSeconds * upRate, 0.001 * upRate, 0, pv.limiterThreshold);
+
+    // Discard latency part.
+    for (let i = 0; i < dsp.limiter.latency; ++i) process(upRate, pv, dsp);
   } else if (pv.limiterType === 2) {
     dsp.limiter = new Tanh(pv.limiterThreshold);
   } else {
     dsp.limiter = new Bypass();
   }
+
+  dsp.probe1 = new DebugProbe(`p1, ch${pv.channel}`);
+  dsp.probe2 = new DebugProbe(`p2, ch${pv.channel}`);
 
   // Discard silence at start.
   let sig = 0;
@@ -404,6 +432,9 @@ onmessage = async (event) => {
   sound[0] = sig;
   for (let i = 1; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
   sound = downSampleIIR(sound, upFold);
+
+  // dsp.probe1.print(); // debug
+  // dsp.probe2.print(); // debug
 
   // Post effect.
   let gainEnv = 1;
