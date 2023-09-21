@@ -84,3 +84,47 @@ export const circularModes = [
   11.903823217314876, 12.020976194473256, 12.48894011894477,  12.6291936518746,
   13.066558649839825, 13.228284530761863, 13.819314942198952, 14.40316086180383
 ];
+
+export class DebugProbe {
+  constructor(label) {
+    this.label = label;
+    this.frame = 0;
+
+    this.min = {value: Number.POSITIVE_INFINITY, frame: -1};
+    this.max = {value: Number.NEGATIVE_INFINITY, frame: -1};
+
+    this.firstNonFinite = {value: 0, frame: -1};
+  }
+
+  print() {
+    let text = `--- ${this.label} (Signal Debugger)
+min: ${this.min.value} at frame ${this.min.frame}
+max: ${this.max.value} at frame ${this.max.frame}`;
+
+    if (this.firstNonFinite.frame >= 0) {
+      text += `\nNon finite number at ${label}, in frame ${this.frame}`;
+    }
+
+    console.log(text);
+  }
+
+  process(input) {
+    if (!Number.isFinite(input)) {
+      this.firstNonFinite.value = input;
+      this.firstNonFinite.frame = this.frame;
+      this.observedNonFinite = true;
+    }
+
+    if (input < this.min.value) {
+      this.min.value = input;
+      this.min.frame = this.frame;
+    }
+    if (input > this.max.value) {
+      this.max.value = input;
+      this.max.frame = this.frame;
+    }
+
+    ++this.frame;
+    return input;
+  }
+}
