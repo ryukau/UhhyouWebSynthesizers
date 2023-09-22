@@ -18,7 +18,7 @@ export function refresh(ui) {
     if (Array.isArray(ui[key])) {
       ui[key].array.forEach(element => { element?.refresh(); });
     } else {
-      ui[key]?.refresh();
+      ui[key].refresh?.();
     }
   }
 }
