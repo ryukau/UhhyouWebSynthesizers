@@ -10,7 +10,7 @@ import {nextPrime} from "../common/dsp/prime.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {RateLimiter} from "../common/dsp/smoother.js";
 import {MatchedBiquad, SVFHP} from "../common/dsp/svf.js";
-import {circularModes, DebugProbe, lerp, uniformDistributionMap} from "../common/util.js";
+import {circularModes, clamp, lerp, uniformDistributionMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
@@ -160,18 +160,6 @@ class Bypass {
   process(input) { return input; }
 }
 
-// Unused. Staying here for further experimentation.
-class EnergyStoreNoise {
-  constructor() { this.sum = 0; }
-
-  process(value, rng) {
-    this.sum += Math.abs(value);
-    const out = uniformDistributionMap(rng.number(), -this.sum, this.sum);
-    this.sum -= Math.abs(out);
-    return out;
-  }
-}
-
 // `EnergyStore` thinly spreads the energy of collisions over time. This acts as a
 // mitigation to not blow up FDN with collision.
 //
@@ -187,6 +175,17 @@ class EnergyStore {
     const absed = Math.abs(value);
     if (absed > Number.EPSILON) this.sum = (this.sum + value) * this.decay;
     return this.sum *= this.gain;
+  }
+}
+
+class EnergyStoreNoise {
+  constructor() { this.sum = 0; }
+
+  process(value, rng) {
+    this.sum += Math.abs(value);
+    const out = uniformDistributionMap(rng.number(), -this.sum, this.sum);
+    this.sum -= Math.abs(out);
+    return out;
   }
 }
 
@@ -243,9 +242,12 @@ function getPitchFunc(pv) {
 }
 
 function prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, isSecondary) {
-  const delayOffset = isSecondary ? 2 ** pv.secondaryDelayOffset : 1;
+  const delayOffset = isSecondary ? 2 ** pv.secondaryPitchOffset : 1;
   const bandpassCutHz = delayOffset * pv.delayTimeHz * 2 ** pv.bandpassCutRatio;
   const delayTimeHz = delayOffset * pv.delayTimeHz;
+
+  const qOffset = isSecondary ? 2 ** pv.secondaryQOffset : 1;
+  const bandpassQ = clamp(pv.bandpassQ * qOffset, 0.1, 100);
 
   const pitchFunc = getPitchFunc(pv);
   const pitchRatio = (index, spread, rndCent) => {
@@ -264,7 +266,7 @@ function prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, isSecondary) {
       upRate / (delayTimeHz * delayCutRatio),
       pv.delayTimeModAmount * upFold * sampleRateScaler,
       bandpassCutHz * bpCutRatio / upRate,
-      pv.bandpassQ,
+      bandpassQ,
     );
   }
 
@@ -313,12 +315,11 @@ function process(upRate, pv, dsp) {
 
   sig = Math.tanh(dsp.longAllpass.process(sig));
 
-  [dsp.wirePosition, dsp.position[0]] = solveCollision(
-    dsp.wirePosition, dsp.position[0], dsp.wireVelocity, dsp.velocity[0],
+  [dsp.wirePosition, dsp.fdnPosition[0]] = solveCollision(
+    dsp.wirePosition, dsp.fdnPosition[0], dsp.wireVelocity, dsp.fdnVelocity[0],
     pv.wireDistance);
 
-  // dsp.probe1.process(dsp.wirePosition); // debug
-  // dsp.probe2.process(dsp.position[0]);  // debug
+  if (dsp.wirePosition !== 0) dsp.isWireEngaged = true;
 
   let wireCollision = lerp(
     dsp.wireEnergyNoise.process(dsp.wirePosition, dsp.rng),
@@ -334,25 +335,27 @@ function process(upRate, pv, dsp) {
 
   const env = dsp.envelope.process();
   if (pv.fdnMix > Number.EPSILON) {
-    for (let idx = 0; idx < dsp.position.length - 1; ++idx) {
-      [dsp.position[idx], dsp.position[idx + 1]] = solveCollision(
-        dsp.position[idx], dsp.position[idx + 1], dsp.velocity[idx],
-        dsp.velocity[idx + 1], pv.collisionDistance);
+    for (let idx = 0; idx < dsp.fdnPosition.length - 1; ++idx) {
+      [dsp.fdnPosition[idx], dsp.fdnPosition[idx + 1]] = solveCollision(
+        dsp.fdnPosition[idx], dsp.fdnPosition[idx + 1], dsp.fdnVelocity[idx],
+        dsp.fdnVelocity[idx + 1], pv.secondaryDistance);
     }
+
+    if (dsp.fdnPosition[0] !== 0) dsp.isSecondaryEngaged = true;
 
     for (let idx = 0; idx < dsp.fdn.length; ++idx) {
-      const collision = dsp.energyStore[idx].process(dsp.position[idx]);
+      const collision = dsp.energyStore[idx].process(dsp.fdnPosition[idx]);
       const p0 = dsp.fdn[idx].process(sig * pv.matrixSize + collision, env);
-      dsp.velocity[idx] = p0 - dsp.position[idx];
-      dsp.position[idx] = p0;
+      dsp.fdnVelocity[idx] = p0 - dsp.fdnPosition[idx];
+      dsp.fdnPosition[idx] = p0;
     }
 
-    sig = lerp(dsp.position[0], dsp.position[1], pv.fdnMix);
+    sig = lerp(dsp.fdnPosition[0], dsp.fdnPosition[1], pv.fdnMix);
   } else {
-    const collision = dsp.energyStore[0].process(dsp.position[0]);
+    const collision = dsp.energyStore[0].process(dsp.fdnPosition[0]);
     const p0 = dsp.fdn[0].process(sig * pv.matrixSize + collision, env);
-    dsp.velocity[0] = p0 - dsp.position[0];
-    dsp.position[0] = p0;
+    dsp.fdnVelocity[0] = p0 - dsp.fdnPosition[0];
+    dsp.fdnPosition[0] = p0;
     sig = p0;
   }
 
@@ -399,14 +402,17 @@ onmessage = async (event) => {
   if (pv.fdnMix > Number.EPSILON) {
     dsp.fdn.push(prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, true));
   }
-  dsp.position = [0, 0];
-  dsp.velocity = [0, 0];
+  dsp.fdnPosition = [0, 0];
+  dsp.fdnVelocity = [0, 0];
   const decaySamples = upRate * 0.001;
   dsp.energyStore = [new EnergyStore(decaySamples), new EnergyStore(decaySamples)];
 
   dsp.slopeFilter = new SlopeFilter(Math.floor(Math.log2(24000 / 1000)));
   dsp.slopeFilter.setCutoff(upRate, 1000, pv.toneSlope, true);
   dsp.dcHighpass = new SVFHP(pv.dcHighpassHz / upRate, Math.SQRT1_2);
+
+  dsp.isWireEngaged = false;
+  dsp.isSecondaryEngaged = false;
 
   if (pv.limiterType === 1) {
     dsp.limiter = new Limiter(
@@ -420,9 +426,6 @@ onmessage = async (event) => {
     dsp.limiter = new Bypass();
   }
 
-  dsp.probe1 = new DebugProbe(`p1, ch${pv.channel}`);
-  dsp.probe2 = new DebugProbe(`p2, ch${pv.channel}`);
-
   // Discard silence at start.
   let sig = 0;
   while (sig === 0) sig = process(upRate, pv, dsp);
@@ -433,9 +436,6 @@ onmessage = async (event) => {
   for (let i = 1; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
   sound = downSampleIIR(sound, upFold);
 
-  // dsp.probe1.print(); // debug
-  // dsp.probe2.print(); // debug
-
   // Post effect.
   let gainEnv = 1;
   let decay = Math.pow(pv.decayTo, 1.0 / sound.length);
@@ -444,5 +444,9 @@ onmessage = async (event) => {
     gainEnv *= decay;
   }
 
-  postMessage({sound: sound});
+  postMessage({
+    sound: sound,
+    isWireEngaged: dsp.isWireEngaged,
+    isSecondaryEngaged: dsp.isSecondaryEngaged,
+  });
 }

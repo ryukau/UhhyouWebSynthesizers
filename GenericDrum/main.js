@@ -32,6 +32,7 @@ function randomize() {
         param[key].dsp = util.exponentialMap(Math.random(), 0.1, 10000);
         continue;
       }
+      if (key === "secondaryQOffset") continue;
 
       if (Array.isArray(param[key])) {
         param[key].forEach(e => { e.normalized = Math.random(); });
@@ -66,6 +67,12 @@ function render() {
     }),
     "perChannel",
     togglebuttonQuickSave.state === 1,
+    (data) => {
+      ui.wireStatus.textContent
+        = data.isWireEngaged ? "Wire collided." : "Wire didn't collide.";
+      ui.secondaryStatus.textContent
+        = data.isSecondaryEngaged ? "Membrane collided." : "Membrane didn't collide.";
+    },
   );
 }
 
@@ -100,7 +107,7 @@ const scales = {
   matrixSize: new parameter.IntScale(1, 32),
   crossFeedbackGain: new parameter.DecibelScale(-12, 3, false),
   feedbackDecaySeconds: new parameter.DecibelScale(-40, 20, false),
-  crossFeedbackRatio: new parameter.LinearScale(-1, 1),
+  crossFeedbackRatio: new parameter.LinearScale(0, 1),
 
   pitchSpread: new parameter.LinearScale(0, 1),
   pitchRandomCent: new parameter.LinearScale(0, 1200),
@@ -113,7 +120,7 @@ const scales = {
   bandpassCutRatio: new parameter.LinearScale(-8, 8),
   bandpassQ: new parameter.DecibelScale(-40, 40, false),
 
-  collisionDistance: new parameter.DecibelScale(-80, 40, true),
+  secondaryDistance: new parameter.DecibelScale(-80, 40, true),
 };
 
 const param = {
@@ -140,7 +147,7 @@ const param = {
   wireMix: new parameter.Parameter(0, scales.mix, true),
   wireFrequencyHz: new parameter.Parameter(20, scales.wireFrequencyHz, true),
   wireDecaySeconds: new parameter.Parameter(1, scales.wireDecaySeconds, true),
-  wireDistance: new parameter.Parameter(1, scales.collisionDistance, true),
+  wireDistance: new parameter.Parameter(1, scales.secondaryDistance, true),
   wireCollisionTypeMix: new parameter.Parameter(0, scales.mix, true),
 
   matrixSize: new parameter.Parameter(5, scales.matrixSize, true),
@@ -164,8 +171,9 @@ const param = {
   bandpassQ: new parameter.Parameter(Math.SQRT1_2, scales.bandpassQ, true),
 
   fdnMix: new parameter.Parameter(0, scales.mix, true),
-  secondaryDelayOffset: new parameter.Parameter(0, scales.bandpassCutRatio, true),
-  collisionDistance: new parameter.Parameter(0.1, scales.collisionDistance, true),
+  secondaryPitchOffset: new parameter.Parameter(0, scales.bandpassCutRatio, true),
+  secondaryQOffset: new parameter.Parameter(0, scales.bandpassCutRatio, true),
+  secondaryDistance: new parameter.Parameter(0.1, scales.secondaryDistance, true),
 };
 
 // Add controls.
@@ -213,11 +221,12 @@ const togglebuttonQuickSave = new widget.ToggleButton(
 
 const detailRender = widget.details(divLeft, "Render");
 const detailLimiter = widget.details(divLeft, "Limiter");
-const detailOsc = widget.details(divRightA, "Oscillator");
+const detailOsc = widget.details(divRightA, "Impact Noise");
 const detailWire = widget.details(divRightA, "Wire");
-const detailFDN = widget.details(divRightA, "FDN");
-const detailPitch = widget.details(divRightB, "Pitch");
-const detailComb = widget.details(divRightB, "Comb");
+const detailFDN = widget.details(divRightA, "Primary Membrane");
+const detailPitchTexture = widget.details(divRightB, "Pitch Texture");
+const detailPitchEnvelope = widget.details(divRightB, "Pitch Envelope");
+const detailPitchMain = widget.details(divRightB, "Pitch Main");
 const detailSecondary = widget.details(divRightB, "Secondary Membrane");
 
 const ui = {
@@ -248,10 +257,10 @@ const ui = {
     new widget.NumberInput(detailOsc, "Noise Decay [s]", param.noiseDecaySeconds, render),
   noiseLowpassHz:
     new widget.NumberInput(detailOsc, "Noise Lowpass [Hz]", param.noiseLowpassHz, render),
-  allpassMaxTimeHz: new widget.NumberInput(
-    detailOsc, "Allpass Time [Hz]", param.allpassMaxTimeHz, render),
+  allpassMaxTimeHz:
+    new widget.NumberInput(detailOsc, "Echo [Hz]", param.allpassMaxTimeHz, render),
 
-  wireMix: new widget.NumberInput(detailWire, "Mix", param.wireMix, render),
+  wireMix: new widget.NumberInput(detailWire, "Impact-Wire Mix", param.wireMix, render),
   wireFrequencyHz:
     new widget.NumberInput(detailWire, "Frequency [Hz]", param.wireFrequencyHz, render),
   wireDecaySeconds:
@@ -259,10 +268,11 @@ const ui = {
   wireDistance:
     new widget.NumberInput(detailWire, "Collision Distance", param.wireDistance, render),
   wireCollisionTypeMix: new widget.NumberInput(
-    detailWire, "Collision Type", param.wireCollisionTypeMix, render),
+    detailWire, "Ruttle-Squeak Mix", param.wireCollisionTypeMix, render),
+  wireStatus: widget.paragraph(detailWire, "wireStatus", undefined),
 
-  matrixSize: new widget.NumberInput(
-    detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
+  matrixSize:
+    new widget.NumberInput(detailFDN, "FDN Size", param.matrixSize, onMatrixSizeChanged),
   crossFeedbackGain: new widget.NumberInput(
     detailFDN, "Cross Feedback Gain [dB]", param.crossFeedbackGain, render),
   crossFeedbackRatio: new widget.BarBox(
@@ -270,35 +280,44 @@ const ui = {
     param.crossFeedbackRatio, render),
 
   delayTimeSpread: new widget.NumberInput(
-    detailPitch, "Delay Time Spread", param.delayTimeSpread, render),
-  bandpassCutSpread:
-    new widget.NumberInput(detailPitch, "BP Cut Spread", param.bandpassCutSpread, render),
+    detailPitchTexture, "Delay Time Spread", param.delayTimeSpread, render),
+  bandpassCutSpread: new widget.NumberInput(
+    detailPitchTexture, "BP Cut Spread", param.bandpassCutSpread, render),
   pitchRandomCent: new widget.NumberInput(
-    detailPitch, "Pitch Random [cent]", param.pitchRandomCent, render),
-  envelopeAttackSeconds: new widget.NumberInput(
-    detailPitch, "Envelope Attack [s]", param.envelopeAttackSeconds, render),
-  envelopeDecaySeconds: new widget.NumberInput(
-    detailPitch, "Envelope Decay [s]", param.envelopeDecaySeconds, render),
-  envelopeModAmount: new widget.NumberInput(
-    detailPitch, "Envelope Amount [oct]", param.envelopeModAmount, render),
+    detailPitchTexture, "Pitch Random [cent]", param.pitchRandomCent, render),
 
-  pitchType: new widget.ComboBoxLine(detailComb, "Pitch Type", param.pitchType, render),
+  envelopeAttackSeconds: new widget.NumberInput(
+    detailPitchEnvelope, "Attack [s]", param.envelopeAttackSeconds, render),
+  envelopeDecaySeconds: new widget.NumberInput(
+    detailPitchEnvelope, "Decay [s]", param.envelopeDecaySeconds, render),
+  envelopeModAmount: new widget.NumberInput(
+    detailPitchEnvelope, "Amount [oct]", param.envelopeModAmount, render),
+
+  pitchType:
+    new widget.ComboBoxLine(detailPitchMain, "Pitch Type", param.pitchType, render),
   delayTimeHz:
-    new widget.NumberInput(detailComb, "Delay [Hz]", param.delayTimeHz, render),
+    new widget.NumberInput(detailPitchMain, "Delay [Hz]", param.delayTimeHz, render),
   delayTimeModAmount: new widget.NumberInput(
-    detailComb, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
-  bandpassCutRatio:
-    new widget.NumberInput(detailComb, "BP Cut [oct]", param.bandpassCutRatio, render),
-  bandpassQ: new widget.NumberInput(detailComb, "BP Q", param.bandpassQ, render),
+    detailPitchMain, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
+  bandpassCutRatio: new widget.NumberInput(
+    detailPitchMain, "BP Cut [oct]", param.bandpassCutRatio, render),
+  bandpassQ: new widget.NumberInput(detailPitchMain, "BP Q", param.bandpassQ, render),
 
   fdnMix: new widget.NumberInput(detailSecondary, "Mix", param.fdnMix, render),
-  secondaryDelayOffset: new widget.NumberInput(
-    detailSecondary, "Delay Offset [oct]", param.secondaryDelayOffset, render),
-  collisionDistance: new widget.NumberInput(
-    detailSecondary, "Collision Distance", param.collisionDistance, render),
+  secondaryPitchOffset: new widget.NumberInput(
+    detailSecondary, "Pitch Offset [oct]", param.secondaryPitchOffset, render),
+  secondaryQOffset: new widget.NumberInput(
+    detailSecondary, "Q Offset [oct]", param.secondaryQOffset, render),
+  secondaryDistance: new widget.NumberInput(
+    detailSecondary, "Collision Distance", param.secondaryDistance, render),
+  secondaryStatus: widget.paragraph(detailSecondary, "secondaryStatus", undefined),
 };
 
-ui.crossFeedbackRatio.sliderZero = 0.5;
+// ui.crossFeedbackRatio.sliderZero = 0.5;
+ui.wireStatus.textContent = "Wire collision status will be shown here.";
+ui.wireStatus.style.textAlign = "center";
+ui.secondaryStatus.textContent = "Membrane collision status will be shown here.";
+ui.secondaryStatus.style.textAlign = "center";
 
 onMatrixSizeChanged(param.matrixSize.defaultDsp);
 window.addEventListener("load", (ev) => { widget.refresh(ui); });

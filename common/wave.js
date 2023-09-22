@@ -74,7 +74,7 @@ export class Audio {
     }, 100);
   }
 
-  render(parameter, normalize = "link", quickSave = false) {
+  render(parameter, normalize = "link", quickSave = false, onRenderFinished = () => {}) {
     if (this.renderStatusElement !== undefined) {
       this.renderStatusElement.textContent = "⚠ Rendering ⚠";
     }
@@ -107,6 +107,9 @@ export class Audio {
                                                      : (1 << parameter.sampleRateScaler),
             quickSave,
           );
+
+          delete event.data.sound;
+          onRenderFinished(event.data);
         }
       };
     });
