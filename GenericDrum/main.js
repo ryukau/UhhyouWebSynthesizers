@@ -125,7 +125,7 @@ const scales = {
 
 const param = {
   renderDuration: new parameter.Parameter(0.5, scales.renderDuration, true),
-  fadeIn: new parameter.Parameter(0.01, scales.fade, true),
+  fadeIn: new parameter.Parameter(0.002, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
   stereoMerge: new parameter.Parameter(0.75, scales.stereoMerge),
@@ -139,41 +139,42 @@ const param = {
   limiterSmoothingSeconds:
     new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
 
-  seed: new parameter.Parameter(0, scales.seed, true),
-  noiseDecaySeconds: new parameter.Parameter(0.5, scales.noiseDecaySeconds, true),
+  seed: new parameter.Parameter(406392312, scales.seed, true),
+  noiseDecaySeconds: new parameter.Parameter(0.08, scales.noiseDecaySeconds, true),
   noiseLowpassHz: new parameter.Parameter(1000.0, scales.delayTimeHz, true),
-  allpassMaxTimeHz: new parameter.Parameter(100, scales.delayTimeHz, true),
+  allpassMaxTimeHz: new parameter.Parameter(3000, scales.delayTimeHz, true),
 
-  wireMix: new parameter.Parameter(0, scales.mix, true),
-  wireFrequencyHz: new parameter.Parameter(20, scales.wireFrequencyHz, true),
-  wireDecaySeconds: new parameter.Parameter(1, scales.wireDecaySeconds, true),
-  wireDistance: new parameter.Parameter(1, scales.secondaryDistance, true),
-  wireCollisionTypeMix: new parameter.Parameter(0, scales.mix, true),
+  wireMix: new parameter.Parameter(0.9, scales.mix, true),
+  wireFrequencyHz: new parameter.Parameter(100, scales.wireFrequencyHz, true),
+  wireDecaySeconds: new parameter.Parameter(2, scales.wireDecaySeconds, true),
+  wireDistance: new parameter.Parameter(0.15, scales.secondaryDistance, true),
+  wireCollisionTypeMix: new parameter.Parameter(0.5, scales.mix, true),
 
   matrixSize: new parameter.Parameter(5, scales.matrixSize, true),
-  crossFeedbackGain: new parameter.Parameter(1, scales.crossFeedbackGain, false),
+  crossFeedbackGain:
+    new parameter.Parameter(util.dbToAmp(-1), scales.crossFeedbackGain, false),
   crossFeedbackRatio: createArrayParameters(
-    new Array(scales.matrixSize.max).fill(0), scales.crossFeedbackRatio,
+    new Array(scales.matrixSize.max).fill(1), scales.crossFeedbackRatio,
     scales.matrixSize.max),
 
-  delayTimeSpread: new parameter.Parameter(1, scales.pitchSpread, true),
-  bandpassCutSpread: new parameter.Parameter(1, scales.pitchSpread, true),
-  pitchRandomCent:
-    new parameter.Parameter(util.syntonicCommaCents, scales.pitchRandomCent, true),
-  envelopeAttackSeconds: new parameter.Parameter(0.5, scales.envelopeSeconds, true),
-  envelopeDecaySeconds: new parameter.Parameter(4, scales.envelopeSeconds, true),
+  delayTimeSpread: new parameter.Parameter(0.1, scales.pitchSpread, true),
+  bandpassCutSpread: new parameter.Parameter(0.5, scales.pitchSpread, true),
+  pitchRandomCent: new parameter.Parameter(300, scales.pitchRandomCent, true),
+
+  envelopeAttackSeconds: new parameter.Parameter(0.01, scales.envelopeSeconds, true),
+  envelopeDecaySeconds: new parameter.Parameter(0.01, scales.envelopeSeconds, true),
   envelopeModAmount: new parameter.Parameter(0, scales.envelopeModAmount, true),
 
-  pitchType: new parameter.Parameter(0, scales.pitchType, true),
-  delayTimeHz: new parameter.Parameter(100, scales.delayTimeHz, true),
-  delayTimeModAmount: new parameter.Parameter(0.0, scales.delayTimeModAmount, true),
-  bandpassCutRatio: new parameter.Parameter(0, scales.bandpassCutRatio, true),
-  bandpassQ: new parameter.Parameter(Math.SQRT1_2, scales.bandpassQ, true),
+  pitchType: new parameter.Parameter(7, scales.pitchType, true),
+  delayTimeHz: new parameter.Parameter(110, scales.delayTimeHz, true),
+  delayTimeModAmount: new parameter.Parameter(1150, scales.delayTimeModAmount, true),
+  bandpassCutRatio: new parameter.Parameter(-0.7, scales.bandpassCutRatio, true),
+  bandpassQ: new parameter.Parameter(0.6, scales.bandpassQ, true),
 
-  fdnMix: new parameter.Parameter(0, scales.mix, true),
-  secondaryPitchOffset: new parameter.Parameter(0, scales.bandpassCutRatio, true),
-  secondaryQOffset: new parameter.Parameter(0, scales.bandpassCutRatio, true),
-  secondaryDistance: new parameter.Parameter(0.1, scales.secondaryDistance, true),
+  fdnMix: new parameter.Parameter(0.25, scales.mix, true),
+  secondaryPitchOffset: new parameter.Parameter(-1.2, scales.bandpassCutRatio, true),
+  secondaryQOffset: new parameter.Parameter(-2, scales.bandpassCutRatio, true),
+  secondaryDistance: new parameter.Parameter(0.0008, scales.secondaryDistance, true),
 };
 
 // Add controls.
