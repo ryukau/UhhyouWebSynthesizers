@@ -122,6 +122,12 @@ solve(case3, q);
 solve(case4, q);
 ```
 
+Solution.
+
+```maxima
+maxQ = -a1 - 1;
+```
+
 Gain normalization:
 
 ```maxima
