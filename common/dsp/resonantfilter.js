@@ -1,19 +1,53 @@
 // Copyright 2023 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+/*
+Below is a block diagram of common filter structure in this file:
+
+```
+input -+--------> (main filter) --------+-> output
+       ↑                                |
+       +- (gain) <- (feedback filter) <-+
+```
+
+`gain` is called `resonance` or `q` in code.
+
+There's an ad-hoc convention for naming. It is `Resonant(main filter)(feedback filter)`.
+For example on `ResonantLowpass1A1`:
+
+- `Resonant` means it is a resonant filter, which is a family of filters written here.
+- `Lowpass1` means order 1 lowpass (-6 dB/oct) is used for main filter.
+- `A1` means order 1 allpass is used for feedback filter.
+  - `A` for allpass.
+  - `B` for bandpass.
+  - `L` for lowpass.
+  - `H` for highpass.
+  - And so on.
+
+Some abbreviations:
+
+- `BLT` or `Blt` mean bilinear transform.
+- `EMA` or `Ema` mean exponential moving average.
+
+This convention might be changed later, because following variations aren't considered.
+
+- Variety of Q for main and feedback filters,
+- Filter discretization method like bilinear or not,
+*/
+
 import {clamp} from "../util.js";
 
 // Reference:
 // https://ryukau.github.io/filter_notes/resonant_one_pole_filter/resonant_one_pole_filter.html
-export class ResonantOnePole {
+export class ResonantEmaLowpass1A1 {
   constructor() {
     this.v1 = 0;
     this.u1 = 0;
     this.u2 = 0;
   }
 
-  // `resonance` in [0, 1].
-  // `apScale` in [0, 1].
+  // `resonance` is in [0, 1].
+  // `apScale` is in [0, 1].
   process(input, cutoffNormalized, apScale, resonance) {
     const freq = Math.PI * clamp(cutoffNormalized, 0, 0.4999);
 
@@ -25,13 +59,141 @@ export class ResonantOnePole {
 
     const q = resonance * (c2 - c1 * c2 + 1);
 
+    // Bilinear allpass, order 1.
     this.v1 = c2 * (this.u1 - this.v1) + this.u2;
     this.u2 = this.u1;
+
+    // Exponential moving average (EMA) lowpass.
     return this.u1 += c1 * (input - this.u1) - q * this.v1;
   }
 }
 
-export class ResonantTwoPole {
+export class ResonantLowpass1A1 {
+  constructor() {
+    this.v1 = 0;
+    this.x1 = 0;
+    this.y1 = 0;
+    this.y2 = 0;
+  }
+
+  // `resonance` is in [0, 1].
+  process(input, cutoffNormalized, resonance) {
+    const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
+    const a1 = (t - 1) / (t + 1);
+    const reso = resonance * (a1 + 1);
+    const gain = (1 + a1 + reso) / 2;
+
+    // Bilinear allpass, order 1.
+    this.v1 = a1 * (this.y1 - this.v1) + this.y2;
+    this.y2 = this.y1;
+
+    // Bilinear lowpass, order 1.
+    this.y1 = gain * (input + this.x1) - a1 * this.y1 - reso * this.v1;
+    this.x1 = input;
+    return this.y1;
+  }
+}
+
+export class ResonantLowpass1H1 {
+  constructor() {
+    this.x1H = 0;
+    this.y1H = 0;
+    this.x1L = 0;
+    this.y1L = 0;
+  }
+
+  // `resonance` is in [-1, 1]. Negative value is allowed.
+  process(input, cutoffNormalized, resonance) {
+    const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
+    const a1 = (1 - t) / (1 + 1);
+    const bH = 1 / (1 + t);
+    const bL = t / (1 + t);
+    const reso = resonance < 0 ? resonance * (a1 + 1) * (a1 + 1) / (2 * bH)
+                               : resonance * (4 - (a1 + 1) * (a1 + 1) / bH);
+
+    // Bilinear highpass, order 1.
+    this.y1H = bH * (this.y1L - this.x1H) + a1 * this.y1H;
+    this.x1H = this.y1L;
+
+    // Bilinear lowpass, order 1.
+    this.y1L = bL * (input + this.x1L) + a1 * this.y1L + reso * this.y1H;
+    this.x1L = input;
+    return this.y1L;
+  }
+}
+
+// Almost same as `ResonantLowpass1H1`, but feed position is altered.
+export class ResonantLowpass1H1Alt {
+  constructor() {
+    this.x1H = 0;
+    this.y1H = 0;
+    this.x1L = 0;
+    this.y1L = 0;
+  }
+
+  // `resonance` is in [0, 1].
+  process(input, cutoffNormalized, resonance) {
+    const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
+    const a1 = (1 - t) / (1 + 1);
+    const bH = 1 / (1 + t);
+    const bL = t / (1 + t);
+    const reso = 4 * resonance;
+
+    // Bilinear highpass, order 1.
+    this.y1H = bH * (this.y1L - this.x1H) + a1 * this.y1H;
+    this.x1H = this.y1L;
+
+    // Bilinear lowpass, order 1.
+    this.y1L = bL * (input + this.x1L + reso * this.y1H) + a1 * this.y1L;
+    this.x1L = input;
+    return this.y1L;
+  }
+}
+
+/*
+`BroadPeakingLowpass` is different from other `Resonant` filters. Block diagram is shown
+below.
+
+```
+input -> (lowpass) -+-----------> (sum) -> output
+                    |               ↑
+                    +-> (highpass) -+
+```
+
+A cascade from lowpass to highpass becomes bandpass. So this is basically a sum of a
+lowpass and a bandpass.
+*/
+export class BroadPeakingLowpass {
+  constructor() {
+    this.x1L = 0;
+    this.y1L = 0;
+    this.x1H = 0;
+    this.y1H = 0;
+
+    // +60 dB when `resonance` is 1.
+    this.resoScaler = 3 * Math.log(10);
+  }
+
+  // `resonance` is in [0, 1].
+  process(input, cutoffNormalized, resonance) {
+    const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
+    const a1 = (1 - t) / (1 + t);
+    const bL = t / (1 + t);
+    const bH = 1 / (1 + t);
+    const mix = Math.exp(this.resoScaler * resonance);
+
+    // Bilinear lowpass, order 1.
+    this.y1L = bL * (input + this.x1L) + a1 * this.y1L;
+    this.x1L = input;
+
+    // Bilinear highpass, order 1.
+    this.y1H = bH * (this.y1L - this.x1H) + a1 * this.y1H;
+    this.x1H = this.y1L;
+    return this.y1L + mix * this.y1H;
+  }
+}
+
+export class ResonantLowpass2A2 {
   #qTable = [
     0.000000000000000,     0.6817937575690126,    0.6687618357481768,
     0.6796440492949124,    0.6895065555123012,    0.6843421496611362,
