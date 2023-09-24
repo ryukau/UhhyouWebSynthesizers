@@ -1,5 +1,5 @@
 # Construction of Resonant Filters
-Resonant filters described here has following structure.
+Resonant filters described here have following structure.
 
 ```
 input -+--------> (main filter) --------+-> output
@@ -23,7 +23,7 @@ A problem is how to determine the bounds of `gain` that doesn't blow up the filt
 3. Translate the difference equations to transfer function.
 4. Solve transfer function to get stability condition.
 
-It's kind of vague that what really is a "simple" filter. Usually order 2 or less can be considered simple. There might are filters that are order 3 or more, and have concise stability condition. But those are exception, because general solution of order 3 or order 4 polynomial is unusable for audio DSP. (See [here](https://math.vanderbilt.edu/schectex/courses/cubic/) and [here](https://en.wikipedia.org/wiki/File:Quartic_Formula.svg) for how lengthy they are.)
+It's kind of vague that what really is a "simple" filter. Usually order 2 or less can be considered simple. Usually the order 3 or more filters doesn't have concise stability condition, because general solution of order 3 or order 4 polynomial are complicated. (See [here](https://math.vanderbilt.edu/schectex/courses/cubic/) and [here](https://en.wikipedia.org/wiki/File:Quartic_Formula.svg) for how lengthy they are.)
 
 Anyway, we can use numerical method when the analytic solution is impractical.
 
@@ -103,7 +103,7 @@ Output:
 + x(n-2) * b_n * a_1
 ```
 
-Transfer function can be constructed from this output. But I'll skip it for now.
+Transfer function can be constructed from the output above. But I'll skip it for now.
 
 Stability condition:
 
@@ -217,6 +217,8 @@ Solution:
 ```
 maxQ = (a1 * a1 + 2 * a1 + 1) / (2 * bH);
 ```
+
+Scaling is applied to the implementation in `common/dsp/resonantfilters.js`. The scaling factor was obtained by comparing a numerical solution to the analytic solution above.
 
 ## ResonantLowpass1H1Alt
 Simplified code.
