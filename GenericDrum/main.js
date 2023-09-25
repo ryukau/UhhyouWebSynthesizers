@@ -100,6 +100,7 @@ const scales = {
   mix: new parameter.LinearScale(0, 1),
   seed: new parameter.IntScale(0, 2 ** 32),
   noiseDecaySeconds: new parameter.DecibelScale(-40, util.ampToDB(0.5), false),
+  noiseLowpassHz: new parameter.DecibelScale(util.ampToDB(2), util.ampToDB(20000), false),
 
   wireFrequencyHz: new parameter.DecibelScale(0, util.ampToDB(1000), false),
   wireDecaySeconds: new parameter.DecibelScale(-40, 40, false),
@@ -141,7 +142,7 @@ const param = {
 
   seed: new parameter.Parameter(406392312, scales.seed, true),
   noiseDecaySeconds: new parameter.Parameter(0.08, scales.noiseDecaySeconds, true),
-  noiseLowpassHz: new parameter.Parameter(1000.0, scales.delayTimeHz, true),
+  noiseLowpassHz: new parameter.Parameter(1000.0, scales.noiseLowpassHz, true),
   allpassMaxTimeHz: new parameter.Parameter(3000, scales.delayTimeHz, true),
 
   wireMix: new parameter.Parameter(0.9, scales.mix, true),

@@ -17,13 +17,22 @@ import * as menuitems from "./menuitems.js";
 
 const exp2Scaler = Math.log(2);
 
-// A badly tuned lowpass based on complex resonator.
+// A lowpass based on complex resonator.
 class ComplexLowpass {
-  // R in [0, 1].
-  constructor(cutoffNormalized, R) {
+  constructor(cutoffNormalized) {
+    // An arbitrary tuning on R. R must be in [0, 1].
+    const setR = (cut, lowR, highR, lowCut, highCut) => {
+      if (cut <= lowCut) return lowR;
+      if (cut >= highCut) return highR;
+      return lowR + (highR - lowR) * (cut - lowCut) / (highCut - lowCut);
+    };
+
     const theta = 2 * Math.PI * cutoffNormalized;
-    this.a1re = R * Math.cos(theta);
-    this.a1im = R * Math.sin(theta);
+    const cutRe = Math.cos(theta);
+    const cutIm = Math.sin(theta);
+    const R = setR(cutoffNormalized, 0.25, 0.9, 0.01, 0.2) ** cutIm;
+    this.a1re = R * cutRe;
+    this.a1im = R * cutIm;
 
     this.b_re = (1 - this.a1re) / 2;
     this.b_im = -this.a1im / 2;
@@ -271,8 +280,6 @@ function prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, isSecondary) {
   }
 
   let crossFeedbackGain = pv.crossFeedbackGain;
-  // if (pv.bandpassQ < 0.1 && pv.fdnMix > Number.EPSILON) crossFeedbackGain *= 0.25;
-  // if (isSecondary) crossFeedbackGain *= Math.SQRT1_2;
   return new EasyFDN(
     upRate,
     upFold,
@@ -325,7 +332,6 @@ function process(upRate, pv, dsp) {
     dsp.wireEnergyNoise.process(dsp.wirePosition, dsp.rng),
     dsp.wireEnergyDecay.process(dsp.wirePosition), pv.wireCollisionTypeMix);
   wireCollision = 8 * Math.tanh(0.125 * wireCollision);
-  // const wireIn = 0.995 * dsp.wireFilter.process(sig + wireCollision); // Unused.
   const wireIn = 0.995 * (sig + wireCollision);
   const wirePos = dsp.wireAllpass.process(wireIn) * dsp.wireEnvelope.process();
   dsp.wireVelocity = wirePos - dsp.wirePosition;
@@ -379,7 +385,7 @@ onmessage = async (event) => {
   dsp.rng = rng;
   dsp.noiseGain = 1;
   dsp.noiseDecay = Math.pow(1e-3, 1 / (upRate * pv.noiseDecaySeconds));
-  dsp.noiseLowpass = new ComplexLowpass(pv.noiseLowpassHz / upRate, 0.9);
+  dsp.noiseLowpass = new ComplexLowpass(pv.noiseLowpassHz / upRate);
 
   dsp.envelope = new DoubleEmaADEnvelope();
   dsp.envelope.noteOn(
@@ -392,7 +398,6 @@ onmessage = async (event) => {
   dsp.wireAllpass
     = prepareSerialAllpass(upRate, dsp.nWireAllpass, pv.wireFrequencyHz, 0.5, dsp.rng);
   dsp.wireEnvelope = new WireEnvelope(pv.wireDecaySeconds * upRate, 1);
-  // dsp.wireFilter = new SVFHP(20 / upRate, Math.SQRT1_2); // Unused.
   dsp.wirePosition = 0;
   dsp.wireVelocity = 0;
   dsp.wireEnergyNoise = new EnergyStoreNoise();
