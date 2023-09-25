@@ -565,7 +565,7 @@ var inputSeed = new NumberInput(
   divPadsynthControls.element, "Seed", 0, 0, Math.floor(Number.MAX_SAFE_INTEGER / 2), 1,
   refresh);
 var inputTableSize
-  = new NumberInput(divPadsynthControls.element, "Length [2^n]", 18, 0, 20, 1, refresh);
+  = new NumberInput(divPadsynthControls.element, "Length [2^n]", 18, 2, 20, 1, refresh);
 
 var divOvertoneControl = new Div(divControlLeft.element, "OvertoneControl");
 var headingOvertone = new Heading(divOvertoneControl.element, 6, "Overtone");
