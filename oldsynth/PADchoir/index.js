@@ -26,10 +26,9 @@ function play(audioContext, wave, stop = false) {
 
 function save(wave) {
   var buffer = Wave.toBuffer(wave, wave.channels);
-  var header = Wave.fileHeader(audioContext.sampleRate, wave.channels,
-    buffer.length);
+  var header = Wave.fileHeader(audioContext.sampleRate, wave.channels, buffer.length);
 
-  var blob = new Blob([header, buffer], { type: "application/octet-stream" });
+  var blob = new Blob([header, buffer], {type: "application/octet-stream"});
   var url = window.URL.createObjectURL(blob);
 
   var a = document.createElement("a");
@@ -64,8 +63,7 @@ function makeWave() {
     if (workers[ch].isRunning) {
       workers[ch].worker.terminate();
       workers[ch].worker = new Worker("renderer.js");
-    }
-    else {
+    } else {
       workers[ch].isRunning = true;
     }
     workers[ch].worker.postMessage({
@@ -74,6 +72,7 @@ function makeWave() {
       baseFreq: inputBaseFreq.value,
       bandWidth: inputBandWidth.value,
       seed: inputSeed.value + inputSeed.max * ch,
+      tableSize: 2 ** inputTableSize.value,
       basefunc: pullDownMenuBaseFunction.index,
       basefuncP1: inputBaseFunctionP1.value,
       modType: pullDownMenuModType.index,
@@ -175,10 +174,8 @@ class OvertoneControl extends Canvas {
     var min = Number.MAX_VALUE;
     var max = Number.MIN_VALUE;
     for (var i = 0; i < overtone.length; ++i) {
-      if (overtone[i] < min)
-        min = overtone[i];
-      if (overtone[i] > max)
-        max = overtone[i];
+      if (overtone[i] < min) min = overtone[i];
+      if (overtone[i] > max) max = overtone[i];
     }
 
     var diff = max - min;
@@ -224,7 +221,8 @@ class OvertoneControl extends Canvas {
     var rect = event.target.getBoundingClientRect();
     var x = Math.floor(point.clientX - rect.left);
     var y = event.ctrlKey ? this.height
-      : event.altKey ? 0 : Math.floor(point.clientY - rect.top);
+      : event.altKey      ? 0
+                          : Math.floor(point.clientY - rect.top);
     return new Vec2(x, y);
   }
 
@@ -250,8 +248,7 @@ class OvertoneControl extends Canvas {
   }
 
   onMouseLeave(event) {
-    if (this.isMouseDown === true)
-      this.onChangeFunc();
+    if (this.isMouseDown === true) this.onChangeFunc();
 
     this.isMouseDown = false;
     this.mouseX = null;
@@ -267,8 +264,7 @@ class OvertoneControl extends Canvas {
 
     if (event.ctrlKey) {
       this.setValue(index, this.overtone[index] - 0.001 * event.deltaY);
-    }
-    else {
+    } else {
       this.setValue(index, this.overtone[index] - 0.003 * event.deltaY);
     }
 
@@ -276,9 +272,7 @@ class OvertoneControl extends Canvas {
     this.onChangeFunc();
   }
 
-  setValue(index, value) {
-    this.overtone[index] = Math.max(0, Math.min(value, 1));
-  }
+  setValue(index, value) { this.overtone[index] = Math.max(0, Math.min(value, 1)); }
 
   setValueFromPosition(position) {
     var index = Math.floor(position.x / this.sliderWidth);
@@ -301,11 +295,7 @@ class OvertoneControl extends Canvas {
     for (var i = 0; i < this.overtone.length; ++i) {
       var sliderHeight = this.overtone[i] * this.height;
       ctx.rect(
-        i * this.sliderWidth,
-        this.height - sliderHeight,
-        this.sliderWidth,
-        sliderHeight
-      );
+        i * this.sliderWidth, this.height - sliderHeight, this.sliderWidth, sliderHeight);
     }
     ctx.fill();
     ctx.stroke();
@@ -326,17 +316,11 @@ class OvertoneControl extends Canvas {
   }
 }
 
-function refresh() {
-  makeWave();
-}
+function refresh() { makeWave(); }
 
-function randomRange(min, max) {
-  return (max - min) * Math.random() + min;
-}
+function randomRange(min, max) { return (max - min) * Math.random() + min; }
 
-function randomRangeInt(min, max) {
-  return Math.floor(randomRange(min, max + 1));
-}
+function randomRangeInt(min, max) { return Math.floor(randomRange(min, max + 1)); }
 
 function random() {
   if (pullDownMenuRandomType.value === "Choir") {
@@ -357,8 +341,7 @@ function random() {
       overtone[i] = Math.random();
     }
     overtoneControl.setOvertone(overtone);
-  }
-  else if (pullDownMenuRandomType.value === "i") {
+  } else if (pullDownMenuRandomType.value === "i") {
     inputSeed.random();
 
     pullDownMenuBaseFunction.setValue("Sqr", false);
@@ -392,8 +375,7 @@ function random() {
     overtone[30] = randomRange(0, 0.2);
     overtone[31] = randomRange(0, 0.2);
     overtoneControl.setOvertone(overtone);
-  }
-  else if (pullDownMenuRandomType.value === "i saw bp") {
+  } else if (pullDownMenuRandomType.value === "i saw bp") {
     inputSeed.random();
 
     pullDownMenuBaseFunction.setValue("Saw", false);
@@ -409,7 +391,7 @@ function random() {
     inputHarmonicShift.value = randomRangeInt(5, 9);
     pullDownMenuAdaptHarmo.setValue("On", false);
     inputAdaptBaseFreq.value = 0.286;
-    inputAdaptPower.value = 0.755; //randomRange(0.7, 0.8)
+    inputAdaptPower.value = 0.755; // randomRange(0.7, 0.8)
 
     var overtone = new Array(overtoneControl.overtone.length).fill(0);
     overtone[1] = 0.2;
@@ -429,8 +411,7 @@ function random() {
     overtone[29] = randomRange(0.15, 0.2);
     overtone[30] = randomRange(0, 0.2);
     overtoneControl.setOvertone(overtone);
-  }
-  else if (pullDownMenuRandomType.value === "oa") {
+  } else if (pullDownMenuRandomType.value === "oa") {
     inputSeed.random();
 
     pullDownMenuBaseFunction.setValue("Pulsesine", false);
@@ -446,8 +427,7 @@ function random() {
     var overtone = new Array(overtoneControl.overtone.length).fill(0);
     overtone[randomRangeInt(3, 6)] = 1;
     overtoneControl.setOvertone(overtone);
-  }
-  else if (pullDownMenuRandomType.value === "Additive Pad") {
+  } else if (pullDownMenuRandomType.value === "Additive Pad") {
     inputSeed.random();
     inputBandWidth.value = 1.0 + 199.0 * (randomRange(0.0, 1.0) ** 2);
 
@@ -472,16 +452,13 @@ function random() {
       overtone[idx] = randomRange(0.5, 1.0) / (idx + 1);
     }
     overtoneControl.setOvertone(overtone);
-  }
-  else if (pullDownMenuRandomType.value === "PADsynth") {
+  } else if (pullDownMenuRandomType.value === "PADsynth") {
     inputBaseFreq.random();
     inputBandWidth.random();
     inputSeed.random();
-  }
-  else if (pullDownMenuRandomType.value === "Seed") {
+  } else if (pullDownMenuRandomType.value === "Seed") {
     inputSeed.random();
-  }
-  else {
+  } else {
     // "All" case.
     inputBaseFreq.random();
     inputBandWidth.random();
@@ -510,7 +487,6 @@ function random() {
   refresh();
 }
 
-
 //-- UI.
 
 var audioContext = new AudioContext();
@@ -531,7 +507,8 @@ var description = new Description(divMain.element);
 description.add("基本操作", "Playボタンかキーボードのスペースキーで音を再生します。");
 description.add("", "Stopボタンで音を停止できます。");
 description.add("", "値を変更するかRandomボタンを押すと音がレンダリングされます。");
-description.add("", "Randomボタンの隣のプルダウンメニューでランダマイズの種類を選択できます。");
+description.add(
+  "", "Randomボタンの隣のプルダウンメニューでランダマイズの種類を選択できます。");
 description.add("", "Saveボタンで気に入った音を保存できます。");
 description.add("", "QuickSaveにチェックを入れると音を再生するたびに音が保存されます。");
 description.add("", "Overtoneの値はCtrl+クリックで0、Alt+クリックで1に設定できます。");
@@ -541,16 +518,17 @@ var headingWaveform = new Heading(divWaveform.element, 6, "Waveform");
 var waveView = new WaveViewMulti(divWaveform.element, wave.channels);
 
 var divRenderControls = new Div(divMain.element, "renderControls");
-var headingRenderStatus = new Heading(divRenderControls.element, 4,
-  "Rendering status will be displayed here.");
-var buttonStop = new Button(divRenderControls.element, "Stop",
-  () => play(audioContext, wave, true));
-var buttonPlay = new Button(divRenderControls.element, "Play",
-  () => play(audioContext, wave));
-var buttonRandom = new Button(divRenderControls.element, "Random",
-  () => { random(); play(audioContext, wave, true); });
-var pullDownMenuRandomType = new PullDownMenu(divRenderControls.element, null,
-  () => { });
+var headingRenderStatus
+  = new Heading(divRenderControls.element, 4, "Rendering status will be displayed here.");
+var buttonStop
+  = new Button(divRenderControls.element, "Stop", () => play(audioContext, wave, true));
+var buttonPlay
+  = new Button(divRenderControls.element, "Play", () => play(audioContext, wave));
+var buttonRandom = new Button(divRenderControls.element, "Random", () => {
+  random();
+  play(audioContext, wave, true);
+});
+var pullDownMenuRandomType = new PullDownMenu(divRenderControls.element, null, () => {});
 pullDownMenuRandomType.add("Choir");
 pullDownMenuRandomType.add("i");
 pullDownMenuRandomType.add("i saw bp");
@@ -559,47 +537,48 @@ pullDownMenuRandomType.add("PADsynth");
 pullDownMenuRandomType.add("Additive Pad");
 pullDownMenuRandomType.add("Seed");
 pullDownMenuRandomType.add("All");
-var buttonSave = new Button(divRenderControls.element, "Save",
-  () => save(wave));
-var checkboxQuickSave = new Checkbox(divRenderControls.element, "QuickSave",
-  false, (checked) => { });
+var buttonSave = new Button(divRenderControls.element, "Save", () => save(wave));
+var checkboxQuickSave
+  = new Checkbox(divRenderControls.element, "QuickSave", false, (checked) => {});
 
 //// ControlLeft
 var divControlLeft = new Div(divMain.element, "controlLeft", "controlBlock");
 
 var divMiscControls = new Div(divControlLeft.element, "MiscControls");
 var headingRender = new Heading(divMiscControls.element, 6, "Render Settings");
-var pullDownMenuChannel = new PullDownMenu(divMiscControls.element, null,
-  () => { refresh(); });
+var pullDownMenuChannel
+  = new PullDownMenu(divMiscControls.element, null, () => { refresh(); });
 pullDownMenuChannel.add("Phase");
 pullDownMenuChannel.add("Mono");
 pullDownMenuChannel.add("Stereo");
-var checkboxNormalize = new Checkbox(divMiscControls.element, "Normalize",
-  true, refresh);
-var checkboxResample = new Checkbox(divMiscControls.element, "16x Sampling",
-  false, refresh);
+var checkboxNormalize = new Checkbox(divMiscControls.element, "Normalize", true, refresh);
+var checkboxResample
+  = new Checkbox(divMiscControls.element, "16x Sampling", false, refresh);
 
 var divPadsynthControls = new Div(divControlLeft.element, "PadsynthControls");
 var headingPadsynth = new Heading(divPadsynthControls.element, 6, "PADsynth");
-var inputBaseFreq = new NumberInput(divPadsynthControls.element, "BaseFreq",
-  220, 1, 1000, 0.01, refresh);
-var inputBandWidth = new NumberInput(divPadsynthControls.element, "BandWidth",
-  50, 0.01, 200, 0.01, refresh);
-var inputSeed = new NumberInput(divPadsynthControls.element, "Seed",
-  0, 0, Math.floor(Number.MAX_SAFE_INTEGER / 2), 1, refresh);
+var inputBaseFreq
+  = new NumberInput(divPadsynthControls.element, "BaseFreq", 220, 1, 1000, 0.01, refresh);
+var inputBandWidth = new NumberInput(
+  divPadsynthControls.element, "BandWidth", 50, 0.01, 200, 0.01, refresh);
+var inputSeed = new NumberInput(
+  divPadsynthControls.element, "Seed", 0, 0, Math.floor(Number.MAX_SAFE_INTEGER / 2), 1,
+  refresh);
+var inputTableSize
+  = new NumberInput(divPadsynthControls.element, "Length [2^n]", 18, 0, 20, 1, refresh);
 
 var divOvertoneControl = new Div(divControlLeft.element, "OvertoneControl");
 var headingOvertone = new Heading(divOvertoneControl.element, 6, "Overtone");
-var overtoneControl = new OvertoneControl(divOvertoneControl.element,
-  448, 128, 32, refresh);
+var overtoneControl
+  = new OvertoneControl(divOvertoneControl.element, 448, 128, 32, refresh);
 
 //// ControlRight
 var divControlRight = new Div(divMain.element, "controlLeft", "controlBlock");
 var divWaveTableControls = new Div(divControlRight.element, "WaveTableControls");
 var headingWaveTable = new Heading(divWaveTableControls.element, 6, "Wave Table");
 
-var pullDownMenuBaseFunction = new PullDownMenu(
-  divWaveTableControls.element, "BaseFunc", () => { refresh(); });
+var pullDownMenuBaseFunction
+  = new PullDownMenu(divWaveTableControls.element, "BaseFunc", () => { refresh(); });
 pullDownMenuBaseFunction.add("Sine");
 pullDownMenuBaseFunction.add("Triangle");
 pullDownMenuBaseFunction.add("Pulse");
@@ -618,26 +597,26 @@ pullDownMenuBaseFunction.add("Spike");
 pullDownMenuBaseFunction.add("Circle");
 pullDownMenuBaseFunction.setValue("Stretchsine", false);
 
-var inputBaseFunctionP1 = new NumberInput(divWaveTableControls.element, "BaseFuncP1",
-  0.4, 0, 1.0, 0.0001, refresh);
+var inputBaseFunctionP1 = new NumberInput(
+  divWaveTableControls.element, "BaseFuncP1", 0.4, 0, 1.0, 0.0001, refresh);
 
-var pullDownMenuModType = new PullDownMenu(
-  divWaveTableControls.element, "Mod.Type", () => { refresh(); });
+var pullDownMenuModType
+  = new PullDownMenu(divWaveTableControls.element, "Mod.Type", () => { refresh(); });
 pullDownMenuModType.add("None");
 pullDownMenuModType.add("Rev");
 pullDownMenuModType.add("Sine");
 pullDownMenuModType.add("Power");
 pullDownMenuModType.setValue("Rev", false);
 
-var inputModP1 = new NumberInput(divWaveTableControls.element, "Mod.P1",
-  36 / 127, 0, 1.0, 0.0001, refresh);
-var inputModP2 = new NumberInput(divWaveTableControls.element, "Mod.P2",
-  68 / 127, 0, 1.0, 0.0001, refresh);
-var inputModP3 = new NumberInput(divWaveTableControls.element, "Mod.P3",
-  89 / 127, 0, 1.0, 0.0001, refresh);
+var inputModP1 = new NumberInput(
+  divWaveTableControls.element, "Mod.P1", 36 / 127, 0, 1.0, 0.0001, refresh);
+var inputModP2 = new NumberInput(
+  divWaveTableControls.element, "Mod.P2", 68 / 127, 0, 1.0, 0.0001, refresh);
+var inputModP3 = new NumberInput(
+  divWaveTableControls.element, "Mod.P3", 89 / 127, 0, 1.0, 0.0001, refresh);
 
-var pullDownMenuFiltType = new PullDownMenu(
-  divWaveTableControls.element, "Filt.Type", () => { refresh(); });
+var pullDownMenuFiltType
+  = new PullDownMenu(divWaveTableControls.element, "Filt.Type", () => { refresh(); });
 pullDownMenuFiltType.add("None");
 pullDownMenuFiltType.add("LowPass1");
 pullDownMenuFiltType.add("HighPass1a");
@@ -654,23 +633,23 @@ pullDownMenuFiltType.add("LowShelf");
 pullDownMenuFiltType.add("Peaking");
 pullDownMenuFiltType.setValue("LowPass1", false);
 
-var inputFiltCutoff = new NumberInput(divWaveTableControls.element, "Filt.Cutoff",
-  102 / 128, 0, 1.0, 0.0001, refresh);
-var inputFiltQ = new NumberInput(divWaveTableControls.element, "Filt.Q",
-  16 / 127, 0, 1.0, 0.0001, refresh);
-var inputHarmonicShift = new NumberInput(divWaveTableControls.element, "Harmo.Shift",
-  7, -64, 64, 1, refresh);
+var inputFiltCutoff = new NumberInput(
+  divWaveTableControls.element, "Filt.Cutoff", 102 / 128, 0, 1.0, 0.0001, refresh);
+var inputFiltQ = new NumberInput(
+  divWaveTableControls.element, "Filt.Q", 16 / 127, 0, 1.0, 0.0001, refresh);
+var inputHarmonicShift
+  = new NumberInput(divWaveTableControls.element, "Harmo.Shift", 7, -64, 64, 1, refresh);
 
-var pullDownMenuAdaptHarmo = new PullDownMenu(
-  divWaveTableControls.element, "Adapt.Harmo", () => { refresh(); });
+var pullDownMenuAdaptHarmo
+  = new PullDownMenu(divWaveTableControls.element, "Adapt.Harmo", () => { refresh(); });
 pullDownMenuAdaptHarmo.add("Off");
 pullDownMenuAdaptHarmo.add("On");
 pullDownMenuAdaptHarmo.setValue("On", false);
 
-var inputAdaptBaseFreq = new NumberInput(divWaveTableControls.element, "Adapt.Freq",
-  124 / 128, 0, 2, 0.0001, refresh);
-var inputAdaptPower = new NumberInput(divWaveTableControls.element, "Adapt.Power",
-  78 / 127, 0, 1.0, 0.0001, refresh);
+var inputAdaptBaseFreq = new NumberInput(
+  divWaveTableControls.element, "Adapt.Freq", 124 / 128, 0, 2, 0.0001, refresh);
+var inputAdaptPower = new NumberInput(
+  divWaveTableControls.element, "Adapt.Power", 78 / 127, 0, 1.0, 0.0001, refresh);
 
 refresh();
 
