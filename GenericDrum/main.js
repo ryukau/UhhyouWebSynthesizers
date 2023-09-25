@@ -100,7 +100,7 @@ const scales = {
   mix: new parameter.LinearScale(0, 1),
   seed: new parameter.IntScale(0, 2 ** 32),
   noiseDecaySeconds: new parameter.DecibelScale(-40, util.ampToDB(0.5), false),
-  noiseLowpassHz: new parameter.DecibelScale(util.ampToDB(2), util.ampToDB(20000), false),
+  noiseLowpassHz: new parameter.DecibelScale(util.ampToDB(2), util.ampToDB(10000), false),
 
   wireFrequencyHz: new parameter.DecibelScale(0, util.ampToDB(1000), false),
   wireDecaySeconds: new parameter.DecibelScale(-40, 40, false),
