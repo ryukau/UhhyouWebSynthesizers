@@ -22,6 +22,7 @@ function randomize() {
       if (key === "dcHighpassHz") continue;
       if (key === "toneSlope") continue;
 
+      if (key === "membraneWireMix") continue;
       if (key === "matrixSize") continue;
       if (key === "crossFeedbackGain") continue;
       if (key === "pitchType") {
@@ -145,7 +146,8 @@ const param = {
   noiseLowpassHz: new parameter.Parameter(1000.0, scales.noiseLowpassHz, true),
   allpassMaxTimeHz: new parameter.Parameter(3000, scales.delayTimeHz, true),
 
-  wireMix: new parameter.Parameter(0.9, scales.mix, true),
+  impactWireMix: new parameter.Parameter(0.9, scales.mix, true),
+  membraneWireMix: new parameter.Parameter(0, scales.mix, true),
   wireFrequencyHz: new parameter.Parameter(100, scales.wireFrequencyHz, true),
   wireDecaySeconds: new parameter.Parameter(2, scales.wireDecaySeconds, true),
   wireDistance: new parameter.Parameter(0.15, scales.secondaryDistance, true),
@@ -172,7 +174,7 @@ const param = {
   bandpassCutRatio: new parameter.Parameter(-0.7, scales.bandpassCutRatio, true),
   bandpassQ: new parameter.Parameter(0.6, scales.bandpassQ, true),
 
-  fdnMix: new parameter.Parameter(0.25, scales.mix, true),
+  secondaryFdnMix: new parameter.Parameter(0.25, scales.mix, true),
   secondaryPitchOffset: new parameter.Parameter(-1.2, scales.bandpassCutRatio, true),
   secondaryQOffset: new parameter.Parameter(-2, scales.bandpassCutRatio, true),
   secondaryDistance: new parameter.Parameter(0.0008, scales.secondaryDistance, true),
@@ -262,7 +264,10 @@ const ui = {
   allpassMaxTimeHz:
     new widget.NumberInput(detailOsc, "Echo [Hz]", param.allpassMaxTimeHz, render),
 
-  wireMix: new widget.NumberInput(detailWire, "Impact-Wire Mix", param.wireMix, render),
+  impactWireMix:
+    new widget.NumberInput(detailWire, "Impact-Wire Mix", param.impactWireMix, render),
+  membraneWireMix: new widget.NumberInput(
+    detailWire, "Membrane-Wire Mix", param.membraneWireMix, render),
   wireFrequencyHz:
     new widget.NumberInput(detailWire, "Frequency [Hz]", param.wireFrequencyHz, render),
   wireDecaySeconds:
@@ -305,7 +310,8 @@ const ui = {
     detailPitchMain, "BP Cut [oct]", param.bandpassCutRatio, render),
   bandpassQ: new widget.NumberInput(detailPitchMain, "BP Q", param.bandpassQ, render),
 
-  fdnMix: new widget.NumberInput(detailSecondary, "Mix", param.fdnMix, render),
+  secondaryFdnMix:
+    new widget.NumberInput(detailSecondary, "Mix", param.secondaryFdnMix, render),
   secondaryPitchOffset: new widget.NumberInput(
     detailSecondary, "Pitch Offset [oct]", param.secondaryPitchOffset, render),
   secondaryQOffset: new widget.NumberInput(

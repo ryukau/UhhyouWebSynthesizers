@@ -337,10 +337,11 @@ function process(upRate, pv, dsp) {
   dsp.wireVelocity = wirePos - dsp.wirePosition;
   dsp.wirePosition = wirePos;
 
-  sig = lerp(sig, dsp.wirePosition, pv.wireMix);
+  const wireOut = lerp(sig, dsp.wirePosition, pv.impactWireMix);
+  sig = wireOut;
 
   const env = dsp.envelope.process();
-  if (pv.fdnMix > Number.EPSILON) {
+  if (pv.secondaryFdnMix > Number.EPSILON) {
     for (let idx = 0; idx < dsp.fdnPosition.length - 1; ++idx) {
       [dsp.fdnPosition[idx], dsp.fdnPosition[idx + 1]] = solveCollision(
         dsp.fdnPosition[idx], dsp.fdnPosition[idx + 1], dsp.fdnVelocity[idx],
@@ -356,7 +357,7 @@ function process(upRate, pv, dsp) {
       dsp.fdnPosition[idx] = p0;
     }
 
-    sig = lerp(dsp.fdnPosition[0], dsp.fdnPosition[1], pv.fdnMix);
+    sig = lerp(dsp.fdnPosition[0], dsp.fdnPosition[1], pv.secondaryFdnMix);
   } else {
     const collision = dsp.energyStore[0].process(dsp.fdnPosition[0]);
     const p0 = dsp.fdn[0].process(sig * pv.matrixSize + collision, env);
@@ -364,6 +365,7 @@ function process(upRate, pv, dsp) {
     dsp.fdnPosition[0] = p0;
     sig = p0;
   }
+  sig = lerp(sig, wireOut, pv.membraneWireMix);
 
   if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
   if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
@@ -404,7 +406,7 @@ onmessage = async (event) => {
   dsp.wireEnergyDecay = new EnergyStore(upRate * 0.001);
 
   dsp.fdn = [prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, false)];
-  if (pv.fdnMix > Number.EPSILON) {
+  if (pv.secondaryFdnMix > Number.EPSILON) {
     dsp.fdn.push(prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, true));
   }
   dsp.fdnPosition = [0, 0];
@@ -433,7 +435,7 @@ onmessage = async (event) => {
 
   // Discard silence at start.
   let sig = 0;
-  while (sig === 0) sig = process(upRate, pv, dsp);
+  while (Math.abs(sig) < Number.EPSILON) sig = process(upRate, pv, dsp);
 
   // Process.
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
