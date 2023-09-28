@@ -143,7 +143,7 @@ const param = {
 
   seed: new parameter.Parameter(406392312, scales.seed, true),
   noiseDecaySeconds: new parameter.Parameter(0.08, scales.noiseDecaySeconds, true),
-  noiseLowpassHz: new parameter.Parameter(1000.0, scales.noiseLowpassHz, true),
+  noiseLowpassHz: new parameter.Parameter(50.0, scales.noiseLowpassHz, true),
   allpassMaxTimeHz: new parameter.Parameter(3000, scales.delayTimeHz, true),
 
   impactWireMix: new parameter.Parameter(0.9, scales.mix, true),
@@ -171,11 +171,11 @@ const param = {
   pitchType: new parameter.Parameter(7, scales.pitchType, true),
   delayTimeHz: new parameter.Parameter(110, scales.delayTimeHz, true),
   delayTimeModAmount: new parameter.Parameter(1150, scales.delayTimeModAmount, true),
-  bandpassCutRatio: new parameter.Parameter(-0.7, scales.bandpassCutRatio, true),
-  bandpassQ: new parameter.Parameter(0.6, scales.bandpassQ, true),
+  bandpassCutRatio: new parameter.Parameter(0.7, scales.bandpassCutRatio, true),
+  bandpassQ: new parameter.Parameter(0.1, scales.bandpassQ, true),
 
   secondaryFdnMix: new parameter.Parameter(0.25, scales.mix, true),
-  secondaryPitchOffset: new parameter.Parameter(-1.2, scales.bandpassCutRatio, true),
+  secondaryPitchOffset: new parameter.Parameter(0.65, scales.bandpassCutRatio, true),
   secondaryQOffset: new parameter.Parameter(-2, scales.bandpassCutRatio, true),
   secondaryDistance: new parameter.Parameter(0.0008, scales.secondaryDistance, true),
 };
