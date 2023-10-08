@@ -227,10 +227,10 @@ const detailRender = widget.details(divLeft, "Render");
 const detailLimiter = widget.details(divLeft, "Limiter");
 const detailOsc = widget.details(divRightA, "Impact Noise");
 const detailWire = widget.details(divRightA, "Wire");
-const detailFDN = widget.details(divRightA, "Primary Membrane");
+const detailFDN = widget.details(divRightA, "Membrane Tone");
 const detailPitchTexture = widget.details(divRightB, "Pitch Texture");
 const detailPitchEnvelope = widget.details(divRightB, "Pitch Envelope");
-const detailPitchMain = widget.details(divRightB, "Pitch Main");
+const detailPrimary = widget.details(divRightB, "Primary Membrane");
 const detailSecondary = widget.details(divRightB, "Secondary Membrane");
 
 const ui = {
@@ -301,14 +301,14 @@ const ui = {
     detailPitchEnvelope, "Amount [oct]", param.envelopeModAmount, render),
 
   pitchType:
-    new widget.ComboBoxLine(detailPitchMain, "Pitch Type", param.pitchType, render),
+    new widget.ComboBoxLine(detailPrimary, "Pitch Type", param.pitchType, render),
   delayTimeHz:
-    new widget.NumberInput(detailPitchMain, "Delay [Hz]", param.delayTimeHz, render),
+    new widget.NumberInput(detailPrimary, "Delay [Hz]", param.delayTimeHz, render),
   delayTimeModAmount: new widget.NumberInput(
-    detailPitchMain, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
-  bandpassCutRatio: new widget.NumberInput(
-    detailPitchMain, "BP Cut [oct]", param.bandpassCutRatio, render),
-  bandpassQ: new widget.NumberInput(detailPitchMain, "BP Q", param.bandpassQ, render),
+    detailPrimary, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
+  bandpassCutRatio:
+    new widget.NumberInput(detailPrimary, "BP Cut [oct]", param.bandpassCutRatio, render),
+  bandpassQ: new widget.NumberInput(detailPrimary, "BP Q", param.bandpassQ, render),
 
   secondaryFdnMix:
     new widget.NumberInput(detailSecondary, "Mix", param.secondaryFdnMix, render),
