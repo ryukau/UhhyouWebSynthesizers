@@ -275,7 +275,7 @@ const ui = {
   wireDistance:
     new widget.NumberInput(detailWire, "Collision Distance", param.wireDistance, render),
   wireCollisionTypeMix: new widget.NumberInput(
-    detailWire, "Ruttle-Squeak Mix", param.wireCollisionTypeMix, render),
+    detailWire, "Rattle-Squeak Mix", param.wireCollisionTypeMix, render),
   wireStatus: widget.paragraph(detailWire, "wireStatus", undefined),
 
   matrixSize:
