@@ -25,10 +25,9 @@ function play(audioContext, wave) {
 
 function save(wave) {
   var buffer = Wave.toBuffer(wave, wave.channels);
-  var header = Wave.fileHeader(audioContext.sampleRate, wave.channels,
-    buffer.length);
+  var header = Wave.fileHeader(audioContext.sampleRate, wave.channels, buffer.length);
 
-  var blob = new Blob([header, buffer], { type: "application/octet-stream" });
+  var blob = new Blob([header, buffer], {type: "application/octet-stream"});
   var url = window.URL.createObjectURL(blob);
 
   var a = document.createElement("a");
@@ -48,9 +47,9 @@ function makeWave(length, sampleRate) {
   var waveLength = Math.floor(sampleRate * length);
   var wave = new Array(waveLength).fill(0);
   for (var t = 0; t < wave.length; ++t) {
-    var headmod = oscHeadMod.oscillate(t, 0, isFM);
-    var head = oscHead.oscillate(t, headmod, isFM);
-    wave[t] += 0.8 * oscBody.oscillate(t, head, isFM);
+    var headmod = oscHeadMod.oscillate(t, 0, fmType);
+    var head = oscHead.oscillate(t, headmod, fmType);
+    wave[t] += 0.8 * oscBody.oscillate(t, head, fmType);
   }
   return wave;
 }
@@ -62,8 +61,8 @@ class Oscillator {
 
     this.gainEnvelope = new Envelope(0.5);
     this.pitchEnvelope = new Envelope(0.5);
-    this._pitchStart = 200;
-    this._pitchEnd = 30;
+    this._pitchStartHz = 200;
+    this._pitchEndHz = 30;
     this._length = 960;
     this.feedback = 0;
     this.fmIndex = 0;
@@ -73,35 +72,31 @@ class Oscillator {
     this.phaseReset = true;
 
     this.twoPiRate = TWO_PI / this.sampleRate;
-    this.pitchDiff = this._pitchStart - this._pitchEnd;
-    this.pitchEndFixed = this._pitchEnd - 1;
+    this.pitchDiffHz = this._pitchStartHz - this._pitchEndHz;
+    this.pitchEndFixedHz = this._pitchEndHz - 1;
   }
 
-  get length() {
-    return this._length;
-  }
+  get length() { return this._length; }
 
   set length(value) {
     this._length = (value < 0) ? 0 : Math.floor(this.sampleRate * value);
   }
 
   set pitchStart(value) {
-    this._pitchStart = value;
-    this.pitchDiff = this._pitchStart - this._pitchEnd;
+    this._pitchStartHz = value;
+    this.pitchDiffHz = this._pitchStartHz - this._pitchEndHz;
   }
 
   set pitchEnd(value) {
-    this._pitchEnd = value;
-    this.pitchDiff = this._pitchStart - this._pitchEnd;
-    this.pitchEndFixed = this._pitchEnd - 1;
+    this._pitchEndHz = value;
+    this.pitchDiffHz = this._pitchStartHz - this._pitchEndHz;
+    this.pitchEndFixedHz = this._pitchEndHz - 1;
   }
 
-  reset() {
-    this.phase = (this.phaseReset) ? 0 : Math.abs(this.phase) % TWO_PI;
-  }
+  reset() { this.phase = (this.phaseReset) ? 0 : Math.abs(this.phase) % TWO_PI; }
 
   // time は経過サンプル数。
-  oscillate(time, modulation, isFM) {
+  oscillate(time, modulation, fmType) {
     if (time > this._length || time < 0) {
       return 0;
     }
@@ -111,14 +106,37 @@ class Oscillator {
 
     var pitchEnv = this.pitchEnvelope.decay(envTime);
     var mod = this.fmIndex * modulation + this.feedback * output;
-    if (isFM) {
-      var pitch = this.pow(this.pitchDiff, pitchEnv + mod);
-      this.phase += this.twoPiRate * (pitch + this.pitchEndFixed);
+    if (fmType === 0) { // Muffled FM
+      var pitch = this.pow(this.pitchDiffHz, pitchEnv + mod);
+      this.phase += this.twoPiRate * (pitch + this.pitchEndFixedHz);
+    } else if (fmType === 1) { // PM
+      var pitch = this.pow(this.pitchDiffHz, pitchEnv);
+      this.phase += this.twoPiRate * (pitch + this.pitchEndFixedHz) + mod;
+    } else if (fmType === 2) { // Pow FM
+      var pitch = this.pow(this.pitchDiffHz, pitchEnv);
+      this.phase += this.twoPiRate * Math.pow(pitch + this.pitchEndFixedHz, 2 * mod + 1);
+    } else if (fmType === 3) { // Lin FM
+      var pitch = this.pitchDiffHz * pitchEnv + this._pitchEndHz * mod * 64;
+      this.phase += this.twoPiRate * (pitch + this.pitchEndFixedHz);
+    } else if (fmType === 4) { // Exp FM
+      const diff = Math.log(this._pitchStartHz) - Math.log(this._pitchEndHz);
+      const scalar = Math.exp(pitchEnv * diff + 16 * mod);
+      this.phase += this.twoPiRate * this._pitchEndHz * scalar;
+    } else if (fmType === 5) { // Lin Abs FM
+      mod = Math.abs(mod);
+      var pitch = this.pitchDiffHz * pitchEnv + this._pitchEndHz * mod * 64;
+      this.phase += this.twoPiRate * (pitch + this.pitchEndFixedHz);
+    } else if (fmType === 6) { // Exp Abs FM
+      mod = Math.abs(mod);
+      const diff = Math.log(this._pitchStartHz) - Math.log(this._pitchEndHz);
+      const scalar = Math.exp(pitchEnv * diff + 16 * mod);
+      this.phase += this.twoPiRate * this._pitchEndHz * scalar;
+    } else if (fmType === 7) { // Abs PM
+      mod = Math.abs(mod);
+      var pitch = this.pow(this.pitchDiffHz, pitchEnv);
+      this.phase += this.twoPiRate * (pitch + this.pitchEndFixedHz) + mod;
     }
-    else {
-      var pitch = this.pow(this.pitchDiff, pitchEnv);
-      this.phase += this.twoPiRate * (pitch + this.pitchEndFixed) + mod;
-    }
+    this.phase %= 2 * Math.PI;
 
     return output;
   }
@@ -133,11 +151,18 @@ class Oscillator {
 }
 
 class OscillatorControls {
-  constructor(parent, label, oscillator,
-    minLength, maxLength, stepLength,
-    maxGainTension, maxPitchTension, maxPitchStart, maxPitchEnd,
-    refreshFunc
-  ) {
+  constructor(
+    parent,
+    label,
+    oscillator,
+    minLength,
+    maxLength,
+    stepLength,
+    maxGainTension,
+    maxPitchTension,
+    maxPitchStart,
+    maxPitchEnd,
+    refreshFunc) {
     this.oscillator = oscillator;
 
     this.div = new Div(parent, label);
@@ -145,24 +170,26 @@ class OscillatorControls {
     var divElement = this.div.element;
 
     this.heading = new Heading(divElement, 6, label);
-    this.length = new NumberInput(divElement, "Length",
-      maxLength / 2, minLength, maxLength, stepLength, refreshFunc);
-    this.feedback = new NumberInput(divElement, "Feedback",
-      0, 0, 0.1, 0.001, refreshFunc);
-    this.gainTension = new NumberInput(divElement, "GainTension",
-      maxGainTension / 2, 0, maxGainTension, 0.01, refreshFunc);
-    this.pitchStart = new NumberInput(divElement, "PitchStart",
-      200, 5, maxPitchStart, 1, (value) => {
-        this.pitchStart.value = Math.max(value, this.pitchEnd.value);
-        refreshFunc();
-      });
-    this.pitchEnd = new NumberInput(divElement, "PitchEnd",
-      30, 5, maxPitchEnd, 1, (value) => {
-        this.pitchEnd.value = Math.min(value, this.pitchStart.value);
-        refreshFunc();
-      });
-    this.pitchTension = new NumberInput(divElement, "PitchTension",
-      maxPitchTension / 2, 0, maxPitchTension, 0.01, refreshFunc);
+    this.length = new NumberInput(
+      divElement, "Length", maxLength / 2, minLength, maxLength, stepLength, refreshFunc);
+    this.feedback
+      = new NumberInput(divElement, "Feedback", 0, 0, 0.1, 0.001, refreshFunc);
+    this.gainTension = new NumberInput(
+      divElement, "GainTension", maxGainTension / 2, 0, maxGainTension, 0.01,
+      refreshFunc);
+    this.pitchStart
+      = new NumberInput(divElement, "PitchStart", 200, 5, maxPitchStart, 1, (value) => {
+          this.pitchStart.value = Math.max(value, this.pitchEnd.value);
+          refreshFunc();
+        });
+    this.pitchEnd
+      = new NumberInput(divElement, "PitchEnd", 30, 5, maxPitchEnd, 1, (value) => {
+          this.pitchEnd.value = Math.min(value, this.pitchStart.value);
+          refreshFunc();
+        });
+    this.pitchTension = new NumberInput(
+      divElement, "PitchTension", maxPitchTension / 2, 0, maxPitchTension, 0.01,
+      refreshFunc);
   }
 
   random(feedback) {
@@ -193,7 +220,7 @@ class OscillatorControls {
 
 function random(randomBody) {
   if (randomBody) {
-    oscBodyControls.random(isFM);
+    oscBodyControls.random(fmType);
   }
   oscHeadControls.random(true);
   inputBodyFM.random();
@@ -229,7 +256,7 @@ function refresh() {
 
 var audioContext = new AudioContext();
 
-var isFM = true;
+var fmType = 0;
 var quickSave = false;
 var oscBody = new Oscillator(audioContext);
 var oscHead = new Oscillator(audioContext);
@@ -237,15 +264,22 @@ var oscHeadMod = new Oscillator(audioContext);
 var wave = new Wave(1);
 wave.left = makeWave(0.02, audioContext.sampleRate, 200, 30);
 
-
 var divMain = new Div(document.body, "main");
 var headingTitle = pageTitle(divMain.element);
 
 var description = new Description(divMain.element);
-description.add("さくっと使う", "SingenBD2はバスドラムを作るシンセサイザーです。まずはRandomボタンを何回か押して音を試してみてください。おおまかな音の雰囲気が気に入ったら、RandomHaedボタンでアタックの質感だけを変えることができます。狙って音を作る場合はPlayボタンで試聴できます。");
-description.add("ファイルの保存", "Saveボタンで作った音をダウンロードして保存できます。ファイルの形式は32bit float、サンプリングレートは環境依存です。QuickSaveにチェックを入れると、Play、Random、RandomHeadボタンで音が再生されるたびにファイルが保存されます。");
-description.add("概説", "中身は3オペレータを直列につないだFMシンセです。出力 <- Body <- Head <- HeadModと接続されています。HeadModは直接操作できませんが、Headのパラメータにほぼ追従します。Body <- Headの変調インデックスがBodyFM、Head <- HeadModの変調インデックスがHeadFMです。");
-description.add("Tips", "TypeをPMにしたときは、BodyのFeedbackを0にしてみてください。また、DeclickInでアタックの鋭さを調整できます。");
+description.add(
+  "さくっと使う",
+  "SingenBD2はバスドラムを作るシンセサイザーです。まずはRandomボタンを何回か押して音を試してみてください。おおまかな音の雰囲気が気に入ったら、RandomHaedボタンでアタックの質感だけを変えることができます。狙って音を作る場合はPlayボタンで試聴できます。");
+description.add(
+  "ファイルの保存",
+  "Saveボタンで作った音をダウンロードして保存できます。ファイルの形式は32bit float、サンプリングレートは環境依存です。QuickSaveにチェックを入れると、Play、Random、RandomHeadボタンで音が再生されるたびにファイルが保存されます。");
+description.add(
+  "概説",
+  "中身は3オペレータを直列につないだFMシンセです。出力 <- Body <- Head <- HeadModと接続されています。HeadModは直接操作できませんが、Headのパラメータにほぼ追従します。Body <- Headの変調インデックスがBodyFM、Head <- HeadModの変調インデックスがHeadFMです。");
+description.add(
+  "Tips",
+  "TypeをPMにしたときは、BodyのFeedbackを0にしてみてください。また、DeclickInでアタックの鋭さを調整できます。");
 
 var divWaveform = new Div(divMain.element, "waveform");
 var headingGainEnvelope = new Heading(divWaveform.element, 6, "Waveform");
@@ -256,44 +290,61 @@ var envelopeViewHeight = 128;
 var divEnvelopeView = new Div(divMain.element, "envelopeView");
 var divGainEnvelope = new Div(divEnvelopeView.element, "gainEnvelope");
 var headingGainEnvelope = new Heading(divGainEnvelope.element, 6, "Body - Gain");
-var waveViewGainEnvelope = new WaveView(divGainEnvelope.element, envelopeViewWidth,
-  envelopeViewHeight, oscBody.gainEnvelope.makeTable(envelopeViewWidth), true);
+var waveViewGainEnvelope = new WaveView(
+  divGainEnvelope.element, envelopeViewWidth, envelopeViewHeight,
+  oscBody.gainEnvelope.makeTable(envelopeViewWidth), true);
 var divPitchEnvelope = new Div(divEnvelopeView.element, "pitchEnvelope");
 var headingPitchEnvelope = new Heading(divPitchEnvelope.element, 6, "Body - Pitch");
-var waveViewPitchEnvelope = new WaveView(divPitchEnvelope.element, envelopeViewWidth,
-  envelopeViewHeight, oscBody.pitchEnvelope.makeTable(envelopeViewWidth), true);
+var waveViewPitchEnvelope = new WaveView(
+  divPitchEnvelope.element, envelopeViewWidth, envelopeViewHeight,
+  oscBody.pitchEnvelope.makeTable(envelopeViewWidth), true);
 
 var divRenderControls = new Div(divMain.element, "renderControls");
-var buttonPlay = new Button(divRenderControls.element, "Play",
-  () => play(audioContext, wave));
-var buttonRandom = new Button(divRenderControls.element, "Random",
-  () => random(true));
-var buttonRandomHead = new Button(divRenderControls.element, "RandomHead",
-  () => random(false));
-var buttonSave = new Button(divRenderControls.element, "Save",
-  () => save(wave));
-var checkboxQuickSave = new Checkbox(divRenderControls.element, "QuickSave",
-  quickSave, (checked) => { quickSave = checked; });
+var buttonPlay
+  = new Button(divRenderControls.element, "Play", () => play(audioContext, wave));
+var buttonRandom = new Button(divRenderControls.element, "Random", () => random(true));
+var buttonRandomHead
+  = new Button(divRenderControls.element, "RandomHead", () => random(false));
+var buttonSave = new Button(divRenderControls.element, "Save", () => save(wave));
+var checkboxQuickSave = new Checkbox(
+  divRenderControls.element, "QuickSave", quickSave,
+  (checked) => { quickSave = checked; });
 
-var oscBodyControls = new OscillatorControls(divMain.element, "Body",
-  oscBody, 0.01, 1, 0.01, 1, 1, 1000, 100, refresh);
-var oscHeadControls = new OscillatorControls(divMain.element, "Head",
-  oscHead, 0.0001, 0.04, 0.0001, 0.5, 0.5, 4000, 2000, refresh);
+var oscBodyControls = new OscillatorControls(
+  divMain.element, "Body", oscBody, 0.01, 1, 0.01, 1, 1, 1000, 100, refresh);
+var oscHeadControls = new OscillatorControls(
+  divMain.element, "Head", oscHead, 0.0001, 0.04, 0.0001, 0.5, 0.5, 4000, 2000, refresh);
 
 var divFMControls = new Div(divMain.element, "fmControls");
 var headingModulation = new Heading(divFMControls.element, 6, "Modulation");
-var radioButtonModulationType = new RadioButton(divFMControls.element, "Type",
-  (value) => { isFM = value === "FM"; refresh(); });
-radioButtonModulationType.add("FM");
+var radioButtonModulationType
+  = new RadioButton(divFMControls.element, "Type", (value) => {
+      fmType = value === "Muffled FM" ? 0
+        : value === "PM"              ? 1
+        : value === "Pow FM"          ? 2
+        : value === "Lin FM"          ? 3
+        : value === "Exp FM"          ? 4
+        : value === "Lin Abs FM"      ? 5
+        : value === "Exp Abs FM"      ? 5
+                                      : 6; // "Abs PM"
+      refresh();
+    });
+radioButtonModulationType.add("Muffled FM");
 radioButtonModulationType.add("PM");
-var inputBodyFM = new NumberInput(divFMControls.element, "BodyFM",
-  0.62, 0, 2, 0.01, refresh);
-var inputHeadFM = new NumberInput(divFMControls.element, "HeadFM",
-  1, 0, 2, 0.01, refresh);
-var inputHeadRatio = new NumberInput(divFMControls.element, "HeadRatio",
-  1.6666, 0, 8, 0.0001, refresh);
+radioButtonModulationType.add("Pow FM");
+radioButtonModulationType.add("Lin FM");
+radioButtonModulationType.add("Exp FM");
+radioButtonModulationType.add("Lin Abs FM");
+radioButtonModulationType.add("Exp Abs FM");
+radioButtonModulationType.add("Abs PM");
+var inputBodyFM
+  = new NumberInput(divFMControls.element, "BodyFM", 0.62, 0, 2, 0.01, refresh);
+var inputHeadFM
+  = new NumberInput(divFMControls.element, "HeadFM", 1, 0, 2, 0.01, refresh);
+var inputHeadRatio
+  = new NumberInput(divFMControls.element, "HeadRatio", 1.6666, 0, 8, 0.0001, refresh);
 var tenMilliSecond = audioContext.sampleRate / 100;
-var inputDeclick = new NumberInput(divFMControls.element, "DeclickIn",
-  0, 0, tenMilliSecond, 1, refresh);
+var inputDeclick
+  = new NumberInput(divFMControls.element, "DeclickIn", 0, 0, tenMilliSecond, 1, refresh);
 
 refresh();
