@@ -9,36 +9,34 @@ input -+--------> (main filter) --------+-> output
 
 `gain` is called `resonance` or `q` in code.
 
-These filters are written in `common/dsp/resonantfilters.js`. For building blocks, see also:
+These filters are written in `common/dsp/resonantfilters.js`. Following files contain the filters used as building block.
 
 - `common/dsp/onepole.js`
 - `common/dsp/sos.js`
 - `common/dsp/svf.js`
 
-## Find Stability Condition
-A problem is how to determine the bounds of `gain` that doesn't blow up the filter. For simple filters, transfer function can be used.
+## Finding Stability Condition
+The problem is how to determine the bounds of `gain` that doesn't blow up the filter. For simple filters, transfer function can be used.
 
-1. Write filter code from combining building blocks.
-2. Translate the filter code to difference equations.
-3. Translate the difference equations to transfer function.
-4. Solve transfer function to get stability condition.
+1. Write filter code by combining building blocks.
+2. Convert the filter code to difference equations.
+3. Convert the difference equations to transfer function.
+4. Solve the transfer function to get a stability condition.
 
-It's kind of vague that what really is a "simple" filter. Usually order 2 or less can be considered simple. Usually the order 3 or more filters doesn't have concise stability condition, because general solution of order 3 or order 4 polynomial are complicated. (See [here](https://math.vanderbilt.edu/schectex/courses/cubic/) and [here](https://en.wikipedia.org/wiki/File:Quartic_Formula.svg) for how lengthy they are.)
+It's kind of vague that what really is a "simple" filter. Usually order 2 or less can be considered simple. Most of order 3 or more filters don't have concise stability condition, because general solution of order 3 or order 4 polynomial are complicated. (See [here](https://math.vanderbilt.edu/schectex/courses/cubic/) and [here](https://en.wikipedia.org/wiki/File:Quartic_Formula.svg) for how lengthy they are.)
 
-Anyway, we can use numerical method when the analytic solution is impractical.
+Anyway, we can use numerical method when the analytic solution is impractical. Below is an outline of the method I used.
 
-- Select cutoff frequencies to find the upper bound of `resonance`.
-  - This becomes a lookup table. Application draws the values from given cutoff, and maybe interpolates them.
-- Setup binary search for `resonance` for each cutoff.
-- For branching, use linear regression of impulse response with given `resonance`.
-  - If the slope is positive, it's diversing. Branch into lower side.
-  - If the slope is negative, it's conversing. Branch into upper side.
+1. Select cutoff frequencies to find the upper bound of `resonance`. This becomes a lookup table. Application draws the values from given cutoff, and maybe interpolates them.
+2. Setup binary search for `resonance` for each cutoff. Linear regression of impulse response (IR) is used for branching.
+  - If the slope is positive, branch into lower side. IR is diversing.
+  - If the slope is negative, branch into upper side. IR is conversing.
   - We want to find `resonance` that make the slope to exactly 0.
 
-The problem of linear regression approach is that the length of impulse response can only be finite on computer. We are dealing with IIR filter, where IIR stands for **infinite** impulse response. In practice, it was sufficient to cut at 65536 samples for the filters described here.
+The problem of linear regression approach is that the length of impulse response can only be finite on computer. We are dealing with IIR filter, where IIR stands for **infinite** impulse response. In practice, it was sufficient to cut at 65536 = 2^16 samples for the filters described here.
 
 ## ResonantLowpass1A1
-Code from `ResonantLowpass1A1.process()`.
+Code below comes from `ResonantLowpass1A1.process()`.
 
 ```javascript
 // Bilinear allpass, order 1.
@@ -63,11 +61,11 @@ The subscripts `n` indicates the value appeared in `n` samples before. For examp
 
 Second symbols like `A`, `H`, `L` mean the type of filter, like "A"llpass, "H"ighpass, "L"owpass, and so on. For example, `bH` means a filter coefficient of highpass.
 
-Assignments like `y2 = y1` are ignored in difference equation. Instead, the subscript of the left side value of assignment is altered from `v1 = f(v1)` to `v0 = f(v1)`. This is basically converting the difference between math notation and assignment in programming language.
+Assignments like `y2 = y1` are ignored in difference equations. Instead, the subscript in the left side value of assignment is altered from `v1 = f(v1)` to `v0 = f(v1)`. This is basically converting the difference between math notation and assignment in programming language.
 
-`input` is replaced with `x0`.
+`input` in code is replaced with `x0` in difference equation.
 
-Below is difference equations.
+Below is the difference equations of `ResonantLowpass1A1`.
 
 ```
 v0 = a1 * (y1 - v1) + y2.              (1)
@@ -80,7 +78,7 @@ Solve (2) for v0.
 v0 = (b * (x0 + x1) - a1 * y1 - y0) / q.
 ```
 
-Substitute to (1) using Maxima.
+Substitute above to (1) using [Maxima](https://maxima.sourceforge.io/).
 
 ```maxima
 v(n) := (b_n * (x(n) + x(n - 1)) - a_1 * y(n-1) - y(n)) / q;
