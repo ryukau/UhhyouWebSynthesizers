@@ -11,6 +11,8 @@ function randomize() {
   // selectRandom.value  === "Default"
   for (const key in param) {
     if (key === "renderSamples") continue;
+    if (key === "nTable") continue;
+    if (key === "randomAmount") continue;
     if (key === "highpass") continue;
     if (key === "lowpass") continue;
     if (Array.isArray(param[key])) {
@@ -42,6 +44,8 @@ const scales = {
   bipolarScale: new parameter.LinearScale(-1, 1),
 
   renderSamples: new parameter.IntScale(1, 2 ** 16),
+  nTable: new parameter.IntScale(1, 1024),
+  seed: new parameter.IntScale(0, 2 ** 32),
 
   waveform: new parameter.LinearScale(0, 3),
   powerOf: new parameter.DecibelScale(-40, 40, false),
@@ -57,6 +61,9 @@ const scales = {
 
 const param = {
   renderSamples: new parameter.Parameter(2048, scales.renderSamples),
+  nTable: new parameter.Parameter(1, scales.nTable),
+  seed: new parameter.Parameter(0, scales.seed),
+  randomAmount: new parameter.Parameter(0, scales.defaultScale),
 
   waveform: new parameter.Parameter(0, scales.waveform, true),
   powerOf: new parameter.Parameter(1, scales.powerOf, true),
@@ -123,6 +130,7 @@ const createDetailInBlock = (name) => {
 };
 
 const detailRender = widget.details(divLeft, "Render");
+const detailMultiTable = widget.details(divLeft, "Multiple Tables");
 const detailShape = widget.details(divRight, "Shape");
 const detailSpectral = widget.details(divRight, "Spectral");
 const detailFilter = widget.details(divRight, "Filter");
@@ -130,6 +138,11 @@ const detailFilter = widget.details(divRight, "Filter");
 const ui = {
   renderSamples: new widget.NumberInput(
     detailRender, "Duration [sample]", param.renderSamples, render),
+
+  nTable: new widget.NumberInput(detailMultiTable, "nTable", param.nTable, render),
+  seed: new widget.NumberInput(detailMultiTable, "Seed", param.seed, render),
+  randomAmount:
+    new widget.NumberInput(detailMultiTable, "Random Amount", param.randomAmount, render),
 
   waveform: new widget.NumberInput(detailShape, "Sine-Saw-Pulse", param.waveform, render),
   powerOf: new widget.NumberInput(detailShape, "Power", param.powerOf, render),
