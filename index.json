@@ -251,6 +251,26 @@
           }
         },
         {
+          "href": "./KSCymbal/synth.html",
+          "name": "KSCymbal",
+          "description": {
+            "ja": "2つのKarplus-Strongを適当にぶつけて音を合成。",
+            "en": "Collision of 2 Karplus-Strong string."
+          }
+        }
+      ]
+    },
+    {
+      "title": {
+        "ja": "古いシンセサイザ",
+        "en": "Old Synthesizer"
+      },
+      "summary": {
+        "ja": "コードのスタイルが古いシンセサイザ。 (<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers/blob/main/docs/code_walkthrough.md#old-synth\">詳細</a>)",
+        "en": "Synthesizers using old style code. (<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers/blob/main/docs/code_walkthrough.md#old-synth\">Details</a>)"
+      },
+      "list": [
+        {
           "href": "./oldsynth/FMTechnoBass/index.html",
           "name": "FMTechnoBass",
           "description": {
@@ -328,14 +348,6 @@
           "description": {
             "ja": "1次元の波のシミュレーションとKarplus-Strongアルゴリズムの組み合わせ。シンバルというより紐につないだ空き缶を引きずったときのような音。",
             "en": "Combination of 1D wave simulation and Karplus-Strong algorithm. It sounds like dragging a bunch of empty cans."
-          }
-        },
-        {
-          "href": "./KSCymbal/synth.html",
-          "name": "KSCymbal",
-          "description": {
-            "ja": "2つのKarplus-Strongを使って弦をぶつけた時のような音を合成。",
-            "en": "Collision of 2 Karplus-Strong string."
           }
         },
         {
