@@ -12,24 +12,27 @@ import {WaveformXYPad} from "./waveformxypad.js";
 
 function randomize() {
   for (const key in param) {
-    if (key === "renderDuration") continue;
+    if (key === "renderDurationBeat") continue;
+    if (key === "tempoBpm") continue;
     if (key === "fadeIn") continue;
     if (key === "fadeOut") continue;
     if (key === "decayTo") continue;
     if (key === "overSample") continue;
     if (key === "sampleRateScaler") continue;
+    if (key === "oscOctave") continue;
     if (key === "oscSync") continue;
     if (key === "frequencyHz") {
       // param[key].dsp = util.exponentialMap(Math.random(), 40, 4000);
       continue;
     }
-    if (key === "arpeggioDurationSeconds") continue;
     if (key === "pitchScale") {
       // param[key].normalized = Math.random();
       continue;
     }
     if (key === "equalTemperament") continue;
     if (key === "pitchDriftCent") continue;
+    if (key === "arpeggioDecayTo") continue;
+    if (key === "chordChance") continue;
     if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
@@ -63,7 +66,8 @@ function render() {
 const scales = {
   boolean: new parameter.IntScale(0, 1),
 
-  renderDuration: new parameter.DecibelScale(-40, 40, false),
+  tempoBpm: new parameter.LinearScale(0, 1024),
+  renderDurationBeat: new parameter.IntScale(1, 128),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
@@ -71,21 +75,26 @@ const scales = {
 
   seed: new parameter.IntScale(0, 2 ** 32),
   frequencyHz: new parameter.DecibelScale(util.ampToDB(20), util.ampToDB(20000), false),
+  oscOctave: new parameter.IntScale(-16, 16),
   oscSync: new parameter.LinearScale(0, 1),
   fmIndex: new parameter.DecibelScale(-60, 40, true),
 
-  arpeggioDurationSeconds: new parameter.DecibelScale(-40, 0, false),
+  arpeggioDecayTo: new parameter.DecibelScale(-60, 0, false),
   arpeggioDurationVariation: new parameter.IntScale(1, 4),
   equalTemperament: new parameter.IntScale(1, 24),
   pitchScale: new parameter.MenuItemScale(menuitems.pitchScaleItems),
   pitchDriftCent: new parameter.LinearScale(0, 100),
   pitchVariation: new parameter.IntScale(0, 16),
   pitchOctaveWrap: new parameter.IntScale(1, 8),
-  arpeggioDecayTo: new parameter.DecibelScale(-60, 0, false),
+
+  chordNoteCount: new parameter.IntScale(1, 32),
+  chordChance: new parameter.LinearScale(0, 1),
+  chordMaxOvertone: new parameter.IntScale(2, 64),
 };
 
 const param = {
-  renderDuration: new parameter.Parameter(1.28, scales.renderDuration, true),
+  tempoBpm: new parameter.Parameter(187.5, scales.tempoBpm, true),
+  renderDurationBeat: new parameter.Parameter(4, scales.renderDurationBeat, true),
   fadeIn: new parameter.Parameter(0, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
@@ -94,11 +103,11 @@ const param = {
 
   seed: new parameter.Parameter(0, scales.seed, true),
   frequencyHz: new parameter.Parameter(160, scales.frequencyHz, true),
+  oscOctave: new parameter.Parameter(0, scales.oscOctave, true),
   oscSync: new parameter.Parameter(1, scales.oscSync, true),
   fmIndex: new parameter.Parameter(0, scales.fmIndex, true),
 
-  arpeggioDurationSeconds:
-    new parameter.Parameter(0.08, scales.arpeggioDurationSeconds, true),
+  arpeggioDecayTo: new parameter.Parameter(1, scales.arpeggioDecayTo, false),
   arpeggioDurationVariation:
     new parameter.Parameter(1, scales.arpeggioDurationVariation, true),
   equalTemperament: new parameter.Parameter(5, scales.equalTemperament, true),
@@ -106,7 +115,10 @@ const param = {
   pitchDriftCent: new parameter.Parameter(25, scales.pitchDriftCent),
   pitchVariation: new parameter.Parameter(0, scales.pitchVariation),
   pitchOctaveWrap: new parameter.Parameter(2, scales.pitchOctaveWrap),
-  arpeggioDecayTo: new parameter.Parameter(1, scales.arpeggioDecayTo, false),
+
+  chordNoteCount: new parameter.Parameter(3, scales.chordNoteCount),
+  chordChance: new parameter.Parameter(0.5, scales.chordChance),
+  chordMaxOvertone: new parameter.Parameter(32, scales.chordMaxOvertone, false),
 };
 
 // Add controls.
@@ -155,10 +167,13 @@ const detailRender = widget.details(divLeft, "Render");
 const detailOsc = widget.details(divLeft, "Oscillator");
 const detailWaveform = widget.details(divRight, "Waveform");
 const detailArpeggio = widget.details(divRight, "Arpeggio");
+const detailChord = widget.details(divRight, "Overtone Chord");
 
 const ui = {
-  renderDuration:
-    new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
+  renderDurationBeat: new widget.NumberInput(
+    detailRender, "Duration [beat]", param.renderDurationBeat, render),
+  tempoBpm:
+    new widget.NumberInput(detailRender, "Tempo [beat/min]", param.tempoBpm, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
@@ -170,6 +185,7 @@ const ui = {
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   frequencyHz:
     new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
+  oscOctave: new widget.NumberInput(detailOsc, "Octave", param.oscOctave, render),
   oscSync: new widget.NumberInput(detailOsc, "Sync.", param.oscSync, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
 
@@ -177,8 +193,8 @@ const ui = {
     detailWaveform, 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, "Waveform", 13,
     render),
 
-  arpeggioDurationSeconds: new widget.NumberInput(
-    detailArpeggio, "Duration [s]", param.arpeggioDurationSeconds, render),
+  arpeggioDecayTo: new widget.NumberInput(
+    detailArpeggio, "Decay To [dB]", param.arpeggioDecayTo, render),
   arpeggioDurationVariation: new widget.NumberInput(
     detailArpeggio, "Duration Variation", param.arpeggioDurationVariation, render),
   equalTemperament: new widget.NumberInput(
@@ -190,8 +206,12 @@ const ui = {
     detailArpeggio, "Pitch Variation", param.pitchVariation, render),
   pitchOctaveWrap: new widget.NumberInput(
     detailArpeggio, "Pitch Wrap [oct]", param.pitchOctaveWrap, render),
-  arpeggioDecayTo: new widget.NumberInput(
-    detailArpeggio, "Decay To [dB]", param.arpeggioDecayTo, render),
+
+  chordNoteCount:
+    new widget.NumberInput(detailChord, "Note Count", param.chordNoteCount, render),
+  chordChance: new widget.NumberInput(detailChord, "Chance", param.chordChance, render),
+  chordMaxOvertone:
+    new widget.NumberInput(detailChord, "Max Overtone", param.chordMaxOvertone, render),
 };
 
 render();
