@@ -83,7 +83,7 @@ function setNote(upRate, pv, dsp, isRandomizing) {
   dsp.noteSamples += dsp.baseNoteDuration
     * (durMul - Math.ceil(dsp.noteSamples / dsp.baseNoteDuration));
 
-  dsp.gainEnv = 1;
+  dsp.gainEnv = dsp.rng.number() < pv.arpeggioRestChance ? 0 : 1;
   dsp.gainDecay = Math.pow(pv.arpeggioDecayTo, 1.0 / dsp.noteSamples);
 }
 

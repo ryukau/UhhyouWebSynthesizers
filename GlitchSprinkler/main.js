@@ -32,6 +32,7 @@ function randomize() {
     if (key === "equalTemperament") continue;
     if (key === "pitchDriftCent") continue;
     if (key === "arpeggioDecayTo") continue;
+    if (key === "arpeggioRestChance") continue;
     if (key === "chordChance") continue;
     if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
@@ -81,6 +82,7 @@ const scales = {
 
   arpeggioDecayTo: new parameter.DecibelScale(-60, 0, false),
   arpeggioDurationVariation: new parameter.IntScale(1, 4),
+  arpeggioRestChance: new parameter.LinearScale(0, 1),
   equalTemperament: new parameter.IntScale(1, 24),
   pitchScale: new parameter.MenuItemScale(menuitems.pitchScaleItems),
   pitchDriftCent: new parameter.LinearScale(0, 100),
@@ -110,6 +112,7 @@ const param = {
   arpeggioDecayTo: new parameter.Parameter(1, scales.arpeggioDecayTo, false),
   arpeggioDurationVariation:
     new parameter.Parameter(1, scales.arpeggioDurationVariation, true),
+  arpeggioRestChance: new parameter.Parameter(0, scales.arpeggioRestChance, false),
   equalTemperament: new parameter.Parameter(5, scales.equalTemperament, true),
   pitchScale: new parameter.Parameter(0, scales.pitchScale),
   pitchDriftCent: new parameter.Parameter(25, scales.pitchDriftCent),
@@ -197,6 +200,8 @@ const ui = {
     detailArpeggio, "Decay To [dB]", param.arpeggioDecayTo, render),
   arpeggioDurationVariation: new widget.NumberInput(
     detailArpeggio, "Duration Variation", param.arpeggioDurationVariation, render),
+  arpeggioRestChance: new widget.NumberInput(
+    detailArpeggio, "Rest Chance", param.arpeggioRestChance, render),
   equalTemperament: new widget.NumberInput(
     detailArpeggio, "Equal Temperament", param.equalTemperament, render),
   pitchScale: new widget.ComboBoxLine(detailArpeggio, "Scale", param.pitchScale, render),
