@@ -8,19 +8,54 @@ import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
 function randomize() {
-  // selectRandom.value  === "Default"
-  for (const key in param) {
-    if (key === "renderSamples") continue;
-    if (key === "nTable") continue;
-    if (key === "randomAmount") continue;
-    if (key === "highpass") continue;
-    if (key === "lowpass") continue;
-    if (Array.isArray(param[key])) {
-      param[key].forEach(e => { e.normalized = Math.random(); });
-    } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      param[key].normalized = Math.random();
-    } else {
-      param[key].normalized = Math.random();
+  if (selectRandom.value === "Full") {
+    for (const key in param) {
+      if (key === "renderSamples") continue;
+      if (key === "nTable") continue;
+      if (key === "randomAmount") continue;
+      if (key === "reduceGlitch") continue;
+      if (key === "highpass") continue;
+      if (key === "lowpass") continue;
+      if (Array.isArray(param[key])) {
+        param[key].forEach(e => { e.normalized = Math.random(); });
+      } else if (param[key].scale instanceof parameter.MenuItemScale) {
+        param[key].normalized = Math.random();
+      } else {
+        param[key].normalized = Math.random();
+      }
+    }
+  } else { // selectRandom.value  === "Default"
+    for (const key in param) {
+      if (key === "renderSamples") continue;
+      if (key === "nTable") continue;
+      if (key === "randomAmount") continue;
+      if (key === "reduceGlitch") continue;
+      if (key === "powerOf") {
+        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 20);
+        continue;
+      }
+      if (key === "skew") {
+        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 20);
+        continue;
+      }
+      if (key === "spectralSpread") {
+        param[key].ui = util.uniformDistributionMap(Math.random(), -20, 20);
+        continue;
+      }
+      if (key === "highpass") continue;
+      if (key === "lowpass") continue;
+      if (key === "notchRange") {
+        param[key].ui
+          = util.uniformDistributionMap(Math.random(), -60, util.ampToDB(0.04));
+        continue;
+      }
+      if (Array.isArray(param[key])) {
+        param[key].forEach(e => { e.normalized = Math.random(); });
+      } else if (param[key].scale instanceof parameter.MenuItemScale) {
+        param[key].normalized = Math.random();
+      } else {
+        param[key].normalized = Math.random();
+      }
     }
   }
 
@@ -61,9 +96,11 @@ const scales = {
 
 const param = {
   renderSamples: new parameter.Parameter(2048, scales.renderSamples),
+
   nTable: new parameter.Parameter(1, scales.nTable),
   seed: new parameter.Parameter(0, scales.seed),
   randomAmount: new parameter.Parameter(0, scales.defaultScale),
+  reduceGlitch: new parameter.Parameter(1, scales.boolScale),
 
   waveform: new parameter.Parameter(0, scales.waveform, true),
   powerOf: new parameter.Parameter(1, scales.powerOf, true),
@@ -113,8 +150,8 @@ audio.renderStatusElement = pRenderStatus;
 
 const divPlayControl = widget.div(divLeft, "playControl", undefined);
 const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
-  (ev) => { randomize(); });
+  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default", "Full"],
+  "Default", (ev) => { randomize(); });
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
@@ -143,6 +180,8 @@ const ui = {
   seed: new widget.NumberInput(detailMultiTable, "Seed", param.seed, render),
   randomAmount:
     new widget.NumberInput(detailMultiTable, "Random Amount", param.randomAmount, render),
+  reduceGlitch: new widget.ToggleButtonLine(
+    detailMultiTable, ["Leave Glitch", "Reduce Glitch"], param.reduceGlitch, render),
 
   waveform: new widget.NumberInput(detailShape, "Sine-Saw-Pulse", param.waveform, render),
   powerOf: new widget.NumberInput(detailShape, "Power", param.powerOf, render),

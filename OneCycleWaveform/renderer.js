@@ -77,7 +77,7 @@ function generateTable(renderSamples, freqIdx, pv, rng, fft) {
   const skew = tiltExp(rng, pv.skew, 0.01, 100, pv.randomAmount);
   const sineShaper = tiltLin(rng, pv.sineShaper, 0, 1, pv.randomAmount);
   const sineRatio = Math.floor(tiltExp(rng, pv.sineRatio, 1, 1024, pv.randomAmount));
-  const hardSync = tiltExp(rng, pv.hardSync, 0.1, 10, pv.randomAmount);
+  let hardSync = tiltExp(rng, pv.hardSync, 0.1, 10, pv.randomAmount);
   const mirrorRange = tiltLin(rng, pv.mirrorRange, 0, 1, pv.randomAmount);
   const mirrorRepeat = tiltLin(rng, pv.mirrorRepeat, 0, 1, pv.randomAmount);
   const flip = tiltLin(rng, pv.flip, -1, 1, pv.randomAmount);
@@ -95,6 +95,7 @@ function generateTable(renderSamples, freqIdx, pv, rng, fft) {
   // Base waveform.
   const mid = Math.floor(sound.length * (1 - mirrorRange / 2));
   let idx = 0;
+  let maxAmp = 1;
   for (; idx < mid; ++idx) {
     let phase = hardSync * idx / mid;
     phase = Math.pow(phase, skew);
@@ -102,11 +103,14 @@ function generateTable(renderSamples, freqIdx, pv, rng, fft) {
     let sinePhase = 2 * Math.sin(Math.PI * phase * sineRatio);
 
     let sig = generateWave(phase + lerp(0, sinePhase, sineShaper), waveform);
-
     sig = signedPower(sig, powerOf);
 
-    sound[idx] += sig;
+    sound[idx] += Number.isFinite(sig) ? sig : 0;
+
+    const absed = Math.abs(sound[idx]);
+    if (maxAmp < absed) maxAmp = absed;
   }
+  for (let i = 0; i < sound.length; ++i) sound[i] /= maxAmp;
   for (; idx < sound.length; ++idx) {
     const mirror = sound[sound.length - 1 - idx];
     const repeat = sound[idx - mid];
@@ -190,7 +194,35 @@ onmessage = async (event) => {
     tables.push(generateTable(renderSamples, freqIdx, pv, rng, fft));
   }
   tables.sort((a, b) => a.slope < b.slope ? -1 : a.slope > b.slope ? 1 : 0);
-  let sound = tables.flatMap(v => v.data);
 
+  if (pv.reduceGlitch !== 0) {
+    // Rotate each wavetable to minimize discontinuity.
+    for (let idx = 1; idx < tables.length; ++idx) {
+      const targetAmp = tables[idx - 1].data.at(-1);
+      const targetSlope = targetAmp - tables[idx - 1].data.at(-2);
+
+      const tbl = tables[idx].data;
+      let previousError = Number.MAX_VALUE;
+      let anchor = 0;
+      for (let jdx = 0; jdx < tbl.length; ++jdx) {
+        const amp = tbl[jdx];
+        const slope = amp - tbl.at(jdx - 1);
+        if (slope * targetSlope < 0) continue;
+
+        const ampDist = amp - targetAmp;
+        const slopeDist = slope - targetSlope;
+
+        // `currentError` is arbitrary tuned.
+        const currentError = ampDist * ampDist + Math.sqrt(slopeDist * slopeDist);
+        if (currentError < previousError) {
+          previousError = currentError;
+          anchor = jdx;
+        }
+      }
+      tables[idx].data = tbl.slice(anchor, tbl.length).concat(tbl.slice(0, anchor));
+    }
+  }
+
+  let sound = tables.flatMap(v => v.data);
   postMessage({sound: sound});
 }
