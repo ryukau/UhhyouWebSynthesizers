@@ -79,38 +79,31 @@
       box-sizing: border-box;
     }
 
-    div.description {
+    div.synthList {
       display: flex;
       width: calc(100% - 1rem);
       box-sizing: border-box;
       padding: 0.1em 0;
     }
 
-    div.description:nth-child(3n+1) {
+    div.synthList:nth-child(3n+1) {
       background-color: #fafafa;
     }
 
-    div.description:nth-child(3n+2) {
+    div.synthList:nth-child(3n+2) {
       background-color: #f4f4f4;
     }
 
     dt {
-      width: 30%;
-      box-sizing: border-box;
-      vertical-align: top;
-      padding: 0;
-      margin: 0;
-      background-color: inherit;
+      width: 20%;
     }
 
-    dd {
-      flex-grow: 1;
-      max-width: 70%;
-      box-sizing: border-box;
-      vertical-align: top;
-      padding: 0;
-      margin: 0;
-      background-color: inherit;
+    dd.tag {
+      width: 20%;
+    }
+
+    dd.description {
+      width: 60%;
     }
   </style>
 </head>
@@ -143,9 +136,10 @@
       {%- endif %}
       <dl>
         {%- for li in sect["list"] %}
-        <div class="description">
+        <div class="synthList">
           <dt><a href="{{ li['href'] }}">{{ li["name"] }}</a></dt>
-          <dd>{{ li["description"][lang] }}</dd>
+          <dd class="tag">{{ li["tag"][lang] }}</dd>
+          <dd class="description">{{ li["description"][lang] }}</dd>
         </div>
         {%- endfor %}
       </dl>
