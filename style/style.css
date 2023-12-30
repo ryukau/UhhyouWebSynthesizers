@@ -38,8 +38,8 @@ a:hover {
 }
 
 div.controlBlock {
-  writing-mode: initial;
-  text-orientation: initial;
+  writing-mode: horizontal-tb;
+  text-orientation: upright;
   text-align: initial;
 
   display: inline-block;
@@ -50,8 +50,8 @@ div.controlBlock {
 }
 
 p#renderStatus {
-  writing-mode: initial;
-  text-orientation: initial;
+  writing-mode: horizontal-tb;
+  text-orientation: upright;
   height: calc(1.5 * var(--font-size-body));
   text-align: center;
 }
