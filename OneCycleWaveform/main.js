@@ -7,6 +7,8 @@ import * as parameter from "../common/parameter.js";
 import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
+import {startFromSineItems} from "./menuitems.js";
+
 function randomize() {
   if (selectRandom.value === "Full") {
     for (const key in param) {
@@ -14,6 +16,7 @@ function randomize() {
       if (key === "nTable") continue;
       if (key === "randomAmount") continue;
       if (key === "reduceGlitch") continue;
+      if (key === "startFromSine") continue;
       if (key === "highpass") continue;
       if (key === "lowpass") continue;
       if (Array.isArray(param[key])) {
@@ -30,6 +33,7 @@ function randomize() {
       if (key === "nTable") continue;
       if (key === "randomAmount") continue;
       if (key === "reduceGlitch") continue;
+      if (key === "startFromSine") continue;
       if (key === "powerOf") {
         param[key].ui = util.uniformDistributionMap(Math.random(), -40, 20);
         continue;
@@ -79,6 +83,7 @@ const scales = {
   bipolarScale: new parameter.LinearScale(-1, 1),
 
   renderSamples: new parameter.IntScale(1, 2 ** 16),
+  startFromSine: new parameter.MenuItemScale(startFromSineItems),
   nTable: new parameter.IntScale(1, 1024),
   seed: new parameter.IntScale(0, 2 ** 32),
 
@@ -97,6 +102,7 @@ const scales = {
 const param = {
   renderSamples: new parameter.Parameter(2048, scales.renderSamples),
 
+  startFromSine: new parameter.Parameter(0, scales.startFromSine),
   nTable: new parameter.Parameter(1, scales.nTable),
   seed: new parameter.Parameter(0, scales.seed),
   randomAmount: new parameter.Parameter(0, scales.defaultScale),
@@ -176,6 +182,8 @@ const ui = {
   renderSamples: new widget.NumberInput(
     detailRender, "Duration [sample]", param.renderSamples, render),
 
+  startFromSine: new widget.ComboBoxLine(
+    detailMultiTable, "Start From Sine", param.startFromSine, render),
   nTable: new widget.NumberInput(detailMultiTable, "nTable", param.nTable, render),
   seed: new widget.NumberInput(detailMultiTable, "Seed", param.seed, render),
   randomAmount:

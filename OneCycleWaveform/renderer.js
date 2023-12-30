@@ -5,6 +5,8 @@ import {clamp, exponentialMap, lerp, uniformDistributionMap} from "../common/uti
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import PocketFFT from "../lib/pocketfft/pocketfft.js";
 
+import {startFromSineItems} from "./menuitems.js";
+
 // import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 function signedPower(x, y) {
@@ -58,39 +60,53 @@ function generateWave(phase, waveform) {
   return phase == 0 ? 1.0 : -1.0;
 }
 
-function generateTable(renderSamples, freqIdx, pv, rng, fft) {
+function generateTable(renderSamples, tableIndex, freqIdx, pv, rng, fft) {
   let sound = new Array(renderSamples).fill(0);
 
-  const tiltLin = (rng, base, lower, upper, range) => {
+  const normalizedTableIndex
+    = pv.nTable > 1 && (pv.startFromSine !== 0) ? tableIndex / (pv.nTable - 1) : 1;
+
+  const tiltLin = (rng, base, defaultValue, lower, upper, range) => {
+    base = defaultValue + normalizedTableIndex * (base - defaultValue);
     const value = base + uniformDistributionMap(rng.number(), -range, range);
     return clamp(value, lower, upper);
   };
-  const tiltExp = (rng, base, lower, upper, range) => {
+  const tiltExp = (rng, base, defaultValue, lower, upper, range) => {
+    base = clamp(base, lower, upper);
+    defaultValue = clamp(defaultValue, lower, upper);
+    if (pv.startFromSine === 1) { //  "Linear Scaling"
+      base = defaultValue + normalizedTableIndex * (base - defaultValue);
+    } else if (pv.startFromSine === 2) { // "Matched Scaling"
+      const defaultLog = Math.log(defaultValue);
+      const baseLog = Math.log(base);
+      base = Math.exp(defaultLog + normalizedTableIndex * (baseLog - defaultLog));
+      base = clamp(base, lower, upper);
+    }
     const logRange = range * Math.log(upper / lower);
     const low = Math.max(lower, base * Math.exp(-logRange));
     const high = Math.min(upper, base * Math.exp(logRange));
     return base * exponentialMap(rng.number(), low, high);
   };
 
-  const waveform = tiltLin(rng, pv.waveform, 0, 1, pv.randomAmount);
-  const powerOf = tiltExp(rng, pv.powerOf, 0.01, 100, pv.randomAmount);
-  const skew = tiltExp(rng, pv.skew, 0.01, 100, pv.randomAmount);
-  const sineShaper = tiltLin(rng, pv.sineShaper, 0, 1, pv.randomAmount);
-  const sineRatio = Math.floor(tiltExp(rng, pv.sineRatio, 1, 1024, pv.randomAmount));
-  let hardSync = tiltExp(rng, pv.hardSync, 0.1, 10, pv.randomAmount);
-  const mirrorRange = tiltLin(rng, pv.mirrorRange, 0, 1, pv.randomAmount);
-  const mirrorRepeat = tiltLin(rng, pv.mirrorRepeat, 0, 1, pv.randomAmount);
-  const flip = tiltLin(rng, pv.flip, -1, 1, pv.randomAmount);
+  const waveform = tiltLin(rng, pv.waveform, 0, 0, 1, pv.randomAmount);
+  const powerOf = tiltExp(rng, pv.powerOf, 1, 0.01, 100, pv.randomAmount);
+  const skew = tiltExp(rng, pv.skew, 1, 0.01, 100, pv.randomAmount);
+  const sineShaper = tiltLin(rng, pv.sineShaper, 0, 0, 1, pv.randomAmount);
+  const sineRatio = Math.floor(tiltExp(rng, pv.sineRatio, 1, 1, 1024, pv.randomAmount));
+  let hardSync = tiltExp(rng, pv.hardSync, 1, 0.1, 10, pv.randomAmount);
+  const mirrorRange = tiltLin(rng, pv.mirrorRange, 1, 0, 1, pv.randomAmount);
+  const mirrorRepeat = tiltLin(rng, pv.mirrorRepeat, 0, 0, 1, pv.randomAmount);
+  const flip = tiltLin(rng, pv.flip, -1, -1, 1, pv.randomAmount);
 
-  const spectralSpread = tiltExp(rng, pv.spectralSpread, 0.01, 100, pv.randomAmount);
-  const phaseSlope = tiltExp(rng, pv.phaseSlope, 0.001, 1000, pv.randomAmount);
+  const spectralSpread = tiltExp(rng, pv.spectralSpread, 1, 0.01, 100, pv.randomAmount);
+  const phaseSlope = tiltExp(rng, pv.phaseSlope, 0, 0.001, 1000, pv.randomAmount);
 
-  const highpass = tiltExp(rng, pv.highpass, 0.001, 1, pv.randomAmount);
-  const lowpass = tiltExp(rng, pv.lowpass, 0.001, 1, pv.randomAmount);
-  const notchStart = tiltExp(rng, pv.notchStart, 0.001, 1, pv.randomAmount);
-  const notchRange = tiltExp(rng, pv.notchRange, 0.001, 1, pv.randomAmount);
-  const lowshelfEnd = tiltExp(rng, pv.lowshelfEnd, 0.001, 1, pv.randomAmount);
-  const lowshelfGain = tiltExp(rng, pv.lowshelfGain, 0.01, 100, pv.randomAmount);
+  const highpass = tiltExp(rng, pv.highpass, 0, 0.001, 1, pv.randomAmount);
+  const lowpass = tiltExp(rng, pv.lowpass, 1, 0.001, 1, pv.randomAmount);
+  const notchStart = tiltExp(rng, pv.notchStart, 1, 0.001, 1, pv.randomAmount);
+  const notchRange = tiltExp(rng, pv.notchRange, 0.01, 0.001, 1, pv.randomAmount);
+  const lowshelfEnd = tiltExp(rng, pv.lowshelfEnd, 0, 0.001, 1, pv.randomAmount);
+  const lowshelfGain = tiltExp(rng, pv.lowshelfGain, 1, 0.01, 100, pv.randomAmount);
 
   // Base waveform.
   const mid = Math.floor(sound.length * (1 - mirrorRange / 2));
@@ -191,9 +207,11 @@ onmessage = async (event) => {
 
   let tables = [];
   for (let i = 0; i < pv.nTable; ++i) {
-    tables.push(generateTable(renderSamples, freqIdx, pv, rng, fft));
+    tables.push(generateTable(renderSamples, i, freqIdx, pv, rng, fft));
   }
-  tables.sort((a, b) => a.slope < b.slope ? -1 : a.slope > b.slope ? 1 : 0);
+  if (pv.startFromSine === 0) {
+    tables.sort((a, b) => a.slope < b.slope ? -1 : a.slope > b.slope ? 1 : 0);
+  }
 
   if (pv.reduceGlitch !== 0) {
     // Rotate each wavetable to minimize discontinuity.
