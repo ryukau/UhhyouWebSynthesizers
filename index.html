@@ -65,6 +65,14 @@
       margin-bottom: 2em;
     }
 
+    a {
+      opacity: unset;
+    }
+
+    a:hover {
+      opacity: 0.5;
+    }
+
     li {
       padding: 0.1em;
     }
@@ -95,15 +103,29 @@
     }
 
     dt {
-      width: 20%;
+      width: 25%;
     }
 
     dd.tag {
-      width: 20%;
+      display: inline-block;
+      width: 15%;
+      color: darkgray;
     }
 
     dd.description {
+      color: unset;
+      font-size: unset;
       width: 60%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    dd.description:hover {
+      color: #dd7010;
+      font-size: 125%;
+      white-space: unset;
+      overflow: unset;
     }
   </style>
 </head>
@@ -116,7 +138,7 @@
         <option value="en">English</option>
         <option value="ja">日本語</option>
       </select>
-      <span id="lastModified">Last Modified: 2023-11-30</span>
+      <span id="lastModified">Last Modified: 2023-12-30</span>
     </p>
   </header>
 
@@ -132,151 +154,151 @@
       <dl>
         <div class="synthList">
           <dt><a href="./MaybeCabinetIR/synth.html">MaybeCabinetIR</a></dt>
-          <dd class="tag">FIR filter</dd>
-          <dd class="description">Fake guitar cabinet impulse responses.</dd>
+          <dd class="tag"><span class="bold">FIR filter</span></dd>
+          <dd class="description">Fake guitar cabinet impulse responses. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./L4Reverb/synth.html">L4Reverb</a></dt>
-          <dd class="tag">Reverb</dd>
-          <dd class="description">Reverb using 4 times nested lattice allpass filter.</dd>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description">Reverb using 4 times nested lattice allpass filter. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./FDNReverb/synth.html">FDNReverb</a></dt>
-          <dd class="tag">Reverb</dd>
-          <dd class="description">Reverb using a feedback delay network.</dd>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description">Reverb using a feedback delay network. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Pulseverb/index.html">Pulseverb</a></dt>
-          <dd class="tag">Reverb</dd>
-          <dd class="description">Reverb using modulated band-limited impulse train (BLIT).</dd>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description">Reverb using modulated band-limited impulse train (BLIT). </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Freeverb/index.html">Freeverb</a></dt>
-          <dd class="tag">Reverb</dd>
-          <dd class="description">Reverb using Freeverb algorithm.</dd>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description">Reverb using Freeverb algorithm. </dd>
         </div>
       </dl>
       <h2>Synthesizer</h2>
       <dl>
         <div class="synthList">
           <dt><a href="./GenericDrum/synth.html">GenericDrum</a></dt>
-          <dd class="tag">Drum</dd>
-          <dd class="description">Generic drum synthesizer based on ClangSnare. Tuned for ease of use.</dd>
+          <dd class="tag"><span class="bold">Drum</span></dd>
+          <dd class="description">Generic drum synthesizer based on ClangSnare. Tuned for ease of use. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./HooverSynth/synth.html">HooverSynth</a></dt>
-          <dd class="tag">Hoover</dd>
-          <dd class="description"></dd>
+          <dd class="tag"><span class="bold">Hoover</span></dd>
+          <dd class="description">Hoover sound syntheiszer. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./ResonantDrop/synth.html">ResonantDrop</a></dt>
-          <dd class="tag">Noise</dd>
-          <dd class="description">Sound of falling small objects. Using resonators.</dd>
+          <dd class="tag"><span class="bold">Noise</span></dd>
+          <dd class="description">Sound of falling small objects. Using resonators. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./AdaptiveNotchComb/synth.html">AdaptiveNotchComb</a></dt>
-          <dd class="tag">Metal</dd>
-          <dd class="description">Feedback comb filter with adaptive notch filters on feedback path.</dd>
+          <dd class="tag"><span class="bold">Metal</span></dd>
+          <dd class="description">Feedback comb filter with adaptive notch filters on feedback path. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./SlipOutComb/synth.html">SlipOutComb</a></dt>
-          <dd class="tag">Noise</dd>
-          <dd class="description">Feedback comb filter that modulates bandpass cutoff to slip out from divergence.</dd>
+          <dd class="tag"><span class="bold">Noise</span></dd>
+          <dd class="description">Feedback comb filter that modulates bandpass cutoff to slip out from divergence. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./FMGlassyPad/synth.html">FMGlassyPad</a></dt>
-          <dd class="tag">Pad</dd>
-          <dd class="description">Pad sound of FM synthesizer with unison.</dd>
+          <dd class="tag"><span class="bold">Pad</span></dd>
+          <dd class="description">Pad sound of FM synthesizer with unison. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./TechnoSnare/synth.html">TechnoSnare</a></dt>
-          <dd class="tag">Snare</dd>
-          <dd class="description">Snare drum sound similar to old rhythm machines.</dd>
+          <dd class="tag"><span class="bold">Snare</span></dd>
+          <dd class="description">Snare drum sound similar to old rhythm machines. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./IntegerArpeggio/synth.html">IntegerArpeggio</a></dt>
-          <dd class="tag">Arpeggio</dd>
-          <dd class="description">The period of waveforms are aligned to integer samples. Intended for use with a slicer.</dd>
+          <dd class="tag"><span class="bold">Arpeggio</span></dd>
+          <dd class="description">The period of waveforms are aligned to integer samples. Intended for use with a slicer. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./GlitchSprinkler/synth.html">GlitchSprinkler</a></dt>
-          <dd class="tag">Melody loop</dd>
-          <dd class="description">Microtonal phrases that consists of simple synthesizer tones.</dd>
+          <dd class="tag"><span class="bold">Melody loop</span></dd>
+          <dd class="description">Microtonal phrases that consists of simple synthesizer tones. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./MetalSqueak/synth.html">MetalSqueak</a></dt>
-          <dd class="tag">Cymbal</dd>
-          <dd class="description">Texture of metals squeaking. FDN with allpass on feedback path.</dd>
+          <dd class="tag"><span class="bold">Cymbal</span></dd>
+          <dd class="description">Texture of metals squeaking. FDN with allpass on feedback path. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./GrowlSynth/synth.html">GrowlSynth</a></dt>
-          <dd class="tag">Voice</dd>
-          <dd class="description">Animal growl.</dd>
+          <dd class="tag"><span class="bold">Voice</span></dd>
+          <dd class="description">Animal growl. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./SalmonTube/synth.html">SalmonTube</a></dt>
-          <dd class="tag">Voice</dd>
-          <dd class="description">A port of Pink Trombone. This one is made to understand the internals.</dd>
+          <dd class="tag"><span class="bold">Voice</span></dd>
+          <dd class="description">A port of Pink Trombone. This one is made to understand the internals. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./OneCycleWaveform/synth.html">OneCycleWaveform</a></dt>
-          <dd class="tag">Waveform</dd>
-          <dd class="description">Single cycle waveform generator.</dd>
+          <dd class="tag"><span class="bold">Waveform</span></dd>
+          <dd class="description">Single cycle waveform generator. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./MaybeSnare/synth.html">MaybeSnare</a></dt>
-          <dd class="tag">Snare</dd>
-          <dd class="description">Using self modulating FDN.</dd>
+          <dd class="tag"><span class="bold">Snare</span></dd>
+          <dd class="description">Using self modulating FDN. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./WireWireCollision/synth.html">WireWireCollision</a></dt>
-          <dd class="tag">Simulation</dd>
-          <dd class="description">Collision of 2 wires. (<a href="docs/Wave1DTest/test.html">Visual demo</a>)</dd>
+          <dd class="tag"><span class="bold">Simulation</span></dd>
+          <dd class="description">Collision of 2 wires. (<a href="docs/Wave1DTest/test.html">Visual demo</a>) </dd>
         </div>
         <div class="synthList">
           <dt><a href="./WireWallCollision/synth.html">WireWallCollision</a></dt>
-          <dd class="tag">Simulation</dd>
-          <dd class="description">A wire colliding into rigid wall.</dd>
+          <dd class="tag"><span class="bold">Simulation</span></dd>
+          <dd class="description">A wire colliding into rigid wall. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./ClangSnare/synth.html">ClangSnare</a></dt>
-          <dd class="tag">Snare</dd>
-          <dd class="description">Based on ClangCymbal.</dd>
+          <dd class="tag"><span class="bold">Snare</span></dd>
+          <dd class="description">Based on ClangCymbal. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./PadChoir3/synth.html">PadChoir3</a></dt>
-          <dd class="tag">Pad</dd>
-          <dd class="description">PADchoir using formant data.</dd>
+          <dd class="tag"><span class="bold">Pad</span></dd>
+          <dd class="description">PADchoir using formant data. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./ResonantBD/synth.html">ResonantBD</a></dt>
-          <dd class="tag">Bass drum</dd>
-          <dd class="description">Similar to bass drums of old rhythm machines. Using oscillation of SVF.</dd>
+          <dd class="tag"><span class="bold">Bass drum</span></dd>
+          <dd class="description">Similar to bass drums of old rhythm machines. Using oscillation of SVF. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./SingenBD3/synth.html">SingenBD3</a></dt>
-          <dd class="tag">Bass drum</dd>
-          <dd class="description">FM bass drum synthesizer with strange stereo image.</dd>
+          <dd class="tag"><span class="bold">Bass drum</span></dd>
+          <dd class="description">FM bass drum synthesizer with strange stereo image. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./PadCymbal2/synth.html">PadCymbal2</a></dt>
-          <dd class="tag">Cymbal</dd>
-          <dd class="description">Improved PADcymbal with the addition of layer and serial comb filter.</dd>
+          <dd class="tag"><span class="bold">Cymbal</span></dd>
+          <dd class="description">Improved PADcymbal with the addition of layer and serial comb filter. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./ClangCymbal/synth.html">ClangCymbal</a></dt>
-          <dd class="tag">Cymbal</dd>
-          <dd class="description">Stable feedback is the difference to FDNCymbal. Mostly same as <a href="https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_en.html">VST 3 version</a>.</dd>
+          <dd class="tag"><span class="bold">Cymbal</span></dd>
+          <dd class="description">Stable feedback is the difference to FDNCymbal. Mostly same as <a href="https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_en.html">VST 3 version</a>. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./SerialCombCymbal/synth.html">SerialCombCymbal</a></dt>
-          <dd class="tag">Cymbal</dd>
-          <dd class="description">Using serial comb filter.</dd>
+          <dd class="tag"><span class="bold">Cymbal</span></dd>
+          <dd class="description">Using serial comb filter. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./KSCymbal/synth.html">KSCymbal</a></dt>
-          <dd class="tag">Cymbal</dd>
-          <dd class="description">Collision of 2 Karplus-Strong string.</dd>
+          <dd class="tag"><span class="bold">Cymbal</span></dd>
+          <dd class="description">Collision of 2 Karplus-Strong string. </dd>
         </div>
       </dl>
       <h2>Old Synthesizer</h2>
@@ -284,96 +306,96 @@
       <dl>
         <div class="synthList">
           <dt><a href="./oldsynth/FMTechnoBass/index.html">FMTechnoBass</a></dt>
-          <dd class="tag">Bass</dd>
-          <dd class="description">FM bass synthesizer.</dd>
+          <dd class="tag"><span class="bold">Bass</span></dd>
+          <dd class="description">FM bass synthesizer. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/WobblingMetalBoard/index.html">WobblingMetalBoard</a></dt>
-          <dd class="tag">Noise</dd>
-          <dd class="description">Approximation of wobbling thin metal plate sound.</dd>
+          <dd class="tag"><span class="bold">Noise</span></dd>
+          <dd class="description">Approximation of wobbling thin metal plate sound. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Bubbles/index.html">Bubbles</a></dt>
-          <dd class="tag">Water</dd>
-          <dd class="description">Sound of bubbles that is formed when droplets fall onto water surface.</dd>
+          <dd class="tag"><span class="bold">Water</span></dd>
+          <dd class="description">Sound of bubbles that is formed when droplets fall onto water surface. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Singen0.3/index.html">Singen0.3</a></dt>
-          <dd class="tag">FM</dd>
-          <dd class="description"></dd>
+          <dd class="tag"><span class="bold">FM</span></dd>
+          <dd class="description">FM synthesizer. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/PADchoir2/index.html">PADchoir2</a></dt>
-          <dd class="tag">Pad</dd>
-          <dd class="description">PADchoir with an alternative interface.</dd>
+          <dd class="tag"><span class="bold">Pad</span></dd>
+          <dd class="description">PADchoir with an alternative interface. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/FDNCymbal/index.html">FDNCymbal</a></dt>
-          <dd class="tag">Cymbal</dd>
-          <dd class="description">Using feedback delay network.</dd>
+          <dd class="tag"><span class="bold">Cymbal</span></dd>
+          <dd class="description">Using feedback delay network. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/PADchoir/index.html">PADchoir</a></dt>
-          <dd class="tag">Pad</dd>
-          <dd class="description">Using PADsynth algorithm.</dd>
+          <dd class="tag"><span class="bold">Pad</span></dd>
+          <dd class="description">Using PADsynth algorithm. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/WaveBox/index.html">WaveBox</a></dt>
-          <dd class="tag">Simulation</dd>
-          <dd class="description">3D wave propagation. Simulation nodes are placed like a box. Slow.</dd>
+          <dd class="tag"><span class="bold">Simulation</span></dd>
+          <dd class="description">3D wave propagation. Simulation nodes are placed like a box. Slow. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/WaveCymbal2/index.html">WaveCymbal2</a></dt>
-          <dd class="tag">Metal</dd>
-          <dd class="description">WaveCymbal that use implicit method for wave propagation.</dd>
+          <dd class="tag"><span class="bold">Metal</span></dd>
+          <dd class="description">WaveCymbal that use implicit method for wave propagation. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/WaveCymbal/index.html">WaveCymbal</a></dt>
-          <dd class="tag">Metal</dd>
-          <dd class="description">Sounds like dragging a bunch of empty cans rather than a cymbal. Using a combination of 1D wave simulation and Karplus-Strong algorithm.</dd>
+          <dd class="tag"><span class="bold">Metal</span></dd>
+          <dd class="description">Sounds like dragging a bunch of empty cans rather than a cymbal. Using a combination of 1D wave simulation and Karplus-Strong algorithm. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Pluck/index.html">Pluck</a></dt>
-          <dd class="tag">Metal</dd>
-          <dd class="description">A variation of Karplus-Strong algorithm.</dd>
+          <dd class="tag"><span class="bold">Metal</span></dd>
+          <dd class="description">A variation of Karplus-Strong algorithm. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/PADcymbal/index.html">PADcymbal</a></dt>
-          <dd class="tag">Cymbal</dd>
-          <dd class="description">Random frequency components are fed into PADsynth algorithm to generate cymbal-ish sound.</dd>
+          <dd class="tag"><span class="bold">Cymbal</span></dd>
+          <dd class="description">Random frequency components are fed into PADsynth algorithm to generate cymbal-ish sound. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Singen0.2/index.html">Singen0.2</a></dt>
-          <dd class="tag">FM</dd>
-          <dd class="description"></dd>
+          <dd class="tag"><span class="bold">FM</span></dd>
+          <dd class="description">FM synthesizer. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/ECAFM/index.html">ECAFM</a></dt>
-          <dd class="tag">FM</dd>
-          <dd class="description">ECAC + FM.</dd>
+          <dd class="tag"><span class="bold">FM</span></dd>
+          <dd class="description">ECAC + FM. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/SingenBD2/index.html">SingenBD2</a></dt>
-          <dd class="tag">Bass drum</dd>
-          <dd class="description">FM bass drum. Recommend to use SingenBD3 which has better functionality.</dd>
+          <dd class="tag"><span class="bold">Bass drum</span></dd>
+          <dd class="description">FM bass drum. Recommend to use SingenBD3 which has better functionality. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Singen0.1/index.html">Singen0.1</a></dt>
-          <dd class="tag">FM</dd>
-          <dd class="description"></dd>
+          <dd class="tag"><span class="bold">FM</span></dd>
+          <dd class="description">FM synthesizer. </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/SinChord/index.html">SinChord</a></dt>
-          <dd class="tag">Pad</dd>
-          <dd class="description">Random chord using naive aliasing oscillators.</dd>
+          <dd class="tag"><span class="bold">Pad</span></dd>
+          <dd class="description">Random chord using naive aliasing oscillators. </dd>
         </div>
       </dl>
       <h2>WebAudio</h2>
       <dl>
         <div class="synthList">
           <dt><a href="./oldsynth/ECAC/index.html">ECAC</a></dt>
-          <dd class="tag"></dd>
-          <dd class="description">Additive synthesizer using elementary cellular automaton.</dd>
+          <dd class="tag"><span class="bold"></span></dd>
+          <dd class="description">Additive synthesizer using elementary cellular automaton. </dd>
         </div>
       </dl>
     </div>
@@ -385,151 +407,151 @@
       <dl>
         <div class="synthList">
           <dt><a href="./MaybeCabinetIR/synth.html">MaybeCabinetIR</a></dt>
-          <dd class="tag">FIR フィルタ</dd>
-          <dd class="description">ギターキャビネットに似せたインパルス応答。</dd>
+          <dd class="tag"><span class="bold">FIR フィルタ</span></dd>
+          <dd class="description">ギターキャビネットに似せたインパルス応答。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./L4Reverb/synth.html">L4Reverb</a></dt>
-          <dd class="tag">リバーブ</dd>
-          <dd class="description">格子構造のオールパスフィルタを 4 つ入れ子にしたリバーブ。</dd>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description">格子構造のオールパスフィルタを 4 つ入れ子にしたリバーブ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./FDNReverb/synth.html">FDNReverb</a></dt>
-          <dd class="tag">リバーブ</dd>
-          <dd class="description">Feedback delay network (FDN) を1つ使ったリバーブ。</dd>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description">Feedback delay network (FDN) を1つ使ったリバーブ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Pulseverb/index.html">Pulseverb</a></dt>
-          <dd class="tag">リバーブ</dd>
-          <dd class="description">インパルスを適当にモジュレーションしたリバーブ。</dd>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description">インパルスを適当にモジュレーションしたリバーブ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Freeverb/index.html">Freeverb</a></dt>
-          <dd class="tag">リバーブ</dd>
-          <dd class="description">Freeverbアルゴリズムによるリバーブ。</dd>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description">Freeverbアルゴリズムによるリバーブ。 </dd>
         </div>
       </dl>
       <h2>シンセサイザ</h2>
       <dl>
         <div class="synthList">
           <dt><a href="./GenericDrum/synth.html">GenericDrum</a></dt>
-          <dd class="tag">ドラム</dd>
-          <dd class="description">ClangSnare を基に使い易く調整した汎用ドラムシンセサイザ。</dd>
+          <dd class="tag"><span class="bold">ドラム</span></dd>
+          <dd class="description">ClangSnare を基に使い易く調整した汎用ドラムシンセサイザ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./HooverSynth/synth.html">HooverSynth</a></dt>
-          <dd class="tag">フーバー</dd>
-          <dd class="description"></dd>
+          <dd class="tag"><span class="bold">フーバー</span></dd>
+          <dd class="description">フーバーサウンドに特化したシンセサイザ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./ResonantDrop/synth.html">ResonantDrop</a></dt>
-          <dd class="tag">ノイズ</dd>
-          <dd class="description">パラパラと小さな物が落ちるような音。レゾネータを使用。</dd>
+          <dd class="tag"><span class="bold">ノイズ</span></dd>
+          <dd class="description">パラパラと小さな物が落ちるような音。レゾネータを使用。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./AdaptiveNotchComb/synth.html">AdaptiveNotchComb</a></dt>
-          <dd class="tag">金属音</dd>
-          <dd class="description">適応ノッチフィルタをフィードバック経路に設置した、フィードバックコムフィルタ。</dd>
+          <dd class="tag"><span class="bold">金属音</span></dd>
+          <dd class="description">適応ノッチフィルタをフィードバック経路に設置した、フィードバックコムフィルタ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./SlipOutComb/synth.html">SlipOutComb</a></dt>
-          <dd class="tag">ノイズ</dd>
-          <dd class="description">発散からすり抜けるようにバンドパスのカットオフを変調するフィードバックコムフィルタ。</dd>
+          <dd class="tag"><span class="bold">ノイズ</span></dd>
+          <dd class="description">発散からすり抜けるようにバンドパスのカットオフを変調するフィードバックコムフィルタ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./FMGlassyPad/synth.html">FMGlassyPad</a></dt>
-          <dd class="tag">パッド</dd>
-          <dd class="description">ユニゾンした FM シンセによるパッド音。</dd>
+          <dd class="tag"><span class="bold">パッド</span></dd>
+          <dd class="description">ユニゾンした FM シンセによるパッド音。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./TechnoSnare/synth.html">TechnoSnare</a></dt>
-          <dd class="tag">スネア</dd>
-          <dd class="description">古いリズムマシンのようなスネアドラム。</dd>
+          <dd class="tag"><span class="bold">スネア</span></dd>
+          <dd class="description">古いリズムマシンのようなスネアドラム。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./IntegerArpeggio/synth.html">IntegerArpeggio</a></dt>
-          <dd class="tag">アルペジオ</dd>
-          <dd class="description">波形の周期が整数サンプルとなるスケールを使用。スライサに読み込んで使用。</dd>
+          <dd class="tag"><span class="bold">アルペジオ</span></dd>
+          <dd class="description">波形の周期が整数サンプルとなるスケールを使用。スライサに読み込んで使用。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./GlitchSprinkler/synth.html">GlitchSprinkler</a></dt>
-          <dd class="tag">メロディーループ</dd>
-          <dd class="description">単純なシンセサイザの音によるマイクロトーナルを用いたフレーズ。</dd>
+          <dd class="tag"><span class="bold">メロディーループ</span></dd>
+          <dd class="description">単純なシンセサイザの音によるマイクロトーナルを用いたフレーズ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./MetalSqueak/synth.html">MetalSqueak</a></dt>
-          <dd class="tag">シンバル</dd>
-          <dd class="description">フィードバック経路にオールパスを備えた FDN による金属が擦れるような音。</dd>
+          <dd class="tag"><span class="bold">シンバル</span></dd>
+          <dd class="description">フィードバック経路にオールパスを備えた FDN による金属が擦れるような音。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./GrowlSynth/synth.html">GrowlSynth</a></dt>
-          <dd class="tag">声</dd>
-          <dd class="description">動物のうなり声。</dd>
+          <dd class="tag"><span class="bold">声</span></dd>
+          <dd class="description">動物のうなり声。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./SalmonTube/synth.html">SalmonTube</a></dt>
-          <dd class="tag">声</dd>
-          <dd class="description">Pink Trombone の移植。習作。</dd>
+          <dd class="tag"><span class="bold">声</span></dd>
+          <dd class="description">Pink Trombone の移植。習作。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./OneCycleWaveform/synth.html">OneCycleWaveform</a></dt>
-          <dd class="tag">波形</dd>
-          <dd class="description">オシレータの 1 周期分の波形を生成。</dd>
+          <dd class="tag"><span class="bold">波形</span></dd>
+          <dd class="description">オシレータの 1 周期分の波形を生成。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./MaybeSnare/synth.html">MaybeSnare</a></dt>
-          <dd class="tag">スネア</dd>
-          <dd class="description">自己変調する FDN を使用。</dd>
+          <dd class="tag"><span class="bold">スネア</span></dd>
+          <dd class="description">自己変調する FDN を使用。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./WireWireCollision/synth.html">WireWireCollision</a></dt>
-          <dd class="tag">シミュレーション</dd>
-          <dd class="description">2 つの弦の衝突。 (<a href="docs/Wave1DTest/test.html">視覚化デモ</a>)</dd>
+          <dd class="tag"><span class="bold">シミュレーション</span></dd>
+          <dd class="description">2 つの弦の衝突。 (<a href="docs/Wave1DTest/test.html">視覚化デモ</a>) </dd>
         </div>
         <div class="synthList">
           <dt><a href="./WireWallCollision/synth.html">WireWallCollision</a></dt>
-          <dd class="tag">シミュレーション</dd>
-          <dd class="description">1 つの弦が固い壁に衝突。</dd>
+          <dd class="tag"><span class="bold">シミュレーション</span></dd>
+          <dd class="description">1 つの弦が固い壁に衝突。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./ClangSnare/synth.html">ClangSnare</a></dt>
-          <dd class="tag">スネア</dd>
-          <dd class="description">ClangCymbal の改変。</dd>
+          <dd class="tag"><span class="bold">スネア</span></dd>
+          <dd class="description">ClangCymbal の改変。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./PadChoir3/synth.html">PadChoir3</a></dt>
-          <dd class="tag">パッド</dd>
-          <dd class="description">フォルマントデータを使った PADchoir 。</dd>
+          <dd class="tag"><span class="bold">パッド</span></dd>
+          <dd class="description">フォルマントデータを使った PADchoir 。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./ResonantBD/synth.html">ResonantBD</a></dt>
-          <dd class="tag">バスドラム</dd>
-          <dd class="description">古いリズムマシンのようなバスドラム。 SVF の発振を使用。</dd>
+          <dd class="tag"><span class="bold">バスドラム</span></dd>
+          <dd class="description">古いリズムマシンのようなバスドラム。 SVF の発振を使用。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./SingenBD3/synth.html">SingenBD3</a></dt>
-          <dd class="tag">バスドラム</dd>
-          <dd class="description">FM を用いたバスドラムシンセサイザ。ステレオ感が怪しい。</dd>
+          <dd class="tag"><span class="bold">バスドラム</span></dd>
+          <dd class="description">FM を用いたバスドラムシンセサイザ。ステレオ感が怪しい。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./PadCymbal2/synth.html">PadCymbal2</a></dt>
-          <dd class="tag">シンバル</dd>
-          <dd class="description">レイヤと直列コムフィルタを追加した改良版 PADcymbal 。</dd>
+          <dd class="tag"><span class="bold">シンバル</span></dd>
+          <dd class="description">レイヤと直列コムフィルタを追加した改良版 PADcymbal 。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./ClangCymbal/synth.html">ClangCymbal</a></dt>
-          <dd class="tag">シンバル</dd>
-          <dd class="description">FDN が発散しないように調整されている点が FDNCymbal と異なる。ほぼ <a href="https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_ja.html">VST 3 版</a>と同じ。</dd>
+          <dd class="tag"><span class="bold">シンバル</span></dd>
+          <dd class="description">FDN が発散しないように調整されている点が FDNCymbal と異なる。ほぼ <a href="https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_ja.html">VST 3 版</a>と同じ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./SerialCombCymbal/synth.html">SerialCombCymbal</a></dt>
-          <dd class="tag">シンバル</dd>
-          <dd class="description">直列につないだコムフィルタを使用。</dd>
+          <dd class="tag"><span class="bold">シンバル</span></dd>
+          <dd class="description">直列につないだコムフィルタを使用。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./KSCymbal/synth.html">KSCymbal</a></dt>
-          <dd class="tag">シンバル</dd>
-          <dd class="description">2 つの Karplus-Strong を適当にぶつけて音を合成。</dd>
+          <dd class="tag"><span class="bold">シンバル</span></dd>
+          <dd class="description">2 つの Karplus-Strong を適当にぶつけて音を合成。 </dd>
         </div>
       </dl>
       <h2>古いシンセサイザ</h2>
@@ -537,96 +559,96 @@
       <dl>
         <div class="synthList">
           <dt><a href="./oldsynth/FMTechnoBass/index.html">FMTechnoBass</a></dt>
-          <dd class="tag">ベース</dd>
-          <dd class="description">FM ベースシンセサイザ。</dd>
+          <dd class="tag"><span class="bold">ベース</span></dd>
+          <dd class="description">FM ベースシンセサイザ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/WobblingMetalBoard/index.html">WobblingMetalBoard</a></dt>
-          <dd class="tag">ノイズ</dd>
-          <dd class="description">薄い金属板を揺らしたときのような音。</dd>
+          <dd class="tag"><span class="bold">ノイズ</span></dd>
+          <dd class="description">薄い金属板を揺らしたときのような音。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Bubbles/index.html">Bubbles</a></dt>
-          <dd class="tag">水音</dd>
-          <dd class="description">水滴が水面に落ちた時に生じる泡の音。</dd>
+          <dd class="tag"><span class="bold">水音</span></dd>
+          <dd class="description">水滴が水面に落ちた時に生じる泡の音。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Singen0.3/index.html">Singen0.3</a></dt>
-          <dd class="tag">FM</dd>
-          <dd class="description"></dd>
+          <dd class="tag"><span class="bold">FM</span></dd>
+          <dd class="description">FM シンセサイザ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/PADchoir2/index.html">PADchoir2</a></dt>
-          <dd class="tag">パッド</dd>
-          <dd class="description">UI を変更した PADchoir 。</dd>
+          <dd class="tag"><span class="bold">パッド</span></dd>
+          <dd class="description">UI を変更した PADchoir 。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/FDNCymbal/index.html">FDNCymbal</a></dt>
-          <dd class="tag">シンバル</dd>
-          <dd class="description">Feedback Delay Network を使用。</dd>
+          <dd class="tag"><span class="bold">シンバル</span></dd>
+          <dd class="description">Feedback Delay Network を使用。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/PADchoir/index.html">PADchoir</a></dt>
-          <dd class="tag">パッド</dd>
-          <dd class="description">PADsynth アルゴリズムを使用。</dd>
+          <dd class="tag"><span class="bold">パッド</span></dd>
+          <dd class="description">PADsynth アルゴリズムを使用。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/WaveBox/index.html">WaveBox</a></dt>
-          <dd class="tag">シミュレーション</dd>
-          <dd class="description">箱のように配置されたノードを伝わる 3 次元の波。遅い。</dd>
+          <dd class="tag"><span class="bold">シミュレーション</span></dd>
+          <dd class="description">箱のように配置されたノードを伝わる 3 次元の波。遅い。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/WaveCymbal2/index.html">WaveCymbal2</a></dt>
-          <dd class="tag">金属音</dd>
-          <dd class="description">WaveCymbal の波のシミュレーションの解き方を変更。</dd>
+          <dd class="tag"><span class="bold">金属音</span></dd>
+          <dd class="description">WaveCymbal の波のシミュレーションの解き方を変更。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/WaveCymbal/index.html">WaveCymbal</a></dt>
-          <dd class="tag">金属音</dd>
-          <dd class="description">シンバルというより紐につないだ空き缶を引きずったときのような音。 1 次元の波のシミュレーションと Karplus-Strong アルゴリズムの組み合わせ。</dd>
+          <dd class="tag"><span class="bold">金属音</span></dd>
+          <dd class="description">シンバルというより紐につないだ空き缶を引きずったときのような音。 1 次元の波のシミュレーションと Karplus-Strong アルゴリズムの組み合わせ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Pluck/index.html">Pluck</a></dt>
-          <dd class="tag">金属音</dd>
-          <dd class="description">Karplus-Strong アルゴリズムの一種を使用。</dd>
+          <dd class="tag"><span class="bold">金属音</span></dd>
+          <dd class="description">Karplus-Strong アルゴリズムの一種を使用。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/PADcymbal/index.html">PADcymbal</a></dt>
-          <dd class="tag">シンバル</dd>
-          <dd class="description">ランダムな周波数成分を PADsynth アルゴリズムに入力してシンバルのような音を合成。</dd>
+          <dd class="tag"><span class="bold">シンバル</span></dd>
+          <dd class="description">ランダムな周波数成分を PADsynth アルゴリズムに入力してシンバルのような音を合成。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Singen0.2/index.html">Singen0.2</a></dt>
-          <dd class="tag">FM</dd>
-          <dd class="description"></dd>
+          <dd class="tag"><span class="bold">FM</span></dd>
+          <dd class="description">FM シンセサイザ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/ECAFM/index.html">ECAFM</a></dt>
-          <dd class="tag">FM</dd>
-          <dd class="description">ECAC + FM 。</dd>
+          <dd class="tag"><span class="bold">FM</span></dd>
+          <dd class="description">ECAC + FM 。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/SingenBD2/index.html">SingenBD2</a></dt>
-          <dd class="tag">バスドラム</dd>
-          <dd class="description">FM バスドラム。より多機能な SingenBD3 の利用を推奨。</dd>
+          <dd class="tag"><span class="bold">バスドラム</span></dd>
+          <dd class="description">FM バスドラム。より多機能な SingenBD3 の利用を推奨。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/Singen0.1/index.html">Singen0.1</a></dt>
-          <dd class="tag">FM</dd>
-          <dd class="description"></dd>
+          <dd class="tag"><span class="bold">FM</span></dd>
+          <dd class="description">FM シンセサイザ。 </dd>
         </div>
         <div class="synthList">
           <dt><a href="./oldsynth/SinChord/index.html">SinChord</a></dt>
-          <dd class="tag">パッド</dd>
-          <dd class="description">エイリアスノイズが出る素朴なオシレータで適当なコードを合成。</dd>
+          <dd class="tag"><span class="bold">パッド</span></dd>
+          <dd class="description">エイリアスノイズが出る素朴なオシレータで適当なコードを合成。 </dd>
         </div>
       </dl>
       <h2>WebAudio</h2>
       <dl>
         <div class="synthList">
           <dt><a href="./oldsynth/ECAC/index.html">ECAC</a></dt>
-          <dd class="tag"></dd>
-          <dd class="description">Elementary Cellular Automaton に基づいて倍音を加算合成。</dd>
+          <dd class="tag"><span class="bold"></span></dd>
+          <dd class="description">Elementary Cellular Automaton に基づいて倍音を加算合成。 </dd>
         </div>
       </dl>
     </div>
