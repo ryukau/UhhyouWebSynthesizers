@@ -5,4 +5,5 @@ export const startFromSineItems = [
   "Off",
   "Linear Scaling",
   "Matched Scaling",
+  "Sine Shaper",
 ];

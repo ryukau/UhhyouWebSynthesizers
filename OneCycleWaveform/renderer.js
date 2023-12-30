@@ -63,29 +63,28 @@ function generateWave(phase, waveform) {
 function generateTable(renderSamples, tableIndex, freqIdx, pv, rng, fft) {
   let sound = new Array(renderSamples).fill(0);
 
-  const normalizedTableIndex
-    = pv.nTable > 1 && (pv.startFromSine !== 0) ? tableIndex / (pv.nTable - 1) : 1;
+  const normalizedTableIndex = pv.nTable > 1 ? tableIndex / (pv.nTable - 1) : 1;
 
   const tiltLin = (rng, base, defaultValue, lower, upper, range) => {
-    base = defaultValue + normalizedTableIndex * (base - defaultValue);
+    if (pv.startFromSine !== 0) {
+      base = defaultValue + normalizedTableIndex * (base - defaultValue);
+    }
     const value = base + uniformDistributionMap(rng.number(), -range, range);
     return clamp(value, lower, upper);
   };
   const tiltExp = (rng, base, defaultValue, lower, upper, range) => {
-    base = clamp(base, lower, upper);
-    defaultValue = clamp(defaultValue, lower, upper);
     if (pv.startFromSine === 1) { //  "Linear Scaling"
       base = defaultValue + normalizedTableIndex * (base - defaultValue);
-    } else if (pv.startFromSine === 2) { // "Matched Scaling"
-      const defaultLog = Math.log(defaultValue);
-      const baseLog = Math.log(base);
-      base = Math.exp(defaultLog + normalizedTableIndex * (baseLog - defaultLog));
-      base = clamp(base, lower, upper);
+    } else if (pv.startFromSine === 2 && (base !== 0 || defaultValue !== 0)) {
+      // "Matched Scaling"
+      const logDefault = Math.log(Math.max(defaultValue, lower));
+      const logBase = Math.log(Math.max(base, lower));
+      base = Math.exp(logDefault + normalizedTableIndex * (logBase - logDefault));
     }
     const logRange = range * Math.log(upper / lower);
     const low = Math.max(lower, base * Math.exp(-logRange));
     const high = Math.min(upper, base * Math.exp(logRange));
-    return base * exponentialMap(rng.number(), low, high);
+    return exponentialMap(rng.number(), low, high);
   };
 
   const waveform = tiltLin(rng, pv.waveform, 0, 0, 1, pv.randomAmount);
