@@ -65,8 +65,12 @@ function generateTable(renderSamples, tableIndex, freqIdx, pv, rng, fft) {
 
   const normalizedTableIndex = pv.nTable > 1 ? tableIndex / (pv.nTable - 1) : 1;
 
+  const expInterp = (x0, x1, t) => {
+    const logX0 = Math.log(x0);
+    return Math.exp(logX0 + t * (Math.log(x1) - logX0));
+  };
   const tiltLin = (rng, base, defaultValue, lower, upper, range) => {
-    if (pv.startFromSine !== 0) {
+    if (pv.startFromSine > 0 && pv.startFromSine < 4) {
       base = defaultValue + normalizedTableIndex * (base - defaultValue);
     }
     const value = base + uniformDistributionMap(rng.number(), -range, range);
@@ -77,9 +81,8 @@ function generateTable(renderSamples, tableIndex, freqIdx, pv, rng, fft) {
       base = defaultValue + normalizedTableIndex * (base - defaultValue);
     } else if (pv.startFromSine === 2 && (base !== 0 || defaultValue !== 0)) {
       // "Matched Scaling"
-      const logDefault = Math.log(Math.max(defaultValue, lower));
-      const logBase = Math.log(Math.max(base, lower));
-      base = Math.exp(logDefault + normalizedTableIndex * (logBase - logDefault));
+      base = expInterp(
+        Math.max(defaultValue, lower), Math.max(base, lower), normalizedTableIndex);
     }
     const logRange = range * Math.log(upper / lower);
     const low = Math.max(lower, base * Math.exp(-logRange));
@@ -89,10 +92,11 @@ function generateTable(renderSamples, tableIndex, freqIdx, pv, rng, fft) {
 
   const waveform = tiltLin(rng, pv.waveform, 0, 0, 1, pv.randomAmount);
   const powerOf = tiltExp(rng, pv.powerOf, 1, 0.01, 100, pv.randomAmount);
-  const skew = tiltExp(rng, pv.skew, 1, 0.01, 100, pv.randomAmount);
+  let skew = tiltExp(rng, pv.skew, 1, 0.01, 100, pv.randomAmount);
+  if (pv.startFromSine === 4) skew = expInterp(1, skew, normalizedTableIndex);
   const sineShaper = tiltLin(rng, pv.sineShaper, 0, 0, 1, pv.randomAmount);
   const sineRatio = Math.floor(tiltExp(rng, pv.sineRatio, 1, 1, 1024, pv.randomAmount));
-  let hardSync = tiltExp(rng, pv.hardSync, 1, 0.1, 10, pv.randomAmount);
+  const hardSync = tiltExp(rng, pv.hardSync, 1, 0.1, 10, pv.randomAmount);
   const mirrorRange = tiltLin(rng, pv.mirrorRange, 1, 0, 1, pv.randomAmount);
   const mirrorRepeat = tiltLin(rng, pv.mirrorRepeat, 0, 0, 1, pv.randomAmount);
   const flip = tiltLin(rng, pv.flip, -1, -1, 1, pv.randomAmount);

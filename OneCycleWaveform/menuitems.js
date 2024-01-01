@@ -6,4 +6,5 @@ export const startFromSineItems = [
   "Linear Scaling",
   "Matched Scaling",
   "Sine Shaper",
+  "Skew",
 ];
