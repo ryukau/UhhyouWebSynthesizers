@@ -394,6 +394,14 @@ select.inputLine {
 }
 
 /* Barbox */
+div.barboxContainer {
+  background: inherit;
+}
+
+div.barboxContainer:hover {
+  background: #fbf1b4;
+}
+
 label.barbox {
   display: inline-block;
   width: 100%;

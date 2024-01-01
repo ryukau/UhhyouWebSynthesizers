@@ -15,6 +15,18 @@
       },
       "list": [
         {
+          "href": "./FV1Reverb/synth.html",
+          "name": "FV1Reverb",
+          "tag": {
+            "ja": "リバーブ",
+            "en": "Reverb"
+          },
+          "description": {
+            "ja": "Spin Semiconductor の <a href=\"http://www.spinsemi.com/knowledge_base/effects.html\">FV-1</a> に基づくループ構造のリバーブ。",
+            "en": "Reverb using the loop structure of Spin Semiconductor <a href=\"http://www.spinsemi.com/knowledge_base/effects.html\">FV-1</a>."
+          }
+        },
+        {
           "href": "./MaybeCabinetIR/synth.html",
           "name": "MaybeCabinetIR",
           "tag": {
