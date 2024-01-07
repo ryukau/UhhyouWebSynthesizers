@@ -269,6 +269,34 @@ input[type="button"].toggleButtonLine {
   margin: var(--margin);
 }
 
+/* CheckBox */
+div.checkBoxLine {
+  display: flex;
+  text-align: center;
+  width: auto;
+  padding: var(--margin);
+}
+
+div.checkBoxLine:hover {
+  box-shadow: 1px 1px 4px #000000;
+}
+
+label.checkBoxLine {
+  display: block;
+  width: var(--input-line-label-width);
+
+  margin: auto;
+  padding-left: var(--margin);
+
+  text-align: left;
+}
+
+input[type="button"].checkBoxLine {
+  width: calc(100% - var(--input-line-label-width));
+  box-sizing: border-box;
+  margin: var(--margin);
+}
+
 /* `inputLine` class is shared between controls that occupies a line. */
 div.inputLine {
   display: flex;

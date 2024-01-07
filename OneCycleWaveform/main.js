@@ -188,8 +188,8 @@ const ui = {
   seed: new widget.NumberInput(detailMultiTable, "Seed", param.seed, render),
   randomAmount:
     new widget.NumberInput(detailMultiTable, "Random Amount", param.randomAmount, render),
-  reduceGlitch: new widget.ToggleButtonLine(
-    detailMultiTable, ["Leave Glitch", "Reduce Glitch"], param.reduceGlitch, render),
+  reduceGlitch: new widget.CheckBoxLine(
+    detailMultiTable, "Reduce Glitch", ["☉ Off", "☀︎ On"], param.reduceGlitch, render),
 
   waveform: new widget.NumberInput(detailShape, "Sine-Saw-Pulse", param.waveform, render),
   powerOf: new widget.NumberInput(detailShape, "Power", param.powerOf, render),
