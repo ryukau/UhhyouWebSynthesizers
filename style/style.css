@@ -294,7 +294,7 @@ label.checkBoxLine {
 input[type="button"].checkBoxLine {
   width: calc(100% - var(--input-line-label-width));
   box-sizing: border-box;
-  margin: var(--margin);
+  margin: 0 var(--margin) 0 var(--margin);
 }
 
 /* `inputLine` class is shared between controls that occupies a line. */
