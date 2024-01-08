@@ -121,6 +121,13 @@
       text-overflow: ellipsis;
     }
 
+    dd.description:focus {
+      color: #1070dd;
+      font-size: 125%;
+      white-space: unset;
+      overflow: unset;
+    }
+
     dd.description:hover {
       color: #dd7010;
       font-size: 125%;
@@ -161,7 +168,7 @@
         <div class="synthList">
           <dt><a href="{{ li['href'] }}">{{ li["name"] }}</a></dt>
           <dd class="tag"><span class="bold">{{ li["tag"][lang] }}</span></dd>
-          <dd class="description">{{ li["description"][lang] }} </dd>
+          <dd class="description" tabindex="0">{{ li["description"][lang] }} </dd>
         </div>
         {%- endfor %}
       </dl>
