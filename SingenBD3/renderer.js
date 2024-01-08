@@ -103,7 +103,8 @@ onmessage = async (event) => {
 
     renderDuration: Math.floor(upRate * pv.renderDuration),
     modDecayDuration: modDecayDuration,
-    pitchSuperellipseDuration: Math.floor(upRate * pv.pitchSuperellipseDuration),
+    pitchSuperellipseDuration:
+      Math.max(Math.floor(upRate * pv.pitchSuperellipseDuration), Number.EPSILON),
     currentSample: 0,
 
     baseDelta: pv.baseFreq / upRate,

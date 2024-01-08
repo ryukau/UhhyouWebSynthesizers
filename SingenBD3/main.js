@@ -19,6 +19,7 @@ function randomize() {
         param[key].dsp = util.exponentialMap(Math.random(), util.dbToAmp(-20), 1);
         continue;
       }
+      if (key === "stereoMerge") continue;
       if (key === "overSample") continue;
       if (key === "sampleRateScaler") continue;
       if (key === "baseFreq") {
@@ -53,6 +54,157 @@ function randomize() {
       if (key === "limiterInputGain") continue;
       if (key === "reverbMix") {
         param[key].normalized = 0;
+        continue;
+      }
+
+      if (Array.isArray(param[key])) {
+        param[key].forEach(e => { e.normalized = Math.random(); });
+      } else if (param[key].scale instanceof parameter.MenuItemScale) {
+        // Do nothing for now.
+      } else {
+        param[key].normalized = Math.random();
+      }
+    }
+  } else if (selectRandom.value === "Micro BD") {
+    for (const key in param) {
+      if (key === "renderDuration") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.3);
+        continue;
+      }
+      if (key === "fadeIn") continue;
+      if (key === "fadeOut") continue;
+      if (key === "decayTo") {
+        param[key].ui = util.uniformDistributionMap(Math.random(), -20, 0);
+        continue;
+      }
+      if (key === "overSample") continue;
+      if (key === "sampleRateScaler") continue;
+
+      if (key === "overtoneRandomizeType") continue;
+      if (key === "nOvertone") continue;
+
+      if (key === "limiterAttack") continue;
+      if (key === "limiterSustain") continue;
+      if (key === "limiterRelease") continue;
+      if (key === "limiterInputGain") {
+        param[key].normalized = 0;
+        continue;
+      }
+
+      if (key === "gainBezier") {
+        param[key][2].normalized = 1; // x2
+        param[key][3].normalized = 0; // y2
+        continue;
+      }
+      if (key === "baseFreq") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
+        continue;
+      }
+      if (key === "pitchDropBezier") {
+        param[key].normalized = 0;
+        continue;
+      }
+      if (key === "pitchDropSuperellipse") {
+        param[key].normalized = 0;
+        continue;
+      }
+      if (key === "mod1Amount") {
+        param[key].normalized = 0;
+        continue;
+      }
+
+      if (key === "reverbMix") {
+        param[key].normalized = 0;
+        continue;
+      }
+
+      if (Array.isArray(param[key])) {
+        param[key].forEach(e => { e.normalized = Math.random(); });
+      } else if (param[key].scale instanceof parameter.MenuItemScale) {
+        // Do nothing for now.
+      } else {
+        param[key].normalized = Math.random();
+      }
+    }
+  } else if (selectRandom.value === "Short Bass") {
+    for (const key in param) {
+      if (key === "renderDuration") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.3);
+        continue;
+      }
+      if (key === "fadeIn") continue;
+      if (key === "fadeOut") continue;
+      if (key === "decayTo") {
+        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 0);
+        continue;
+      }
+      if (key === "stereoMerge") continue;
+      if (key === "overSample") continue;
+      if (key === "sampleRateScaler") continue;
+      if (key === "limiterAttack") continue;
+      if (key === "limiterSustain") continue;
+      if (key === "limiterRelease") continue;
+      if (key === "baseFreq") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
+        continue;
+      }
+      if (key === "pitchDropBezier") {
+        param[key].normalized = 0;
+        continue;
+      }
+      if (key === "pitchDropSuperellipse") {
+        param[key].normalized = 0;
+        continue;
+      }
+      if (key === "mod1Amount") {
+        param[key].normalized = 0;
+        continue;
+      }
+
+      if (Array.isArray(param[key])) {
+        param[key].forEach(e => { e.normalized = Math.random(); });
+      } else if (param[key].scale instanceof parameter.MenuItemScale) {
+        // Do nothing for now.
+      } else {
+        param[key].normalized = Math.random();
+      }
+    }
+  } else if (selectRandom.value === "FM Bass") {
+    for (const key in param) {
+      if (key === "renderDuration") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.8);
+        continue;
+      }
+      if (key === "fadeIn") continue;
+      if (key === "fadeOut") continue;
+      if (key === "decayTo") {
+        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 0);
+        continue;
+      }
+      if (key === "stereoMerge") continue;
+      if (key === "overSample") continue;
+      if (key === "sampleRateScaler") continue;
+      if (key === "limiterAttack") continue;
+      if (key === "limiterSustain") continue;
+      if (key === "limiterRelease") continue;
+      if (key === "baseFreq") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
+        continue;
+      }
+      if (key === "pitchDropBezier") {
+        param[key].normalized = 0;
+        continue;
+      }
+      if (key === "pitchDropSuperellipse") {
+        param[key].normalized = 0;
+        continue;
+      }
+      if (key === "modDecayDuration") {
+        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.01, 10);
+        continue;
+      }
+      if (key === "mod2Amount") {
+        param[key].normalized = util.exponentialMap(Math.random(), Number.EPSILON, 0.2);
         continue;
       }
 
@@ -131,6 +283,7 @@ const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
+  stereoMerge: new parameter.LinearScale(0, 1),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
   sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
 
@@ -165,6 +318,7 @@ const param = {
   fadeIn: new parameter.Parameter(0.001, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(0.01, scales.decayTo, false),
+  stereoMerge: new parameter.Parameter(0, scales.stereoMerge),
   overSample: new parameter.Parameter(0, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   seed: new parameter.Parameter(0, scales.seed),
@@ -233,8 +387,9 @@ audio.renderStatusElement = pRenderStatus;
 
 const divPlayControl = widget.div(divLeft, "playControl", undefined);
 const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default", "Dry BD"],
-  "Default", (ev) => { randomize(); });
+  divPlayControl, "Randomize Recipe", "randomRecipe", undefined,
+  ["Default", "Dry BD", "Micro BD", "Short Bass", "FM Bass"], "Default",
+  (ev) => { randomize(); });
 const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
 buttonRandom.id = "randomRecipe";
 const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
@@ -259,14 +414,16 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
+  stereoMerge:
+    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
   sampleRateScaler: new widget.ComboBoxLine(
     detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
-  overtoneRandomizeType: new widget.ToggleButtonLine(
-    detailOvertone, menuitems.overtoneRandomizeItems, param.overtoneRandomizeType,
+  overtoneRandomizeType: new widget.CheckBoxLine(
+    detailOvertone, "Randomize Type", ["𐄢 Mono", "𐄣 Stereo"], param.overtoneRandomizeType,
     render),
   nOvertone: new widget.NumberInput(detailOvertone, "nOvertone", param.nOvertone, render),
   pitchRandomRange: new widget.NumberInput(
