@@ -5,7 +5,7 @@ import {clamp, exponentialMap, lerp, uniformDistributionMap} from "../common/uti
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import PocketFFT from "../lib/pocketfft/pocketfft.js";
 
-import {startFromSineItems} from "./menuitems.js";
+import * as menuitems from "./menuitems.js";
 
 // import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -60,56 +60,35 @@ function generateWave(phase, waveform) {
   return phase == 0 ? 1.0 : -1.0;
 }
 
-function generateTable(renderSamples, tableIndex, freqIdx, pv, rng, fft) {
+function expInterp(x0, x1, t) {
+  const logX0 = Math.log(x0);
+  return Math.exp(logX0 + t * (Math.log(x1) - logX0));
+};
+
+function generateTable(renderSamples, tableIndex, freqIdx, pv, wf, rng, fft) {
   let sound = new Array(renderSamples).fill(0);
 
-  const normalizedTableIndex = pv.nTable > 1 ? tableIndex / (pv.nTable - 1) : 1;
+  const interpRatio = pv.nWaveform > 1 ? tableIndex / (pv.nWaveform - 1) : 1;
 
-  const expInterp = (x0, x1, t) => {
-    const logX0 = Math.log(x0);
-    return Math.exp(logX0 + t * (Math.log(x1) - logX0));
-  };
-  const tiltLin = (rng, base, defaultValue, lower, upper, range) => {
-    if (pv.startFromSine > 0 && pv.startFromSine < 4) {
-      base = defaultValue + normalizedTableIndex * (base - defaultValue);
-    }
-    const value = base + uniformDistributionMap(rng.number(), -range, range);
-    return clamp(value, lower, upper);
-  };
-  const tiltExp = (rng, base, defaultValue, lower, upper, range) => {
-    if (pv.startFromSine === 1) { //  "Linear Scaling"
-      base = defaultValue + normalizedTableIndex * (base - defaultValue);
-    } else if (pv.startFromSine === 2 && (base !== 0 || defaultValue !== 0)) {
-      // "Matched Scaling"
-      base = expInterp(
-        Math.max(defaultValue, lower), Math.max(base, lower), normalizedTableIndex);
-    }
-    const logRange = range * Math.log(upper / lower);
-    const low = Math.max(lower, base * Math.exp(-logRange));
-    const high = Math.min(upper, base * Math.exp(logRange));
-    return exponentialMap(rng.number(), low, high);
-  };
+  const waveform = wf.waveform.randomize(rng, interpRatio);
+  const powerOf = wf.powerOf.randomize(rng, interpRatio);
+  const skew = wf.skew.randomize(rng, interpRatio);
+  const sineShaper = wf.sineShaper.randomize(rng, interpRatio);
+  const sineRatio = wf.sineRatio.randomize(rng, interpRatio);
+  const hardSync = wf.hardSync.randomize(rng, interpRatio);
+  const mirrorRange = wf.mirrorRange.randomize(rng, interpRatio);
+  const mirrorRepeat = wf.mirrorRepeat.randomize(rng, interpRatio);
+  const flip = wf.flip.randomize(rng, interpRatio);
 
-  const waveform = tiltLin(rng, pv.waveform, 0, 0, 1, pv.randomAmount);
-  const powerOf = tiltExp(rng, pv.powerOf, 1, 0.01, 100, pv.randomAmount);
-  let skew = tiltExp(rng, pv.skew, 1, 0.01, 100, pv.randomAmount);
-  if (pv.startFromSine === 4) skew = expInterp(1, skew, normalizedTableIndex);
-  const sineShaper = tiltLin(rng, pv.sineShaper, 0, 0, 1, pv.randomAmount);
-  const sineRatio = Math.floor(tiltExp(rng, pv.sineRatio, 1, 1, 1024, pv.randomAmount));
-  const hardSync = tiltExp(rng, pv.hardSync, 1, 0.1, 10, pv.randomAmount);
-  const mirrorRange = tiltLin(rng, pv.mirrorRange, 1, 0, 1, pv.randomAmount);
-  const mirrorRepeat = tiltLin(rng, pv.mirrorRepeat, 0, 0, 1, pv.randomAmount);
-  const flip = tiltLin(rng, pv.flip, -1, -1, 1, pv.randomAmount);
+  const spectralSpread = wf.spectralSpread.randomize(rng, interpRatio);
+  const phaseSlope = wf.phaseSlope.randomize(rng, interpRatio);
 
-  const spectralSpread = tiltExp(rng, pv.spectralSpread, 1, 0.01, 100, pv.randomAmount);
-  const phaseSlope = tiltExp(rng, pv.phaseSlope, 0, 0.001, 1000, pv.randomAmount);
-
-  const highpass = tiltExp(rng, pv.highpass, 0, 0.001, 1, pv.randomAmount);
-  const lowpass = tiltExp(rng, pv.lowpass, 1, 0.001, 1, pv.randomAmount);
-  const notchStart = tiltExp(rng, pv.notchStart, 1, 0.001, 1, pv.randomAmount);
-  const notchRange = tiltExp(rng, pv.notchRange, 0.01, 0.001, 1, pv.randomAmount);
-  const lowshelfEnd = tiltExp(rng, pv.lowshelfEnd, 0, 0.001, 1, pv.randomAmount);
-  const lowshelfGain = tiltExp(rng, pv.lowshelfGain, 1, 0.01, 100, pv.randomAmount);
+  const highpass = wf.highpass.randomize(rng, interpRatio);
+  const lowpass = wf.lowpass.randomize(rng, interpRatio);
+  const notchStart = wf.notchStart.randomize(rng, interpRatio);
+  const notchRange = wf.notchRange.randomize(rng, interpRatio);
+  const lowshelfEnd = wf.lowshelfEnd.randomize(rng, interpRatio);
+  const lowshelfGain = wf.lowshelfGain.randomize(rng, interpRatio);
 
   // Base waveform.
   const mid = Math.floor(sound.length * (1 - mirrorRange / 2));
@@ -199,6 +178,86 @@ function generateTable(renderSamples, tableIndex, freqIdx, pv, rng, fft) {
   return {data: sound, slope: -linregress(freqIdx, powerSpc) / maxSample};
 }
 
+class ParamLin {
+  constructor(base, defaultValue, lower, upper, range, startFromDefault) {
+    this.base = base;
+    this.defaultValue = defaultValue;
+    this.lower = lower;
+    this.upper = upper;
+    this.range = range;
+    this.startFromDefault = startFromDefault; // boolean, unlike ParamExp.
+  }
+
+  randomize(rng, interpRatio) {
+    let bs = this.base;
+    if (this.startFromDefault) bs = lerp(this.defaultValue, bs, interpRatio);
+
+    const random = uniformDistributionMap(rng.number(), -this.range, this.range);
+    return clamp(bs + random, this.lower, this.upper);
+  }
+}
+
+class ParamExp {
+  constructor(base, defaultValue, lower, upper, range, startFromDefault) {
+    this.base = base;
+    this.defaultValue = defaultValue;
+    this.lower = lower;
+    this.upper = upper;
+    this.range = range;
+    this.startFromDefault = startFromDefault; // 0: off, 1: linear, 2: exponential.
+
+    // Disable exponential automation scaling when the result may become NaN.
+    if (this.startFromDefault === 2 && base === 0 && defaultValue === 0) {
+      this.startFromDefault = 0;
+    }
+  }
+
+  randomize(rng, interpRatio) {
+    let bs = this.base;
+    if (this.startFromDefault === 1) {
+      bs = lerp(this.defaultValue, bs, interpRatio);
+    } else if (this.startFromDefault === 2) {
+      bs = expInterp(
+        Math.max(this.defaultValue, this.lower), Math.max(bs, this.lower), interpRatio);
+    }
+    const logRange = this.range * Math.log(this.upper / this.lower);
+    const low = Math.max(this.lower, bs * Math.exp(-logRange));
+    const high = Math.min(this.upper, bs * Math.exp(logRange));
+    return exponentialMap(rng.number(), low, high);
+  }
+}
+
+function prepareWaveformParameter(pv) {
+  const rnd = pv.randomAmount;
+  const readMenu = (item) => {
+    const sfd = pv.startFromDefault[menuitems.startFromDefaultItems.indexOf(item)];
+    return sfd ? pv.automationScaling : 0;
+  };
+  return {
+    waveform: new ParamLin(pv.waveform, 0, 0, 1, rnd, readMenu("Sine-Saw-Pulse")),
+    powerOf: new ParamExp(pv.powerOf, 1, 0.01, 100, rnd, readMenu("Power")),
+    skew: new ParamExp(pv.skew, 1, 0.01, 100, rnd, readMenu("Skew")),
+    sineShaper: new ParamLin(pv.sineShaper, 0, 0, 1, rnd, readMenu("Sine Shaper")),
+    sineRatio: new ParamExp(pv.sineRatio, 1, 1, 1024, rnd, readMenu("Sine Ratio")),
+    hardSync: new ParamExp(pv.hardSync, 1, 0.1, 10, rnd, readMenu("Hard Sync.")),
+    mirrorRange: new ParamLin(pv.mirrorRange, 1, 0, 1, rnd, readMenu("Mirror Range")),
+    mirrorRepeat: new ParamLin(pv.mirrorRepeat, 0, 0, 1, rnd, readMenu("Mirror/Repeat")),
+    flip: new ParamLin(pv.flip, -1, -1, 1, rnd, readMenu("Flip")),
+
+    spectralSpread:
+      new ParamExp(pv.spectralSpread, 1, 0.01, 100, rnd, readMenu("Spectral Spread")),
+    phaseSlope: new ParamExp(pv.phaseSlope, 0, 0.001, 1000, rnd, readMenu("Phase Slope")),
+
+    highpass: new ParamExp(pv.highpass, 0, 0.001, 1, rnd, readMenu("Highpass")),
+    lowpass: new ParamExp(pv.lowpass, 1, 0.001, 1, rnd, readMenu("Lowpass")),
+    notchStart: new ParamExp(pv.notchStart, 1, 0.001, 1, rnd, readMenu("Notch Start")),
+    notchRange: new ParamExp(pv.notchRange, 0.01, 0.001, 1, rnd, readMenu("Notch Range")),
+    lowshelfEnd: new ParamExp(pv.lowshelfEnd, 0, 0.001, 1, rnd, readMenu("Lowshelf End")),
+    lowshelfGain:
+      new ParamExp(pv.lowshelfGain, 1, 0.01, 100, rnd, readMenu("Lowshelf Gain")),
+  };
+}
+
 onmessage = async (event) => {
   const pv = event.data; // Parameter values.
   const fft = await PocketFFT();
@@ -208,11 +267,14 @@ onmessage = async (event) => {
   const spcLength = Math.floor(renderSamples / 2 + 1);
   const freqIdx = new Array(spcLength).fill(0).map((_, i) => i);
 
+  const wf = prepareWaveformParameter(pv); // WaveForm.
+  console.log(wf);                         // debug
+
   let tables = [];
-  for (let i = 0; i < pv.nTable; ++i) {
-    tables.push(generateTable(renderSamples, i, freqIdx, pv, rng, fft));
+  for (let i = 0; i < pv.nWaveform; ++i) {
+    tables.push(generateTable(renderSamples, i, freqIdx, pv, wf, rng, fft));
   }
-  if (pv.startFromSine === 0) {
+  if (pv.automationScaling === menuitems.automationScalingItems.indexOf("Off")) {
     tables.sort((a, b) => a.slope < b.slope ? -1 : a.slope > b.slope ? 1 : 0);
   }
 

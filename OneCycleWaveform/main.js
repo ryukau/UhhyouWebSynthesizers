@@ -7,16 +7,16 @@ import * as parameter from "../common/parameter.js";
 import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
-import {startFromSineItems} from "./menuitems.js";
+import * as menuitems from "./menuitems.js";
 
 function randomize() {
   if (selectRandom.value === "Full") {
     for (const key in param) {
       if (key === "renderSamples") continue;
-      if (key === "nTable") continue;
+      if (key === "nWaveform") continue;
       if (key === "randomAmount") continue;
       if (key === "reduceGlitch") continue;
-      if (key === "startFromSine") continue;
+      if (key === "automationScaling") continue;
       if (key === "highpass") continue;
       if (key === "lowpass") continue;
       if (Array.isArray(param[key])) {
@@ -30,10 +30,10 @@ function randomize() {
   } else { // selectRandom.value  === "Default"
     for (const key in param) {
       if (key === "renderSamples") continue;
-      if (key === "nTable") continue;
+      if (key === "nWaveform") continue;
       if (key === "randomAmount") continue;
       if (key === "reduceGlitch") continue;
-      if (key === "startFromSine") continue;
+      if (key === "automationScaling") continue;
       if (key === "powerOf") {
         param[key].ui = util.uniformDistributionMap(Math.random(), -40, 20);
         continue;
@@ -67,6 +67,14 @@ function randomize() {
   render();
 }
 
+function createArrayParameters(defaultDspValues, size, scale) {
+  let arr = new Array(size);
+  for (let i = 0; i < arr.length; ++i) {
+    arr[i] = new parameter.Parameter(defaultDspValues[i], scale, true);
+  }
+  return arr;
+}
+
 function render() {
   audio.render(
     parameter.toMessage(param, {
@@ -83,8 +91,8 @@ const scales = {
   bipolarScale: new parameter.LinearScale(-1, 1),
 
   renderSamples: new parameter.IntScale(1, 2 ** 16),
-  startFromSine: new parameter.MenuItemScale(startFromSineItems),
-  nTable: new parameter.IntScale(1, 1024),
+  automationScaling: new parameter.MenuItemScale(menuitems.automationScalingItems),
+  nWaveform: new parameter.IntScale(1, 1024),
   seed: new parameter.IntScale(0, 2 ** 32),
 
   waveform: new parameter.LinearScale(0, 3),
@@ -97,13 +105,15 @@ const scales = {
 
   cutoff: new parameter.DecibelScale(-60, 0, true),
   gain: new parameter.DecibelScale(-40, 40, true),
+
+  startFromDefault: new parameter.MenuItemScale(menuitems.startFromDefaultItems),
 };
 
 const param = {
   renderSamples: new parameter.Parameter(2048, scales.renderSamples),
 
-  startFromSine: new parameter.Parameter(0, scales.startFromSine),
-  nTable: new parameter.Parameter(1, scales.nTable),
+  automationScaling: new parameter.Parameter(2, scales.automationScaling),
+  nWaveform: new parameter.Parameter(1, scales.nWaveform),
   seed: new parameter.Parameter(0, scales.seed),
   randomAmount: new parameter.Parameter(0, scales.defaultScale),
   reduceGlitch: new parameter.Parameter(1, scales.boolScale),
@@ -127,6 +137,28 @@ const param = {
 
   lowshelfEnd: new parameter.Parameter(0, scales.cutoff, true),
   lowshelfGain: new parameter.Parameter(1, scales.gain, true),
+
+  startFromDefault: createArrayParameters(
+    [
+      0, // "Sine-Saw-Pulse"
+      0, // "Power"
+      0, // "Skew"
+      0, // "Sine Shaper"
+      0, // "Sine Ratio"
+      0, // "Hard Sync."
+      0, // "Mirror Range"
+      0, // "Mirror/Repeat"
+      0, // "Flip"
+      0, // "Spectral Spread"
+      0, // "Phase Slope"
+      0, // "Highpass"
+      0, // "Lowpass"
+      0, // "Notch Start"
+      0, // "Notch Range"
+      0, // "Lowshelf End"
+      0, // "Lowshelf Gain"
+    ],
+    menuitems.startFromDefaultItems.length, scales.boolScale),
 };
 
 // Add controls.
@@ -134,7 +166,8 @@ const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
 
 const divLeft = widget.div(divMain, undefined, "controlBlock");
-const divRight = widget.div(divMain, undefined, "controlBlock");
+const divRightA = widget.div(divMain, undefined, "controlBlock");
+const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
@@ -172,19 +205,26 @@ const createDetailInBlock = (name) => {
   return widget.details(div, name);
 };
 
+const detailTips = widget.details(divLeft, "Tips");
+const paragraphTip1 = widget.paragraph(detailTips, undefined, undefined);
+paragraphTip1.textContent = "Automation only works when `nWaveform` is 2 or more."
+const paragraphTip2 = widget.paragraph(detailTips, undefined, undefined);
+paragraphTip2.textContent
+  = "`Reduce Glitch` tries to reduce discontinuity between adjacent waveforms, but it may not work in some cases. When in doubt, recommend to flip it."
+
 const detailRender = widget.details(divLeft, "Render");
-const detailMultiTable = widget.details(divLeft, "Multiple Tables");
-const detailShape = widget.details(divRight, "Shape");
-const detailSpectral = widget.details(divRight, "Spectral");
-const detailFilter = widget.details(divRight, "Filter");
+const detailMultiTable = widget.details(divLeft, "Multiple Waveforms");
+const detailShape = widget.details(divRightA, "Shape");
+const detailSpectral = widget.details(divRightA, "Spectral");
+const detailFilter = widget.details(divRightA, "Filter");
+const detailAutomation = widget.details(divRightB, "Automation");
 
 const ui = {
   renderSamples: new widget.NumberInput(
     detailRender, "Duration [sample]", param.renderSamples, render),
 
-  startFromSine: new widget.ComboBoxLine(
-    detailMultiTable, "Start From Sine", param.startFromSine, render),
-  nTable: new widget.NumberInput(detailMultiTable, "nTable", param.nTable, render),
+  nWaveform:
+    new widget.NumberInput(detailMultiTable, "nWaveform", param.nWaveform, render),
   seed: new widget.NumberInput(detailMultiTable, "Seed", param.seed, render),
   randomAmount:
     new widget.NumberInput(detailMultiTable, "Random Amount", param.randomAmount, render),
@@ -219,6 +259,12 @@ const ui = {
     new widget.NumberInput(detailFilter, "Lowshelf End", param.lowshelfEnd, render),
   lowshelfGain:
     new widget.NumberInput(detailFilter, "Lowshelf Gain", param.lowshelfGain, render),
+
+  automationScaling: new widget.ComboBoxLine(
+    detailAutomation, "Automation Scaling", param.automationScaling, render),
+  startFromDefault: new widget.MultiCheckBoxVertical(
+    detailAutomation, "Parameters to Start from Default", menuitems.startFromDefaultItems,
+    2 * uiSize.waveViewWidth, param.startFromDefault, render),
 };
 
 render();
