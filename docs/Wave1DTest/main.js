@@ -1,6 +1,5 @@
 class Wave1D {
-  constructor(nNode, a, c, dt, dx)
-  {
+  constructor(nNode, a, c, dt, dx) {
     this.wave = [];
     for (let i = 0; i < 3; ++i) this.wave.push(new Array(nNode).fill(0));
     this.setParameter(a, c, dt, dx);
@@ -8,8 +7,7 @@ class Wave1D {
 
   getDisplacement() { return this.wave[0]; }
 
-  pick(x, displacement)
-  {
+  pick(x, displacement) {
     this.wave[0][x] = displacement + 0.995 * (this.wave[0][x] - displacement);
   }
 
@@ -17,8 +15,7 @@ class Wave1D {
   // `c` is wave speed in [m/s].
   // `dt` is interval of time step in [s].
   // `dx` is distance between node in [m].
-  setParameter(a, c, dt, dx)
-  {
+  setParameter(a, c, dt, dx) {
     this.a = a;
     this.c = c;
     this.dt = dt;
@@ -28,8 +25,7 @@ class Wave1D {
     this.C1 = 2 * (1 - this.C0);
   }
 
-  step()
-  {
+  step() {
     this.wave.unshift(this.wave.pop());
     for (let x = 1; x < this.wave[0].length - 1; ++x) {
       // clang-format off
@@ -48,16 +44,14 @@ class Wave1DDampedForwardFD extends Wave1D {
   // `c` is wave speed in [m/s].
   // `dt` is interval of time step in [s].
   // `dx` is distance between node in [m].
-  setParameter(a, c, dt, dx)
-  {
+  setParameter(a, c, dt, dx) {
     this.C0 = 1 / (dt * dt);
     this.C1 = 1 / (this.C0 + a / dt);
     this.C2 = c * c / (dx * dx);
     this.C3 = 2 * this.C0 + a / dt - 2 * this.C2;
   }
 
-  step()
-  {
+  step() {
     this.wave.unshift(this.wave.pop());
     for (let x = 1; x < this.wave[0].length - 1; ++x) {
       // clang-format off
@@ -76,8 +70,7 @@ class Wave1DDampedCentralFD extends Wave1D {
   // `c` is wave speed in [m/s].
   // `dt` is interval of time step in [s].
   // `dx` is distance between node in [m].
-  setParameter(a, c, dt, dx)
-  {
+  setParameter(a, c, dt, dx) {
     this.C0 = 1 / (dt * dt);
     this.C1 = a / dt / 2;
     this.C2 = c * c / (dx * dx);
@@ -86,8 +79,7 @@ class Wave1DDampedCentralFD extends Wave1D {
     this.C5 = this.C0 - this.C1;
   }
 
-  step()
-  {
+  step() {
     this.wave.unshift(this.wave.pop());
     for (let x = 1; x < this.wave[0].length - 1; ++x) {
       // clang-format off
@@ -102,21 +94,18 @@ class Wave1DDampedCentralFD extends Wave1D {
 }
 
 class CollidingWave1DWallWire {
-  constructor(nNode, a, c, dt, dx, distance = 0)
-  {
+  constructor(nNode, a, c, dt, dx, distance = 0) {
     this.wire = new Wave1DDampedCentralFD(nNode, a, c, dt, dx);
     this.distance = distance;
   }
 
   getDisplacement() { return this.wire.getDisplacement(); }
 
-  pick(x, displacement)
-  {
+  pick(x, displacement) {
     this.wire.pick(x, displacement > this.distance ? this.distance : displacement);
   }
 
-  step()
-  {
+  step() {
     this.wire.step();
 
     const last = this.wire.wave[0].length - 1;
@@ -130,8 +119,7 @@ class CollidingWave1DWallWire {
 }
 
 class CollidingWave1DWireWire {
-  constructor(nNode, a, c, dt, dx, distance = 0)
-  {
+  constructor(nNode, a, c, dt, dx, distance = 0) {
     this.w0 = new Wave1DDampedCentralFD(nNode, a, c, dt, dx);
     this.w1 = new Wave1DDampedCentralFD(nNode, a, c, dt, dx);
 
@@ -141,16 +129,14 @@ class CollidingWave1DWireWire {
     this.mass1 = 1;
   }
 
-  getDisplacement(index)
-  {
+  getDisplacement(index) {
     if (index === 0) return this.w0.getDisplacement();
     return this.w1.getDisplacement();
   }
 
   pick(x, displacement) { this.w1.pick(x, displacement); }
 
-  step()
-  {
+  step() {
     this.w0.step();
     this.w1.step();
 
@@ -168,21 +154,20 @@ class CollidingWave1DWireWire {
 class Canvas {
   #isMouseLeftDown = false;
   #isMouseRightDown = false;
-  #testbox = {rotation : 0};
+  #testbox = {rotation: 0};
   #camera;
   #pickPos = null;
 
-  constructor()
-  {
+  constructor() {
     this.canvas = document.createElement("canvas");
     this.canvas.width = 512;
     this.canvas.height = 512;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener("mousedown", (e) => this.onMouseDown(e), false);
-    this.canvas.addEventListener("mouseup", (e) => this.onMouseUp(e), false);
-    this.canvas.addEventListener("mousemove", (e) => this.onMouseMove(e), false);
-    // this.canvas.addEventListener("mouseenter", (e) => this.onMouseEnter(e), false);
-    this.canvas.addEventListener("mouseleave", (e) => this.onMouseLeave(e), false);
+    this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
+    this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
+    this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);
+    // this.canvas.addEventListener("pointerenter", (e) => this.onPointerEnter(e), false);
+    this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
     this.canvas.addEventListener("contextmenu", (e) => {
@@ -203,43 +188,38 @@ class Canvas {
     );
   }
 
-  resetCamera()
-  {
+  resetCamera() {
     this.#camera = {
       // x : this.canvas.width / 2,
       // y : this.canvas.height / 2,
-      x : 0,
-      y : this.canvas.height / 2,
-      zoom : 0,
+      x: 0,
+      y: this.canvas.height / 2,
+      zoom: 0,
     };
   }
 
-  #getWorldPosition(event)
-  {
+  #getWorldPosition(event) {
     const point = event.type.includes("touch") ? event.touches[0] : event;
     const rect = event.target.getBoundingClientRect();
     const mouseX = Math.floor(point.clientX - rect.left);
     const mouseY = Math.floor(point.clientY - rect.top);
     const scale = 0.5 ** this.#camera.zoom;
-    return {x : scale * (mouseX - this.#camera.x), y : scale * (this.#camera.y - mouseY)};
+    return {x: scale * (mouseX - this.#camera.x), y: scale * (this.#camera.y - mouseY)};
   }
 
-  #pickWave(event)
-  {
+  #pickWave(event) {
     const pos = this.#getWorldPosition(event);
     this.wave.pick(Math.floor(pos.x), -0.1 * pos.y);
   }
 
-  #releaseMouse()
-  {
+  #releaseMouse() {
     this.#isMouseLeftDown = false;
     this.#isMouseRightDown = false;
     this.#pickPos = null;
     this.draw();
   }
 
-  onMouseDown(event)
-  {
+  onPointerDown(event) {
     this.canvas.focus();
     if (event.button === 0) {
       this.#isMouseLeftDown = true;
@@ -250,10 +230,9 @@ class Canvas {
     this.draw();
   }
 
-  onMouseUp(event) { this.#releaseMouse(); }
+  onPointerUp(event) { this.#releaseMouse(); }
 
-  onMouseMove(event)
-  {
+  onPointerMove(event) {
     if (this.#isMouseLeftDown) {
       this.#pickPos = this.#getWorldPosition(event);
     }
@@ -264,10 +243,9 @@ class Canvas {
     this.draw();
   }
 
-  onMouseLeave(event) { this.#releaseMouse(); }
+  onPointerLeave(event) { this.#releaseMouse(); }
 
-  onWheel(event)
-  {
+  onWheel(event) {
     const zoomAmount = 0.25;
     if (event.deltaY > 0) {
       this.#camera.zoom -= zoomAmount;
@@ -277,8 +255,7 @@ class Canvas {
     this.draw();
   }
 
-  onKeyDown(event)
-  {
+  onKeyDown(event) {
     if (event.key === " ") {
       pause = !pause;
       animate();
@@ -289,8 +266,7 @@ class Canvas {
     }
   }
 
-  animate(deltaMilliSec)
-  {
+  animate(deltaMilliSec) {
     this.#testbox.rotation += deltaMilliSec / 1000;
     this.#testbox.rotation -= Math.floor(this.#testbox.rotation);
 
@@ -304,8 +280,7 @@ class Canvas {
     this.draw();
   }
 
-  draw()
-  {
+  draw() {
     const width = this.canvas.width;
     const height = this.canvas.height;
 
@@ -353,8 +328,7 @@ class Canvas {
   }
 }
 
-function animate(timestamp)
-{
+function animate(timestamp) {
   if (!pause) requestAnimationFrame(animate);
 
   if (timestamp === undefined) return;

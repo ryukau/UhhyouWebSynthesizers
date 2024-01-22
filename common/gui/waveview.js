@@ -23,10 +23,10 @@ export class WaveView {
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
-    this.canvas.addEventListener("mousedown", (e) => this.onMouseDown(e), false);
-    this.canvas.addEventListener("mouseup", (e) => this.onMouseUp(e), false);
-    this.canvas.addEventListener("mousemove", (e) => this.onMouseMove(e), false);
-    this.canvas.addEventListener("mouseleave", (e) => this.onMouseLeave(e), false);
+    this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
+    this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
+    this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);
+    this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.div.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -64,15 +64,15 @@ export class WaveView {
     this.draw();
   }
 
-  onMouseDown(event) {
+  onPointerDown(event) {
     this.#isMouseDown = true;
     let rect = event.target.getBoundingClientRect();
     this.#lastX = Math.floor(event.clientX - rect.left);
   }
 
-  onMouseUp(event) { this.#isMouseDown = false; }
+  onPointerUp(event) { this.#isMouseDown = false; }
 
-  onMouseMove(event) {
+  onPointerMove(event) {
     if (!this.#isMouseDown) return;
 
     let rect = event.target.getBoundingClientRect();
@@ -90,7 +90,7 @@ export class WaveView {
     this.#lastX = x;
   }
 
-  onMouseLeave(event) { this.#isMouseDown = false; }
+  onPointerLeave(event) { this.#isMouseDown = false; }
 
   onWheel(event) {
     event.preventDefault(); // Prevent page scrolling.
@@ -233,6 +233,7 @@ export class WaveView {
     const path = minArray.concat(maxArray.reverse());
 
     this.context.lineWidth = 0.5;
+    this.context.setLineDash([]);
     this.context.beginPath();
     this.context.moveTo(path[0][0], path[0][1]);
     for (let i = 1; i < path.length; ++i) this.context.lineTo(path[i][0], path[i][1]);
@@ -256,6 +257,7 @@ export class WaveView {
     }
 
     this.context.lineWidth = 1;
+    this.context.setLineDash([]);
     this.context.beginPath();
     this.context.moveTo(px[0], py[0]);
     for (let i = 1; i < this.#length; ++i) this.context.lineTo(px[i], py[i]);

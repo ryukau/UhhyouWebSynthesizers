@@ -95,11 +95,11 @@ export class BarBox {
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener("mousedown", (e) => this.onMouseDown(e), false);
-    this.canvas.addEventListener("mouseup", (e) => this.onMouseUp(e), false);
-    this.canvas.addEventListener("mousemove", (e) => this.onMouseMove(e), false);
-    this.canvas.addEventListener("mouseenter", (e) => this.onMouseEnter(e), false);
-    this.canvas.addEventListener("mouseleave", (e) => this.onMouseLeave(e), false);
+    this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
+    this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
+    this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);
+    this.canvas.addEventListener("pointerenter", (e) => this.onPointerEnter(e), false);
+    this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
     this.canvas.addEventListener("contextmenu", (e) => {
@@ -265,7 +265,7 @@ export class BarBox {
     }
   }
 
-  onMouseDown(event) {
+  onPointerDown(event) {
     event.preventDefault();
     this.canvas.focus();
 
@@ -278,18 +278,18 @@ export class BarBox {
 
     this.draw();
 
-    this.canvas.requestPointerLock();
+    this.canvas.setPointerCapture(event.pointerId);
   }
 
-  onMouseUp(event) {
+  onPointerUp(event) {
     this.#mouseButton = -1;
     this.#anchor = null;
-    document.exitPointerLock();
+    this.canvas.releasePointerCapture(event.pointerId);
     this.onInputFunc();
     this.draw();
   }
 
-  onMouseMove(event) {
+  onPointerMove(event) {
     this.#mousePosition = this.#getMousePosition(event);
 
     if (this.#mouseButton < 0) {
@@ -305,13 +305,13 @@ export class BarBox {
     this.draw();
   }
 
-  onMouseEnter(event) {
+  onPointerEnter(event) {
     this.#isMouseEntered = true;
     this.#mousePosition = this.#getMousePosition(event);
     this.draw();
   }
 
-  onMouseLeave(event) {
+  onPointerLeave(event) {
     this.#isMouseEntered = false;
     this.#mouseButton = -1;
     this.#anchor = null;

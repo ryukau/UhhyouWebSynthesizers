@@ -47,10 +47,10 @@ export class EqualizerXYPad {
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener("mousedown", (e) => this.onMouseDown(e), false);
-    this.canvas.addEventListener("mousemove", (e) => this.onMouseMove(e), false);
-    this.canvas.addEventListener("mouseup", (e) => this.onMouseUp(e), false);
-    this.canvas.addEventListener("mouseleave", (e) => this.onMouseLeave(e), false);
+    this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
+    this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);
+    this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
+    this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
@@ -247,8 +247,8 @@ export class EqualizerXYPad {
     return -1;
   }
 
-  onMouseDown(event) {
-    this.canvas.requestPointerLock();
+  onPointerDown(event) {
+    this.canvas.setPointerCapture(event.pointerId);
     this.#isMouseDown = true;
 
     const mouse = this.#getMousePosition(event);
@@ -262,7 +262,7 @@ export class EqualizerXYPad {
     this.draw();
   }
 
-  onMouseMove(event) {
+  onPointerMove(event) {
     if (!this.#isMouseDown) {
       let prevFocused = this.#focusedPoint;
       this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
@@ -284,13 +284,13 @@ export class EqualizerXYPad {
     this.draw();
   }
 
-  onMouseUp(event) {
-    document.exitPointerLock();
+  onPointerUp(event) {
+    this.canvas.releasePointerCapture(event.pointerId);
     this.#isMouseDown = false;
     this.onChangeFunc();
   }
 
-  onMouseLeave(event) { this.draw(); }
+  onPointerLeave(event) { this.draw(); }
 
   onWheel(event) {
     event.preventDefault(); // Prevent page scrolling.

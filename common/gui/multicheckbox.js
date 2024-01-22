@@ -31,10 +31,10 @@ export class MultiCheckBoxVertical {
     this.canvas.width = width;
     this.canvas.height = (valueNames.length + 1) * this.labelHeight;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener("mousedown", (e) => this.onMouseDown(e), false);
-    this.canvas.addEventListener("mouseup", (e) => this.onMouseUp(e), false);
-    this.canvas.addEventListener("mousemove", (e) => this.onMouseMove(e), false);
-    this.canvas.addEventListener("mouseleave", (e) => this.onMouseLeave(e), false);
+    this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
+    this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
+    this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);
+    this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -89,7 +89,7 @@ export class MultiCheckBoxVertical {
 
   refresh() { this.draw(); }
 
-  onMouseDown(event) {
+  onPointerDown(event) {
     this.#isMouseDown = true;
 
     const mouse = this.#getMousePosition(event);
@@ -101,7 +101,7 @@ export class MultiCheckBoxVertical {
     this.draw();
   }
 
-  onMouseMove(event) {
+  onPointerMove(event) {
     const mouse = this.#getMousePosition(event);
     const newIndex = this.#getIndexFromPoint(mouse);
     if (newIndex == this.#paramIndex) return;
@@ -112,12 +112,12 @@ export class MultiCheckBoxVertical {
     this.draw();
   }
 
-  onMouseUp(event) {
+  onPointerUp(event) {
     this.#isMouseDown = false;
     this.onChangeFunc();
   }
 
-  onMouseLeave(event) {
+  onPointerLeave(event) {
     this.#paramIndex = -1;
     if (this.#isMouseDown) {
       this.#isMouseDown = false;

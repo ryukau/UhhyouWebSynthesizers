@@ -35,10 +35,12 @@ export class TongueXYPad {
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener("mousedown", (event) => this.onMouseDown(event), false);
-    this.canvas.addEventListener("mousemove", (event) => this.onMouseMove(event), false);
-    this.canvas.addEventListener("mouseup", (event) => this.onMouseUp(event), false);
-    this.canvas.addEventListener("mouseleave", (e) => this.onMouseLeave(e), false);
+    this.canvas.addEventListener(
+      "pointerdown", (event) => this.onPointerDown(event), false);
+    this.canvas.addEventListener(
+      "pointermove", (event) => this.onPointerMove(event), false);
+    this.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event), false);
+    this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -79,16 +81,16 @@ export class TongueXYPad {
     this.draw();
   }
 
-  onMouseDown(event) {
+  onPointerDown(event) {
     const mouse = this.#getMousePosition(event);
     this.#grabbed = this.#hitTest(mouse);
     if (this.#grabbed >= this.#position.length) return;
 
-    this.canvas.requestPointerLock();
+    this.canvas.setPointerCapture(event.pointerId);
     this.draw();
   }
 
-  onMouseMove(event) {
+  onPointerMove(event) {
     const mouse = this.#getMousePosition(event);
 
     this.#pointingAt = this.#hitTest(mouse);
@@ -108,14 +110,14 @@ export class TongueXYPad {
     this.draw();
   }
 
-  onMouseUp(event) {
-    document.exitPointerLock();
+  onPointerUp(event) {
+    this.canvas.releasePointerCapture(event.pointerId);
     this.#grabbed = this.#position.length;
     this.#pointingAt = this.#position.length;
     this.onChangeFunc();
   }
 
-  onMouseLeave(event) { this.draw(); }
+  onPointerLeave(event) { this.draw(); }
 
   #getTongueY(x) {
     let value = 0;

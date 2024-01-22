@@ -24,10 +24,12 @@ export class FormantXYPad {
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener("mousedown", (event) => this.onMouseDown(event), false);
-    this.canvas.addEventListener("mousemove", (event) => this.onMouseMove(event), false);
-    this.canvas.addEventListener("mouseup", (event) => this.onMouseUp(event), false);
-    this.canvas.addEventListener("mouseleave", (e) => this.onMouseLeave(e), false);
+    this.canvas.addEventListener(
+      "pointerdown", (event) => this.onPointerDown(event), false);
+    this.canvas.addEventListener(
+      "pointermove", (event) => this.onPointerMove(event), false);
+    this.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event), false);
+    this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -68,15 +70,15 @@ export class FormantXYPad {
     this.draw();
   }
 
-  onMouseDown(event) {
-    this.canvas.requestPointerLock();
+  onPointerDown(event) {
+    this.canvas.setPointerCapture(event.pointerId);
     this.#isMouseDown = true;
     this.#targetPos = this.#getMousePosition(event);
     this.#updateTarget();
     this.draw();
   }
 
-  onMouseMove(event) {
+  onPointerMove(event) {
     if (!this.#isMouseDown) return;
 
     const movementX = clamp(event.movementX, -24, 24);
@@ -89,13 +91,13 @@ export class FormantXYPad {
     this.draw();
   }
 
-  onMouseUp(event) {
-    document.exitPointerLock();
+  onPointerUp(event) {
+    this.canvas.releasePointerCapture(event.pointerId);
     this.#isMouseDown = false;
     this.onChangeFunc();
   }
 
-  onMouseLeave(event) {
+  onPointerLeave(event) {
     this.#triangleIndex = null;
     this.draw();
   }
