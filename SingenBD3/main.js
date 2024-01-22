@@ -9,248 +9,134 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-function randomize() {
-  if (selectRandom.value === "Dry BD") {
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") {
-        param[key].dsp = util.exponentialMap(Math.random(), util.dbToAmp(-20), 1);
-        continue;
-      }
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "baseFreq") {
-        param[key].dsp = util.exponentialMap(Math.random(), 10, 90);
-        continue;
-      }
-      if (key === "pitchDropBezier") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 1, 3);
-        continue;
-      }
-      if (key === "pitchDropBezierPower") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.9, 1.1);
-        continue;
-      }
-      if (key === "pitchDropSuperellipse") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 3.0, 10.0);
-        continue;
-      }
-      if (key === "pitchSuperellipseCurve") continue;
-      if (key === "pitchSuperellipseDuration") {
-        param[key].dsp
-          = util.exponentialMap(Math.random(), 0.1, scales.decaySecond.maxDsp);
-        continue;
-      }
-      if (key === "modCurve") continue;
-      if (key === "overtoneRandomizeType") {
-        param[key].normalized = 0;
-        continue;
-      }
-      if (key === "limiterAttack") continue;
-      if (key === "limiterRelease") continue;
-      if (key === "limiterInputGain") continue;
-      if (key === "reverbMix") {
-        param[key].normalized = 0;
-        continue;
-      }
+const version = 0;
 
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
+const localRecipeBook = {
+  "Default": {
+    renderDuration:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.8); },
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 0); },
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    pitchSuperellipseCurve: () => {},
+    modCurve: () => {},
+    limiterAttack: () => {},
+    limiterRelease: () => {},
+  },
+  "Dry BD": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo:
+      (prm) => { prm.dsp = util.exponentialMap(Math.random(), util.dbToAmp(-20), 1); },
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    baseFreq: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 90); },
+    pitchDropBezier:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 1, 3); },
+    pitchDropBezierPower:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.9, 1.1); },
+    pitchDropSuperellipse:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 3.0, 10.0); },
+    pitchSuperellipseCurve: () => {},
+    pitchSuperellipseDuration: (prm) => {
+      prm.dsp = util.exponentialMap(Math.random(), 0.1, scales.decaySecond.maxDsp);
+    },
+    modCurve: () => {},
+    overtoneRandomizeType: (prm) => { prm.normalized = 0; },
+    limiterAttack: () => {},
+    limiterRelease: () => {},
+    limiterInputGain: () => {},
+    reverbMix: (prm) => { prm.normalized = 0; },
+  },
+  "Micro BD": {
+    renderDuration:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.3); },
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -20, 0); },
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    overtoneRandomizeType: () => {},
+    nOvertone: () => {},
+    limiterAttack: () => {},
+    limiterSustain: () => {},
+    limiterRelease: () => {},
+    limiterInputGain: (prm) => { prm.normalized = 0; },
+    gainBezier: (prm) => {
+      prm[2].normalized = 1; // x2
+      prm[3].normalized = 0; // y2
+    },
+    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    pitchDropBezier: (prm) => { prm.normalized = 0; },
+    pitchDropSuperellipse: (prm) => { prm.normalized = 0; },
+    mod1Amount: (prm) => { prm.normalized = 0; },
+    reverbMix: (prm) => { prm.normalized = 0; },
+  },
+  "Short Bass": {
+    renderDuration:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.3); },
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 0); },
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    limiterAttack: () => {},
+    limiterSustain: () => {},
+    limiterRelease: () => {},
+    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    pitchDropBezier: (prm) => { prm.normalized = 0; },
+    pitchDropSuperellipse: (prm) => { prm.normalized = 0; },
+    mod1Amount: (prm) => { prm.normalized = 0; },
+  },
+  "FM Bass": {
+    renderDuration:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.8); },
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 0); },
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    limiterAttack: () => {},
+    limiterSustain: () => {},
+    limiterRelease: () => {},
+    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    pitchDropBezier: (prm) => { prm.normalized = 0; },
+    pitchDropSuperellipse: (prm) => { prm.normalized = 0; },
+    modDecayDuration:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.01, 10); },
+    mod2Amount: (prm) => {
+      prm.normalized = util.exponentialMap(Math.random(), Number.EPSILON, 0.2);
+    },
+  },
+};
+
+function applyLocalRecipe(param, recipe) {
+  for (const key in param) {
+    if (recipe.hasOwnProperty(key)) {
+      recipe[key](param[key]);
+    } else if (Array.isArray(param[key])) {
+      param[key].forEach(e => { e.normalized = Math.random(); });
+    } else if (param[key].scale instanceof parameter.MenuItemScale) {
+      // Do nothing.
+    } else {
+      param[key].normalized = Math.random();
     }
-  } else if (selectRandom.value === "Micro BD") {
-    for (const key in param) {
-      if (key === "renderDuration") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.3);
-        continue;
-      }
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") {
-        param[key].ui = util.uniformDistributionMap(Math.random(), -20, 0);
-        continue;
-      }
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
+  };
+}
 
-      if (key === "overtoneRandomizeType") continue;
-      if (key === "nOvertone") continue;
-
-      if (key === "limiterAttack") continue;
-      if (key === "limiterSustain") continue;
-      if (key === "limiterRelease") continue;
-      if (key === "limiterInputGain") {
-        param[key].normalized = 0;
-        continue;
-      }
-
-      if (key === "gainBezier") {
-        param[key][2].normalized = 1; // x2
-        param[key][3].normalized = 0; // y2
-        continue;
-      }
-      if (key === "baseFreq") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
-        continue;
-      }
-      if (key === "pitchDropBezier") {
-        param[key].normalized = 0;
-        continue;
-      }
-      if (key === "pitchDropSuperellipse") {
-        param[key].normalized = 0;
-        continue;
-      }
-      if (key === "mod1Amount") {
-        param[key].normalized = 0;
-        continue;
-      }
-
-      if (key === "reverbMix") {
-        param[key].normalized = 0;
-        continue;
-      }
-
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else if (selectRandom.value === "Short Bass") {
-    for (const key in param) {
-      if (key === "renderDuration") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.3);
-        continue;
-      }
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") {
-        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 0);
-        continue;
-      }
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "limiterAttack") continue;
-      if (key === "limiterSustain") continue;
-      if (key === "limiterRelease") continue;
-      if (key === "baseFreq") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
-        continue;
-      }
-      if (key === "pitchDropBezier") {
-        param[key].normalized = 0;
-        continue;
-      }
-      if (key === "pitchDropSuperellipse") {
-        param[key].normalized = 0;
-        continue;
-      }
-      if (key === "mod1Amount") {
-        param[key].normalized = 0;
-        continue;
-      }
-
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else if (selectRandom.value === "FM Bass") {
-    for (const key in param) {
-      if (key === "renderDuration") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.8);
-        continue;
-      }
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") {
-        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 0);
-        continue;
-      }
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "limiterAttack") continue;
-      if (key === "limiterSustain") continue;
-      if (key === "limiterRelease") continue;
-      if (key === "baseFreq") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
-        continue;
-      }
-      if (key === "pitchDropBezier") {
-        param[key].normalized = 0;
-        continue;
-      }
-      if (key === "pitchDropSuperellipse") {
-        param[key].normalized = 0;
-        continue;
-      }
-      if (key === "modDecayDuration") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.01, 10);
-        continue;
-      }
-      if (key === "mod2Amount") {
-        param[key].normalized = util.exponentialMap(Math.random(), Number.EPSILON, 0.2);
-        continue;
-      }
-
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else { // "Default"
-    for (const key in param) {
-      if (key === "renderDuration") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.8);
-        continue;
-      }
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") {
-        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 0);
-        continue;
-      }
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "baseFreq") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 90);
-        continue;
-      }
-      if (key === "pitchSuperellipseCurve") continue;
-      if (key === "modCurve") continue;
-      if (key === "limiterAttack") continue;
-      if (key === "limiterRelease") continue;
-
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
+function addLocalRecipes(source, target) {
+  let tgt = new Map(target); // Don't mutate original.
+  for (const [key, recipe] of Object.entries(source)) {
+    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
   }
-
-  render();
-  widget.refresh(ui);
+  return new Map([...tgt.entries()].sort()); // Sort by key.
 }
 
 function getSampleRateScaler() {
@@ -259,10 +145,10 @@ function getSampleRateScaler() {
 
 function createBezierEnvelopeParameters(x1 = 0.2, y1 = 0.2, x2 = 0.8, y2 = 0.8) {
   return [
-    new parameter.Parameter(x1, scales.defaultScale),
-    new parameter.Parameter(y1, scales.defaultScale),
-    new parameter.Parameter(x2, scales.defaultScale),
-    new parameter.Parameter(y2, scales.defaultScale),
+    new parameter.Parameter(x1, scales.defaultScale, false, "x1"),
+    new parameter.Parameter(y1, scales.defaultScale, false, "y1"),
+    new parameter.Parameter(x2, scales.defaultScale, false, "x2"),
+    new parameter.Parameter(y2, scales.defaultScale, false, "y2"),
   ];
 }
 
@@ -273,7 +159,7 @@ function render() {
       maxDelayTime: 2 * scales.reverbSecond.maxDsp,
     }),
     "perChannel",
-    togglebuttonQuickSave.state === 1,
+    playControl.togglebuttonQuickSave.state === 1,
   );
 }
 
@@ -358,6 +244,11 @@ const param = {
   feedback: new parameter.Parameter(0.98, scales.feedback, true),
 };
 
+const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
+  "recipe/full.json",
+  "recipe/init.json",
+]));
+
 // Add controls.
 const audio = new wave.Audio(
   2,
@@ -385,21 +276,35 @@ const waveView = [
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
-const divPlayControl = widget.div(divLeft, "playControl", undefined);
-const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined,
-  ["Default", "Dry BD", "Micro BD", "Short Bass", "FM Bass"], "Default",
-  (ev) => { randomize(); });
-const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
-buttonRandom.id = "randomRecipe";
-const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay
-  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
-const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(
-  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
-const togglebuttonQuickSave = new widget.ToggleButton(
-  divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
+const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
+  parameter.downloadJson(
+    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+});
+const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
+  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+});
+
+const playControl = widget.playControl(
+  divLeft,
+  (ev) => { audio.play(getSampleRateScaler()); },
+  (ev) => { audio.stop(); },
+  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {},
+  (ev) => {
+    recipeBook.get(playControl.selectRandom.value).randomize(param);
+    render();
+    widget.refresh(ui);
+  },
+  [...recipeBook.keys()],
+  (ev) => {
+    const recipeOptions = {author: "temp", recipeName: util.getTimeStamp()};
+    const currentRecipe = parameter.dumpJsonObject(param, version, recipeOptions);
+    const optionName = parameter.addRecipe(param, recipeBook, currentRecipe);
+    widget.option(playControl.selectRandom, optionName);
+  },
+  (ev) => { recipeExportDialog.open(); },
+  (ev) => { recipeImportDialog.open(); },
+);
 
 const detailRender = widget.details(divLeft, "Render");
 const detailOvertone = widget.details(divLeft, "Overtone");

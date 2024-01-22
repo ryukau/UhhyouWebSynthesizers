@@ -15,19 +15,20 @@ export function toMessage(param, info) {
   return Object.assign({}, dest, info);
 }
 
-/*
-`Parameter` is basically a glue between GUI and DSP that enables flexible value
-scaling. DSP value is considered as ground truth of current state.
+/**
+`Parameter` provides different representations of a same value. DSP value is considered as
+ground truth of current state.
 */
 export class Parameter {
   #raw; // DSP value.
 
-  constructor(defaultDsp, scale, displayDsp = false) {
+  constructor(defaultDsp, scale, displayDsp = false, comment = "") {
     console.assert(defaultDsp >= scale.minDsp, new Error());
     console.assert(defaultDsp <= scale.maxDsp, new Error());
 
     this.scale = scale;
     this.displayDsp = displayDsp;
+    this.comment = comment;
 
     this.defaultDsp = defaultDsp;
     this.defaultUi = this.scale.toUi(defaultDsp);
@@ -62,6 +63,33 @@ export class Parameter {
   get defaultDispaly() { return this.displayDsp ? this.defaultDsp : this.defaultUi; }
   get minDisplay() { return this.displayDsp ? this.scale.minDsp : this.scale.minUi; }
   get maxDisplay() { return this.displayDsp ? this.scale.maxDsp : this.scale.maxUi; }
+
+  uiToDsp(x) { return this.scale.toDsp(x); }
+  dspToUi(x) { return this.scale.toUi(x); }
+
+  uiToNormalized(x) {
+    if (this.scale.maxUi === this.scale.minUi) return this.scale.minUi;
+    return (x - this.scale.minUi) / (this.scale.maxUi - this.scale.minUi);
+  }
+  normalizedToUi(x) {
+    return this.scale.minUi + (this.scale.maxUi - this.scale.minUi) * util.clamp(x, 0, 1);
+  }
+
+  dspToNormalized(x) {
+    if (this.scale.maxDsp === this.scale.minDsp) return this.scale.minDsp;
+    return (x - this.scale.minDsp) / (this.scale.maxDsp - this.scale.minDsp);
+  }
+  normalizedToDsp(x) {
+    return this.scale.minDsp
+      + (this.scale.maxDsp - this.scale.minDsp) * util.clamp(x, 0, 1);
+  }
+
+  displayToNormalized(x) {
+    return this.displayDsp ? this.dspToNormalized(x) : this.uiToNormalized(x);
+  }
+  normalizedToDisplay(x) {
+    return this.displayDsp ? this.normalizedToDsp(x) : this.normalizedToUi(x);
+  }
 }
 
 export class IntScale {
@@ -135,7 +163,7 @@ export class DecibelScale {
 
 // Decibel in UI, amplitude in DSP. `offset` is in amplitude.
 //
-// A use case is filter Q factor.
+// Example use cases are feedback of a comb filter, and filter Q factor.
 export class NegativeDecibelScale {
   constructor(minDB, maxDB, offset, minToZero) {
     console.assert(Number.isFinite(minDB) || -Infinity === minDB, new Error());
@@ -153,7 +181,7 @@ export class NegativeDecibelScale {
   get minDsp() { return this.offset - this.scale.maxAmp; }
   get maxDsp() { return this.offset - this.scale.minAmp; }
 
-  toDsp(negativeDB) { return this.offset - this.scale.toDsp(-negativeDB); }
+  toDsp(negativeDB) { return this.offset - this.offset * this.scale.toDsp(-negativeDB); }
   toUi(amplitude) { return 1 - this.scale.toUi(this.offset - amplitude); }
 }
 
@@ -262,4 +290,206 @@ export class MenuItemScale {
 
   toDsp(index) { return Math.floor(index); }
   toUi(index) { return Math.floor(index); }
+}
+
+/**
+`version` is there to handle old presets in case of breaking change. Use incremental
+number and document the change somewhere. No need to be semver.
+
+`options` format:
+
+```
+{
+  author: <string>,
+  recipeName: <string>,
+  fullRange: <boolean>,
+}
+```
+
+`author` and `recipeName` are used as a name of the recipe.
+
+`fullRange` is used to dump full randomization recipe. This is only used to make first
+recipe.json which will be copied to make other recipes.
+*/
+export function dumpJsonObject(param, version, options) {
+  // Handle options.
+  const fullRange = options.fullRange === true;
+  const author = options.author !== undefined ? `${options.author}` : "";
+  const recipeName = options.recipeName !== undefined
+    ? `${options.recipeName}`
+    : (fullRange === true ? "Full" : "Init");
+
+  // Prepare destination `data`.
+  let data = {
+    meta: {author, recipeName, version},
+    parameters: {},
+  };
+
+  // Fill `data.parameters`.
+  const recursion = (prm, fullRange) => {
+    if (Array.isArray(prm)) return prm.map(prm => recursion(prm, fullRange));
+    return parameterToObject(prm, fullRange);
+  };
+  for (const [key, prm] of Object.entries(param)) {
+    data.parameters[key] = recursion(prm, fullRange === true);
+  }
+  return data;
+}
+
+export function dumpJsonString(param, version, options) {
+  return JSON.stringify(dumpJsonObject(param, version, options));
+}
+
+export function downloadJson(param, version, author, recipeName) {
+  const data = dumpJsonString(param, version, {author, recipeName});
+  const blob = new Blob([data], {type: "application/json"});
+  const url = window.URL.createObjectURL(blob);
+
+  let a = document.createElement("a");
+  a.style = "display: none";
+  a.href = url;
+  a.download = `${document.title}_${author}_${recipeName}.json`;
+  document.body.appendChild(a);
+  a.click();
+
+  // Introducing delay to enable download on Firefox.
+  setTimeout(() => {
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, 100);
+}
+
+// Used in `dumpJsonObject`.
+function parameterToObject(prm, fullRange) {
+  let obj = {};
+
+  {
+    let info = {};
+    if (typeof prm.comment === "string" && prm.comment.length > 0) {
+      info.comment = prm.comment;
+    }
+    info.min = prm.minDisplay;
+    info.max = prm.maxDisplay;
+    obj.info = info;
+  }
+
+  {
+    let random = {};
+    if (fullRange) {
+      random.min = prm.minDisplay;
+      random.max = prm.maxDisplay;
+    } else {
+      random.min = prm.display;
+      random.max = prm.display;
+    }
+    random.type = "display"; // Add more type as required.
+    obj.random = random;
+  }
+
+  return obj;
+};
+
+export function addRecipe(parameters, recipeBook, newRecipe) {
+  const name = `${newRecipe.meta.author} - ${newRecipe.meta.recipeName}`;
+  if (recipeBook.has(name)) {
+    console.warn(`Recipe name conflict on "${name}". Set unique author.`);
+    return;
+  }
+
+  let dest = new Map();
+  for (const [key, randomInfo] of Object.entries(newRecipe.parameters)) {
+    dest.set(key, new Randomizer(key, parameters[key], randomInfo));
+  }
+  recipeBook.set(name, new FullRandomizer(dest));
+
+  return name;
+}
+
+/**
+Return value is a Map with following structure. Note that the value of `parameter*` may be
+a nested Array.
+
+```
+randomizationRecipes = {
+  "author0 - recipe0": {
+    parameter0: randomizer0,
+    parameter1: randomizer1,
+    parameter2: [randomizer2_0, randomizer2_1, ...],
+    parameter3: [
+      [randomizer3_0_0, randomizer3_0_1, ...],
+      [randomizer3_1_0, randomizer3_1_1, ...], ...
+    ], ...
+  }, ...
+};
+```
+*/
+export async function loadJson(parameters, recipeJsonPaths) {
+  const fetchRecipe = async (recipeJsonPaths) => {
+    let container = [];
+    for (let idx = 0; idx < recipeJsonPaths.length; ++idx) {
+      await fetch(recipeJsonPaths[idx])
+        .then(response => response.json())
+        .then(json => { container.push(json); })
+        .catch(console.error);
+    }
+    return container;
+  };
+
+  let rawRecipes = await fetchRecipe(recipeJsonPaths);
+  let recipeBook = new Map();
+  for (const src of rawRecipes) addRecipe(parameters, recipeBook, src);
+
+  return new Map([...recipeBook.entries()].sort()); // Sort by key.
+}
+
+// `FullRandomizer` and `Randomizer` could be function, but written as a class for easier
+// debugging.
+class FullRandomizer {
+  constructor(recipe) { this.recipe = recipe; }
+
+  randomize(parameters) {
+    for (let [key, randomizer] of this.recipe) randomizer.apply(parameters[key]);
+  }
+}
+
+class Randomizer {
+  // `key` isn't necessary but convenient to debug recursion.
+  constructor(key, parameter, randomInfo) {
+    this.key = key;
+    this.apply = this.#getRandomFunc(key, parameter, randomInfo);
+  }
+
+  #getRandomFunc(key, parameter, randomInfo) {
+    if (Array.isArray(parameter) && !Array.isArray(randomInfo)) {
+      console.warn(`Recipe doesn't specify array for array parameter "${key}".`);
+    } else if (!Array.isArray(parameter) && Array.isArray(randomInfo)) {
+      console.warn(`Recipe specifies array for non-array parameter "${key}".`);
+    }
+
+    if (Array.isArray(parameter) && Array.isArray(randomInfo)) {
+      if (parameter.length !== randomInfo.length) {
+        console.warn(`Array length mismatch on "${key}".`);
+      }
+      const fn = parameter.map(
+        (prm, idx) => this.#getRandomFunc(`${key}_${idx}`, prm, randomInfo[idx]));
+      return (prm) => {
+        for (let idx = 0; idx < prm.length; ++idx) fn[idx](prm[idx]);
+      };
+    }
+
+    const rnd = randomInfo.random;
+    if (rnd.type === "bypass") return () => {};
+
+    // The rest is a branch for `rnd.type === "display"`.
+    // `d*` for display value, `n*` for normalized value.
+    let dMin = rnd.min;
+    let dMax = rnd.max;
+    if (!Number.isFinite(dMin) || !Number.isFinite(dMax)) return () => {};
+    if (dMin === dMax) return (prm) => { prm.display = dMin; };
+    if (dMin > dMax) [dMin, dMax] = [dMax, dMin];
+
+    const nMin = parameter.displayToNormalized(dMin);
+    const nMax = parameter.displayToNormalized(dMax) - nMin;
+    return (prm) => { prm.normalized = nMin + nMax * Math.random(); };
+  }
 }

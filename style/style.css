@@ -217,6 +217,14 @@ input[type="button"] {
   font-size: inherit;
   font-family: inherit;
   height: 2em;
+
+  border-radius: var(--border-radius-mid);
+  border: solid 1px #888888;
+  background-color: white;
+}
+
+input[type="button"]:hover {
+  filter: invert(5%);
 }
 
 /* randomRecipe */
@@ -236,31 +244,29 @@ select#randomRecipe {
   height: 2em;
 }
 
+select:hover {
+  filter: invert(5%);
+}
+
 /* ToggleButton */
 input[type="button"].toggleState0 {
-  border-radius: var(--border-radius-mid);
-  border: solid 1px #888888;
-
-  color: #606060;
-  background-color: white;
+  border: outset 1px #e0e0e0;
+  box-shadow: 1px 1px 3px #808080;
 }
 
 input[type="button"].toggleState0:hover {
-  box-shadow: 1px 1px 2px #000000;
-  border: outset 2px #e0e0e0;
+  box-shadow: 1px 1px 1px #000000;
 }
 
 input[type="button"].toggleState1 {
   border-radius: var(--border-radius-mid);
-  border: solid 1px #888888;
-
-  color: #000000;
+  border: inset 1px #888888;
   background-color: var(--highlight-color);
 }
 
 input[type="button"].toggleState1:hover {
   box-shadow: inset 1px 1px 2px #000000;
-  border: inset 2px var(--highlight-color);
+  border: inset 1px var(--highlight-color);
 }
 
 input[type="button"].toggleButtonLine {
@@ -449,4 +455,110 @@ input.barbox {
   margin: var(--margin);
   width: fit-content;
   display: inline-block;
+}
+
+/* RecipeExportDialog */
+dialog.recipeExport {
+  padding: calc(3 * var(--margin));
+  font-size: 1rem;
+}
+
+dialog.recipeExport>h2 {
+  margin-top: var(--margin);
+}
+
+div.dialogTextInputLine {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  width: calc(2/3 * var(--control-width));
+  margin: calc(2 * var(--margin));
+}
+
+div.dialogTextInputLine:hover {
+  box-shadow: 1px 1px 4px #000000;
+}
+
+div.dialogTextInputLine>label {
+  flex-basis: 33%;
+}
+
+div.dialogTextInputLine>input[type="text"] {
+  flex-basis: 67%;
+  box-sizing: border-box;
+  padding: var(--margin);
+  font-size: inherit;
+}
+
+div.dialogConfirmButtonLine {
+  display: flex;
+  align-items: center;
+  margin: calc(3 * var(--margin)) calc(2 * var(--margin));
+}
+
+div.dialogConfirmButtonLine>input[type="button"] {
+  flex-grow: 3;
+  vertical-align: middle;
+  height: 2em;
+}
+
+div.dialogConfirmCenterPad {
+  flex-grow: 1;
+}
+
+div.dialogDescription {
+  margin: calc(2 * var(--margin));
+}
+
+/* RecipeImportDialog */
+dialog.recipeImport {
+  width: 66%;
+  padding: calc(3 * var(--margin));
+  font-size: 1rem;
+}
+
+dialog.recipeImport>h2 {
+  margin-top: var(--margin);
+}
+
+dialog.recipeImport>div.RecipeImportInputContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: calc(2 * var(--margin));
+  margin-bottom: 0;
+}
+
+div.RecipeImportInputContainer>input[type="file"] {
+  font-size: inherit;
+  box-sizing: border-box;
+  padding: var(--margin);
+}
+
+input[type="file"]:hover {
+  box-shadow: 2px 2px 8px #000000;
+  background-color: var(--highlight-color);
+}
+
+div#RecipeImportDragAndDropArea {
+  max-width: 100%;
+  height: calc(var(--control-width) / 2);
+  box-sizing: border-box;
+  border: inset 8px #000000;
+  transition: all 0.08s ease-out;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+}
+
+div#RecipeImportDragAndDropArea>span {
+  color: #808080;
+  font-size: 4rem;
+}
+
+div#RecipeImportDragAndDropArea:hover {
+  background-color: var(--highlight-color);
+  box-shadow: inset 8px 8px 16px #000000;
 }

@@ -38,6 +38,7 @@ export function uniformIntDistributionMap(value, low, high) {
   return Math.floor(low + value * (high + 1 - low));
 }
 
+// `value` is in [0, 1).
 export function exponentialMap(value, low, high) {
   const logL = Math.log2(low);
   const logH = Math.log2(high);
@@ -127,4 +128,25 @@ max: ${this.max.value} at frame ${this.max.frame}`;
     ++this.frame;
     return input;
   }
+}
+
+export function getTimeStamp() {
+  const date = new Date();
+
+  const Y = `${date.getFullYear()}`.padStart(4, "0");
+  const m = `${date.getMonth() + 1}`.padStart(2, "0");
+  const d = `${date.getDate()}`.padStart(2, "0");
+  const H = `${date.getHours()}`.padStart(2, "0");
+  const M = `${date.getMinutes()}`.padStart(2, "0");
+  const S = `${date.getSeconds()}`.padStart(2, "0");
+  const milli = `${date.getMilliseconds()}`.padStart(3, "0");
+
+  const localTime = `${Y}-${m}-${d}T${H}${M}${S}.${milli}`;
+
+  const tzOffsetMinute = -date.getTimezoneOffset();
+  if (tzOffsetMinute === 0) return `${localTime}Z`;
+  const tzSign = tzOffsetMinute < 0 ? "-" : "+";
+  const tzHour = `${Math.floor(Math.abs(tzOffsetMinute) / 60)}`.padStart(2, "0");
+  const tzMinute = `${Math.abs(tzOffsetMinute) % 60}`.padStart(2, "0");
+  return `${localTime}${tzSign}${tzHour}${tzMinute}`;
 }

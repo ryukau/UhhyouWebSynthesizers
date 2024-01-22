@@ -1,0 +1,173 @@
+{
+  "meta": {"author": "", "recipeName": "Full", "version": 0},
+  "parameters": {
+    "renderDuration": {
+      "info"  : {"min": 0.01, "max": 100                  },
+      "random": {"min": 0.01, "max": 100, "type": "bypass"}
+    },
+    "fadeIn": {
+      "info"  : {"min": 0, "max": 100                  },
+      "random": {"min": 0, "max": 100, "type": "bypass"}
+    },
+    "fadeOut": {
+      "info"  : {"min": 0, "max": 100                  },
+      "random": {"min": 0, "max": 100, "type": "bypass"}
+    },
+    "decayTo": {
+      "info"  : {"min": -144.49439791871097, "max": 0                  },
+      "random": {"min": -144.49439791871097, "max": 0, "type": "bypass"}
+    },
+    "stereoMerge": {
+      "info"  : {"min": 0, "max": 1                  },
+      "random": {"min": 0, "max": 1, "type": "bypass"}
+    },
+    "overSample": {
+      "info"  : {"min": 0, "max": 7                  },
+      "random": {"min": 0, "max": 7, "type": "bypass"}
+    },
+    "sampleRateScaler": {
+      "info"  : {"min": 0, "max": 5                  },
+      "random": {"min": 0, "max": 5, "type": "bypass"}
+    },
+    "seed": {
+      "info"  : {"min": 0, "max": 9007199254740992                   },
+      "random": {"min": 0, "max": 9007199254740992, "type": "display"}
+    },
+    "overtoneRandomizeType": {
+      "info"  : {"min": 0, "max": 2                   },
+      "random": {"min": 0, "max": 2, "type": "display"}
+    },
+    "nOvertone": {
+      "info"  : {"min": 1, "max": 64                   },
+      "random": {"min": 1, "max": 64, "type": "display"}
+    },
+    "pitchRandomRange": {
+      "info"  : {"min": 1, "max": 5                   },
+      "random": {"min": 1, "max": 5, "type": "display"}
+    },
+    "overtoneAmp": {
+      "info"  : {"min": 1, "max": 100                   },
+      "random": {"min": 1, "max": 100, "type": "display"}
+    },
+    "gainBezier": [
+      {
+        "info"  : {"comment": "x1", "min": 0, "max": 1                   },
+        "random": {                 "min": 0, "max": 1, "type": "display"}
+      },
+      {
+        "info"  : {"comment": "y1", "min": 0, "max": 1                   },
+        "random": {                 "min": 0, "max": 1, "type": "display"}
+      },
+      {
+        "info"  : {"comment": "x2", "min": 0, "max": 1                   },
+        "random": {                 "min": 0, "max": 1, "type": "display"}
+      },
+      {
+        "info"  : {"comment": "y2", "min": 0, "max": 1                   },
+        "random": {                 "min": 0, "max": 1, "type": "display"}
+      }
+    ],
+    "pitchBezier": [
+      {
+        "info"  : {"comment": "x1", "min": 0, "max": 1                   },
+        "random": {                 "min": 0, "max": 1, "type": "display"}
+      },
+      {
+        "info"  : {"comment": "y1", "min": 0, "max": 1                   },
+        "random": {                 "min": 0, "max": 1, "type": "display"}
+      },
+      {
+        "info"  : {"comment": "x2", "min": 0, "max": 1                   },
+        "random": {                 "min": 0, "max": 1, "type": "display"}
+      },
+      {
+        "info"  : {"comment": "y2", "min": 0, "max": 1                   },
+        "random": {                 "min": 0, "max": 1, "type": "display"}
+      }
+    ],
+    "baseFreq": {
+      "info"  : {"min": 2.0439497289109267, "max": 2093.004522404789                   },
+      "random": {"min": 2.0439497289109267, "max": 2093.004522404789, "type": "display"}
+    },
+    "pitchDropBezier": {
+      "info"  : {"min": 0, "max": 100                   },
+      "random": {"min": 0, "max": 100, "type": "display"}
+    },
+    "pitchDropBezierPower": {
+      "info"  : {"min": 0, "max": 127.99999999999999                   },
+      "random": {"min": 0, "max": 127.99999999999999, "type": "display"}
+    },
+    "pitchDropSuperellipse": {
+      "info"  : {"min": 0, "max": 100                   },
+      "random": {"min": 0, "max": 100, "type": "display"}
+    },
+    "pitchSuperellipseCurve": {
+      "info"  : {"min": 0.1, "max": 1                   },
+      "random": {"min": 0.1, "max": 1, "type": "display"}
+    },
+    "pitchSuperellipseDuration": {
+      "info"  : {"min": 0, "max": 10                   },
+      "random": {"min": 0, "max": 10, "type": "display"}
+    },
+    "modDecayDuration": {
+      "info"  : {"min": 0, "max": 10                   },
+      "random": {"min": 0, "max": 10, "type": "display"}
+    },
+    "modCurve": {
+      "info"  : {"min": 0.1, "max": 1                   },
+      "random": {"min": 0.1, "max": 1, "type": "display"}
+    },
+    "mod1PitchRatio": {
+      "info"  : {"min": 0, "max": 32                   },
+      "random": {"min": 0, "max": 32, "type": "display"}
+    },
+    "mod2PitchRatio": {
+      "info"  : {"min": 0, "max": 32                   },
+      "random": {"min": 0, "max": 32, "type": "display"}
+    },
+    "mod1Amount": {
+      "info"  : {"min": 0, "max": 100                   },
+      "random": {"min": 0, "max": 100, "type": "display"}
+    },
+    "mod2Amount": {
+      "info"  : {"min": 0, "max": 100                   },
+      "random": {"min": 0, "max": 100, "type": "display"}
+    },
+    "limiterAttack": {
+      "info"  : {"min": 0.0001, "max": 0.01                   },
+      "random": {"min": 0.0001, "max": 0.01, "type": "display"}
+    },
+    "limiterSustain": {
+      "info"  : {"min": 0.0001, "max": 0.01                   },
+      "random": {"min": 0.0001, "max": 0.01, "type": "display"}
+    },
+    "limiterRelease": {
+      "info"  : {"min": 0, "max": 1                   },
+      "random": {"min": 0, "max": 1, "type": "display"}
+    },
+    "limiterInputGain": {
+      "info"  : {"min": 0, "max": 20                   },
+      "random": {"min": 0, "max": 20, "type": "display"}
+    },
+    "reverbMix": {
+      "info"  : {"min": -60, "max": 0                   },
+      "random": {"min": -60, "max": 0, "type": "display"}
+    },
+    "matrixSize": {
+      "info"  : {"min": 1, "max": 64                   },
+      "random": {"min": 1, "max": 64, "type": "display"}
+    },
+    "reverbBaseSecond": {
+      "info"  : {"min": 0, "max": 0.1                   },
+      "random": {"min": 0, "max": 0.1, "type": "display"}
+    },
+    "reverbLowpassHz": {
+      "info"  : {"min": 99.99999999999999, "max": 48000.000000000015                   },
+      "random": {"min": 99.99999999999999, "max": 48000.000000000015, "type": "display"}
+    },
+    "feedback": {
+      "info"  : {"min": 0, "max": 1                   },
+      "random": {"min": 0, "max": 1, "type": "display"}
+    }
+  }
+}

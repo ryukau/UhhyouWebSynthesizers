@@ -1,6 +1,19 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+export function option(parent, label, id, className) {
+  console.assert(typeof label === "string", "label must be string.", new Error());
+
+  if (typeof id === "string") element.id = id;
+  if (typeof className === "string") element.className = className;
+
+  let option = document.createElement("option");
+  option.textContent = label;
+  option.value = label;
+  parent.appendChild(option);
+  return option;
+}
+
 export function select(parent, label, id, className, items, defaultValue, onChangeFunc) {
   let select = document.createElement("select");
   select.ariaLabel = label;
@@ -9,14 +22,7 @@ export function select(parent, label, id, className, items, defaultValue, onChan
   select.addEventListener("change", (event) => onChangeFunc(event), false);
   parent.appendChild(select);
 
-  for (const item of items) {
-    console.assert(typeof item === "string", "item must be string.", new Error());
-
-    let option = document.createElement("option");
-    option.textContent = item;
-    option.value = item;
-    select.appendChild(option);
-  }
+  for (const item of items) option(select, item);
 
   select.value = defaultValue;
   console.assert(

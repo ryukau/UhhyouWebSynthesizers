@@ -1,6 +1,8 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+import * as util from "./util.js";
+
 export class Audio {
   #source;
   #gain;
@@ -52,18 +54,18 @@ export class Audio {
   }
 
   save(loop = false, cue = [], upFold = 1) {
-    let buffer = Wave.toBuffer(this.wave, this.wave.channels);
-    let header = Wave.fileHeader(
+    const buffer = Wave.toBuffer(this.wave, this.wave.channels);
+    const header = Wave.fileHeader(
       upFold * this.audioContext.sampleRate, this.wave.channels, buffer.length, loop,
       cue);
 
-    let blob = new Blob([header, buffer], {type: "application/octet-stream"});
-    let url = window.URL.createObjectURL(blob);
+    const blob = new Blob([header, buffer], {type: "application/octet-stream"});
+    const url = window.URL.createObjectURL(blob);
 
-    let a = document.createElement("a");
+    const a = document.createElement("a");
     a.style = "display: none";
     a.href = url;
-    a.download = document.title + "_" + Date.now() + ".wav";
+    a.download = `${document.title}_${util.getTimeStamp()}.wav`;
     document.body.appendChild(a);
     a.click();
 
