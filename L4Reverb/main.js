@@ -24,28 +24,6 @@ const localRecipeBook = {
   },
 };
 
-function applyLocalRecipe(param, recipe) {
-  for (const key in param) {
-    if (recipe.hasOwnProperty(key)) {
-      recipe[key](param[key]);
-    } else if (Array.isArray(param[key])) {
-      param[key].forEach(e => { e.normalized = Math.random(); });
-    } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing.
-    } else {
-      param[key].normalized = Math.random();
-    }
-  };
-}
-
-function addLocalRecipes(source, target) {
-  let tgt = new Map(target); // Don't mutate original.
-  for (const [key, recipe] of Object.entries(source)) {
-    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
-  }
-  return new Map([...tgt.entries()].sort()); // Sort by key.
-}
-
 function getSampleRateScaler() {
   return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
 }
@@ -111,10 +89,8 @@ const param = {
   l4Feed: createArrayParameters(0, 4, scales.feed),
 };
 
-const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
-  // "recipe/full.json",
-  // "recipe/init.json",
-]));
+const recipeBook
+  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
 
 // Add controls.
 const audio = new wave.Audio(

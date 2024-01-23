@@ -43,6 +43,7 @@ export const palette = {
   overlayHighlight: rgbaStr("#00ff0033"),
   overlayFaint: rgbaStr("#0000000b"),
   waveform: rgbaStr("#303030ff"),
+  inactive: rgbaStr("#b0b0b0ff"),
 };
 
 const controlWidth

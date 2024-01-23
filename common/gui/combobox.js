@@ -1,6 +1,8 @@
 // Copyright 2022 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+import {palette} from "./palette.js";
+
 export function option(parent, label, id, className) {
   console.assert(typeof label === "string", "label must be string.", new Error());
 
@@ -45,6 +47,12 @@ export class ComboBoxLine {
       this.label.className = "inputLine";
       this.label.textContent = label;
       this.div.appendChild(this.label);
+
+      this.label.addEventListener("pointerdown", (event) => {
+        this.param.lockRandomization = !this.param.lockRandomization;
+        this.label.style.color
+          = this.param.lockRandomization ? palette.inactive : "unset";
+      }, false);
     }
 
     this.container = document.createElement("div");

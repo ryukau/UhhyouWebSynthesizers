@@ -30,6 +30,9 @@ export class Parameter {
     this.displayDsp = displayDsp;
     this.comment = comment;
 
+    // Not sure if this is a good idea, because a functionality of Randomizer is leaking.
+    this.lockRandomization = false;
+
     this.defaultDsp = defaultDsp;
     this.defaultUi = this.scale.toUi(defaultDsp);
     this.#raw = defaultDsp;
@@ -74,7 +77,6 @@ export class Parameter {
   normalizedToUi(x) {
     return this.scale.minUi + (this.scale.maxUi - this.scale.minUi) * util.clamp(x, 0, 1);
   }
-
   dspToNormalized(x) {
     if (this.scale.maxDsp === this.scale.minDsp) return this.scale.minDsp;
     return (x - this.scale.minDsp) / (this.scale.maxDsp - this.scale.minDsp);
@@ -83,12 +85,15 @@ export class Parameter {
     return this.scale.minDsp
       + (this.scale.maxDsp - this.scale.minDsp) * util.clamp(x, 0, 1);
   }
-
   displayToNormalized(x) {
     return this.displayDsp ? this.dspToNormalized(x) : this.uiToNormalized(x);
   }
   normalizedToDisplay(x) {
     return this.displayDsp ? this.normalizedToDsp(x) : this.normalizedToUi(x);
+  }
+
+  randomize(randomFunc) {
+    if (!this.lockRandomization) randomFunc(this);
   }
 }
 
@@ -448,7 +453,7 @@ class FullRandomizer {
   constructor(recipe) { this.recipe = recipe; }
 
   randomize(parameters) {
-    for (let [key, randomizer] of this.recipe) randomizer.apply(parameters[key]);
+    for (let [key, randomizer] of this.recipe) parameters[key].randomize(randomizer.fn);
   }
 }
 
@@ -456,7 +461,7 @@ class Randomizer {
   // `key` isn't necessary but convenient to debug recursion.
   constructor(key, parameter, randomInfo) {
     this.key = key;
-    this.apply = this.#getRandomFunc(key, parameter, randomInfo);
+    this.fn = this.#getRandomFunc(key, parameter, randomInfo);
   }
 
   #getRandomFunc(key, parameter, randomInfo) {
@@ -492,4 +497,27 @@ class Randomizer {
     const nMax = parameter.displayToNormalized(dMax) - nMin;
     return (prm) => { prm.normalized = nMin + nMax * Math.random(); };
   }
+}
+
+function applyLocalRecipe(param, recipe) {
+  for (const key in param) {
+    if (recipe.hasOwnProperty(key)) {
+      param[key].randomize(recipe[key]);
+    } else if (Array.isArray(param[key])) {
+      param[key].forEach(
+        item => item.randomize((prm) => { prm.normalized = Math.random(); }));
+    } else if (param[key].scale instanceof MenuItemScale) {
+      // Do nothing if randomization is not specified in `recipe`.
+    } else {
+      param[key].randomize((prm) => prm.normalized = Math.random());
+    }
+  };
+}
+
+export function addLocalRecipes(source, target) {
+  let tgt = new Map(target); // Don't mutate original.
+  for (const [key, recipe] of Object.entries(source)) {
+    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
+  }
+  return new Map([...tgt.entries()].sort()); // Sort by key.
 }

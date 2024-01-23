@@ -40,28 +40,6 @@ const localRecipeBook = {
   },
 };
 
-function applyLocalRecipe(param, recipe) {
-  for (const key in param) {
-    if (recipe.hasOwnProperty(key)) {
-      recipe[key](param[key]);
-    } else if (Array.isArray(param[key])) {
-      param[key].forEach(e => { e.normalized = Math.random(); });
-    } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing.
-    } else {
-      param[key].normalized = Math.random();
-    }
-  };
-}
-
-function addLocalRecipes(source, target) {
-  let tgt = new Map(target); // Don't mutate original.
-  for (const [key, recipe] of Object.entries(source)) {
-    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
-  }
-  return new Map([...tgt.entries()].sort()); // Sort by key.
-}
-
 function render() {
   audio.render(
     parameter.toMessage(param, {
@@ -118,10 +96,8 @@ const param = {
   seed: new parameter.Parameter(0, scales.seed),
 };
 
-const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
-  // "recipe/full.json",
-  // "recipe/init.json",
-]));
+const recipeBook
+  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
 
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);

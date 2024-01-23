@@ -3,6 +3,8 @@
 
 import {clamp} from "../util.js";
 
+import {palette} from "./palette.js";
+
 export class NumberInput {
   constructor(parent, label, parameter, onInputFunc) {
     this.param = parameter;
@@ -45,6 +47,10 @@ export class NumberInput {
     this.number.className = "numberInputNumber";
     this.container.appendChild(this.number);
 
+    this.label.addEventListener("pointerdown", (event) => {
+      this.param.lockRandomization = !this.param.lockRandomization;
+      this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
+    }, false);
     this.range.addEventListener("input", (event) => this.onInputRange(event), false);
     this.number.addEventListener("change", (event) => this.onInputNumber(event), false);
   }
