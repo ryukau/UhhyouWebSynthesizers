@@ -197,7 +197,7 @@ div.canvasMargin:hover {
 }
 
 /* Button. */
-#playControl {
+div.playControl {
   display: inline-block;
   width: 100%;
   box-sizing: border-box;

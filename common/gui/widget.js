@@ -117,7 +117,7 @@ export function playControl(
 ) {
   const pc = {};
 
-  pc.divPlayControl = div(parent, "playControl", undefined);
+  pc.divPlayControl = div(parent, null, "playControl");
 
   const defaultName = " - Default";
   const defaultRandom
@@ -136,10 +136,10 @@ export function playControl(
   pc.togglebuttonQuickSave = new ToggleButton(
     pc.divPlayControl, "QuickSave", undefined, undefined, 0, quickSaveFunc);
 
-  pc.divRecipeControl = div(parent, "playControl", undefined);
-  pc.buttonPush = Button(pc.divPlayControl, "Push", pushRecipeFunc);
-  pc.buttonExport = Button(pc.divPlayControl, "Export", exportRecipeFunc);
-  pc.buttonImport = Button(pc.divPlayControl, "Import", importRecipeFunc);
+  pc.divRecipeControl = div(parent, null, "playControl");
+  pc.buttonPush = Button(pc.divRecipeControl, "Push", pushRecipeFunc);
+  pc.buttonExport = Button(pc.divRecipeControl, "Export", exportRecipeFunc);
+  pc.buttonImport = Button(pc.divRecipeControl, "Import", importRecipeFunc);
 
   return pc;
 }
