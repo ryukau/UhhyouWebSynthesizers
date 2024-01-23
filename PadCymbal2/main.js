@@ -9,33 +9,46 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-function randomize() {
-  for (const key in param) {
-    if (key === "renderDuration") continue;
-    if (key === "matrixSize") continue;
-    if (key === "fadeOut") continue;
-    if (key === "outputDecayTo") continue;
-    if (key === "overSample") continue;
-    if (key === "sampleRateScaler") continue;
-    if (key === "attackSecond") continue;
-    if (key === "stereoRandom") continue;
-    if (key === "padMix") continue;
-    if (key === "lowpassHz") continue;
-    if (key === "lowpassQ") continue;
-    if (key === "highpassHz") continue;
-    if (key === "highpassQ") continue;
+const version = 0;
 
-    if (Array.isArray(param[key])) {
+const localRecipeBook = {
+  "Default": {
+    renderDuration: () => {},
+    matrixSize: () => {},
+    fadeOut: () => {},
+    outputDecayTo: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    attackSecond: () => {},
+    stereoRandom: () => {},
+    padMix: () => {},
+    lowpassHz: () => {},
+    lowpassQ: () => {},
+    highpassHz: () => {},
+    highpassQ: () => {},
+  },
+};
+
+function applyLocalRecipe(param, recipe) {
+  for (const key in param) {
+    if (recipe.hasOwnProperty(key)) {
+      recipe[key](param[key]);
+    } else if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing for now.
+      // Do nothing.
     } else {
       param[key].normalized = Math.random();
     }
-  }
+  };
+}
 
-  render();
-  widget.refresh(ui);
+function addLocalRecipes(source, target) {
+  let tgt = new Map(target); // Don't mutate original.
+  for (const [key, recipe] of Object.entries(source)) {
+    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
+  }
+  return new Map([...tgt.entries()].sort()); // Sort by key.
 }
 
 function getSampleRateScaler() {
@@ -48,7 +61,7 @@ function render() {
       sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
     }),
     "perChannel",
-    togglebuttonQuickSave.state === 1,
+    playControl.togglebuttonQuickSave.state === 1,
   );
 }
 
@@ -116,6 +129,11 @@ const param = {
   highpassQ: new parameter.Parameter(Math.SQRT1_2, scales.filterQ, true),
 };
 
+const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
+  // "recipe/full.json",
+  // "recipe/init.json",
+]));
+
 // Add controls.
 const audio = new wave.Audio(
   2,
@@ -143,20 +161,35 @@ const waveView = [
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
-const divPlayControl = widget.div(divLeft, "playControl", undefined);
-const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
-  (ev) => { randomize(); });
-const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
-buttonRandom.id = "randomRecipe";
-const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay
-  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
-const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(
-  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
-const togglebuttonQuickSave = new widget.ToggleButton(
-  divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
+const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
+  parameter.downloadJson(
+    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+});
+const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
+  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+});
+
+const playControl = widget.playControl(
+  divLeft,
+  (ev) => { audio.play(getSampleRateScaler()); },
+  (ev) => { audio.stop(); },
+  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {},
+  (ev) => {
+    recipeBook.get(playControl.selectRandom.value).randomize(param);
+    render();
+    widget.refresh(ui);
+  },
+  [...recipeBook.keys()],
+  (ev) => {
+    const recipeOptions = {author: "temp", recipeName: util.getTimeStamp()};
+    const currentRecipe = parameter.dumpJsonObject(param, version, recipeOptions);
+    const optionName = parameter.addRecipe(param, recipeBook, currentRecipe);
+    widget.option(playControl.selectRandom, optionName);
+  },
+  (ev) => { recipeExportDialog.open(); },
+  (ev) => { recipeImportDialog.open(); },
+);
 
 const detailRender = widget.details(divLeft, "Render");
 const detailLayer = widget.details(divLeft, "Layer");

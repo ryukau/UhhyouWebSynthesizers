@@ -9,299 +9,202 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-function randomize() {
-  if (selectRandom.value === "Default") {
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") continue;
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "dcHighpassHz") continue;
-      if (key === "toneSlope") continue;
-      if (key === "adaptiveFilterMix") continue;
-      if (key === "limiterEnable") continue;
-      if (key === "limiterThreshold") continue;
-      if (key === "bodyHighpassHz") continue;
-      if (key === "noiseCombRandom") continue;
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else if (selectRandom.value === "Snare1") {
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") continue;
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "dcHighpassHz") continue;
-      if (key === "toneSlope") continue;
-      if (key === "bodyNoiseMix") {
-        const curve = 2;
-        const inv = 1 / curve;
-        param[key].dsp
-          = util.uniformDistributionMap(Math.random(), 1e-2 ** inv, 0.5 ** inv) ** curve;
-        continue;
-      }
-      if (key === "adaptiveFilterMix") continue;
-      if (key === "limiterEnable") continue;
-      if (key === "limiterThreshold") continue;
-      if (key === "bodyAttackSeconds") {
-        param[key].dsp = util.exponentialMap(Math.random(), 1e-5, 1e-3);
-        continue;
-      }
-      if (key === "bodyEnvelopeCurve") {
-        param[key].dsp = util.exponentialMap(Math.random(), 8, 50);
-        continue;
-      }
-      // if (key === "bodyPitchDecaySeconds") continue;
-      // if (key === "bodyAM") continue;
-      if (key === "bodyNoise") {
-        param[key].dsp = util.exponentialMap(Math.random(), 1e-2, 3);
-        continue;
-      }
-      if (key === "bodyPitchBaseHz") {
-        param[key].dsp = util.exponentialMap(Math.random(), 10, 40);
-        continue;
-      }
-      if (key === "bodyPitchModHz") {
-        param[key].dsp = 100 * util.uniformDistributionMap(Math.random(), 0, 1) ** 2;
-        continue;
-      }
-      if (key === "bodyLowpassHz") {
-        param[key].dsp
-          = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp);
-        continue;
-      }
-      if (key === "bodyHighpassHz") {
-        param[key].dsp = util.exponentialMap(Math.random(), 60, 120);
-        continue;
-      }
-      if (key === "bodyModOctave") {
-        param[key].dsp
-          = util.uniformDistributionMap(Math.random(), scales.octave.minDsp, 3);
-        continue;
-      }
-      // if (key === "bodyModSaturationGain") continue;
-      if (key === "noiseAttackSeconds") continue;
-      if (key === "noiseEnvelopeCurve") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 1, 20);
-        continue;
-      }
-      if (key === "noiseBandpassHz") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 1000, 16000);
-        continue;
-      }
-      // if (key === "noiseCombMix") continue;
-      // if (key === "noiseCombFeedback") continue;
-      // if (key === "noiseCombHz") continue;
-      // if (key === "noiseCombLowpassHz") continue;
-      // if (key === "noiseCombHighpassHz") continue;
-      if (key === "hightoneGain") continue;
-      // if (key === "hightoneStartHz") continue;
-      // if (key === "hightoneEndHz") continue;
-      // if (key === "hightoneOvertoneRatio") continue;
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else if (selectRandom.value === "Snare2") {
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") continue;
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "dcHighpassHz") continue;
-      if (key === "toneSlope") continue;
-      if (key === "bodyNoiseMix") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.6);
-        continue;
-      }
-      if (key === "adaptiveFilterMix") continue;
-      if (key === "limiterEnable") continue;
-      if (key === "limiterThreshold") continue;
-      if (key === "bodyAttackSeconds") {
-        const value = util.exponentialMap(Math.random(), 1e-5, 1e-3);
-        param[key].dsp = value;
-        param["noiseAttackSeconds"].dsp = value;
-        continue;
-      }
-      if (key === "bodyEnvelopeCurve") {
-        const value = util.exponentialMap(Math.random(), 8, 50);
-        param[key].dsp = value;
-        param["noiseEnvelopeCurve"].dsp = value;
-        continue;
-      }
-      // if (key === "bodyPitchDecaySeconds") continue;
-      // if (key === "bodyAM") continue;
-      if (key === "bodyNoise") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 3, 6.2);
-        continue;
-      }
-      if (key === "bodyPitchBaseHz") {
-        param[key].dsp = util.exponentialMap(Math.random(), 10, 40);
-        continue;
-      }
-      if (key === "bodyPitchModHz") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0, 10);
-        continue;
-      }
-      if (key === "bodyLowpassHz") {
-        param[key].dsp
-          = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp);
-        continue;
-      }
-      if (key === "bodyHighpassHz") {
-        param[key].dsp = util.exponentialMap(Math.random(), 60, 120);
-        continue;
-      }
-      if (key === "bodyModOctave") {
-        param[key].dsp
-          = util.uniformDistributionMap(Math.random(), scales.octave.minDsp, 3);
-        continue;
-      }
-      // if (key === "bodyModSaturationGain") continue;
-      if (key === "noiseAttackSeconds") continue;
-      if (key === "noiseEnvelopeCurve") continue;
-      if (key === "noiseBandpassHz") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 1000, 16000);
-        continue;
-      }
-      // if (key === "noiseCombMix") continue;
-      // if (key === "noiseCombFeedback") continue;
-      // if (key === "noiseCombHz") continue;
-      // if (key === "noiseCombLowpassHz") continue;
-      // if (key === "noiseCombHighpassHz") continue;
-      if (key === "hightoneGain") continue;
-      // if (key === "hightoneStartHz") continue;
-      // if (key === "hightoneEndHz") continue;
-      // if (key === "hightoneOvertoneRatio") continue;
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else if (selectRandom.value === "Full") {
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") continue;
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "dcHighpassHz") continue;
-      // if (key === "toneSlope") continue;
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else if (selectRandom.value === "Body") {
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") continue;
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "dcHighpassHz") continue;
-      if (key === "toneSlope") continue;
-      if (key === "seed") continue;
-      if (key === "bodyNoiseMix") continue;
-      if (key === "adaptiveFilterMix") continue;
-      if (key === "limiterEnable") continue;
-      if (key === "limiterThreshold") continue;
-      if (key === "limiterAttackSeconds") continue;
-      if (key === "noiseAttackSeconds") continue;
-      if (key === "noiseEnvelopeCurve") continue;
-      if (key === "noiseBandpassHz") continue;
-      if (key === "noiseCombMix") continue;
-      if (key === "noiseCombFeedback") continue;
-      if (key === "noiseCombHz") continue;
-      if (key === "noiseCombRandom") continue;
-      if (key === "noiseCombLowpassHz") continue;
-      if (key === "noiseCombHighpassHz") continue;
-      if (key === "hightoneGain") continue;
-      if (key === "hightoneStartHz") continue;
-      if (key === "hightoneEndHz") continue;
-      if (key === "hightoneOvertoneRatio") continue;
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else if (selectRandom.value === "Noise") {
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "decayTo") continue;
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "dcHighpassHz") continue;
-      if (key === "toneSlope") continue;
-      if (key === "bodyNoiseMix") continue;
-      if (key === "seed") continue;
-      if (key === "adaptiveFilterMix") continue;
-      if (key === "limiterEnable") continue;
-      if (key === "limiterThreshold") continue;
-      if (key === "limiterAttackSeconds") continue;
-      if (key === "bodyAttackSeconds") continue;
-      if (key === "bodyEnvelopeCurve") continue;
-      if (key === "bodyPitchDecaySeconds") continue;
-      if (key === "bodyAM") continue;
-      if (key === "bodyOvertoneGain") continue;
-      if (key === "bodyNoise") continue;
-      if (key === "bodyPitchBaseHz") continue;
-      if (key === "bodyPitchModHz") continue;
-      if (key === "bodyLowpassHz") continue;
-      if (key === "bodyHighpassHz") continue;
-      if (key === "bodyModOctave") continue;
-      if (key === "bodyModSaturationGain") continue;
-      if (key === "hightoneGain") continue;
-      if (key === "hightoneStartHz") continue;
-      if (key === "hightoneEndHz") continue;
-      if (key === "hightoneOvertoneRatio") continue;
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        // Do nothing for now.
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  }
+const version = 0;
 
-  render();
-  widget.refresh(ui);
+const localRecipeBook = {
+  "Default": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    dcHighpassHz: () => {},
+    toneSlope: () => {},
+    adaptiveFilterMix: () => {},
+    limiterEnable: () => {},
+    limiterThreshold: () => {},
+    bodyHighpassHz: () => {},
+    noiseCombRandom: () => {},
+  },
+  "Snare1": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    dcHighpassHz: () => {},
+    toneSlope: () => {},
+    bodyNoiseMix: (prm) => {
+      const curve = 2;
+      const inv = 1 / curve;
+      prm.dsp
+        = util.uniformDistributionMap(Math.random(), 1e-2 ** inv, 0.5 ** inv) ** curve;
+    },
+    adaptiveFilterMix: () => {},
+    limiterEnable: () => {},
+    limiterThreshold: () => {},
+    bodyAttackSeconds:
+      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-5, 1e-3); },
+    bodyEnvelopeCurve: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 8, 50); },
+    bodyNoise: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-2, 3); },
+    bodyPitchBaseHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 40); },
+    bodyPitchModHz:
+      (prm) => { prm.dsp = 100 * util.uniformDistributionMap(Math.random(), 0, 1) ** 2; },
+    bodyLowpassHz: (prm) => {
+      prm.dsp = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp);
+    },
+    bodyHighpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 60, 120); },
+    bodyModOctave: (prm) => {
+      prm.dsp = util.uniformDistributionMap(Math.random(), scales.octave.minDsp, 3);
+    },
+    noiseAttackSeconds: () => {},
+    noiseEnvelopeCurve:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 1, 20); },
+    noiseBandpassHz:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 1000, 16000); },
+    hightoneGain: (prm) => { prm.dsp = util.dbToAmp(-40); },
+  },
+  "Snare2": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    dcHighpassHz: () => {},
+    toneSlope: () => {},
+    bodyNoiseMix:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.6); },
+    adaptiveFilterMix: () => {},
+    limiterEnable: () => {},
+    limiterThreshold: () => {},
+    bodyAttackSeconds: (prm) => {
+      const value = util.exponentialMap(Math.random(), 1e-5, 1e-3);
+      prm.dsp = value;
+      param["noiseAttackSeconds"].dsp = value;
+    },
+    bodyEnvelopeCurve: (prm) => {
+      const value = util.exponentialMap(Math.random(), 8, 50);
+      prm.dsp = value;
+      param["noiseEnvelopeCurve"].dsp = value;
+    },
+    bodyNoise: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 3, 6.2); },
+    bodyPitchBaseHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 40); },
+    bodyPitchModHz:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 10); },
+    bodyLowpassHz: (prm) => {
+      prm.dsp = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp);
+    },
+    bodyHighpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 60, 120); },
+    bodyModOctave: (prm) => {
+      prm.dsp = util.uniformDistributionMap(Math.random(), scales.octave.minDsp, 3);
+    },
+    noiseAttackSeconds: () => {},
+    noiseEnvelopeCurve: () => {},
+    noiseBandpassHz:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 1000, 16000); },
+    hightoneGain: (prm) => { prm.dsp = util.dbToAmp(-40); },
+  },
+  "Full": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    dcHighpassHz: () => {},
+  },
+  "Body": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    dcHighpassHz: () => {},
+    toneSlope: () => {},
+    seed: () => {},
+    bodyNoiseMix: () => {},
+    adaptiveFilterMix: () => {},
+    limiterEnable: () => {},
+    limiterThreshold: () => {},
+    limiterAttackSeconds: () => {},
+    noiseAttackSeconds: () => {},
+    noiseEnvelopeCurve: () => {},
+    noiseBandpassHz: () => {},
+    noiseCombMix: () => {},
+    noiseCombFeedback: () => {},
+    noiseCombHz: () => {},
+    noiseCombRandom: () => {},
+    noiseCombLowpassHz: () => {},
+    noiseCombHighpassHz: () => {},
+    hightoneGain: () => {},
+    hightoneStartHz: () => {},
+    hightoneEndHz: () => {},
+    hightoneOvertoneRatio: () => {},
+  },
+  "Noise": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    dcHighpassHz: () => {},
+    toneSlope: () => {},
+    bodyNoiseMix: () => {},
+    seed: () => {},
+    adaptiveFilterMix: () => {},
+    limiterEnable: () => {},
+    limiterThreshold: () => {},
+    limiterAttackSeconds: () => {},
+    bodyAttackSeconds: () => {},
+    bodyEnvelopeCurve: () => {},
+    bodyPitchDecaySeconds: () => {},
+    bodyAM: () => {},
+    bodyOvertoneGain: () => {},
+    bodyNoise: () => {},
+    bodyPitchBaseHz: () => {},
+    bodyPitchModHz: () => {},
+    bodyLowpassHz: () => {},
+    bodyHighpassHz: () => {},
+    bodyModOctave: () => {},
+    bodyModSaturationGain: () => {},
+    hightoneGain: () => {},
+    hightoneStartHz: () => {},
+    hightoneEndHz: () => {},
+    hightoneOvertoneRatio: () => {},
+  },
+};
+
+function applyLocalRecipe(param, recipe) {
+  for (const key in param) {
+    if (recipe.hasOwnProperty(key)) {
+      recipe[key](param[key]);
+    } else if (Array.isArray(param[key])) {
+      param[key].forEach(e => { e.normalized = Math.random(); });
+    } else if (param[key].scale instanceof parameter.MenuItemScale) {
+      // Do nothing.
+    } else {
+      param[key].normalized = Math.random();
+    }
+  };
+}
+
+function addLocalRecipes(source, target) {
+  let tgt = new Map(target); // Don't mutate original.
+  for (const [key, recipe] of Object.entries(source)) {
+    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
+  }
+  return new Map([...tgt.entries()].sort()); // Sort by key.
 }
 
 function getSampleRateScaler() {
@@ -314,7 +217,7 @@ function render() {
       sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
     }),
     "perChannel",
-    togglebuttonQuickSave.state === 1,
+    playControl.togglebuttonQuickSave.state === 1,
   );
 }
 
@@ -403,6 +306,11 @@ const param = {
   hightoneOvertoneRatio: new parameter.Parameter(270 / 5344, scales.overtoneRatio, true),
 };
 
+const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
+  // "recipe/full.json",
+  // "recipe/init.json",
+]));
+
 // Add controls.
 const audio = new wave.Audio(
   2,
@@ -431,25 +339,35 @@ const waveView = [
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
-const divPlayControl = widget.div(divLeft, "playControl", undefined);
-const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined,
-  ["Default", "Snare1", "Snare2", "Body", "Noise", "Full"], "Default", (ev) => {
-    if (ev.currentTarget.value === "Snare1" || ev.currentTarget.value === "Snare2") {
-      param["hightoneGain"].dsp = util.dbToAmp(-40);
-    }
-    randomize();
-  });
-const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
-buttonRandom.id = "randomRecipe";
-const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay
-  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
-const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(
-  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
-const togglebuttonQuickSave = new widget.ToggleButton(
-  divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
+const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
+  parameter.downloadJson(
+    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+});
+const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
+  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+});
+
+const playControl = widget.playControl(
+  divLeft,
+  (ev) => { audio.play(getSampleRateScaler()); },
+  (ev) => { audio.stop(); },
+  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {},
+  (ev) => {
+    recipeBook.get(playControl.selectRandom.value).randomize(param);
+    render();
+    widget.refresh(ui);
+  },
+  [...recipeBook.keys()],
+  (ev) => {
+    const recipeOptions = {author: "temp", recipeName: util.getTimeStamp()};
+    const currentRecipe = parameter.dumpJsonObject(param, version, recipeOptions);
+    const optionName = parameter.addRecipe(param, recipeBook, currentRecipe);
+    widget.option(playControl.selectRandom, optionName);
+  },
+  (ev) => { recipeExportDialog.open(); },
+  (ev) => { recipeImportDialog.open(); },
+);
 
 const detailRender = widget.details(divLeft, "Render");
 const detailMisc = widget.details(divLeft, "Misc.");

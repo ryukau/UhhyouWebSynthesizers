@@ -15,8 +15,6 @@ import {lerp, uniformDistributionMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import PocketFFT from "../lib/pocketfft/pocketfft.js";
 
-import * as menuitems from "./menuitems.js";
-
 function toAmp(decibel) { return 10 ** (decibel / 40); }
 
 function sosfilt(sos, x) {

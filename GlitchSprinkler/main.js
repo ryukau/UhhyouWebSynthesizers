@@ -10,43 +10,49 @@ import * as wave from "../common/wave.js";
 import * as menuitems from "./menuitems.js";
 import {WaveformXYPad} from "./waveformxypad.js";
 
-function randomize() {
+const version = 0;
+
+const localRecipeBook = {
+  "Default": {
+    renderDurationBeat: () => {},
+    tempoBpm: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    oscOctave: () => {},
+    oscSync: () => {},
+    frequencyHz: () => {},
+    pitchScale: () => {},
+    equalTemperament: () => {},
+    pitchDriftCent: () => {},
+    arpeggioDecayTo: () => {},
+    arpeggioRestChance: () => {},
+    chordChance: () => {},
+  },
+};
+
+function applyLocalRecipe(param, recipe) {
   for (const key in param) {
-    if (key === "renderDurationBeat") continue;
-    if (key === "tempoBpm") continue;
-    if (key === "fadeIn") continue;
-    if (key === "fadeOut") continue;
-    if (key === "decayTo") continue;
-    if (key === "overSample") continue;
-    if (key === "sampleRateScaler") continue;
-    if (key === "oscOctave") continue;
-    if (key === "oscSync") continue;
-    if (key === "frequencyHz") {
-      // param[key].dsp = util.exponentialMap(Math.random(), 40, 4000);
-      continue;
-    }
-    if (key === "pitchScale") {
-      // param[key].normalized = Math.random();
-      continue;
-    }
-    if (key === "equalTemperament") continue;
-    if (key === "pitchDriftCent") continue;
-    if (key === "arpeggioDecayTo") continue;
-    if (key === "arpeggioRestChance") continue;
-    if (key === "chordChance") continue;
-    if (Array.isArray(param[key])) {
+    if (recipe.hasOwnProperty(key)) {
+      recipe[key](param[key]);
+    } else if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing for now.
+      // Do nothing.
     } else {
       param[key].normalized = Math.random();
     }
+  };
+}
+
+function addLocalRecipes(source, target) {
+  let tgt = new Map(target); // Don't mutate original.
+  for (const [key, recipe] of Object.entries(source)) {
+    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
   }
-
-  ui.waveform.randomize();
-
-  render();
-  widget.refresh(ui);
+  return new Map([...tgt.entries()].sort()); // Sort by key.
 }
 
 function getSampleRateScaler() {
@@ -60,7 +66,7 @@ function render() {
       a: ui.waveform.coefficients(),
     }),
     "perChannel",
-    togglebuttonQuickSave.state === 1,
+    playControl.togglebuttonQuickSave.state === 1,
   );
 }
 
@@ -124,6 +130,11 @@ const param = {
   chordMaxOvertone: new parameter.Parameter(32, scales.chordMaxOvertone, false),
 };
 
+const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
+  // "recipe/full.json",
+  // "recipe/init.json",
+]));
+
 // Add controls.
 const audio = new wave.Audio(
   2,
@@ -151,20 +162,36 @@ const waveView = [
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
-const divPlayControl = widget.div(divLeft, "playControl", undefined);
-const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
-  (ev) => { randomize(); });
-const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
-buttonRandom.id = "randomRecipe";
-const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay
-  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
-const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(
-  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
-const togglebuttonQuickSave = new widget.ToggleButton(
-  divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
+const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
+  parameter.downloadJson(
+    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+});
+const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
+  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+});
+
+const playControl = widget.playControl(
+  divLeft,
+  (ev) => { audio.play(getSampleRateScaler()); },
+  (ev) => { audio.stop(); },
+  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {},
+  (ev) => {
+    recipeBook.get(playControl.selectRandom.value).randomize(param);
+    ui.waveform.randomize(); // Specific to this synth.
+    render();
+    widget.refresh(ui);
+  },
+  [...recipeBook.keys()],
+  (ev) => {
+    const recipeOptions = {author: "temp", recipeName: util.getTimeStamp()};
+    const currentRecipe = parameter.dumpJsonObject(param, version, recipeOptions);
+    const optionName = parameter.addRecipe(param, recipeBook, currentRecipe);
+    widget.option(playControl.selectRandom, optionName);
+  },
+  (ev) => { recipeExportDialog.open(); },
+  (ev) => { recipeImportDialog.open(); },
+);
 
 const detailRender = widget.details(divLeft, "Render");
 const detailOsc = widget.details(divLeft, "Oscillator");

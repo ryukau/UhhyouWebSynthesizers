@@ -119,8 +119,9 @@ export function playControl(
 
   pc.divPlayControl = div(parent, "playControl", undefined);
 
+  const defaultName = " - Default";
   const defaultRandom
-    = randomizeRecipes.includes("Default") ? "Default" : randomizeRecipes[0];
+    = randomizeRecipes.includes(defaultName) ? defaultName : randomizeRecipes[0];
   pc.selectRandom = select(
     pc.divPlayControl, "Randomize Recipe", "randomRecipe", undefined, randomizeRecipes,
     defaultRandom, randomizeFunc);
@@ -155,7 +156,7 @@ export class RecipeExportDialog {
     });
     parent.appendChild(this.dialog);
 
-    this.heading = heading(this.dialog, 2, "Export Recipe as JSON", null, null);
+    this.heading = heading(this.dialog, 2, "Export Recipe", null, null);
 
     this.divAuthor = div(this.dialog, null, "dialogTextInputLine");
     this.labelAuthor = createGenericElement("label", this.divAuthor, null, null);

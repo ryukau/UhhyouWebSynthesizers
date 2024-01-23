@@ -1,6 +1,10 @@
 // Copyright 2023 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+/*
+There's a bug that `sampleRateScaler` affects duration and octave.
+*/
+
 import {palette, uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
@@ -11,37 +15,44 @@ import * as menuitems from "./menuitems.js";
 import {constructIntJustScale, justIntonationTable} from "./shared.js"
 import {WaveformXYPad} from "./waveformxypad.js";
 
-function randomize() {
+const version = 0;
+
+const localRecipeBook = {
+  "Default": {
+    octaveStart: () => {},
+    octaveRange: () => {},
+    basePeriod: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    addSpace: () => {},
+    oscSync: () => {},
+    fmDecay: () => {},
+    arpeggioDurationSeconds: () => {},
+    arpeggioDecayTo: () => {},
+    arpeggioNotes: () => {},
+  },
+};
+
+function applyLocalRecipe(param, recipe) {
   for (const key in param) {
-    if (key === "octaveStart") continue;
-    if (key === "octaveRange") continue;
-    if (key === "basePeriod") {
-      // param[key].normalized = Math.random();
-      continue;
-    }
-    if (key === "addSpace") continue;
-    if (key === "oscSync") continue;
-    if (key === "fmDecay") continue;
-    if (key === "arpeggioDurationSeconds") continue;
-    if (key === "arpeggioDecayTo") continue;
-    if (key === "arpeggioNotes") {
-      // param[key].forEach(e => { e.normalized = Math.random(); });
-      // param[key][0].normalized = 1;
-      continue;
-    }
-    if (Array.isArray(param[key])) {
+    if (recipe.hasOwnProperty(key)) {
+      recipe[key](param[key]);
+    } else if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing for now.
+      // Do nothing.
     } else {
       param[key].normalized = Math.random();
     }
+  };
+}
+
+function addLocalRecipes(source, target) {
+  let tgt = new Map(target); // Don't mutate original.
+  for (const [key, recipe] of Object.entries(source)) {
+    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
   }
-
-  ui.waveform.randomize();
-
-  render();
-  widget.refresh(ui);
+  return new Map([...tgt.entries()].sort()); // Sort by key.
 }
 
 function createArrayParameters(defaultDspValues, size, scale) {
@@ -59,7 +70,7 @@ function render() {
       a: ui.waveform.coefficients(),
     }),
     "perChannel",
-    togglebuttonQuickSave.state === 1,
+    playControl.togglebuttonQuickSave.state === 1,
   );
 }
 
@@ -70,6 +81,7 @@ const scales = {
   octaveRange: new parameter.IntScale(1, 12),
   basePeriod: new parameter.MenuItemScale(menuitems.basePeriodItems),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
+  sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
 
   seed: new parameter.IntScale(0, 2 ** 32),
   oscSync: new parameter.LinearScale(0, 1),
@@ -87,6 +99,7 @@ const param = {
   octaveRange: new parameter.Parameter(4, scales.octaveRange, true),
   basePeriod: new parameter.Parameter(0, scales.basePeriod),
   overSample: new parameter.Parameter(0, scales.overSample),
+  sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   addSpace: new parameter.Parameter(1, scales.boolean),
 
   seed: new parameter.Parameter(0, scales.seed, true),
@@ -132,6 +145,15 @@ const param = {
     justIntonationTable.length, scales.boolean),
 };
 
+const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
+  // "recipe/full.json",
+  // "recipe/init.json",
+]));
+
+function getSampleRateScaler() {
+  return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
+}
+
 // Add controls.
 const audio = new wave.Audio(
   2,
@@ -160,36 +182,53 @@ const waveView = [
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
-const divPlayControl = widget.div(divLeft, "playControl", undefined);
-const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
-  (ev) => { randomize(); });
-const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
-buttonRandom.id = "randomRecipe";
-const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-// spanPlayControlFiller.textContent = " ";
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
-const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => {
-  const notes = constructIntJustScale(
-    parseInt(menuitems.basePeriodItems[param.basePeriod.dsp]), param.octaveStart.dsp,
-    param.octaveRange.dsp, param.arpeggioNotes.map(element => element.dsp));
-  const cue = new Array(notes.length);
-  const bytesPerFrame = audio.wave.channels * 4; // 4 bytes for 32 bit float.
-  const bufferLengthByte = bytesPerFrame * audio.wave.frames;
-  const noteDuration = Math.floor(bufferLengthByte / cue.length);
-  const lastFrameByte = bufferLengthByte - bytesPerFrame;
-  for (let idx = 0; idx < cue.length; ++idx) {
-    cue[idx] = {
-      start: idx * noteDuration,
-      end: Math.min((idx + 1) * noteDuration - bytesPerFrame, lastFrameByte),
-    }
-  }
-
-  audio.save(false, cue);
+const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
+  parameter.downloadJson(
+    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
-const togglebuttonQuickSave = new widget.ToggleButton(
-  divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
+const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
+  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+});
+
+const playControl = widget.playControl(
+  divLeft,
+  (ev) => { audio.play(getSampleRateScaler()); },
+  (ev) => { audio.stop(); },
+  (ev) => {
+    const notes = constructIntJustScale(
+      parseInt(menuitems.basePeriodItems[param.basePeriod.dsp]), param.octaveStart.dsp,
+      param.octaveRange.dsp, param.arpeggioNotes.map(element => element.dsp));
+    const cue = new Array(notes.length);
+    const bytesPerFrame = audio.wave.channels * 4; // 4 bytes for 32 bit float.
+    const bufferLengthByte = bytesPerFrame * audio.wave.frames;
+    const noteDuration = Math.floor(bufferLengthByte / cue.length);
+    const lastFrameByte = bufferLengthByte - bytesPerFrame;
+    for (let idx = 0; idx < cue.length; ++idx) {
+      cue[idx] = {
+        start: idx * noteDuration,
+        end: Math.min((idx + 1) * noteDuration - bytesPerFrame, lastFrameByte),
+      }
+    }
+
+    audio.save(false, cue, getSampleRateScaler());
+  },
+  (ev) => {},
+  (ev) => {
+    recipeBook.get(playControl.selectRandom.value).randomize(param);
+    ui.waveform.randomize(); // Specific to this synth.
+    render();
+    widget.refresh(ui);
+  },
+  [...recipeBook.keys()],
+  (ev) => {
+    const recipeOptions = {author: "temp", recipeName: util.getTimeStamp()};
+    const currentRecipe = parameter.dumpJsonObject(param, version, recipeOptions);
+    const optionName = parameter.addRecipe(param, recipeBook, currentRecipe);
+    widget.option(playControl.selectRandom, optionName);
+  },
+  (ev) => { recipeExportDialog.open(); },
+  (ev) => { recipeImportDialog.open(); },
+);
 
 const detailRender = widget.details(divLeft, "Render");
 const detailOsc = widget.details(divRightA, "Oscillator");
@@ -205,6 +244,8 @@ const ui = {
     detailRender, "Base Period [sample]", param.basePeriod, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler: new widget.ComboBoxLine(
+    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   addSpace: new widget.ToggleButtonLine(
     detailRender, ["No Space Between Notes", "Add Space Between Notes"], param.addSpace,
     render),

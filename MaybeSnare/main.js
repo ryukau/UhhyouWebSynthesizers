@@ -9,100 +9,100 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-function randomize() {
-  if (selectRandom.value === "SnareDrum") {
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "expDecayTo") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "fdnMix") continue;
-      if (key === "fdnCross") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 0, 20);
-        continue;
-      }
-      if (key === "crossDecayTime") {
-        param[key].dsp
-          = util.dbToAmp(util.uniformDistributionMap(Math.random(), -20, 20));
-        continue;
-      }
-      if (key.includes("MatrixSize")) {
-        param[key].dsp = Math.floor(util.uniformDistributionMap(Math.random(), 8, 32));
-        continue;
-      }
-      if (key.includes("MatrixType")) continue;
-      if (key.includes("DelayInterp")) continue;
-      if (key.includes("IdentityAmount")) {
-        param[key].dsp
-          = util.dbToAmp(util.uniformDistributionMap(Math.random(), -20, 40));
-        continue;
-      }
-      if (key.includes("Frequency")) {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 20, 90);
-        continue;
-      }
-      if (key.includes("Feedback")) {
-        param[key].dsp = 1
-          - util.dbToAmp(util.uniformDistributionMap(
-            Math.random(), util.ampToDB(0.02), util.ampToDB(0.15)));
-        continue;
-      }
-      if (key === "batterLowpassCutoffHz") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 500, 4000);
-        continue;
-      }
-      if (key === "snareLowpassCutoffHz") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 500, 16000);
-        continue;
-      }
-      if (key.includes("LowpassQ")) continue;
-      if (key.includes("HighpassQ")) continue;
-      if (key === "batterHighpassCutoffHz") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 100);
-        continue;
-      }
-      if (key === "snareHighpassCutoffHz") {
-        param[key].dsp = util.uniformDistributionMap(Math.random(), 10, 100);
-        continue;
-      }
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        param[key].normalized = Math.random();
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  } else { // selectRandom.value  === "Default"
-    for (const key in param) {
-      if (key === "renderDuration") continue;
-      if (key === "fadeIn") continue;
-      if (key === "fadeOut") continue;
-      if (key === "expDecayTo") continue;
-      if (key === "overSample") continue;
-      if (key === "sampleRateScaler") continue;
-      if (key === "stereoMerge") continue;
-      if (key === "overSample") continue;
-      if (key === "fdnCross") continue;
-      if (key.includes("MatrixType")) continue;
-      if (key.includes("Frequency")) continue;
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        param[key].normalized = Math.random();
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  }
+const version = 0;
 
-  onBatterMatrixSizeChanged(param.batterMatrixSize.dsp);
-  onSnareMatrixSizeChanged(param.snareMatrixSize.dsp);
-  widget.refresh(ui);
+function randomMatrixSize(prm) {
+  prm.dsp = Math.floor(util.uniformDistributionMap(Math.random(), 8, 32));
+};
+function randomIdentityAmount(prm) {
+  prm.dsp = util.dbToAmp(util.uniformDistributionMap(Math.random(), -20, 40));
+};
+function randomFrequency(prm) {
+  prm.dsp = util.uniformDistributionMap(Math.random(), 20, 90);
+};
+function randomFeedback(prm) {
+  prm.dsp = 1 - util.exponentialMap(Math.random(), 0.02, 0.15);
+};
+function randomHighpassCutoffHz(prm) {
+  prm.dsp = util.uniformDistributionMap(Math.random(), 10, 100);
+};
+
+const localRecipeBook = {
+  "Default": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    expDecayTo: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+
+    fdnMix: () => {},
+    fdnCross: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 20); },
+    crossDecayTime: (prm) => {
+      prm.dsp = util.dbToAmp(util.uniformDistributionMap(Math.random(), -20, 20));
+    },
+
+    batterMatrixSize: (prm) => randomMatrixSize(prm),
+    batterMatrixType: () => {},
+    batterDelayInterp: () => {},
+    batterIdentityAmount: (prm) => randomIdentityAmount(prm),
+    batterFrequency: (prm) => randomFrequency(prm),
+    batterFeedback: (prm) => randomFeedback(prm),
+    batterLowpassCutoffHz:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 500, 4000); },
+    batterLowpassQ: () => {},
+    batterHighpassQ: () => {},
+    batterHighpassCutoffHz: (prm) => randomHighpassCutoffHz(prm),
+
+    snareMatrixSize: (prm) => randomMatrixSize(prm),
+    snareLMatrixType: () => {},
+    snareLDelayInterp: () => {},
+    snareIdentityAmount: (prm) => randomIdentityAmount(prm),
+    snareFrequency: (prm) => randomFrequency(prm),
+    snareFeedback: (prm) => randomFeedback(prm),
+    snareLowpassCutoffHz:
+      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 500, 16000); },
+    snareLowpassQ: () => {},
+    snareHighpassQ: () => {},
+    snareHighpassCutoffHz: (prm) => randomHighpassCutoffHz(prm),
+  },
+  "Full": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    expDecayTo: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    fdnCross: () => {},
+    MatrixType: () => {},
+    Frequency: () => {},
+  },
+};
+
+function applyLocalRecipe(param, recipe) {
+  for (const key in param) {
+    if (recipe.hasOwnProperty(key)) {
+      recipe[key](param[key]);
+    } else if (Array.isArray(param[key])) {
+      param[key].forEach(e => { e.normalized = Math.random(); });
+    } else if (param[key].scale instanceof parameter.MenuItemScale) {
+      // Do nothing.
+    } else {
+      param[key].normalized = Math.random();
+    }
+  };
+}
+
+function addLocalRecipes(source, target) {
+  let tgt = new Map(target); // Don't mutate original.
+  for (const [key, recipe] of Object.entries(source)) {
+    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
+  }
+  return new Map([...tgt.entries()].sort()); // Sort by key.
 }
 
 function getSampleRateScaler() {
@@ -123,7 +123,7 @@ function render() {
       sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
     }),
     "perChannel",
-    togglebuttonQuickSave.state === 1,
+    playControl.togglebuttonQuickSave.state === 1,
   );
 }
 
@@ -228,6 +228,11 @@ const param = {
   snareHighpassQ: createArrayParameters(0.7, scales.filterQ),
 };
 
+const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
+  // "recipe/full.json",
+  // "recipe/init.json",
+]));
+
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
@@ -256,20 +261,36 @@ for (let i = 0; i < waveView.length; ++i) waveView[i].set(audio.wave.data[i]);
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
-const divPlayControl = widget.div(divLeft, "playControl", undefined);
-const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default", "SnareDrum"],
-  "SnareDrum", (ev) => { randomize(); });
-const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
-buttonRandom.id = "randomRecipe";
-const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-const buttonPlay
-  = widget.Button(divPlayControl, "Play", (ev) => { audio.play(getSampleRateScaler()); });
-const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(
-  divPlayControl, "Save", (ev) => { audio.save(false, [], getSampleRateScaler()); });
-const togglebuttonQuickSave = new widget.ToggleButton(
-  divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
+const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
+  parameter.downloadJson(
+    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+});
+const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
+  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+});
+
+const playControl = widget.playControl(
+  divLeft,
+  (ev) => { audio.play(getSampleRateScaler()); },
+  (ev) => { audio.stop(); },
+  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {},
+  (ev) => {
+    recipeBook.get(playControl.selectRandom.value).randomize(param);
+    onBatterMatrixSizeChanged(param.batterMatrixSize.defaultDsp);
+    onSnareMatrixSizeChanged(param.snareMatrixSize.defaultDsp);
+    widget.refresh(ui);
+  },
+  [...recipeBook.keys()],
+  (ev) => {
+    const recipeOptions = {author: "temp", recipeName: util.getTimeStamp()};
+    const currentRecipe = parameter.dumpJsonObject(param, version, recipeOptions);
+    const optionName = parameter.addRecipe(param, recipeBook, currentRecipe);
+    widget.option(playControl.selectRandom, optionName);
+  },
+  (ev) => { recipeExportDialog.open(); },
+  (ev) => { recipeImportDialog.open(); },
+);
 
 const createDetailInBlock = (name) => {
   const div = widget.div(divMain, undefined, "controlBlock");

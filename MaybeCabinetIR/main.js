@@ -4,73 +4,62 @@
 import {uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
-import {
-  ampToDB,
-  dbToAmp,
-  exponentialMap,
-  uniformDistributionMap
-} from "../common/util.js";
+import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
 import {EqualizerXYPad} from "./equalizerxypad.js";
-import * as menuitems from "./menuitems.js";
+
+const version = 0;
 
 function randomEq(prm, lowHz, highHz, lowQ, highQ, lowDB, highDB) {
   const cutoffHz = prm[0];
-  cutoffHz.dsp = exponentialMap(Math.random(), lowHz, highHz);
-  console.log(cutoffHz);
+  cutoffHz.dsp = util.exponentialMap(Math.random(), lowHz, highHz);
 
   const Q = prm[1];
-  Q.dsp = exponentialMap(Math.random(), lowQ, highQ);
+  Q.dsp = util.exponentialMap(Math.random(), lowQ, highQ);
 
   const gain = prm[2];
-  gain.ui = uniformDistributionMap(Math.random(), lowDB, highDB);
+  gain.ui = util.uniformDistributionMap(Math.random(), lowDB, highDB);
 }
 
-function randomize() {
+const localRecipeBook = {
+  "Default": {
+    renderSamples: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    sourceLowpassCutoffHz:
+      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 100, 12000); },
+    sourceLowpassQ: (prm) => {
+      prm.dsp = util.exponentialMap(Math.random(), Math.SQRT2 / 8, Math.SQRT2);
+    },
+    dcHighpass: (prm) => { randomEq(prm, 10, 120, 0.5, 10, 0, 0); },
+    nyquistLowpass: (prm) => { randomEq(prm, 4000, 20000, 0.5, 4, 0, 0); },
+    peak1: (prm) => { randomEq(prm, 80, 200, 0.5, 4, 10, 30); },
+    peak2: (prm) => { randomEq(prm, 300, 1000, 0.1, 100, -60, 10); },
+    peak3: (prm) => { randomEq(prm, 1000, 3000, 0.5, 4, 0, 30); },
+  },
+};
+
+function applyLocalRecipe(param, recipe) {
   for (const key in param) {
-    if (key === "renderSamples") continue;
-    if (key === "fadeIn") continue;
-    if (key === "fadeOut") continue;
-    if (key === "sourceLowpassCutoffHz") {
-      param[key].dsp = exponentialMap(Math.random(), 100, 12000);
-      continue;
-    }
-    if (key === "sourceLowpassQ") {
-      param[key].dsp = exponentialMap(Math.random(), Math.SQRT2 / 8, Math.SQRT2);
-      continue;
-    }
-    if (key.includes("dcHighpass")) {
-      randomEq(param[key], 10, 120, 0.5, 10, 0, 0);
-      continue;
-    }
-    if (key.includes("nyquistLowpass")) {
-      randomEq(param[key], 4000, 20000, 0.5, 4, 0, 0);
-      continue;
-    }
-    if (key.includes("peak1")) {
-      randomEq(param[key], 80, 200, 0.5, 4, 10, 30);
-      continue;
-    }
-    if (key.includes("peak2")) {
-      randomEq(param[key], 300, 1000, 0.1, 100, -60, 10);
-      continue;
-    }
-    if (key.includes("peak3")) {
-      randomEq(param[key], 1000, 3000, 0.5, 4, 0, 30);
-      continue;
-    }
-    if (Array.isArray(param[key])) {
+    if (recipe.hasOwnProperty(key)) {
+      recipe[key](param[key]);
+    } else if (Array.isArray(param[key])) {
       param[key].forEach(e => { e.normalized = Math.random(); });
     } else if (param[key].scale instanceof parameter.MenuItemScale) {
-      // Do nothing for now.
+      // Do nothing.
     } else {
       param[key].normalized = Math.random();
     }
-  }
+  };
+}
 
-  render();
-  widget.refresh(ui);
+function addLocalRecipes(source, target) {
+  let tgt = new Map(target); // Don't mutate original.
+  for (const [key, recipe] of Object.entries(source)) {
+    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
+  }
+  return new Map([...tgt.entries()].sort()); // Sort by key.
 }
 
 function render() {
@@ -79,15 +68,15 @@ function render() {
       sampleRate: audio.audioContext.sampleRate,
     }),
     "link",
-    togglebuttonQuickSave.state === 1,
+    playControl.togglebuttonQuickSave.state === 1,
   );
 }
 
 function createEqulizerParameters(cutoffHz, Q, gainDB) {
   return [
-    new parameter.Parameter(cutoffHz, scales.cutoffHz, true),
-    new parameter.Parameter(Q, scales.Q, true),
-    new parameter.Parameter(dbToAmp(gainDB), scales.gain, false),
+    new parameter.Parameter(cutoffHz, scales.cutoffHz, true, "cutoff-Hz"),
+    new parameter.Parameter(Q, scales.Q, true, "Q"),
+    new parameter.Parameter(util.dbToAmp(gainDB), scales.gain, false, "gain-dB"),
   ];
 }
 
@@ -104,8 +93,8 @@ const scales = {
   renderSamples: new parameter.IntScale(0, 2 ** 16),
   seed: new parameter.IntScale(0, 2 ** 32),
 
-  cutoffHz: new parameter.DecibelScale(ampToDB(10), ampToDB(30000), false),
-  Q: new parameter.DecibelScale(ampToDB(0.01), ampToDB(100), false),
+  cutoffHz: new parameter.DecibelScale(util.ampToDB(10), util.ampToDB(30000), false),
+  Q: new parameter.DecibelScale(util.ampToDB(0.01), util.ampToDB(100), false),
   gain: new parameter.DecibelScale(-60, 60, true),
 };
 
@@ -129,6 +118,11 @@ const param = {
   seed: new parameter.Parameter(0, scales.seed),
 };
 
+const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
+  // "recipe/full.json",
+  // "recipe/init.json",
+]));
+
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
@@ -146,19 +140,35 @@ const waveView = [
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
-const divPlayControl = widget.div(divLeft, "playControl", undefined);
-const selectRandom = widget.select(
-  divPlayControl, "Randomize Recipe", "randomRecipe", undefined, ["Default"], "Default",
-  (ev) => { randomize(); });
-const buttonRandom = widget.Button(divPlayControl, "Random", (ev) => { randomize(); });
-buttonRandom.id = "randomRecipe";
-const spanPlayControlFiller = widget.span(divPlayControl, "playControlFiller", undefined);
-// spanPlayControlFiller.textContent = " ";
-const buttonPlay = widget.Button(divPlayControl, "Play", (ev) => { audio.play(); });
-const buttonStop = widget.Button(divPlayControl, "Stop", (ev) => { audio.stop(); });
-const buttonSave = widget.Button(divPlayControl, "Save", (ev) => { audio.save(); });
-const togglebuttonQuickSave = new widget.ToggleButton(
-  divPlayControl, "QuickSave", undefined, undefined, 0, (ev) => {});
+const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
+  parameter.downloadJson(
+    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+});
+const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
+  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+});
+
+const playControl = widget.playControl(
+  divLeft,
+  (ev) => { audio.play(); },
+  (ev) => { audio.stop(); },
+  (ev) => { audio.save(); },
+  (ev) => {},
+  (ev) => {
+    recipeBook.get(playControl.selectRandom.value).randomize(param);
+    render();
+    widget.refresh(ui);
+  },
+  [...recipeBook.keys()],
+  (ev) => {
+    const recipeOptions = {author: "temp", recipeName: util.getTimeStamp()};
+    const currentRecipe = parameter.dumpJsonObject(param, version, recipeOptions);
+    const optionName = parameter.addRecipe(param, recipeBook, currentRecipe);
+    widget.option(playControl.selectRandom, optionName);
+  },
+  (ev) => { recipeExportDialog.open(); },
+  (ev) => { recipeImportDialog.open(); },
+);
 
 const detailRender = widget.details(divLeft, "Render");
 const detailSource = widget.details(divLeft, "Source");
