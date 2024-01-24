@@ -1,4 +1,6 @@
 # Randomization
+- **2024-01-24: This text is outdated. It will be updated. Don't read this.**
+
 This text provides information about how to add randomization recipes.
 
 It requires to setup development environment. See ["How to Use without Internet"](https://github.com/ryukau/UhhyouWebSynthesizers#how-to-use-without-internet) section in top level `README.md`. You also need a text editor to write some JavaScript.
