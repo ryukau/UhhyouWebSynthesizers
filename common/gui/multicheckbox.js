@@ -21,6 +21,15 @@ export class MultiCheckBoxVertical {
     this.label = document.createElement("label");
     this.label.classList.add("barbox");
     this.label.textContent = label;
+    this.label.addEventListener("pointerdown", (event) => {
+      if (this.param.length <= 0) return;
+
+      // Change the all the states from a single source for consistency.
+      const newState = !this.param[0].lockRandomization;
+      for (let prm of this.param) prm.lockRandomization = newState;
+
+      this.label.style.color = newState ? palette.inactive : "unset";
+    }, false);
     this.divContainer.appendChild(this.label);
 
     this.divCanvasMargin = document.createElement("div");

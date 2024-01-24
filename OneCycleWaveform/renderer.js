@@ -22,7 +22,7 @@ function alignToOdd(x) {
 // Linear regression. `x` and `y` are arrays of the same length.
 function linregress(x, y) {
   if (x.length !== y.length) {
-    console.warn("Size mismatch between x and y.");
+    console.warn("Size mismatch between x and y.", new Error());
     return 0;
   }
 
@@ -268,7 +268,6 @@ onmessage = async (event) => {
   const freqIdx = new Array(spcLength).fill(0).map((_, i) => i);
 
   const wf = prepareWaveformParameter(pv); // WaveForm.
-  console.log(wf);                         // debug
 
   let tables = [];
   for (let i = 0; i < pv.nWaveform; ++i) {

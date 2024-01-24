@@ -516,17 +516,21 @@ class Randomizer {
   }
 }
 
-function applyLocalRecipe(param, recipe) {
-  for (const key in param) {
+function applyLocalRecipe(parameter, recipe) {
+  for (const [key, prm] of Object.entries(parameter)) {
     if (recipe.hasOwnProperty(key)) {
-      param[key].randomize(recipe[key]);
-    } else if (Array.isArray(param[key])) {
-      param[key].forEach(
-        item => item.randomize((prm) => { prm.normalized = Math.random(); }));
-    } else if (param[key].scale instanceof MenuItemScale) {
+      if (Array.isArray(prm)) {
+        // This is a bad hack.
+        if (!prm[0].lockRandomization) recipe[key](prm);
+      } else {
+        prm.randomize(recipe[key]);
+      }
+    } else if (Array.isArray(prm)) {
+      prm.forEach(item => item.randomize((x) => { x.normalized = Math.random(); }));
+    } else if (prm.scale instanceof MenuItemScale) {
       // Do nothing if randomization is not specified in `recipe`.
     } else {
-      param[key].randomize((prm) => prm.normalized = Math.random());
+      prm.randomize((x) => { x.normalized = Math.random(); });
     }
   };
 }
