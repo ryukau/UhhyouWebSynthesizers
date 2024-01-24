@@ -1,6 +1,7 @@
 // Copyright 2024 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+import {palette} from "./palette.js";
 import {ToggleButton} from "./togglebutton.js";
 
 export class CheckBoxLine {
@@ -25,6 +26,11 @@ export class CheckBoxLine {
       this.param.defaultUi,
       (state) => this.onClick(state),
     );
+
+    this.label.addEventListener("pointerdown", (event) => {
+      this.param.lockRandomization = !this.param.lockRandomization;
+      this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
+    }, false);
   }
 
   refresh() {

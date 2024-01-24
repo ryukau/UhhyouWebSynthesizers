@@ -394,6 +394,29 @@ function parameterToObject(prm, fullRange) {
   return obj;
 };
 
+function addRecipeRecursion(recipeName, key, parameter, randomInfo) {
+  if (Array.isArray(parameter) && !Array.isArray(randomInfo)) {
+    console.warn(
+      `Recipe "${recipeName}" doesn't specify array for array parameter "${key}".`,
+      new Error());
+  } else if (!Array.isArray(parameter) && Array.isArray(randomInfo)) {
+    console.warn(
+      `Recipe "${recipeName}" specifies array for non-array parameter "${key}".`,
+      new Error());
+  }
+
+  if (Array.isArray(parameter) && Array.isArray(randomInfo)) {
+    if (parameter.length !== randomInfo.length) {
+      console.warn(`Array length mismatch on "${key}".`);
+    }
+    return parameter.map((item, idx) => {
+      return addRecipeRecursion(recipeName, `${key}_${idx}`, item, randomInfo[idx]);
+    });
+  }
+
+  return new Randomizer(key, parameter, randomInfo);
+}
+
 export function addRecipe(parameters, recipeBook, newRecipe) {
   const name = `${newRecipe.meta.author} - ${newRecipe.meta.recipeName}`;
   if (recipeBook.has(name)) {
@@ -403,7 +426,7 @@ export function addRecipe(parameters, recipeBook, newRecipe) {
 
   let dest = new Map();
   for (const [key, randomInfo] of Object.entries(newRecipe.parameters)) {
-    dest.set(key, new Randomizer(key, parameters[key], randomInfo));
+    dest.set(key, addRecipeRecursion(name, key, parameters[key], randomInfo));
   }
   recipeBook.set(name, new FullRandomizer(dest));
 
@@ -453,7 +476,18 @@ class FullRandomizer {
   constructor(recipe) { this.recipe = recipe; }
 
   randomize(parameters) {
-    for (let [key, randomizer] of this.recipe) parameters[key].randomize(randomizer.fn);
+    const recursion = (prm, rnd) => {
+      if (Array.isArray(prm) ^ Array.isArray(rnd)) {
+        console.warn("Array length mismatch.", prm, rnd, new Error());
+        return;
+      }
+      if (Array.isArray(prm) && Array.isArray(rnd)) {
+        for (let i = 0; i < prm.length; ++i) recursion(prm[i], rnd[i]);
+        return;
+      };
+      prm.randomize(rnd.randomFunc);
+    };
+    for (let [key, randomizer] of this.recipe) recursion(parameters[key], randomizer);
   }
 }
 
@@ -461,27 +495,10 @@ class Randomizer {
   // `key` isn't necessary but convenient to debug recursion.
   constructor(key, parameter, randomInfo) {
     this.key = key;
-    this.fn = this.#getRandomFunc(key, parameter, randomInfo);
+    this.randomFunc = this.#getRandomFunc(parameter, randomInfo);
   }
 
-  #getRandomFunc(key, parameter, randomInfo) {
-    if (Array.isArray(parameter) && !Array.isArray(randomInfo)) {
-      console.warn(`Recipe doesn't specify array for array parameter "${key}".`);
-    } else if (!Array.isArray(parameter) && Array.isArray(randomInfo)) {
-      console.warn(`Recipe specifies array for non-array parameter "${key}".`);
-    }
-
-    if (Array.isArray(parameter) && Array.isArray(randomInfo)) {
-      if (parameter.length !== randomInfo.length) {
-        console.warn(`Array length mismatch on "${key}".`);
-      }
-      const fn = parameter.map(
-        (prm, idx) => this.#getRandomFunc(`${key}_${idx}`, prm, randomInfo[idx]));
-      return (prm) => {
-        for (let idx = 0; idx < prm.length; ++idx) fn[idx](prm[idx]);
-      };
-    }
-
+  #getRandomFunc(parameter, randomInfo) {
     const rnd = randomInfo.random;
     if (rnd.type === "bypass") return () => {};
 
