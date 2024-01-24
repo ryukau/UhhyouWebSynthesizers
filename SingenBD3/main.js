@@ -11,6 +11,11 @@ import * as menuitems from "./menuitems.js";
 
 const version = 0;
 
+const localRecipeJsonPath = [
+  "recipe/full.json",
+  "recipe/init.json",
+];
+
 const localRecipeBook = {
   "Default": {
     renderDuration:
@@ -222,10 +227,8 @@ const param = {
   feedback: new parameter.Parameter(0.98, scales.feedback, true),
 };
 
-const recipeBook = addLocalRecipes(localRecipeBook, await parameter.loadJson(param, [
-  "recipe/full.json",
-  "recipe/init.json",
-]));
+const recipeBook = parameter.addLocalRecipes(
+  localRecipeBook, await parameter.loadJson(param, localRecipeJsonPath));
 
 // Add controls.
 const audio = new wave.Audio(
