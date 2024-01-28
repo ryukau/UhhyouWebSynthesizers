@@ -55,18 +55,19 @@ Normalized value is used for `<input type="range">`, and other slider type contr
 ### Randomization
 This section is about internals of randomiztion. User manual is separately available on `docs/randomization.md`.
 
-A set of randomiztion for all parameters are called "recipe" in here. There are 2 kinds of recipes:
+A set of randomiztion for all parameters is called "recipe" in this repository. There are 2 kinds of recipe:
 
 - JSON recipe.
 - JavaScript recipe.
 
-There are also 2 sources of recipes:
+There are 2 sources of recipe:
 
-- Local recipes, or presets.
-- User recipes.
+- Local recipe, or preset.
+- User recipe.
 
 All the randomiztion codes can be traced from `<Synth>/main.js`. Recipe data processings are written in `common/parameter.js`. Recipe related GUI components are written in `common/gui/widget.js`.
 
+#### Recipe Components in `<Synth>/main.js`
 `widget.playControl` takes lambda functions related to randomization and recipe import and export.
 
 `recipeBook` holds all the recipes including the ones that are imported, and the ones temporarily pushed by Push button.
@@ -76,11 +77,11 @@ All the randomiztion codes can be traced from `<Synth>/main.js`. Recipe data pro
 `recipeExportDialog` and `recipeImportDialog` creates modal dialog for recipe import and recipe export.
 
 #### `FullRandomizer` Data Format
-This is more complicated than I initially thought, so the rationales are documented.
+This is more complicated than I expected, so the rationales are documented.
 
-`FullRandomizer` and `Randomizer` are internal helper classes defined in `common/parameter.js`, and these are responsible to apply JSON recipes to parameters.
+`FullRandomizer` and `Randomizer` are internal helper classes defined in `common/parameter.js`. They are responsible to apply JSON recipes to parameters.
 
-`FullRandomizer.recipe` has following data structure.
+`FullRandomizer.recipe` property has following data structure.
 
 ```javascript
 randomizationRecipes = {
@@ -96,7 +97,7 @@ randomizationRecipes = {
 };
 ```
 
-This structure is used because of parameter lock functionality. I first thought to check if the parameter is locked or not inside of a `Randomizer.randomFunc`, like following:
+This structure is used because of parameter lock functionality. At first, I considered to check if the parameter is locked or not inside of a `Randomizer.randomFunc`, like below:
 
 ```javascript
 (prm) => {
@@ -105,7 +106,15 @@ This structure is used because of parameter lock functionality. I first thought 
 }
 ```
 
-This is error prone, because it's possible to forget the check when adding new randomizations. Instead, I added `Parameter.randomize` method to `Parameter` class in `common/parameter.js`. It looks like below:
+This is error prone, because it's possible to forget the check when adding new randomizations It's better if it can be written like below:
+
+```javascript
+(prm) => {
+  prm.display = someRandom();
+};
+```
+
+To do this, `Parameter.randomize` method is added to `Parameter` class in `common/parameter.js`. It looks like below:
 
 ```javascript
 randomize(randomFunc) {
@@ -119,7 +128,9 @@ and it's called like below:
 prm.randomize(rnd.randomFunc);
 ```
 
-where `prm` is an instance of `Parameter`, and `rnd` is an instance of `Randomizer`. The related part is `recursion` lambda in `FullRandomizer.randomize` method. Recursion is there to handle multi-dimensional arrays.
+where `prm` is an instance of `Parameter`, and `rnd` is an instance of `Randomizer`. `rnd.randomFunc` is the lambda described above: `(prm) => { /* ... */}`.
+
+`recursion` lambda in `FullRandomizer.randomize` method is calling `Parameter.randomize`. Recursion is there to handle multi-dimensional arrays.
 
 There's an issue that local recipe for array of parameters doesn't follow this style. `applyLocalRecipe` function in `common/parameter.js` has following part:
 
