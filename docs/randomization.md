@@ -39,17 +39,19 @@ A JSON recipe can be obtained from Export button. Below is an example of the for
 }
 ```
 
-Below is a list of the properties used for a randomization. Other values are there for convenience.
+To make a new randomization, change the properties listed below.
 
 - `meta.author`
-- `meta.recipeName`
-- `parameters.**.random.min`
-- `parameters.**.random.max`
-- `parameters.**.random.type` (optional, `bypass` or `display`)
+  - `author`
+  - `recipeName`
+- `parameters.**.random`
+  - `min`
+  - `max`
+  - `type` (`bypass` or `display`)
 
 To edit JSON recipes, [FracturedJson](https://j-brooke.github.io/FracturedJson/) might be useful. FracturedJson can vertically aligns properties which makes it easier to skim. [VS Code extension](https://marketplace.visualstudio.com/items?itemName=j-brooke.fracturedjsonvsc) is also available.
 
-The rest of this section is references for each properties.
+The rest of this section is references for all properties in JSON recipe.
 
 ### `meta`
 `meta` section has 3 keys:
@@ -58,7 +60,9 @@ The rest of this section is references for each properties.
 - `meta.recipeName` is the name of a recipe.
 - `meta.version` is the version of a synthesizer.
 
-`author` is used for namespaceing. So it's better to put an unique string here. Consequentially, it's okay to put generic name as a `recipeName`. Those 2 values are intended to make nested menus.
+`author` and `recipeName` are intended to make nested menus. (**TODO**: Change to use HTML `optgroup` tag.)
+
+`author` is used for namespaceing. So it's better to put an unique string. On the other hand, it's okay to use generic names like "Bass Drum" as a `recipeName`.
 
 ### `parameters`
 There are 2 kinds of parameters:
