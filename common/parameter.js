@@ -77,14 +77,10 @@ export class Parameter {
   normalizedToUi(x) {
     return this.scale.minUi + (this.scale.maxUi - this.scale.minUi) * util.clamp(x, 0, 1);
   }
-  dspToNormalized(x) {
-    if (this.scale.maxDsp === this.scale.minDsp) return this.scale.minDsp;
-    return (x - this.scale.minDsp) / (this.scale.maxDsp - this.scale.minDsp);
-  }
-  normalizedToDsp(x) {
-    return this.scale.minDsp
-      + (this.scale.maxDsp - this.scale.minDsp) * util.clamp(x, 0, 1);
-  }
+
+  dspToNormalized(x) { return this.uiToNormalized(this.scale.toUi(x)); }
+  normalizedToDsp(x) { return this.scale.toDsp(this.normalizedToUi(x)); }
+
   displayToNormalized(x) {
     return this.displayDsp ? this.dspToNormalized(x) : this.uiToNormalized(x);
   }
@@ -511,8 +507,8 @@ class Randomizer {
     if (dMin > dMax) [dMin, dMax] = [dMax, dMin];
 
     const nMin = parameter.displayToNormalized(dMin);
-    const nMax = parameter.displayToNormalized(dMax) - nMin;
-    return (prm) => { prm.normalized = nMin + nMax * Math.random(); };
+    const nDiff = parameter.displayToNormalized(dMax) - nMin;
+    return (prm) => { prm.normalized = nMin + nDiff * Math.random(); };
   }
 }
 

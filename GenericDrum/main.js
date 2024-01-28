@@ -11,6 +11,11 @@ import * as menuitems from "./menuitems.js";
 
 const version = 0;
 
+const localRecipeJsonPath = [
+  // "recipe/full.json",
+  "recipe/bassdrum.json",
+];
+
 const localRecipeBook = {
   "Default": {
     renderDuration: () => {},
@@ -164,8 +169,8 @@ const param = {
   secondaryDistance: new parameter.Parameter(0.0008, scales.secondaryDistance, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(
+  localRecipeBook, await parameter.loadJson(param, localRecipeJsonPath));
 
 // Add controls.
 const audio = new wave.Audio(
