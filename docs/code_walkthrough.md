@@ -3,15 +3,6 @@ This document provides an overview of code structure, so to reduce the time to f
 
 For simple things, using search tools is probably faster than reading this text. [`rg`](https://github.com/BurntSushi/ripgrep), [`fd`](https://github.com/sharkdp/fd), and [`fzf`](https://github.com/junegunn/fzf) are example of search tools. I personally use [VS Code's built in search box](https://code.visualstudio.com/docs/editor/codebasics#_search-across-files).
 
-## Aims
-UhhyouWebSynthesizers are mostly about experimentation. So the code aims to produce prototypes as fast as possible.
-
-I'm trying to maximize code reuse on GUI. This is because I know internals and don't need visualization.
-
-On DSP, duplication with subtle difference is allowed for fine tuning. For example, it's better to reimplement feedback comb if components on the feedback path interact with the feedback signal.
-
-Providing escape hatch is important. Most ideas aren't great. So it's better to write quick dirty code to check if it's worth pursuing before committing to write better structured code.
-
 ## Directory Structure
 Directories start with a capital letter are synthesizers. Below is a list of directories that starts with a small letter.
 
@@ -34,6 +25,8 @@ A synthesizer always have following files:
 See `common/wave.js`.
 
 ### Parameter Scaling
+See `Parameter` class in `common/parameter.js`.
+
 A parameter has 3 different representations:
 
 - Raw value.
@@ -53,6 +46,8 @@ Normalized value is used for `<input type="range">`, and other slider type contr
 - If a value is changed from DSP, then a slider receives a raw value, and converts it to a normalized value. (**Note**: UhhyouWebSynthesizers doesn't have this feature, but audio plugins sometimes deal with this case.)
 
 ### Randomization
+`loadJson` function in `common/parameter.js` might be a nice starting point.
+
 This section is about internals of randomiztion. User manual is separately available on `docs/randomization.md`.
 
 A set of randomiztion for all parameters is called "recipe" in this repository. There are 2 kinds of recipe:
@@ -106,7 +101,7 @@ This structure is used because of parameter lock functionality. At first, I cons
 }
 ```
 
-This is error prone, because it's possible to forget the check when adding new randomizations It's better if it can be written like below:
+This is error prone because it's possible to forget the check when adding new randomizations It's better if it can be written like below:
 
 ```javascript
 (prm) => {
@@ -128,7 +123,7 @@ and it's called like below:
 prm.randomize(rnd.randomFunc);
 ```
 
-where `prm` is an instance of `Parameter`, and `rnd` is an instance of `Randomizer`. `rnd.randomFunc` is the lambda described above: `(prm) => { /* ... */}`.
+where `prm` is an instance of `Parameter`, and `rnd` is an instance of `Randomizer`. `rnd.randomFunc` is the lambda described above, that is `(prm) => { /* ... */}`.
 
 `recursion` lambda in `FullRandomizer.randomize` method is calling `Parameter.randomize`. Recursion is there to handle multi-dimensional arrays.
 
@@ -154,3 +149,12 @@ GUI is mostly defined in `index.js`, and GUI widgets are likely comes from `canv
 There are some reserved parameter names as a result of dirty hack. See `Audio.render()` in `common/wave.js`.
 
 `*Delay` classes in `common/dsp/delay.js` takes seconds for constructor, but samples for `setTime` method. It's better to use samples to represent time in DSP.
+
+## Aims
+UhhyouWebSynthesizers are mostly about experimentation. So the code aims to produce prototypes as fast as possible.
+
+I'm trying to maximize code reuse on GUI. This is because I know internals and don't need visualization.
+
+On DSP, duplication with subtle difference is allowed for fine tuning. For example, it's better to reimplement feedback comb if components on the feedback path interact with the feedback signal.
+
+Providing escape hatch is important. Most ideas aren't great. So it's better to write quick dirty code to check if it's worth pursuing before committing to write better structured code.
