@@ -180,9 +180,10 @@ class EnergyStore {
     this.gain = Math.exp(-this.decay);
   }
 
-  process(value) {
+  process(value, preventBlowUp) {
     const absed = Math.abs(value);
     if (absed > Number.EPSILON) this.sum = (this.sum + value) * this.decay;
+    if (preventBlowUp) this.sum = Math.min(0.125, this.sum);
     return this.sum *= this.gain;
   }
 }
@@ -190,8 +191,9 @@ class EnergyStore {
 class EnergyStoreNoise {
   constructor() { this.sum = 0; }
 
-  process(value, rng) {
+  process(value, preventBlowUp, rng) {
     this.sum += Math.abs(value);
+    if (preventBlowUp) this.sum = Math.min(0.25, this.sum);
     const out = uniformDistributionMap(rng.number(), -this.sum, this.sum);
     this.sum -= Math.abs(out);
     return out;
@@ -329,11 +331,13 @@ function process(upRate, pv, dsp) {
   if (dsp.wirePosition !== 0) dsp.isWireEngaged = true;
 
   let wireCollision = lerp(
-    dsp.wireEnergyNoise.process(dsp.wirePosition, dsp.rng),
-    dsp.wireEnergyDecay.process(dsp.wirePosition), pv.wireCollisionTypeMix);
+    dsp.wireEnergyNoise.process(dsp.wirePosition, pv.preventBlowUp, dsp.rng),
+    dsp.wireEnergyDecay.process(dsp.wirePosition, pv.preventBlowUp),
+    pv.wireCollisionTypeMix);
   wireCollision = 8 * Math.tanh(0.125 * wireCollision);
   const wireIn = 0.995 * (sig + wireCollision);
-  const wirePos = dsp.wireAllpass.process(wireIn) * dsp.wireEnvelope.process();
+  let wirePos = dsp.wireAllpass.process(wireIn) * dsp.wireEnvelope.process();
+  if (pv.preventBlowUp) wirePos /= dsp.nWireAllpass;
   dsp.wireVelocity = wirePos - dsp.wirePosition;
   dsp.wirePosition = wirePos;
 

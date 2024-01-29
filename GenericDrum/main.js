@@ -9,11 +9,14 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeJsonPath = [
-  // "recipe/full.json",
+  "recipe/full.json",
   "recipe/bassdrum.json",
+  "recipe/snaredrum.json",
+  "recipe/hihat.json",
+  "recipe/lightpercussion.json",
 ];
 
 const localRecipeBook = {
@@ -124,6 +127,7 @@ const param = {
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   dcHighpassHz: new parameter.Parameter(0, scales.dcHighpassHz, true),
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
+  preventBlowUp: new parameter.Parameter(0, scales.boolean, false),
 
   limiterType: new parameter.Parameter(1, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
@@ -256,6 +260,8 @@ const ui = {
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
   toneSlope:
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  preventBlowUp: new widget.CheckBoxLine(
+    detailRender, "Prevent Blow Up", ["Off", "On"], param.preventBlowUp, render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
   limiterThreshold: new widget.NumberInput(

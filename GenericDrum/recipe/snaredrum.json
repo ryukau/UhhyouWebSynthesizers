@@ -1,0 +1,202 @@
+{
+  "meta": {"author": "", "recipeName": "Snare Drum", "version": 1},
+  "parameters": {
+    "renderDuration": {
+      "info"  : {"min": 0.01, "max": 100                  },
+      "random": {"min": 0.01, "max": 100, "type": "bypass"}
+    },
+    "fadeIn": {
+      "info"  : {"min": 0, "max": 100                  },
+      "random": {"min": 0, "max": 100, "type": "bypass"}
+    },
+    "fadeOut": {
+      "info"  : {"min": 0, "max": 100                  },
+      "random": {"min": 0, "max": 100, "type": "bypass"}
+    },
+    "decayTo": {
+      "info"  : {"min": -144.49439791871097, "max": 0                  },
+      "random": {"min": -144.49439791871097, "max": 0, "type": "bypass"}
+    },
+    "stereoMerge": {
+      "info"  : {"min": 0, "max": 1                  },
+      "random": {"min": 0, "max": 1, "type": "bypass"}
+    },
+    "overSample": {
+      "info"  : {"min": 0, "max": 7                  },
+      "random": {"min": 0, "max": 7, "type": "bypass"}
+    },
+    "sampleRateScaler": {
+      "info"  : {"min": 0, "max": 5                  },
+      "random": {"min": 0, "max": 5, "type": "bypass"}
+    },
+    "dcHighpassHz": {
+      "info"  : {"min": 0, "max": 100                  },
+      "random": {"min": 0, "max": 100, "type": "bypass"}
+    },
+    "toneSlope": {
+      "info"  : {"min": -12, "max": 0                  },
+      "random": {"min": -12, "max": 0, "type": "bypass"}
+    },
+    "preventBlowUp": {
+      "info"  : {"min": 0, "max": 1                   },
+      "random": {"min": 1, "max": 1, "type": "display"}
+    },
+    "limiterType": {
+      "info"  : {"min": 0, "max": 3                  },
+      "random": {"min": 0, "max": 3, "type": "bypass"}
+    },
+    "limiterThreshold": {
+      "info"  : {"min": -60, "max": 40                  },
+      "random": {"min": -60, "max": 40, "type": "bypass"}
+    },
+    "limiterSmoothingSeconds": {
+      "info"  : {"min": 0.0001, "max": 0.1                  },
+      "random": {"min": 0.0001, "max": 0.1, "type": "bypass"}
+    },
+    "seed": {
+      "info"  : {"min": 0, "max": 4294967296                   },
+      "random": {"min": 0, "max": 4294967296, "type": "display"}
+    },
+    "noiseDecaySeconds": {
+      "info"  : {"min": 0.01, "max": 0.50                   },
+      "random": {"min": 0.05, "max": 0.15, "type": "display"}
+    },
+    "noiseLowpassHz": {
+      "info"  : {"min":  2, "max": 10000                   },
+      "random": {"min": 50, "max":   200, "type": "display"}
+    },
+    "allpassMaxTimeHz": {
+      "info"  : {"min":   2, "max": 10000                   },
+      "random": {"min": 500, "max":  4000, "type": "display"}
+    },
+    "impactWireMix": {
+      "info"  : {"min": 0.00, "max": 1                   },
+      "random": {"min": 0.75, "max": 1, "type": "display"}
+    },
+    "membraneWireMix": {
+      "info"  : {"min": 0, "max": 1                   },
+      "random": {"min": 0, "max": 0, "type": "display"}
+    },
+    "wireFrequencyHz": {
+      "info"  : {"min":   1, "max": 1000                   },
+      "random": {"min": 200, "max":  300, "type": "display"}
+    },
+    "wireDecaySeconds": {
+      "info"  : {"min": 0.01, "max": 100                   },
+      "random": {"min": 4.00, "max":  10, "type": "display"}
+    },
+    "wireDistance": {
+      "info"  : {"min": 0, "max": 100.000                   },
+      "random": {"min": 0, "max":   0.015, "type": "display"}
+    },
+    "wireCollisionTypeMix": {
+      "info"  : {"min": 0, "max": 1.0                   },
+      "random": {"min": 0, "max": 0.1, "type": "display"}
+    },
+    "matrixSize": {
+      "info"  : {"min": 1, "max": 32                  },
+      "random": {"min": 1, "max": 32, "type": "bypass"}
+    },
+    "crossFeedbackGain": {
+      "info"  : {"min": -12.0, "max":  3.0                   },
+      "random": {"min":  -2.5, "max": -0.5, "type": "display"}
+    },
+    "crossFeedbackRatio": [
+      {
+        "info"  : {"min": 0, "max": 1                   },
+        "random": {"min": 1, "max": 1, "type": "display"}
+      },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} },
+      { "info": {"min": 0, "max": 1}, "random": {"min": 0, "max": 1, "type": "bypass"} }
+    ],
+    "delayTimeSpread": {
+      "info"  : {"min": 0, "max": 1                   },
+      "random": {"min": 0, "max": 1, "type": "display"}
+    },
+    "bandpassCutSpread": {
+      "info"  : {"min": 0.0, "max": 1                   },
+      "random": {"min": 0.5, "max": 1, "type": "display"}
+    },
+    "pitchRandomCent": {
+      "info"  : {"min": 0, "max": 1200                   },
+      "random": {"min": 0, "max":  500, "type": "display"}
+    },
+    "envelopeAttackSeconds": {
+      "info"  : {"min": 0.001, "max": 100                  },
+      "random": {"min": 0.001, "max": 100, "type": "bypass"}
+    },
+    "envelopeDecaySeconds": {
+      "info"  : {"min": 0.001, "max": 100                  },
+      "random": {"min": 0.001, "max": 100, "type": "bypass"}
+    },
+    "envelopeModAmount": {
+      "info"  : {"min": 0, "max": 10                  },
+      "random": {"min": 0, "max":  0, "type": "bypass"}
+    },
+    "pitchType": {
+      "info"  : {"min": 0, "max": 9                   },
+      "random": {"min": 0, "max": 9, "type": "display"}
+    },
+    "delayTimeHz": {
+      "info"  : {"min":  2, "max": 10000                   },
+      "random": {"min": 50, "max":   150, "type": "display"}
+    },
+    "delayTimeModAmount": {
+      "info"  : {"min":   0, "max": 100000                   },
+      "random": {"min": 200, "max":   1500, "type": "display"}
+    },
+    "bandpassCutRatio": {
+      "info"  : {"min": -8.0, "max": 8                   },
+      "random": {"min":  0.7, "max": 2, "type": "display"}
+    },
+    "bandpassQ": {
+      "info"  : {"min": 0.01, "max": 100.0                   },
+      "random": {"min": 0.10, "max":   0.8, "type": "display"}
+    },
+    "secondaryFdnMix": {
+      "info"  : {"min": 0.00, "max": 1.0                   },
+      "random": {"min": 0.25, "max": 0.5, "type": "display"}
+    },
+    "secondaryPitchOffset": {
+      "info"  : {"min": -8, "max": 8                   },
+      "random": {"min": -1, "max": 1, "type": "display"}
+    },
+    "secondaryQOffset": {
+      "info"  : {"min": -8, "max": 8                   },
+      "random": {"min": -2, "max": 2, "type": "display"}
+    },
+    "secondaryDistance": {
+      "info"  : {"min": 0, "max": 100.0                   },
+      "random": {"min": 0, "max":   0.3, "type": "display"}
+    }
+  }
+}
