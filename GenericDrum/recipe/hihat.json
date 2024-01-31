@@ -269,7 +269,7 @@
     },
     "bandpassCutRatio": {
       "info"  : {"min": -8, "max": 8                   },
-      "random": {"min":  2, "max": 6, "type": "display"}
+      "random": {"min":  4, "max": 7, "type": "display"}
     },
     "bandpassQ": {
       "info"  : {"min": 0.01, "max": 100.00                   },
