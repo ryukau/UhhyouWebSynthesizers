@@ -46,7 +46,7 @@ Normalized value is used for `<input type="range">`, and other slider type contr
 - If a value is changed from DSP, then a slider receives a raw value, and converts it to a normalized value. (**Note**: UhhyouWebSynthesizers doesn't have this feature, but audio plugins sometimes deal with this case.)
 
 ### Randomization
-`loadJson` function in `common/parameter.js` might be a nice starting point.
+`loadJson` function in `common/parameter.js` may be used as a starting point to trace down the related code.
 
 This section is about internals of randomiztion. User manual is separately available on `docs/randomization.md`.
 
@@ -73,6 +73,11 @@ All the randomiztion codes can be traced from `<Synth>/main.js`. Recipe data pro
 
 #### `FullRandomizer` Data Format
 This is more complicated than I expected, so the rationales are documented.
+
+Summary:
+
+- Parameter lock functionality adds a constraint on the data format.
+- JSON recipe and JavaScript recipe can't be unified without losing flexibility. (`eval` can be used, but the risk is not acceptable.)
 
 `FullRandomizer` and `Randomizer` are internal helper classes defined in `common/parameter.js`. They are responsible to apply JSON recipes to parameters.
 

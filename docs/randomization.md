@@ -49,7 +49,7 @@ To make a new randomization, change the properties listed below.
   - `max`
   - `type` (`bypass` or `display`)
 
-To edit JSON recipes, [FracturedJson](https://j-brooke.github.io/FracturedJson/) might be useful. FracturedJson can vertically aligns properties which makes it easier to skim. [VS Code extension](https://marketplace.visualstudio.com/items?itemName=j-brooke.fracturedjsonvsc) is also available.
+To edit JSON recipes, [FracturedJson](https://j-brooke.github.io/FracturedJson/) might be useful. FracturedJson can vertically align properties which makes it easier to skim. [VS Code extension](https://marketplace.visualstudio.com/items?itemName=j-brooke.fracturedjsonvsc) is also available.
 
 The rest of this section is references for all properties in JSON recipe.
 
@@ -98,7 +98,7 @@ A single value parameter has following properties.
 An array of parameters consists from single value parameters. The array may be nested to represent 2D or higher dimensional data.
 
 ## JavaScript Recipe
-JavaScrip recipes for a synthesizer are written in `<Synth>//main.js`. They mostly exists for my convenience, but also allows more flexible randomization compared to JSON recipes.
+JavaScrip recipes for a synthesizer are written in `<Synth>/main.js`. They mostly exists for convenience, but also allows more flexible randomization compared to JSON recipes.
 
 Recipe data is written as `localRecipeBook` object that looks like following.
 
@@ -128,7 +128,7 @@ Second level values are random functions. In above example there are:
 
 Empty functions are used to bypass the randimization. In other words, the value set by user won't be changed even when Random button is clicked.
 
-Functions that takes `prm` is used for randomization. `prm` may be a single value parameter or an array of parameters. For a single value parameter, `prm` is an instance of `Parameter` class defined in `common/parameter.js`. For an array of parameters, `prm` is an `Array` of `Parameter` instances. Note that the array might be nested to represent 2D or higher dimensional data.
+Functions that takes `prm` are used for randomization. `prm` may be a single value parameter or an array of parameters. For a single value parameter, `prm` is an instance of `Parameter` class defined in `common/parameter.js`. For an array of parameters, `prm` is an `Array` of `Parameter` instances. Note that the array might be nested to represent 2D or higher dimensional data.
 
 To see what's comming in as `prm`, `console.log` may be used:
 
@@ -148,14 +148,14 @@ The output of `console.log` will show up in the developer console of your web br
 - `ui`: May be used to display the value for GUI.
 - `normalized`: Only internally used.
 
-These different representation are used for conversions like:
+Those different representations are used for conversions like:
 
 - Amplitude <-> Decibel.
 - Frequency <-> MIDI notes.
 
 They are also used for more parameter specific scalings. For example, feedback of delay is typically using some unusual scaling. For more detailed documentation, see "Parameter Scaling" section in `docs/code_walkthrough.md`.
 
-To get the value range of a parameter, following properties are available:
+To get the value range of a parameter, following properties are available on `Parameter` class:
 
 | Type         | Min            | Max            |
 | ------------ | -------------- | -------------- |
@@ -179,4 +179,4 @@ Another easy one is `prm.normalized`, because the value range is fixed to `[0.0,
 (prm) => { prm.normalized = Math.random(); /* Full range randomization. */ },
 ```
 
-To use `prm.dsp` and `prm.ui`, it's probably better to read `param` in `<Synth>/main.js`, and `*Scale` classed in `common/parameter.js`.
+To use `prm.dsp` and `prm.ui`, it's probably better to read `param` in `<Synth>/main.js`, and `*Scale` classes in `common/parameter.js`.
