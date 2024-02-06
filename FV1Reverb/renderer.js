@@ -56,7 +56,7 @@ onmessage = (event) => {
   const delayType = pv.delayInterpolation === 0 ? IntDelay : Delay;
   for (let idx = 0; idx < dsp.sections.length; ++idx) {
     for (let jdx = 0; jdx < pv.nAllpass; ++jdx) {
-      const serialIndex = idx * pv.nSection + jdx;
+      const serialIndex = idx + jdx * pv.nSection;
       timeInSample[jdx] = pv.timeMultiplier * upRate * pv.delayTime[serialIndex]
         * exponentialMap(dsp.rng.number(), randomDelayMin, 1);
       feed[jdx] = pv.feed[serialIndex]

@@ -63,7 +63,7 @@ const scales = {
   sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
 
   delayInterpolation: new parameter.MenuItemScale(menuitems.delayInterpolationItems),
-  nSection: new parameter.IntScale(1, 16),
+  nSection: new parameter.IntScale(1, 64),
   nAllpass: new parameter.IntScale(1, 16),
   timeMultiplier: new parameter.DecibelScale(-40, 20, false),
   feedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
