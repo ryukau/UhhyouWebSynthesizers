@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
-Lowpass filter coefficient specialized for first stage of 4x oversampling.
+Lowpass filter coefficient specialized for first stage of 4-fold oversampling.
 Sos stands for second order sections.
 
 ```python
@@ -24,7 +24,7 @@ export const sos4FoldFirstStage = [
 ];
 
 /**
-Lowpass filter coefficient specialized for first stage of 8x oversampling.
+Lowpass filter coefficient specialized for first stage of 8-fold oversampling.
 Sos stands for second order sections.
 
 ```python
@@ -48,7 +48,7 @@ export const sos8FoldFirstStage = [
 ];
 
 /**
-Lowpass filter coefficient specialized for first stage of 16x oversampling.
+Lowpass filter coefficient specialized for first stage of 16-fold oversampling.
 Sos stands for second order sections.
 
 ```python
@@ -75,7 +75,7 @@ export const sos16FoldFirstStage = [
 ];
 
 /**
-Lowpass filter coefficient specialized for first stage of 32x oversampling.
+Lowpass filter coefficient specialized for first stage of 32-fold oversampling.
 Sos stands for second order sections.
 
 ```python
@@ -102,7 +102,7 @@ export const sos32FoldFirstStage = [
 ];
 
 /**
-Lowpass filter coefficient specialized for first stage of 64x oversampling.
+Lowpass filter coefficient specialized for first stage of 64-fold oversampling.
 Sos stands for second order sections.
 
 ```python
@@ -129,7 +129,7 @@ export const sos64FoldFirstStage = [
 ];
 
 /**
-Linear phase FIR polyphase lowpass coefficients for 2 fold downsampling.
+Linear phase FIR polyphase lowpass coefficients for 2-fold downsampling.
 
 ```python
 nTaps = 256
@@ -320,7 +320,7 @@ export const firLinearPhase2 = [
 ];
 
 /**
-Linear phase FIR polyphase lowpass coefficients for 8 fold downsampling.
+Linear phase FIR polyphase lowpass coefficients for 4-fold downsampling.
 
 ```python
 nTaps = 256
@@ -687,7 +687,7 @@ export const firLinearPhase4 = [
 ];
 
 /**
-Linear phase FIR polyphase lowpass coefficients for 8 fold downsampling.
+Linear phase FIR polyphase lowpass coefficients for 8-fold downsampling.
 
 ```python
 nTaps = 256
@@ -1406,7 +1406,7 @@ export const firLinearPhase8 = [
 ];
 
 /**
-Linear phase FIR polyphase lowpass coefficients for 8 fold downsampling.
+Linear phase FIR polyphase lowpass coefficients for 16-fold downsampling.
 
 ```python
 nTaps = 256
