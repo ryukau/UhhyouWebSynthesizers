@@ -153,7 +153,7 @@ onmessage = async (event) => {
     for (let i = 0; i < sound.length; ++i) {
       const hb0 = processFunc(pv, dsp, buf[2 * i]);
       const hb1 = processFunc(pv, dsp, buf[2 * i + 1]);
-      sound[i] = halfband.process(hb0, hb1);
+      sound[i] = halfband.processDown(hb0, hb1);
     }
   } else {
     for (let i = 0; i < sound.length; ++i) sound[i] = processFunc(pv, dsp, buf[i]);

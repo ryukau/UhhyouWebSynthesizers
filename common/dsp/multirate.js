@@ -36,7 +36,7 @@ export function downSampleIIR(data, fold) {
 
   if (fold === 2) {
     for (let i = 0; i < data.length; ++i) {
-      data[i] = halfband.process(data[2 * i], data[2 * i + 1]);
+      data[i] = halfband.processDown(data[2 * i], data[2 * i + 1]);
     }
     return data.slice(0, targetDurationSamples);
   }
@@ -60,7 +60,7 @@ export function downSampleIIR(data, fold) {
       }
       frame[j] = decimationLowpass.output();
     }
-    data[i] = halfband.process(frame[0], frame[1]);
+    data[i] = halfband.processDown(frame[0], frame[1]);
   }
   return data.slice(0, targetDurationSamples);
 }
@@ -118,11 +118,20 @@ export class HalfBandIIR {
     for (let ap of this.#ap1) ap.reset();
   }
 
-  // `input0` must be earlier sample.
-  process(input0, input1) {
+  // For down-sampling. `input0` must be earlier sample.
+  processDown(input0, input1) {
     for (let ap of this.#ap0) input0 = ap.process(input0);
     for (let ap of this.#ap1) input1 = ap.process(input1);
     return 0.5 * (input0 + input1);
+  }
+
+  // For up-sampling.
+  processUp(input) {
+    let s1 = input;
+    for (let ap of this.#ap1) s1 = ap.process(s1);
+    let s0 = input;
+    for (let ap of this.#ap0) s0 = ap.process(s0);
+    return [s1, s0];
   }
 }
 

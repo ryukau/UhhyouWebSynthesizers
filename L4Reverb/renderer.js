@@ -52,11 +52,11 @@ onmessage = (event) => {
     let halfband = new multirate.HalfBandIIR();
     const hb0 = l4.process(1);
     const hb1 = l4.process(0);
-    sound[0] = halfband.process(hb0, hb1);
+    sound[0] = halfband.processDown(hb0, hb1);
     for (let i = 1; i < sound.length; ++i) {
       const hb0 = l4.process(0);
       const hb1 = l4.process(0);
-      sound[i] = halfband.process(hb0, hb1);
+      sound[i] = halfband.processDown(hb0, hb1);
     }
   } else {
     sound[0] = 1;

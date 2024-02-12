@@ -39,11 +39,11 @@ onmessage = (event) => {
   if (upFold == 2) {
     const hb0 = fdn.process(1, pv.feedback);
     const hb1 = fdn.process(0, pv.feedback);
-    sound[0] = halfband.process(hb0, hb1);
+    sound[0] = halfband.processDown(hb0, hb1);
     for (let i = 1; i < sound.length; ++i) {
       const hb0 = fdn.process(0, pv.feedback);
       const hb1 = fdn.process(0, pv.feedback);
-      sound[i] = halfband.process(hb0, hb1);
+      sound[i] = halfband.processDown(hb0, hb1);
     }
   } else {
     sound[0] = 1;
