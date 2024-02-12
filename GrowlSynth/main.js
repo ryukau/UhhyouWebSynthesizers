@@ -90,6 +90,7 @@ const scales = {
   randomFrequencyHz: new parameter.LinearScale(0, 2),
 
   impactEnvelopeTime: new parameter.DecibelScale(-60, 40, true),
+  amType: new parameter.MenuItemScale(menuitems.amTypeItems),
   impactEnvelopeAM: new parameter.DecibelScale(-100, 0, true),
   pulseType: new parameter.LinearScale(0, 1),
   pulseBendOct: new parameter.LinearScale(0, 8),
@@ -128,6 +129,7 @@ const param = {
   impulseGain: new parameter.Parameter(0, scales.noiseGain, false),
   impactEnvelopeAttack: new parameter.Parameter(1, scales.impactEnvelopeTime, true),
   impactEnvelopeDecay: new parameter.Parameter(2, scales.impactEnvelopeTime, true),
+  impactAmType: new parameter.Parameter(1, scales.amType),
   impactEnvelopeAM: new parameter.Parameter(0.01, scales.impactEnvelopeAM, true),
   pulseType: new parameter.Parameter(0.5, scales.pulseType, true),
   pulseStartHz: new parameter.Parameter(32, scales.frequencyHz, true),
@@ -245,6 +247,8 @@ const ui = {
     detailSource, "Attack [s]", param.impactEnvelopeAttack, render),
   impactEnvelopeDecay:
     new widget.NumberInput(detailSource, "Decay [s]", param.impactEnvelopeDecay, render),
+  impactAmType:
+    new widget.ComboBoxLine(detailSource, "AM Type", param.impactAmType, render),
   impactEnvelopeAM:
     new widget.NumberInput(detailSource, "AM Amount", param.impactEnvelopeAM, render),
   pulseType: new widget.NumberInput(detailSource, "Pulse Type", param.pulseType, render),

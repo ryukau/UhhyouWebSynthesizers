@@ -5,3 +5,5 @@ import {oversampleIirItems} from "../common/dsp/multirate.js";
 
 export const oversampleItems = oversampleIirItems;
 export const sampleRateScalerItems = ["1", "2", "4", "8", "16"];
+
+export const amTypeItems = ["Direct", "Upper Anti-aliasing", "Full Anti-aliasing"];

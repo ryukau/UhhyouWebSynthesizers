@@ -1,6 +1,10 @@
 // Copyright 2023 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
+import {
+  AntiAliasedAmplitudeModulator,
+  AntiAliasedAmplitudeModulatorFull
+} from "../common/dsp/analyticsignalfilter.js";
 import * as delay from "../common/dsp/delay.js";
 import {DoubleEmaADEnvelope} from "../common/dsp/envelope.js"
 import {downSampleIIR} from "../common/dsp/multirate.js";
@@ -187,7 +191,7 @@ class NoiseFormant {
   }
 }
 
-class Pluck {
+class ModComb {
   constructor(
     sampleRate,
     jitterSeconds,
@@ -251,17 +255,21 @@ function process(upRate, pv, dsp) {
   let sig = dsp.impulse;
   dsp.impulse = 0;
 
-  let envOut = dsp.impactEnvelope.process();
+  const envOut = dsp.impactEnvelope.process();
   const am = Math.cos(2 * Math.PI * (dsp.amPhaseAcc += dsp.amPhaseScale * envOut));
-  let envAm = envOut * am;
+  const envAm = envOut * am;
 
-  let pulsePitchRatio = 2 ** (pv.pulsePitchOct + pv.pulseBendOct * envAm);
-  let s0 = envAm * dsp.blitOsc.process(pulsePitchRatio * pv.pulseStartHz / upRate);
+  const pulsePitchRatio = 2 ** (pv.pulsePitchOct + pv.pulseBendOct * envAm);
+  let s0 = dsp.blitOsc.process(pulsePitchRatio * pv.pulseStartHz / upRate);
+  s0 = dsp.pulseAm.process(s0, envAm);
   s0 = dsp.formant.process(s0, pulsePitchRatio / 16);
-  let freqMod = pv.pulseBendOct * lerp(envAm, envOut, pv.freqModMix);
-  let grainFreq = (pv.pulseStartHz / upRate) * 2 ** (pv.pulsePitchOct + freqMod - 2);
-  let s1 = envAm * envAm * dsp.grainOsc.processAA(grainFreq, dsp.grainOverlap)
-    * dsp.grainOverlap;
+
+  const freqMod = pv.pulseBendOct * lerp(envAm, envOut, pv.freqModMix);
+  const grainFreq = (pv.pulseStartHz / upRate) * 2 ** (pv.pulsePitchOct + freqMod - 2);
+  let s1 = dsp.grainOsc.processAA(grainFreq, dsp.grainOverlap) * dsp.grainOverlap;
+  const sqEnvAm = dsp.squaringAm.process(envAm, envAm);
+  s1 = dsp.grainAm.process(s1, sqEnvAm);
+
   sig += 2 * lerp(s0, s1, pv.pulseType);
 
   let noise = uniformDistributionMap(dsp.rng.number(), -pv.noiseGain, pv.noiseGain);
@@ -270,9 +278,9 @@ function process(upRate, pv, dsp) {
   sig += noise;
 
   let sum = 0;
-  let fbMod = lerp(1, envOut, pv.feedbackMod);
-  for (let idx = 0; idx < dsp.pluck.length; ++idx) {
-    sum += dsp.pluck[idx].process(sig, pv.energyLossThreshold, -envAm, fbMod);
+  const fbMod = lerp(1, envOut, pv.feedbackMod);
+  for (let idx = 0; idx < dsp.modComb.length; ++idx) {
+    sum += dsp.modComb[idx].process(sig, pv.energyLossThreshold, -envAm, fbMod);
   }
   sig = sum;
 
@@ -288,6 +296,21 @@ function generateTable(upRate, pv, rng) {
   table[0] = formant.process(1, 1);
   for (let i = 0; i < table.length; ++i) table[i] = formant.process(0, 1);
   return table;
+}
+
+// This class provides the same interface as `AntiAliasedAmplitudeModulator*` classes.
+class DirectAM {
+  process(carrior, modulator) { return carrior * modulator; }
+}
+
+function getAmplitudeModulator(pv) {
+  const amType = menuitems.amTypeItems[pv.impactAmType];
+  if (amType === "Upper Anti-aliasing") {
+    return new AntiAliasedAmplitudeModulator();
+  } else if (amType === "Full Anti-aliasing") {
+    return new AntiAliasedAmplitudeModulatorFull();
+  }
+  return new DirectAM(); // `amType === "Direct"`.
 }
 
 onmessage = async (event) => {
@@ -306,6 +329,10 @@ onmessage = async (event) => {
     amPhaseAcc: 0,
     amPhaseScale: pv.impactEnvelopeAM * 48000 / upRate,
 
+    pulseAm: getAmplitudeModulator(pv),
+    squaringAm: getAmplitudeModulator(pv),
+    grainAm: getAmplitudeModulator(pv),
+
     blitOsc: new BlitOscillator(0.95),
     formant: new MaybeFormant(rng, upRate, pv.pulseFormantOctave, pv.pulseFormantQRatio),
     grainOsc: new OverlapOscillator(fft, generateTable(upRate, pv, rng)),
@@ -317,7 +344,7 @@ onmessage = async (event) => {
 
     dcHighpass: new SVF(pv.dcHighpassHz / upRate, Math.SQRT1_2),
 
-    pluck: [],
+    modComb: [],
   };
 
   dsp.impactEnvelope.noteOn(
@@ -326,7 +353,7 @@ onmessage = async (event) => {
   const freqRandLow = 2 ** -pv.randomFrequencyHz;
   const freqRandHigh = 2 ** pv.randomFrequencyHz;
   for (let idx = 0; idx < pv.delayCount; ++idx) {
-    dsp.pluck.push(new Pluck(
+    dsp.modComb.push(new ModComb(
       upRate,
       uniformDistributionMap(dsp.rng.number(), 0.0, pv.maxJitterSecond),
       1 / (pv.frequencyHz * exponentialMap(dsp.rng.number(), freqRandLow, freqRandHigh)),
