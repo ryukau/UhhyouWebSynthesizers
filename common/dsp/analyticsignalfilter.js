@@ -245,7 +245,7 @@ export class AntiAliasedAmplitudeModulatorFull {
   #lowpassMod = new SosFilter(this.#sosLowpass);
   #lowpassDown = new SosFilter(this.#sosLowpass);
 
-  #bandpassAm = new SosFilter(this.#sosBandpass); // TODO
+  #bandpassAm = new SosFilter(this.#sosBandpass);
 
   #forwardShifter = new FrequencyShifter();
   #backwardShifter = new FrequencyShifter();
@@ -254,6 +254,9 @@ export class AntiAliasedAmplitudeModulatorFull {
     this.#lowpassCar.reset();
     this.#lowpassMod.reset();
     this.#lowpassDown.reset();
+    this.#bandpassAm.reset();
+    this.#forwardShifter.reset();
+    this.#backwardShifter.reset();
   }
 
   // `carrior` isn't mixed to output.
