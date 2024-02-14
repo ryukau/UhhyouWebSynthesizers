@@ -263,7 +263,6 @@ export class AntiAliasedAmplitudeModulatorFull {
   process(carrior, modulator) {
     const upCar = [carrior, 0, 0];
     const upMod = [modulator, 0, 0];
-
     for (let idx = 0; idx < 3; ++idx) {
       upCar[idx] = this.#lowpassCar.process(upCar[idx]);
       upMod[idx] = this.#lowpassMod.process(upMod[idx]);
@@ -275,7 +274,6 @@ export class AntiAliasedAmplitudeModulatorFull {
 
       this.#lowpassDown.push(result);
     }
-
-    return this.#lowpassDown.output();
+    return 9 * this.#lowpassDown.output();
   }
 }
