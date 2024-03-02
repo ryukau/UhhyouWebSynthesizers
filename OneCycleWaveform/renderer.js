@@ -234,7 +234,7 @@ function prepareWaveformParameter(pv) {
     return sfd ? pv.automationScaling : 0;
   };
   return {
-    waveform: new ParamLin(pv.waveform, 0, 0, 1, rnd, readMenu("Sine-Saw-Pulse")),
+    waveform: new ParamLin(pv.waveform, 0, 0, 3, rnd, readMenu("Sine-Saw-Pulse")),
     powerOf: new ParamExp(pv.powerOf, 1, 0.01, 100, rnd, readMenu("Power")),
     skew: new ParamExp(pv.skew, 1, 0.01, 100, rnd, readMenu("Skew")),
     sineShaper: new ParamLin(pv.sineShaper, 0, 0, 1, rnd, readMenu("Sine Shaper")),
