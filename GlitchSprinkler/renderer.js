@@ -17,7 +17,6 @@ function process(upRate, pv, dsp) {
   if (++dsp.phase >= dsp.cycleSamples) dsp.phase = 0;
 
   if (--dsp.noteSamples < 0 && dsp.phase == 0) setNote(upRate, pv, dsp, true);
-  // if (--dsp.noteSamples < 0) setNote(upRate, pv, dsp, true);
 
   let sig = dsp.wavetable[dsp.phase];
 
@@ -35,7 +34,7 @@ function setNote(upRate, pv, dsp, isRandomizing) {
   const randInt = (low, high) => uniformIntDistributionMap(dsp.rng.number(), low, high);
   const randFloat = (low, high) => uniformDistributionMap(dsp.rng.number(), low, high);
 
-  let frequencyHz = pv.frequencyHz;
+  let frequencyHz = dsp.frequencyHz;
   let oscSync = pv.oscSync;
   let fmIndex = pv.fmIndex;
 
@@ -50,7 +49,7 @@ function setNote(upRate, pv, dsp, isRandomizing) {
   }
 
   dsp.phase = 0;
-  dsp.cycleSamples = Math.round(upRate / frequencyHz);
+  dsp.cycleSamples = Math.max(1, Math.round(upRate / frequencyHz));
   dsp.phaseScale = 1 / (oscSync * dsp.cycleSamples);
   dsp.fmIndex = fmIndex;
 
@@ -192,6 +191,7 @@ onmessage = async (event) => {
   const rng = new PcgRandom(BigInt(pv.seed + pv.channel * 65537));
 
   let dsp = {};
+  dsp.frequencyHz = pv.frequencyHz * 2 ** pv.oscOctave;
   dsp.wavetable = new Array(1024).fill(0);
   dsp.chordPitch = new Array(pv.chordNoteCount).fill(0);
   dsp.chordPitch[0] = 1;
@@ -203,7 +203,7 @@ onmessage = async (event) => {
     return;
   }
   dsp.baseNoteDuration = Math.round(upRate * 15 / pv.tempoBpm);
-  dsp.scaleOctave = constructScale(pv).map(v => v + pv.oscOctave);
+  dsp.scaleOctave = constructScale(pv);
   setNote(upRate, pv, dsp, false);
 
   // Process.
