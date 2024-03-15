@@ -68,7 +68,7 @@ const scales = {
   fmUpdateCycle: new parameter.IntScale(2, 16),
   saturationGain: new parameter.DecibelScale(0, 40, true),
 
-  arpeggioDurationSeconds: new parameter.DecibelScale(-40, 0, false),
+  arpeggioDurationSeconds: new parameter.DecibelScale(-40, 20, false),
   arpeggioDecayTo: new parameter.DecibelScale(-60, 0, false),
 };
 
