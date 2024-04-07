@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {palette} from "../common/gui/palette.js";
-import {clamp, dbToAmp} from "../common/util.js";
+import {clamp} from "../common/util.js";
 
 import {computePolynomial} from "./shared.js"
 
@@ -66,6 +66,7 @@ export class WaveformXYPad {
   #focusedPoint = -1;
   #grabbedPoint = -1;
   #coefficients;
+  #normalizeGain = 1;
 
   constructor(
     parent,
@@ -130,17 +131,25 @@ export class WaveformXYPad {
   }
 
   refresh() { this.draw(); }
-  coefficients() { return structuredClone(this.#coefficients); }
+
+  coefficients() {
+    let co = structuredClone(this.#coefficients);
+    for (let i = 0; i < co.length; ++i) co[i] *= this.#normalizeGain;
+    return co;
+  }
 
   #updateCoefficients() {
     const size = this.#controlPoints.length + 2;
 
-    let b = new Array(size);
-    b[0] = 0;
-    b[size - 1] = 0;
+    let ctrlPoints = structuredClone(this.#controlPoints);
+    ctrlPoints.sort((p, q) => p.x - q.x);
+
+    let b = new Array(size).fill(0);
+    let polyX = new Array(size).fill(0);
+    polyX[size - 1] = 1;
     for (let i = 1; i < size - 1; ++i) {
-      b[i]
-        = (this.#controlPoints[i - 1].y - this.canvas.height * 0.5) / this.canvas.height;
+      b[i] = (ctrlPoints[i - 1].y - this.canvas.height * 0.5) / this.canvas.height;
+      polyX[i] = ctrlPoints[i - 1].x / this.canvas.width;
     }
 
     // A[n] = [x[n]^0, x[n]^1, x[n]^2, x[n]^3, ...].
@@ -150,11 +159,65 @@ export class WaveformXYPad {
     A[0][0] = 1;
     A.at(-1).fill(1);
     for (let i = 1; i < size - 1; ++i) {
-      const polyX = this.#controlPoints[i - 1].x / this.canvas.width;
-      for (let j = 0; j < size; ++j) A[i][j] = polyX ** j;
+      for (let j = 0; j < size; ++j) A[i][j] = polyX[i] ** j;
     }
 
     this.#coefficients = solve(A, b, size);
+    return;
+
+    // From here, it starts finding normalization gain.
+    // `d1` is 1st order derivative of target polynomial.
+    let d1 = new Array(this.#coefficients.length - 1);
+    for (let i = 0; i < d1.length; ++i) d1[i] = (i + 1) * this.#coefficients[i + 1];
+
+    let peaks = [];
+    let getPeakPoint
+      = (x) => { return {x: x, y: Math.abs(computePolynomial(x, this.#coefficients))}; };
+    for (let i = 0; i < polyX.length - 1; ++i) {
+      // Binary search. L: left, M: mid, R: right.
+      let xL = polyX[i];
+      let xR = polyX[i + 1];
+      let xM;
+
+      let iter = 0;
+      do {
+        let yL = computePolynomial(xL, d1);
+        let yR = computePolynomial(xR, d1);
+
+        let signL = Math.sign(yL);
+        let signR = Math.sign(yR);
+        if (signL === signR) {
+          if (yL > yR)
+            peaks.push(getPeakPoint(xL));
+          else
+            peaks.push(getPeakPoint(xR));
+          break;
+        }
+
+        xM = 0.5 * (xR + xL);
+        let yM = computePolynomial(xM, d1);
+
+        let signM = Math.sign(yM);
+        if (signM === 0) {
+          peaks.push(getPeakPoint(xM));
+          break;
+        } else if (signL === signM) {
+          xL = xM;
+        } else if (signR === signM) {
+          xR = xM;
+        }
+      } while (++iter < 53); // 53 is number of significand bits in double float.
+
+      if (iter >= 53) peaks.push(getPeakPoint(xM));
+    }
+
+    // Find max peak.
+    let maxPeak = peaks[0].y;
+    for (let i = 1; i < peaks.length; ++i) {
+      if (maxPeak < peaks[i].y) maxPeak = peaks[i].y;
+    }
+
+    this.#normalizeGain = maxPeak > Number.MIN_VALUE ? 0.5 / maxPeak : 1;
   }
 
   #getMousePosition(event) {
