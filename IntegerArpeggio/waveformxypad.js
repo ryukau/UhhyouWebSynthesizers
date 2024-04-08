@@ -187,10 +187,9 @@ export class WaveformXYPad {
         let signL = Math.sign(yL);
         let signR = Math.sign(yR);
         if (signL === signR) {
-          if (yL > yR)
-            peaks.push(getPeakPoint(xL));
-          else
-            peaks.push(getPeakPoint(xR));
+          pkL = getPeakPoint(xL);
+          pkR = getPeakPoint(xR);
+          peaks.push(pkL.y >= pkR.y ? pkL : pkR);
           break;
         }
 
