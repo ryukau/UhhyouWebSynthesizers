@@ -65,6 +65,15 @@ export function lagrange3Interp(y0, y1, y2, y3, t) {
   return y0 - u * (d0 + (1 - u) / 2 * (d1 + (2 - u) / 3 * d2));
 }
 
+// `a` is an array of polynomial coefficients.
+// `x` in [0, 1].
+export function computePolynomial(x, a) {
+  if (a.length <= 0) return 0;
+  let v = a.at(-1);
+  for (let i = a.length - 2; i >= 0; --i) v = v * x + a[i];
+  return v;
+}
+
 // Frequency ratio of circular membrane modes. Generated using
 // `MaybeSnare/circularmembranemode.py`.
 export const circularModes = [

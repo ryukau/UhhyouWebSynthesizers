@@ -8,7 +8,6 @@ import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
-import {WaveformXYPad} from "./waveformxypad.js";
 
 const version = 0;
 
@@ -41,7 +40,7 @@ function render() {
   audio.render(
     parameter.toMessage(param, {
       sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
-      a: ui.waveform.coefficients(),
+      a: ui.waveform.coefficients(false),
     }),
     "perChannel",
     playControl.togglebuttonQuickSave.state === 1,
@@ -195,7 +194,7 @@ const ui = {
   oscSync: new widget.NumberInput(detailOsc, "Sync.", param.oscSync, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
 
-  waveform: new WaveformXYPad(
+  waveform: new widget.WaveformXYPad(
     detailWaveform, 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, "Waveform", 13,
     render),
 

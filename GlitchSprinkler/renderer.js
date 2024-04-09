@@ -4,14 +4,13 @@
 import {downSampleLinearPhase} from "../common/dsp/multirate.js";
 import {nextPrime} from "../common/dsp/prime.js";
 import {
-  exponentialMap,
+  computePolynomial,
   uniformDistributionMap,
   uniformIntDistributionMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
-import {computePolynomial} from "./polynomial.js"
 
 function process(upRate, pv, dsp) {
   if (++dsp.phase >= dsp.cycleSamples) dsp.phase = 0;

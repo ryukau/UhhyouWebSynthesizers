@@ -12,6 +12,7 @@ export {MultiCheckBoxVertical} from "./multicheckbox.js"
 export {NumberInput} from "./numberinput.js";
 export {TabView} from "./tabview.js"
 export {ToggleButton, ToggleButtonLine} from "./togglebutton.js";
+export {WaveformXYPad} from "./waveformxypad.js"
 export {WaveView} from "./waveview.js";
 
 export function refresh(ui) {

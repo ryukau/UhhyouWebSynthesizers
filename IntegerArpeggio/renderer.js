@@ -1,16 +1,12 @@
 // Copyright 2023 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
-import {downSampleIIR, downSampleLinearPhase} from "../common/dsp/multirate.js";
-import {
-  exponentialMap,
-  uniformDistributionMap,
-  uniformIntDistributionMap
-} from "../common/util.js";
+import {downSampleLinearPhase} from "../common/dsp/multirate.js";
+import {computePolynomial} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
-import {computePolynomial, constructIntJustScale} from "./shared.js"
+import {constructIntJustScale} from "./shared.js"
 
 function process(upRate, pv, dsp) {
   if (++dsp.phase >= dsp.periodSamples) {

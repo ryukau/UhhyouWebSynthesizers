@@ -1,10 +1,9 @@
 // Copyright 2023 Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
-import {palette} from "../common/gui/palette.js";
-import {clamp} from "../common/util.js";
+import {clamp, computePolynomial} from "../util.js";
 
-import {computePolynomial} from "./shared.js"
+import {palette} from "./palette.js";
 
 // Solve `A x = b` for `x`.
 function solve(A, b, size) {
@@ -132,8 +131,10 @@ export class WaveformXYPad {
 
   refresh() { this.draw(); }
 
-  coefficients() {
+  coefficients(normalize = true) {
     let co = structuredClone(this.#coefficients);
+    if (!normalize) return co;
+
     for (let i = 0; i < co.length; ++i) co[i] *= this.#normalizeGain;
     return co;
   }
@@ -163,7 +164,6 @@ export class WaveformXYPad {
     }
 
     this.#coefficients = solve(A, b, size);
-    return;
 
     // From here, it starts finding normalization gain.
     // `d1` is 1st order derivative of target polynomial.
@@ -187,8 +187,8 @@ export class WaveformXYPad {
         let signL = Math.sign(yL);
         let signR = Math.sign(yR);
         if (signL === signR) {
-          pkL = getPeakPoint(xL);
-          pkR = getPeakPoint(xR);
+          const pkL = getPeakPoint(xL);
+          const pkR = getPeakPoint(xR);
           peaks.push(pkL.y >= pkR.y ? pkL : pkR);
           break;
         }
@@ -321,8 +321,8 @@ export class WaveformXYPad {
     this.context.lineWidth = 0.5;
     this.context.strokeStyle = "#f0f0f0";
     this.context.fillStyle = "#808080";
-    // this.context.font
-    //   = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
+    // this.context.font = `${palette.fontWeightBase} ${palette.fontSize}px
+    //   ${palette.fontFamily}`;
     const nGrid = 12;
     for (let idx = 1; idx < nGrid; ++idx) {
       const ratio = idx / nGrid;

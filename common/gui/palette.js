@@ -22,20 +22,22 @@ function rgbaStr(colorCode) {
   return `rgba(${hex(1, 3)}, ${hex(3, 5)}, ${hex(5, 7)}, ${hex(7, 9) / 255})`;
 }
 
+function loadCSSVariable(variableName) {
+  return getComputedStyle(document.body).getPropertyValue(variableName);
+}
+
 export const palette = {
-  fontFamily: getComputedStyle(document.body).getPropertyValue("--font-family"),
-  fontMonospace: getComputedStyle(document.body).getPropertyValue("--monospace"),
-  fontSize: parseFloat(getComputedStyle(document.body).getPropertyValue("font-size")),
-  fontWeightBase:
-    parseFloat(getComputedStyle(document.body).getPropertyValue("--font-weight-base")),
-  fontWeightStrong:
-    parseFloat(getComputedStyle(document.body).getPropertyValue("--font-weight-strong")),
+  fontFamily: loadCSSVariable("--font-family"),
+  fontMonospace: loadCSSVariable("--monospace"),
+  fontSize: parseFloat(loadCSSVariable("font-size")),
+  fontWeightBase: parseFloat(loadCSSVariable("--font-weight-base")),
+  fontWeightStrong: parseFloat(loadCSSVariable("--font-weight-strong")),
 
   foreground: rgbaStr("#000000ff"),
   background: rgbaStr("#ffffffff"),
   boxBackground: rgbaStr("#ffffffff"),
   unfocused: rgbaStr("#ddddddff"),
-  highlightMain: rgbStr(getComputedStyle(document.body).getPropertyValue("--fill-color")),
+  highlightMain: rgbStr(loadCSSVariable("--fill-color")),
   highlightAccent: rgbaStr("#13c136ff"),
   highlightButton: rgbaStr("#fcc04fff"),
   highlightWarning: rgbaStr("#fc8080ff"),
@@ -46,9 +48,7 @@ export const palette = {
   inactive: rgbaStr("#b0b0b0ff"),
 };
 
-const controlWidth
-  = parseFloat(getComputedStyle(document.body).getPropertyValue("--control-width"))
-  * palette.fontSize;
+const controlWidth = parseFloat(loadCSSVariable("--control-width")) * palette.fontSize;
 export const uiSize = {
   controlWidth: controlWidth,
   waveViewWidth: controlWidth * 15 / 32,
