@@ -251,6 +251,11 @@ onmessage = async (event) => {
   dsp.limiter = new Limiter(
     Math.floor(upRate * pv.limiterAttackSeconds), 0, 0, pv.limiterThreshold);
 
+  // Discard latency part.
+  if (pv.limiterEnable === 1) {
+    for (let i = 0; i < dsp.limiter.latency; ++i) process(upRate, pv, dsp);
+  }
+
   // Process.
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
   for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
