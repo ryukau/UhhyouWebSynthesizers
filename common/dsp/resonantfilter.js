@@ -1,4 +1,4 @@
-// Copyright 2023 Takamitsu Endo
+// Copyright Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
 /*
@@ -40,7 +40,9 @@ import {clamp} from "../util.js";
 // Reference:
 // https://ryukau.github.io/filter_notes/resonant_one_pole_filter/resonant_one_pole_filter.html
 export class ResonantEmaLowpass1A1 {
-  constructor() {
+  constructor() { this.reset(); }
+
+  reset() {
     this.v1 = 0;
     this.u1 = 0;
     this.u2 = 0;
@@ -48,7 +50,7 @@ export class ResonantEmaLowpass1A1 {
 
   // `resonance` is in [0, 1].
   // `apScale` is in [0, 1].
-  process(input, cutoffNormalized, apScale, resonance) {
+  process(input, cutoffNormalized, resonance, apScale) {
     const freq = Math.PI * clamp(cutoffNormalized, 0, 0.4999);
 
     const s = 1 - Math.cos(2 * freq);
@@ -68,8 +70,50 @@ export class ResonantEmaLowpass1A1 {
   }
 }
 
+export class CascadedResonantEmaLowpass1A1 {
+  constructor(nCascade) {
+    this.v1 = new Array(nCascade).fill(0);
+    this.u1 = new Array(nCascade).fill(0);
+    this.u2 = new Array(nCascade).fill(0);
+  }
+
+  reset() {
+    this.v1.fill(0);
+    this.u1.fill(0);
+    this.u2.fill(0);
+  }
+
+  // `resonance` is in [0, 1].
+  // `apScale` is in [0, 1].
+  process(input, cutoffNormalized, resonance, apScale) {
+    const freq = Math.PI * clamp(cutoffNormalized, 0, 0.4999);
+
+    const s = 1 - Math.cos(2 * freq);
+    const c1 = Math.sqrt(s * s + 2 * s) - s;
+
+    const t = Math.tan(apScale * freq);
+    const c2 = (t - 1) / (t + 1);
+
+    const q = resonance * (c2 - c1 * c2 + 1);
+
+    for (let idx = 0; idx < this.v1.length; ++idx) {
+      this.v1[idx] = c2 * (this.u1[idx] - this.v1[idx]) + this.u2[idx];
+      this.u2[idx] = this.u1[idx];
+      this.u1[idx] += c1 * (input - this.u1[idx]) - q * this.v1[idx];
+      input = this.u1[idx];
+    }
+    return input;
+  }
+}
+
+/**
+This filter is sensitive to the change of cutoff. May blow up when cutoff is modulated too
+fast.
+*/
 export class ResonantLowpass1A1 {
-  constructor() {
+  constructor() { this.reset(); }
+
+  reset() {
     this.v1 = 0;
     this.x1 = 0;
     this.y1 = 0;
@@ -78,9 +122,11 @@ export class ResonantLowpass1A1 {
 
   // `resonance` is in [0, 1].
   process(input, cutoffNormalized, resonance) {
-    const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
+    const cutoffBounded = clamp(cutoffNormalized, 0, 0.4999);
+    const t = Math.tan(Math.PI * cutoffBounded);
     const a1 = (t - 1) / (t + 1);
-    const reso = resonance * (a1 + 1);
+    const safetyCurve = Math.cos(Math.PI * cutoffBounded); // To prevent blow up.
+    const reso = resonance * (a1 + 1) * safetyCurve;
     const gain = (1 + a1 + reso) / 2;
 
     // Bilinear allpass, order 1.
@@ -94,8 +140,47 @@ export class ResonantLowpass1A1 {
   }
 }
 
+export class CascadedResonantLowpass1A1 {
+  constructor(nCascade) {
+    this.v1 = new Array(nCascade).fill(0);
+    this.x1 = new Array(nCascade).fill(0);
+    this.y1 = new Array(nCascade).fill(0);
+    this.y2 = new Array(nCascade).fill(0);
+  }
+
+  reset() {
+    this.v1.fill(0);
+    this.x1.fill(0);
+    this.y1.fill(0);
+    this.y2.fill(0);
+  }
+
+  // `resonance` is in [0, 1].
+  process(input, cutoffNormalized, resonance) {
+    const cutoffBounded = clamp(cutoffNormalized, 0, 0.4999);
+    const t = Math.tan(Math.PI * cutoffBounded);
+    const a1 = (t - 1) / (t + 1);
+    const safetyCurve = Math.cos(Math.PI * cutoffBounded); // To prevent blow up.
+    const reso = resonance * (a1 + 1) * safetyCurve;
+    const gain = (1 + a1 + reso) / 2;
+
+    for (let idx = 0; idx < this.v1.length; ++idx) {
+      this.v1[idx] = a1 * (this.y1[idx] - this.v1[idx]) + this.y2[idx];
+      this.y2[idx] = this.y1[idx];
+
+      this.y1[idx]
+        = gain * (input + this.x1[idx]) - a1 * this.y1[idx] - reso * this.v1[idx];
+      this.x1[idx] = input;
+      input = this.y1[idx];
+    }
+    return input;
+  }
+}
+
 export class ResonantLowpass1H1 {
-  constructor() {
+  constructor() { this.reset(); }
+
+  reset() {
     this.x1H = 0;
     this.y1H = 0;
     this.x1L = 0;
@@ -105,11 +190,12 @@ export class ResonantLowpass1H1 {
   // `resonance` is in [-1, 1]. Negative value is allowed.
   process(input, cutoffNormalized, resonance) {
     const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
-    const a1 = (1 - t) / (1 + 1);
+    const a1 = (1 - t) / (1 + t);
     const bH = 1 / (1 + t);
     const bL = t / (1 + t);
-    const reso = resonance < 0 ? resonance * (a1 + 1) * (a1 + 1) / (2 * bH)
-                               : resonance * (4 - (a1 + 1) * (a1 + 1) / bH);
+    const resonanceScaler
+      = resonance < 0 ? (a1 + 1) * (a1 + 1) / (2 * bH) : (4 - (a1 + 1) * (a1 + 1) / bH);
+    const reso = resonance * resonanceScaler;
 
     // Bilinear highpass, order 1.
     this.y1H = bH * (this.y1L - this.x1H) + a1 * this.y1H;
@@ -122,9 +208,49 @@ export class ResonantLowpass1H1 {
   }
 }
 
+export class CascadedResonantLowpass1H1 {
+  constructor(nCascade) {
+    this.x1H = new Array(nCascade).fill(0);
+    this.y1H = new Array(nCascade).fill(0);
+    this.x1L = new Array(nCascade).fill(0);
+    this.y1L = new Array(nCascade).fill(0);
+  }
+
+  reset() {
+    this.x1H.fill(0);
+    this.y1H.fill(0);
+    this.x1L.fill(0);
+    this.y1L.fill(0);
+  }
+
+  // `resonance` is in [-1, 1]. Negative value is allowed.
+  process(input, cutoffNormalized, resonance) {
+    const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
+    const a1 = (1 - t) / (1 + t);
+    const bH = 1 / (1 + t);
+    const bL = t / (1 + t);
+    const resonanceScaler
+      = resonance < 0 ? (a1 + 1) * (a1 + 1) / (2 * bH) : (4 - (a1 + 1) * (a1 + 1) / bH);
+    const reso = resonance * resonanceScaler;
+
+    for (let idx = 0; idx < this.x1H.length; ++idx) {
+      this.y1H[idx] = bH * (this.y1L[idx] - this.x1H[idx]) + a1 * this.y1H[idx];
+      this.x1H[idx] = this.y1L[idx];
+
+      this.y1L[idx]
+        = bL * (input + this.x1L[idx]) + a1 * this.y1L[idx] + reso * this.y1H[idx];
+      this.x1L[idx] = input;
+      input = this.y1L[idx];
+    }
+    return input;
+  }
+}
+
 // Almost same as `ResonantLowpass1H1`, but feed position is altered.
 export class ResonantLowpass1H1Alt {
-  constructor() {
+  constructor() { this.reset(); }
+
+  reset() {
     this.x1H = 0;
     this.y1H = 0;
     this.x1L = 0;
@@ -134,7 +260,7 @@ export class ResonantLowpass1H1Alt {
   // `resonance` is in [0, 1].
   process(input, cutoffNormalized, resonance) {
     const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
-    const a1 = (1 - t) / (1 + 1);
+    const a1 = (1 - t) / (1 + t);
     const bH = 1 / (1 + t);
     const bL = t / (1 + t);
     const reso = 4 * resonance;
@@ -147,6 +273,42 @@ export class ResonantLowpass1H1Alt {
     this.y1L = bL * (input + this.x1L + reso * this.y1H) + a1 * this.y1L;
     this.x1L = input;
     return this.y1L;
+  }
+}
+
+export class CascadedResonantLowpass1H1Alt {
+  constructor(nCascade) {
+    this.x1H = new Array(nCascade).fill(0);
+    this.y1H = new Array(nCascade).fill(0);
+    this.x1L = new Array(nCascade).fill(0);
+    this.y1L = new Array(nCascade).fill(0);
+  }
+
+  reset() {
+    this.x1H.fill(0);
+    this.y1H.fill(0);
+    this.x1L.fill(0);
+    this.y1L.fill(0);
+  }
+
+  // `resonance` is in [0, 1].
+  process(input, cutoffNormalized, resonance) {
+    const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
+    const a1 = (1 - t) / (1 + t);
+    const bH = 1 / (1 + t);
+    const bL = t / (1 + t);
+    const reso = 4 * resonance;
+
+    for (let idx = 0; idx < this.x1H.length; ++idx) {
+      this.y1H[idx] = bH * (this.y1L[idx] - this.x1H[idx]) + a1 * this.y1H[idx];
+      this.x1H[idx] = this.y1L[idx];
+
+      this.y1L[idx]
+        = bL * (input + this.x1L[idx] + reso * this.y1H[idx]) + a1 * this.y1L[idx];
+      this.x1L[idx] = input;
+      input = this.y1L[idx];
+    }
+    return input;
   }
 }
 
@@ -165,13 +327,17 @@ lowpass and a bandpass.
 */
 export class BroadPeakingLowpass {
   constructor() {
+    this.reset();
+
+    // +60 dB when `resonance` is 1.
+    this.resoScaler = 3 * Math.log(10);
+  }
+
+  reset() {
     this.x1L = 0;
     this.y1L = 0;
     this.x1H = 0;
     this.y1H = 0;
-
-    // +60 dB when `resonance` is 1.
-    this.resoScaler = 3 * Math.log(10);
   }
 
   // `resonance` is in [0, 1].
@@ -880,7 +1046,9 @@ export class ResonantLowpass2A2 {
     0.0010870588279584758, 0.0005429407920885792,
   ];
 
-  constructor() {
+  constructor() { this.reset(); }
+
+  reset() {
     this.ap_i1 = 0;
     this.ap_i2 = 0;
     this.lp_i1 = 0;
@@ -892,12 +1060,12 @@ export class ResonantLowpass2A2 {
   #getMaxQ(normalizedFreq) {
     const pos = (2 * this.#qTable.length - 1) * normalizedFreq;
     const idx = Math.floor(pos);
-    return this.#qTable[idx] + (pos - idx) * (qTable[idx + 1] - qTable[idx]);
+    return this.#qTable[idx] + (pos - idx) * (this.#qTable[idx + 1] - this.#qTable[idx]);
   }
 
   process(input, cutoffNormalized, apScale, resonance) {
     // Set cutoff.
-    const freq = clamp(cutoffNormalized / sampleRate, 0, 0.49999);
+    const freq = clamp(cutoffNormalized, 0, 0.499);
     const ap_g = Math.tan(Math.PI * freq * apScale);
     const lp_g = Math.tan(Math.PI * freq);
     const reso = resonance * this.#getMaxQ(freq);
@@ -905,16 +1073,16 @@ export class ResonantLowpass2A2 {
     const ap_v1 = (this.ap_i1 + ap_g * (this.lp_out - this.ap_i2))
       / (1 + ap_g * (ap_g + Math.SQRT1_2));
     const ap_v2 = this.ap_i2 + ap_g * ap_v1;
-    this.ap_i2 = Sample(2) * ap_v2 - this.ap_i2;
-    this.ap_i1 = Sample(2) * ap_v1 - this.ap_i1;
-    const ap_out = this.lp_out - Sample(2) * Math.SQRT1_2 * ap_v1;
+    this.ap_i2 = 2 * ap_v2 - this.ap_i2;
+    this.ap_i1 = 2 * ap_v1 - this.ap_i1;
+    const ap_out = this.lp_out - 2 * Math.SQRT1_2 * ap_v1;
 
     const lp_v0 = input - reso * ap_out;
     const lp_v1
       = (this.lp_i1 + lp_g * (lp_v0 - this.lp_i2)) / (1 + lp_g * (lp_g + Math.SQRT1_2));
     const lp_v2 = this.lp_i2 + lp_g * lp_v1;
-    this.lp_i2 = Sample(2) * lp_v2 - this.lp_i2;
-    this.lp_i1 = Sample(2) * lp_v1 - this.lp_i1;
+    this.lp_i2 = 2 * lp_v2 - this.lp_i2;
+    this.lp_i1 = 2 * lp_v1 - this.lp_i1;
     return this.lp_out = lp_v2;
   }
 }
