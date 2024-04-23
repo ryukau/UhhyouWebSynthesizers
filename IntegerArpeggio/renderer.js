@@ -217,8 +217,8 @@ onmessage = async (event) => {
         const scale = constructIntJustScale(basePeriod, -16, 1, pv.arpeggioNotes);
         return scale.map(period => period / scale[0]);
       }
-      case "Just Intonation [0, 2, 5, 7]":
-        return [1 / 1, 9 / 8, 4 / 3, 3 / 2];
+      case "Just Intonation [0, 2, 7, 9]":
+        return [1 / 1, 10 / 9, 3 / 2, 5 / 3];
       case "Just Intonation [0, 3, 7, 10]":
         return [1 / 1, 6 / 5, 3 / 2, 9 / 5];
       case "Just Intonation [0, 4, 7, 11]":

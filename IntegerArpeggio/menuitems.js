@@ -36,7 +36,7 @@ export const filterTypeItems = [
 
 export const pitchScaleItems = [
   "\"Notes in Scale\" List",
-  "Just Intonation [0, 2, 5, 7]",
+  "Just Intonation [0, 2, 7, 9]",
   "Just Intonation [0, 3, 7, 10]",
   "Just Intonation [0, 4, 7, 11]",
   "ET5",

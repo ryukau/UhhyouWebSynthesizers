@@ -1157,7 +1157,7 @@ export class CascadedResonantLowpass2A2 {
     return this.#qTable[idx] + (pos - idx) * (this.#qTable[idx + 1] - this.#qTable[idx]);
   }
 
-  process(input, cutoffNormalized, apScale, resonance) {
+  process(input, cutoffNormalized, resonance, apScale) {
     // Set cutoff.
     const freq = clamp(cutoffNormalized, 0, 0.45);
     const ap_g = Math.tan(Math.PI * freq * apScale);
