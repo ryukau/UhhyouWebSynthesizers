@@ -57,6 +57,17 @@ function solve(A, b, size) {
   return x;
 }
 
+/**
+`WaveformXYPad` does not take parameters, but only returns polynomial coefficients from
+`coefficients()` method.
+
+This is because of randomization. It requires one of the following conversions:
+
+1. From `#controlPoints` to polynomial coefficients.
+2. From polynomial coefficients to `#controlPoints`.
+
+Conversion 2 is not implemented for now, because it requires to solve some math problem.
+*/
 export class WaveformXYPad {
   #isMouseDown = false;
   #controlRadius = 8;
@@ -66,18 +77,30 @@ export class WaveformXYPad {
   #grabbedPoint = -1;
   #coefficients;
   #normalizeGain = 1;
+  #lockRandomization = false;
 
   constructor(
     parent,
+    label,
     width,
     height,
-    label,
     polyOrder,
     onChangeFunc,
   ) {
+    console.assert(polyOrder > 0, "BarBox parameter is empty.", new Error());
+
     this.divContainer = document.createElement("div");
     this.divContainer.classList.add("equalizerContainer");
     parent.appendChild(this.divContainer);
+
+    this.label = document.createElement("label");
+    this.label.classList.add("barbox");
+    this.label.textContent = label;
+    this.label.addEventListener("pointerdown", (event) => {
+      this.#lockRandomization = !this.#lockRandomization;
+      this.label.style.color = this.#lockRandomization ? palette.inactive : "unset";
+    }, false);
+    this.divContainer.appendChild(this.label);
 
     this.divCanvasMargin = document.createElement("div");
     this.divCanvasMargin.classList.add("canvasMargin");
@@ -115,15 +138,30 @@ export class WaveformXYPad {
     this.onChangeFunc = onChangeFunc;
 
     this.#controlPoints = new Array(polyOrder - 2);
-    for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
-      const ratio = (idx + 1) / (this.#controlPoints.length + 1);
-      this.#controlPoints[idx] = {
-        x: this.canvas.width * ratio,
-        y: (Math.sin(2 * Math.PI * ratio) + 1) * this.canvas.height / 2,
-      };
-    }
+    this.setControlPoints();
 
     this.#coefficients = new Array(this.#controlPoints.length + 2).fill(0);
+
+    this.#updateCoefficients();
+    this.refresh();
+  }
+
+  setControlPoints(waveform) {
+    for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
+      const ratio = (idx + 1) / (this.#controlPoints.length + 1);
+
+      if (waveform === "sawtooth") {
+        this.#controlPoints[idx] = {
+          x: ratio * this.canvas.width,
+          y: ratio * this.canvas.height,
+        };
+      } else { // "sine"
+        this.#controlPoints[idx] = {
+          x: ratio * this.canvas.width,
+          y: (Math.sin(2 * Math.PI * ratio) + 1) * this.canvas.height / 2,
+        };
+      }
+    }
 
     this.#updateCoefficients();
     this.refresh();
@@ -235,6 +273,8 @@ export class WaveformXYPad {
   }
 
   randomize() {
+    if (this.#lockRandomization) return;
+
     const length = this.#controlPoints.length;
     for (let idx = 0; idx < length; ++idx) {
       const pt = this.#controlPoints[idx];

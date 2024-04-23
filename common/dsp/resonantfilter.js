@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
+`docs/resonant_filter.md` provides an extra documentation of this file.
+
 Below is a block diagram of common filter structure in this file:
 
 ```
@@ -36,6 +38,54 @@ This convention might be changed later, because following variations aren't cons
 */
 
 import {clamp} from "../util.js";
+
+export const filterTypeItems = [
+  "EmaLowpass1A1",
+  "Lowpass1A1",
+  "Lowpass1H1",
+  "Lowpass1H1Alt",
+  "BroadPeakingLowpass",
+  "Lowpass2A2",
+  "CascadedLowpass1",
+  "SpringDamperLowpass3 - A",
+  "SpringDamperLowpass3 - B",
+  "SpringDamperLowpass3 - C",
+  "SpringDamperLowpass3 - D",
+  "DoubleSpringFilter4 - A",
+  "DoubleSpringFilter4 - B",
+];
+
+export function selectFilter(sampleRate, filterType, nCascade) {
+  switch (filterTypeItems[filterType]) {
+    case "EmaLowpass1A1":
+      return new CascadedResonantEmaLowpass1A1(nCascade);
+    case "Lowpass1A1":
+      return new CascadedResonantLowpass1A1(nCascade);
+    case "Lowpass1H1":
+      return new CascadedResonantLowpass1H1(nCascade);
+    case "Lowpass1H1Alt":
+      return new CascadedResonantLowpass1H1Alt(nCascade);
+    case "BroadPeakingLowpass":
+      return new CascadedBroadPeakingLowpass(nCascade);
+    case "Lowpass2A2":
+      return new CascadedResonantLowpass2A2(nCascade);
+    case "CascadedLowpass1":
+      return new CascadedLowpass1(nCascade);
+    default:
+    case "SpringDamperLowpass3 - A":
+      return new SpringDamperLowpass3(nCascade, sampleRate, 0);
+    case "SpringDamperLowpass3 - B":
+      return new SpringDamperLowpass3(nCascade, sampleRate, 1);
+    case "SpringDamperLowpass3 - C":
+      return new SpringDamperLowpass3(nCascade, sampleRate, 2);
+    case "SpringDamperLowpass3 - D":
+      return new SpringDamperLowpass3(nCascade, sampleRate, 3);
+    case "DoubleSpringFilter4 - A":
+      return new DoubleSpringFilter4(nCascade, sampleRate, 0);
+    case "DoubleSpringFilter4 - B":
+      return new DoubleSpringFilter4(nCascade, sampleRate, 1);
+  }
+};
 
 // Reference:
 // https://ryukau.github.io/filter_notes/resonant_one_pole_filter/resonant_one_pole_filter.html
@@ -312,12 +362,12 @@ export class CascadedResonantLowpass1H1Alt {
   }
 }
 
-/*
+/**
 `BroadPeakingLowpass` is different from other `Resonant` filters. Block diagram is shown
 below.
 
 ```
-input -> (lowpass) -+-----------> (sum) -> output
+input -> (lowpass) -+---------------+-> output
                     |               ↑
                     +-> (highpass) -+
 ```
@@ -359,7 +409,45 @@ export class BroadPeakingLowpass {
   }
 }
 
-export class ResonantLowpass2A2 {
+export class CascadedBroadPeakingLowpass {
+  constructor(nCascade) {
+    this.x1L = new Array(nCascade).fill(0);
+    this.y1L = new Array(nCascade).fill(0);
+    this.x1H = new Array(nCascade).fill(0);
+    this.y1H = new Array(nCascade).fill(0);
+
+    // +60 dB when `resonance` is 1.
+    this.resoScaler = 3 * Math.log(10);
+  }
+
+  reset() {
+    this.x1L.fill(0);
+    this.y1L.fill(0);
+    this.x1H.fill(0);
+    this.y1H.fill(0);
+  }
+
+  // `resonance` is in [0, 1].
+  process(input, cutoffNormalized, resonance) {
+    const t = Math.tan(Math.PI * clamp(cutoffNormalized, 0, 0.4999));
+    const a1 = (1 - t) / (1 + t);
+    const bL = t / (1 + t);
+    const bH = 1 / (1 + t);
+    const mix = Math.exp(this.resoScaler * resonance);
+
+    for (let idx = 0; idx < this.x1L.length; ++idx) {
+      this.y1L[idx] = bL * (input + this.x1L[idx]) + a1 * this.y1L[idx];
+      this.x1L[idx] = input;
+
+      this.y1H[idx] = bH * (this.y1L[idx] - this.x1H[idx]) + a1 * this.y1H[idx];
+      this.x1H[idx] = this.y1L[idx];
+      input = this.y1L[idx] + mix * this.y1H[idx];
+    }
+    return input;
+  }
+}
+
+export class CascadedResonantLowpass2A2 {
   #qTable = [
     0.000000000000000,     0.6817937575690126,    0.6687618357481768,
     0.6796440492949124,    0.6895065555123012,    0.6843421496611362,
@@ -1046,14 +1134,20 @@ export class ResonantLowpass2A2 {
     0.0010870588279584758, 0.0005429407920885792,
   ];
 
-  constructor() { this.reset(); }
+  constructor(nCascade) {
+    this.ap_i1 = new Array(nCascade).fill(0);
+    this.ap_i2 = new Array(nCascade).fill(0);
+    this.lp_i1 = new Array(nCascade).fill(0);
+    this.lp_i2 = new Array(nCascade).fill(0);
+    this.lp_out = new Array(nCascade).fill(0);
+  }
 
   reset() {
-    this.ap_i1 = 0;
-    this.ap_i2 = 0;
-    this.lp_i1 = 0;
-    this.lp_i2 = 0;
-    this.lp_out = 0;
+    this.ap_i1.fill(0);
+    this.ap_i2.fill(0);
+    this.lp_i1.fill(0);
+    this.lp_i2.fill(0);
+    this.lp_out.fill(0);
   }
 
   // `normalizedFreq` must be in [0, 0.5].
@@ -1065,24 +1159,313 @@ export class ResonantLowpass2A2 {
 
   process(input, cutoffNormalized, apScale, resonance) {
     // Set cutoff.
-    const freq = clamp(cutoffNormalized, 0, 0.499);
+    const freq = clamp(cutoffNormalized, 0, 0.45);
     const ap_g = Math.tan(Math.PI * freq * apScale);
     const lp_g = Math.tan(Math.PI * freq);
     const reso = resonance * this.#getMaxQ(freq);
 
-    const ap_v1 = (this.ap_i1 + ap_g * (this.lp_out - this.ap_i2))
-      / (1 + ap_g * (ap_g + Math.SQRT1_2));
-    const ap_v2 = this.ap_i2 + ap_g * ap_v1;
-    this.ap_i2 = 2 * ap_v2 - this.ap_i2;
-    this.ap_i1 = 2 * ap_v1 - this.ap_i1;
-    const ap_out = this.lp_out - 2 * Math.SQRT1_2 * ap_v1;
+    for (let idx = 0; idx < this.ap_i1.length; ++idx) {
+      const ap_v1 = (this.ap_i1[idx] + ap_g * (this.lp_out[idx] - this.ap_i2[idx]))
+        / (1 + ap_g * (ap_g + Math.SQRT1_2));
+      const ap_v2 = this.ap_i2[idx] + ap_g * ap_v1;
+      this.ap_i2[idx] = 2 * ap_v2 - this.ap_i2[idx];
+      this.ap_i1[idx] = 2 * ap_v1 - this.ap_i1[idx];
+      const ap_out = this.lp_out[idx] - 2 * Math.SQRT1_2 * ap_v1;
 
-    const lp_v0 = input - reso * ap_out;
-    const lp_v1
-      = (this.lp_i1 + lp_g * (lp_v0 - this.lp_i2)) / (1 + lp_g * (lp_g + Math.SQRT1_2));
-    const lp_v2 = this.lp_i2 + lp_g * lp_v1;
-    this.lp_i2 = 2 * lp_v2 - this.lp_i2;
-    this.lp_i1 = 2 * lp_v1 - this.lp_i1;
-    return this.lp_out = lp_v2;
+      const lp_v0 = input - reso * ap_out;
+      const lp_v1 = (this.lp_i1[idx] + lp_g * (lp_v0 - this.lp_i2[idx]))
+        / (1 + lp_g * (lp_g + Math.SQRT1_2));
+      const lp_v2 = this.lp_i2[idx] + lp_g * lp_v1;
+      this.lp_i2[idx] = 2 * lp_v2 - this.lp_i2[idx];
+      this.lp_i1[idx] = 2 * lp_v1 - this.lp_i1[idx];
+      input = this.lp_out[idx] = lp_v2;
+    }
+    return input;
+  }
+}
+
+/**
+A cascade of BLT one-pole lowpass with a single feedback.
+
+```
+input -+--> (tanh) -> (LP1) -> ... -> (LP1) --+-> output
+       ↑                                      |
+       +--------------------------- (gain) <--+
+```
+*/
+export class CascadedLowpass1 {
+  constructor(nCascade) {
+    this.x1 = new Array(nCascade).fill(0);
+    this.y1 = new Array(nCascade).fill(0);
+  }
+
+  reset() {
+    this.x1.fill(0);
+    this.y1.fill(0);
+  }
+
+  // `resonance` can be negative or greater than 1. However, higher value cause
+  // oscillation.
+  process(input, cutoffNormalized, resonance) {
+    const cutoffBounded = clamp(cutoffNormalized, 0.0001, 0.4999);
+    const k = 1 / Math.tan(Math.PI * cutoffBounded);
+    const a0 = 1 + k;
+    const bn = 1 / a0;
+    const a1 = (k - 1) / a0; // Negated.
+
+    const tuningGain = Math.PI * Math.cos(Math.PI * cutoffBounded);
+    input = Math.tanh(0.5 * input - tuningGain * resonance * this.y1.at(-1));
+
+    for (let idx = 0; idx < this.x1.length; ++idx) {
+      this.y1[idx] = bn * (input + this.x1[idx]) + a1 * this.y1[idx];
+      this.x1[idx] = input;
+      input = this.y1[idx];
+    }
+
+    return 2 * input;
+  }
+}
+
+/**
+`SpringDamperResonantoLowpass3*` is based on a simple mass-spring-damper system. This
+filter has 3-poles, but the slope is -6 dB/oct which is the same as 1-pole.
+
+Naive form of this filter may add direct current (DC) to the output, probably because it
+has zero and pole at frequency 0. Additional highpass is used to remove the DC, and
+separete lowpass out is mixed to bring back the reduced low.
+
+```
+input -+-> (LP3) -> (HP) -+-> output
+       |                  ↑
+       +-> (EMA lowpass) -+
+```
+
+Varication A may be unstable.
+
+Varication C and D changes the sound depending on sampling rate.
+
+Reference:
+https://ryukau.github.io/filter_notes/3pole_lowpass/3pole_lowpass.html
+*/
+export class SpringDamperLowpass3 {
+  constructor(nCascade, sampleRate, variation = 0) {
+    this.cutoffH = this.getEmaCutoff(10 / sampleRate);
+
+    this.acc = new Array(nCascade).fill(0);
+    this.vel = new Array(nCascade).fill(0);
+    this.pos = new Array(nCascade).fill(0);
+    this.x1L = new Array(nCascade).fill(0);
+
+    this.v1H = new Array(nCascade).fill(0);
+    this.y1Sub = new Array(nCascade).fill(0);
+
+    this.processFunc = variation == 0 ? this.processA
+      : variation == 1                ? this.processB
+      : variation == 2                ? this.processC
+                                      : this.processD;
+  }
+
+  reset() {
+    this.acc.fill(0);
+    this.vel.fill(0);
+    this.pos.fill(0);
+    this.x1L.fill(0);
+
+    this.v1H.fill(0);
+    this.y1Sub.fill(0);
+  }
+
+  getEmaCutoff(cutoffNormalized) {
+    const t = 1 - Math.cos(2 * Math.PI * cutoffNormalized);
+    return Math.sqrt(t * t + 2 * t) - t;
+  }
+
+  process(input, cutoffNormalized, resonance) {
+    return this.processFunc(input, cutoffNormalized, resonance);
+  }
+
+  processA(input, cutoffNormalized, resonance) {
+    const cutoff = this.getEmaCutoff(clamp(cutoffNormalized, 0, 0.4999));
+    resonance = Math.min(resonance, 1 - Number.EPSILON);
+
+    for (let idx = 0; idx < this.acc.length; ++idx) {
+      // Lowpass3.
+      this.acc[idx] = resonance * this.acc[idx] + cutoff * this.vel[idx];
+      this.vel[idx] -= this.acc[idx] + input - this.x1L[idx];
+      this.x1L[idx] = input;
+      this.pos[idx] += cutoff * this.vel[idx];
+
+      // EMA highpass.
+      this.v1H[idx] = this.cutoffH * (this.pos[idx] - this.v1H[idx]);
+      this.pos[idx] -= this.v1H[idx];
+
+      // EMA Lowpass.
+      this.y1Sub[idx] = cutoff * (input - this.y1Sub[idx]);
+      input = this.pos[idx] - this.y1Sub[idx];
+    }
+    return input;
+  }
+
+  processB(input, cutoffNormalized, resonance) {
+    const cutoff = this.getEmaCutoff(clamp(cutoffNormalized, 0, 0.4999));
+
+    for (let idx = 0; idx < this.acc.length; ++idx) {
+      this.acc[idx] = resonance * this.acc[idx] + cutoff * this.vel[idx];
+      this.vel[idx] -= this.acc[idx] + input - this.x1L[idx];
+      this.x1L[idx] = input;
+      this.pos[idx] += cutoff * this.vel[idx];
+
+      this.v1H[idx] = this.cutoffH * (this.pos[idx] - this.v1H[idx]);
+      this.pos[idx] -= this.v1H[idx];
+
+      input = this.pos[idx] - input;
+    }
+    return input;
+  }
+
+  processC(input, cutoffNormalized, resonance) {
+    const cutoff = this.getEmaCutoff(clamp(cutoffNormalized, 0, 0.4999));
+
+    for (let idx = 0; idx < this.acc.length; ++idx) {
+      this.acc[idx] = resonance * this.acc[idx] + cutoff * this.vel[idx];
+      this.vel[idx] -= this.acc[idx] + input - this.x1L[idx];
+      this.x1L[idx] = input;
+      this.pos[idx] += cutoff * this.vel[idx];
+
+      // 2-sample FIR highpass.
+      this.pos[idx] -= this.v1H[idx];
+      this.v1H[idx] = this.pos[idx];
+
+      this.y1Sub[idx] = cutoff * (input - this.y1Sub[idx]);
+      input = this.pos[idx] + this.y1Sub[idx];
+    }
+    return input;
+  }
+
+  processD(input, cutoffNormalized, resonance) {
+    const cutoff = this.getEmaCutoff(clamp(cutoffNormalized, 0, 0.4999));
+
+    for (let idx = 0; idx < this.acc.length; ++idx) {
+      this.acc[idx] = resonance * this.acc[idx] + cutoff * this.vel[idx];
+      this.vel[idx] -= this.acc[idx] + input - this.x1L[idx];
+      this.x1L[idx] = input;
+      this.pos[idx] += this.vel[idx];
+
+      this.pos[idx] -= this.v1H[idx];
+      this.v1H[idx] = this.pos[idx];
+
+      input = this.pos[idx] + input;
+    }
+    return input;
+  }
+}
+
+/**
+`DoubleSpringFilter4` is a 4-pole multi-mode filter based on double spring.
+
+Reference: https://ryukau.github.io/filter_notes/doublefilter/doublefilter.html
+*/
+export class DoubleSpringFilter4 {
+  constructor(nCascade, sampleRate, variation = 0) {
+    const getEmaCutoff = (cutoffNormalized) => {
+      const t = 1 - Math.cos(2 * Math.PI * cutoffNormalized);
+      return Math.sqrt(t * t + 2 * t) - t;
+    };
+    this.cutoffH = getEmaCutoff(10 / sampleRate);
+
+    this.acc2 = new Array(nCascade).fill(0);
+    this.vel2 = new Array(nCascade).fill(0);
+    this.pos2 = new Array(nCascade).fill(0);
+
+    this.acc1 = new Array(nCascade).fill(0);
+    this.vel1 = new Array(nCascade).fill(0);
+    this.pos1 = new Array(nCascade).fill(0);
+
+    this.x1 = new Array(nCascade).fill(0);
+
+    this.v1H = new Array(nCascade).fill(0);
+
+    this.processFunc = variation == 0 ? this.#processA : this.#processB;
+  }
+
+  reset() {
+    this.acc2.fill(0);
+    this.vel2.fill(0);
+    this.pos2.fill(0);
+
+    this.acc1.fill(0);
+    this.vel1.fill(0);
+    this.pos1.fill(0);
+
+    this.x1.fill(0);
+
+    this.v1H.fill(0);
+  }
+
+  #approximateK2(x) { return x * (6.5451144600705975 + x * 20.46391326872472); }
+
+  #approximateK1(x) {
+    const C0 = -0.0049691265927442885;
+    const C1 = -471.738128187657;
+    const C2 = 1432.5662635997667;
+    const C3 = 345.2853784111966;
+    const C4 = -4454.40786711102;
+    const C5 = 3468.062963176107;
+    return C0 + 1 / (C1 + x * (C2 + x * (C3 + x * (C4 + x * C5))));
+  }
+
+  process(input, cutoffNormalized, resonance) {
+    // Some magic derived from numerical tuning.
+    const k2 = this.#approximateK2(clamp(cutoffNormalized, 0, 0.1));
+    let k1 = k2 < 0.6295160864148501 ? resonance * Math.PI
+                                     : resonance * this.#approximateK1(k2);
+    const A = 0.69;
+    const B2 = 0.63;
+    const B3 = 0.635;
+    if (k2 < B2)
+      k1 *= A;
+    else if (k2 >= B2 && k2 < B3)
+      k1 *= A + (1 - A) * (k2 - B2) / (B3 - B2);
+
+    // Filter processing.
+    return this.processFunc(input, k1, k2);
+  }
+
+  #processA(input, k1, k2) {
+    for (let idx = 0; idx < this.acc2.length; ++idx) {
+      this.acc2[idx] = k2 * (this.vel1[idx] - this.vel2[idx]);
+      this.vel2[idx] += this.acc2[idx] + input - this.x1[idx];
+      this.pos2[idx] += this.vel2[idx] * k2;
+
+      this.acc1[idx] = -k1 * this.pos1[idx] - this.acc2[idx];
+      this.vel1[idx] += this.acc1[idx];
+      this.pos1[idx] += this.vel1[idx];
+
+      this.x1[idx] = input;
+
+      // EMA highpass.
+      this.v1H[idx] = this.cutoffH * (this.pos2[idx] - this.v1H[idx]);
+      input = this.pos2[idx] -= this.v1H[idx];
+    }
+    return input;
+  }
+
+  #processB(input, k1, k2) {
+    for (let idx = 0; idx < this.acc2.length; ++idx) {
+      this.acc2[idx] = k2 * (this.vel1[idx] - this.vel2[idx]);
+      this.vel2[idx] += this.acc2[idx] + input - this.x1[idx];
+      this.pos2[idx] += this.vel2[idx] * k2;
+
+      this.acc1[idx] = -k1 * this.pos1[idx] - this.acc2[idx];
+      this.vel1[idx] += this.acc1[idx];
+      this.pos1[idx] += this.vel1[idx];
+
+      this.x1[idx] = input;
+
+      // EMA highpass.
+      this.v1H[idx] = this.cutoffH * (this.pos1[idx] - this.v1H[idx]);
+      input = this.pos1[idx] -= this.v1H[idx];
+    }
+    return input;
   }
 }

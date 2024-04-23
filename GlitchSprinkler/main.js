@@ -124,7 +124,8 @@ const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
 
 const divLeft = widget.div(divMain, undefined, "controlBlock");
-const divRight = widget.div(divMain, undefined, "controlBlock");
+const divRightA = widget.div(divMain, undefined, "controlBlock");
+const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
@@ -169,10 +170,9 @@ const playControl = widget.playControl(
 );
 
 const detailRender = widget.details(divLeft, "Render");
-const detailOsc = widget.details(divLeft, "Oscillator");
-const detailWaveform = widget.details(divRight, "Waveform");
-const detailArpeggio = widget.details(divRight, "Arpeggio");
-const detailChord = widget.details(divRight, "Overtone Chord");
+const detailOsc = widget.details(divRightA, "Oscillator");
+const detailArpeggio = widget.details(divRightB, "Arpeggio");
+const detailChord = widget.details(divRightB, "Overtone Chord");
 
 const ui = {
   renderDurationBeat: new widget.NumberInput(
@@ -187,16 +187,15 @@ const ui = {
   sampleRateScaler: new widget.ComboBoxLine(
     detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
+  waveform: new widget.WaveformXYPad(
+    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13,
+    render),
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   frequencyHz:
     new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
   oscOctave: new widget.NumberInput(detailOsc, "Octave", param.oscOctave, render),
   oscSync: new widget.NumberInput(detailOsc, "Sync.", param.oscSync, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
-
-  waveform: new widget.WaveformXYPad(
-    detailWaveform, 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, "Waveform", 13,
-    render),
 
   arpeggioDecayTo: new widget.NumberInput(
     detailArpeggio, "Decay To [dB]", param.arpeggioDecayTo, render),

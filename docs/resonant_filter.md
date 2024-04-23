@@ -27,7 +27,7 @@ It's kind of vague that what really is a "simple" filter. Usually order 2 or les
 
 Anyway, we can use numerical method when the analytic solution is impractical. Below is an outline of the method I used.
 
-1. Select cutoff frequencies to find the upper bound of `resonance`. This becomes a lookup table. Application draws the values from given cutoff, and maybe interpolates them.
+1. Select cutoff frequencies to find the upper bound of `resonance`. This becomes a lookup table. Application look up one or several values from a given cutoff, and might be interpolate them.
 2. Setup binary search for `resonance` for each cutoff. Linear regression of impulse response (IR) is used for branching.
   - If the slope is positive, branch into lower side. IR is diversing.
   - If the slope is negative, branch into upper side. IR is conversing.
