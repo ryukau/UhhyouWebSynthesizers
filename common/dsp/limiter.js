@@ -33,7 +33,7 @@ class ReleaseFilter {
   }
 }
 
-class FixedIntDelay {
+export class FixedIntDelay {
   #wptr;
   #buf;
 
@@ -42,8 +42,13 @@ class FixedIntDelay {
     this.#buf = new Array(delaySamples + 1).fill(0);
   }
 
+  reset() {
+    this.#wptr = 0;
+    this.#buf.fill(0);
+  }
+
   process(input) {
-    if (++this.#wptr >= this.#buf.length) this.#wptr -= this.#buf.length;
+    if (++this.#wptr >= this.#buf.length) this.#wptr = 0;
     this.#buf[this.#wptr] = input;
     return this.#buf[this.#wptr === this.#buf.length - 1 ? 0 : this.#wptr + 1];
   }

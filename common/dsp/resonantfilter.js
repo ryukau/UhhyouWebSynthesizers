@@ -40,6 +40,7 @@ This convention might be changed later, because following variations aren't cons
 import {clamp} from "../util.js";
 
 export const filterTypeItems = [
+  "Bypass",
   "EmaLowpass1A1",
   "Lowpass1A1",
   "Lowpass1H1",
@@ -57,6 +58,9 @@ export const filterTypeItems = [
 
 export function selectFilter(sampleRate, filterType, nCascade) {
   switch (filterTypeItems[filterType]) {
+    case "Bypass":
+      return new Bypass();
+    default:
     case "EmaLowpass1A1":
       return new CascadedResonantEmaLowpass1A1(nCascade);
     case "Lowpass1A1":
@@ -71,7 +75,6 @@ export function selectFilter(sampleRate, filterType, nCascade) {
       return new CascadedResonantLowpass2A2(nCascade);
     case "CascadedLowpass1":
       return new CascadedLowpass1(nCascade);
-    default:
     case "SpringDamperLowpass3 - A":
       return new SpringDamperLowpass3(nCascade, sampleRate, 0);
     case "SpringDamperLowpass3 - B":
@@ -86,6 +89,12 @@ export function selectFilter(sampleRate, filterType, nCascade) {
       return new DoubleSpringFilter4(nCascade, sampleRate, 1);
   }
 };
+
+// Dummy class for `selectFilter`.
+class Bypass {
+  reset() {}
+  process(input) { return input; }
+}
 
 // Reference:
 // https://ryukau.github.io/filter_notes/resonant_one_pole_filter/resonant_one_pole_filter.html

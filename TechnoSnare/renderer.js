@@ -9,7 +9,7 @@ import {Limiter} from "../common/dsp/limiter.js"
 import {downSampleIIR, SosFilter} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {normalizedCutoffToOnePoleKp} from "../common/dsp/smoother.js";
-import {sosMatchedBandpass} from "../common/dsp/sos.js"
+import {sosMatchedBandpass} from "../common/dsp/sos.js";
 import {SVF} from "../common/dsp/svf.js";
 import {
   clamp,

@@ -4,7 +4,7 @@
 import {Limiter} from "../common/dsp/limiter.js";
 import {downSampleLinearPhase} from "../common/dsp/multirate.js";
 import {selectFilter} from "../common/dsp/resonantfilter.js";
-import {constructIntJustScale} from "../common/dsp/tuning.js"
+import {constructIntJustScale} from "../common/dsp/tuning.js";
 import {
   clamp,
   computePolynomial,
@@ -53,10 +53,8 @@ function process(upRate, pv, dsp) {
   sig *= dsp.gainEnv;
   dsp.gainEnv *= dsp.gainDecay;
 
-  if (pv.useFilter) {
-    const cutoff = dsp.cutoffEnv.process(pv.filterCutoffDecayCurve);
-    sig = dsp.filter.process(sig, cutoff, pv.filterResonance, 1);
-  }
+  const cutoff = dsp.cutoffEnv.process(pv.filterCutoffDecayCurve);
+  sig = dsp.filter.process(sig, cutoff, pv.filterResonance, 1);
 
   return sig;
 }
@@ -185,7 +183,6 @@ onmessage = async (event) => {
       case "Harmonic Series": {
         const start = Math.max(2, basePeriod * 2 ** -pv.octaveStart);
         const end = Math.max(2, start * 2 ** -pv.octaveRange);
-        console.log(basePeriod, start, end);
         let scale = [];
         let overtone = 1;
         let intPeriod = start;
@@ -200,7 +197,6 @@ onmessage = async (event) => {
     }
   };
   dsp.targetScale = getArpeggioScale(pv.arpeggioScale);
-  console.log(basePeriod, dsp.targetScale);
   dsp.longestPeriodSamples = dsp.targetScale[0];
 
   dsp.cutoffRatio = 2 ** pv.filterCutoffOctave;
@@ -268,19 +264,20 @@ onmessage = async (event) => {
       sound[index] *= Math.sin(Math.PI * 0.5 * i / fadeOutLength);
     }
 
-    // // Normalize.
-    // let maxAmp = 0;
-    // for (let i = 0; i < dsp.noteSamples; ++i) {
-    //   const index = sectionStart + i;
-    //   const absed = Math.abs(sound[index]);
-    //   if (maxAmp < absed) maxAmp = absed;
-    // }
-    // if (maxAmp >= Number.MIN_VALUE) {
-    //   for (let i = 0; i < dsp.noteSamples; ++i) {
-    //     const index = sectionStart + i;
-    //     sound[index] /= maxAmp;
-    //   }
-    // }
+    if (pv.normalizePerSection) {
+      let maxAmp = 0;
+      for (let i = 0; i < dsp.noteSamples; ++i) {
+        const index = sectionStart + i;
+        const absed = Math.abs(sound[index]);
+        if (maxAmp < absed) maxAmp = absed;
+      }
+      if (maxAmp >= Number.MIN_VALUE) {
+        for (let i = 0; i < dsp.noteSamples; ++i) {
+          const index = sectionStart + i;
+          sound[index] /= maxAmp;
+        }
+      }
+    }
   }
 
   if (pv.limiterEnable === 1) processLimiter(upRate, pv, sound);

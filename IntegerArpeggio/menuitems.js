@@ -3,36 +3,11 @@
 
 import {oversampleLinearPhaseItems} from "../common/dsp/multirate.js";
 
+export {filterTypeItems} from "../common/dsp/resonantfilter.js";
+
 export const oversampleItems = oversampleLinearPhaseItems;
 export const sampleRateScalerItems = ["1", "2", "4", "8", "16"];
-
-export const basePeriodItems = [
-  "2",
-  "3",
-  "5",
-  "7",
-  "11",
-  "13",
-  "17",
-  "19",
-  "23",
-];
-
-export const filterTypeItems = [
-  "EmaLowpass1A1",
-  "Lowpass1A1",
-  "Lowpass1H1",
-  "Lowpass1H1Alt",
-  "BroadPeakingLowpass",
-  "Lowpass2A2",
-  "CascadedLowpass1",
-  "Lowpass3SpringDamper - A",
-  "Lowpass3SpringDamper - B",
-  "Lowpass3SpringDamper - C",
-  "Lowpass3SpringDamper - D",
-  "DoubleSpringFilter4 - A",
-  "DoubleSpringFilter4 - B",
-];
+export const basePeriodItems = ["2", "3", "5", "7", "11", "13", "17", "19", "23"];
 
 export const pitchScaleItems = [
   "\"Notes in Scale\" List",

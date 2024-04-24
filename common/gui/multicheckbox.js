@@ -113,7 +113,7 @@ export class MultiCheckBoxVertical {
   onPointerMove(event) {
     const mouse = this.#getMousePosition(event);
     const newIndex = this.#getIndexFromPoint(mouse);
-    if (newIndex == this.#paramIndex) return;
+    if (newIndex == this.#paramIndex || newIndex == -1) return;
     this.#paramIndex = newIndex;
 
     if (this.#isMouseDown) this.param[this.#paramIndex].normalized = this.#paintValue;

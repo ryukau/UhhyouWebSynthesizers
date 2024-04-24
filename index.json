@@ -99,6 +99,18 @@
       },
       "list": [
         {
+          "href": "./IntegerChord/synth.html",
+          "name": "IntegerChord",
+          "tag": {
+            "ja": "コード",
+            "en": "Chord"
+          },
+          "description": {
+            "ja": "波形の周期が整数サンプルとなるスケールを使用。",
+            "en": "The period of waveforms are aligned to integer samples."
+          }
+        },
+        {
           "href": "./GenericDrum/synth.html",
           "name": "GenericDrum",
           "tag": {
@@ -143,7 +155,7 @@
           },
           "description": {
             "ja": "適応ノッチフィルタをフィードバック経路に設置した、フィードバックコムフィルタ。",
-            "en": "Feedback comb filter with adaptive notch filters on feedback path."
+            "en": "Feedback comb filter that has adaptive notch filters on feedback path."
           }
         },
         {
@@ -191,7 +203,7 @@
           },
           "description": {
             "ja": "波形の周期が整数サンプルとなるスケールを使用。スライサに読み込んで使用。",
-            "en": "The period of waveforms are aligned to integer samples. Intended for use with a slicer."
+            "en": "The period of waveforms are aligned to integer samples. Intended to be used with a slicer."
           }
         },
         {
@@ -203,7 +215,7 @@
           },
           "description": {
             "ja": "単純なシンセサイザの音によるマイクロトーナルを用いたフレーズ。",
-            "en": "Microtonal phrases that consists of simple synthesizer tones."
+            "en": "Microtonal phrase that consists of simple synthesizer tones."
           }
         },
         {
@@ -215,7 +227,7 @@
           },
           "description": {
             "ja": "フィードバック経路にオールパスを備えた FDN による金属が擦れるような音。",
-            "en": "Texture of metals squeaking. FDN with allpass on feedback path."
+            "en": "Texture of metals squeaking. FDN that has allpass on feedback path."
           }
         },
         {
@@ -334,8 +346,8 @@
             "en": "Bass drum"
           },
           "description": {
-            "ja": "FM を用いたバスドラムシンセサイザ。ステレオ感が怪しい。",
-            "en": "FM bass drum synthesizer with strange stereo image."
+            "ja": "FM を用いたバスドラムシンセサイザ。",
+            "en": "FM bass drum synthesizer."
           }
         },
         {
@@ -359,7 +371,7 @@
           },
           "description": {
             "ja": "FDN が発散しないように調整されている点が FDNCymbal と異なる。ほぼ <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_ja.html\">VST 3 版</a>と同じ。",
-            "en": "Stable feedback is the difference to FDNCymbal. Mostly same as <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_en.html\">VST 3 version</a>."
+            "en": "Stable feedback is the difference to FDNCymbal. Mostly as same as <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_en.html\">VST 3 version</a>."
           }
         },
         {
@@ -370,8 +382,8 @@
             "en": "Cymbal"
           },
           "description": {
-            "ja": "直列につないだコムフィルタを使用。",
-            "en": "Using serial comb filter."
+            "ja": "直列につないだコムフィルタ。",
+            "en": "Serial comb filter."
           }
         },
         {
@@ -383,7 +395,7 @@
           },
           "description": {
             "ja": "2 つの Karplus-Strong を適当にぶつけて音を合成。",
-            "en": "Collision of 2 Karplus-Strong string."
+            "en": "Crude collision of 2 Karplus-Strong string."
           }
         }
       ]
@@ -419,7 +431,7 @@
           },
           "description": {
             "ja": "薄い金属板を揺らしたときのような音。",
-            "en": "Approximation of wobbling thin metal plate sound."
+            "en": "Sound of wobbling thin metal plate."
           }
         },
         {
@@ -490,8 +502,8 @@
             "en": "Simulation"
           },
           "description": {
-            "ja": "箱のように配置されたノードを伝わる 3 次元の波。遅い。",
-            "en": "3D wave propagation. Simulation nodes are placed like a box. Slow."
+            "ja": "箱のように配置されたノードを伝わる 3 次元の波。レンダリングに時間がかかる。",
+            "en": "3D wave propagation. Simulation nodes are placed like a box. Rendering takes time."
           }
         },
         {
@@ -502,7 +514,7 @@
             "en": "Metal"
           },
           "description": {
-            "ja": "WaveCymbal の波のシミュレーションの解き方を変更。",
+            "ja": "WaveCymbal の波のシミュレーションを implicit な方法に変更。",
             "en": "WaveCymbal that use implicit method for wave propagation."
           }
         },

@@ -36,38 +36,23 @@ export function constructIntJustScale(
   octaveRange,
   arpeggioNotes,
 ) {
-  const startPeriod = basePeriod * (1 << (-octaveStart));
-  const endPeriod = Math.max(2, startPeriod / (1 << (octaveRange)));
+  const justRatio = justIntonationTable.filter((_, index) => arpeggioNotes[index] > 0);
 
-  const justSt12 = justIntonationTable.filter((_, index) => arpeggioNotes[index] > 0)
-                     .map(v => 12 * Math.log2(v));
+  let rootPeriod = basePeriod * (1 << (-octaveStart));
+  if (justRatio.length <= 0) return [rootPeriod];
 
-  let periods = [startPeriod];
-  let currentPeriod = startPeriod;
-  let currentSt12 = 12 * (Math.log2(startPeriod / currentPeriod) % 1.0);
-  let jiIndex = 0;
-
-  while (currentPeriod >= endPeriod) {
-    let nextSt12 = 12 * (Math.log2(startPeriod / (currentPeriod - 1)) % 1.0);
-    if (nextSt12 == 0) nextSt12 = 12;
-    const midSt12 = (currentSt12 + nextSt12) / 2;
-
-    if (currentSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < midSt12) {
-      if (periods.at(-1) != currentPeriod) periods.push(currentPeriod);
-      do {
-        if (++jiIndex >= justSt12.length) jiIndex = 0;
-      } while (currentSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < midSt12);
+  justRatio.sort((a, b) => a - b);
+  let periods = new Set();
+  loop: for (let oct = octaveStart; oct < octaveStart + octaveRange; ++oct) {
+    for (let rt of justRatio) {
+      const newPeriod = Math.round(rootPeriod / rt);
+      if (newPeriod < basePeriod) break loop;
+      periods.add(newPeriod);
     }
-
-    if (midSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < nextSt12) {
-      periods.push(currentPeriod - 1);
-      do {
-        if (++jiIndex >= justSt12.length) jiIndex = 0;
-      } while (midSt12 <= justSt12[jiIndex] && justSt12[jiIndex] < nextSt12);
-    }
-
-    --currentPeriod;
-    currentSt12 = nextSt12 == 12 ? 0 : nextSt12;
+    rootPeriod /= 2;
   }
-  return periods;
+  const lastPeriod = Math.ceil(rootPeriod / justRatio[0]);
+  if (lastPeriod >= basePeriod) periods.add(lastPeriod);
+
+  return Array.from(periods);
 }
