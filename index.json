@@ -99,6 +99,18 @@
       },
       "list": [
         {
+          "href": "./SquareMorph/synth.html",
+          "name": "SquareMorph",
+          "tag": {
+            "ja": "波形",
+            "en": "Waveform"
+          },
+          "description": {
+            "ja": "Walsh-Hadamard あるいは Haar 変換によってモーフィングする波形。",
+            "en": "Morphing waveform using Walsh-Hadamard, or Haar transform."
+          }
+        },
+        {
           "href": "./IntegerChord/synth.html",
           "name": "IntegerChord",
           "tag": {

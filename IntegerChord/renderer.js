@@ -11,6 +11,7 @@ import {
   clamp,
   computePolynomial,
   lerp,
+  shuffleArray,
   uniformDistributionMap,
   uniformIntDistributionMap
 } from "../common/util.js";
@@ -161,17 +162,6 @@ function processLimiter(upRate, pv, sound) {
 
     for (let i = 0; i < sound.length; ++i) sound[i] = limiter.process(0);
   }
-}
-
-// Shuffle `array` only in range of [start, end), in-place. `end` is exclusive.
-function shuffleArray(rng, array, start, end) {
-  for (let i = start; i < end - 1; ++i) {
-    const j = start + Math.floor(rng.number() * (end - start));
-    const tmp = array[i];
-    array[i] = array[j];
-    array[j] = tmp;
-  }
-  return array;
 }
 
 onmessage = async (event) => {

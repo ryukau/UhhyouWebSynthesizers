@@ -1,4 +1,4 @@
-// Copyright 2023 Takamitsu Endo
+// Copyright Takamitsu Endo
 // SPDX-License-Identifier: Apache-2.0
 
 /*
@@ -7,13 +7,13 @@ Reference: https://forum.pdpatchrepo.info/topic/5992/casio-cz-oscillators
 Note that opening post doesn't contain `cz-osc~.pd`. It is available on the link
 provided by @whale-av which is far below on the thread.
 
-As discussed in the reference, resonance oscillators are combination of hard-sync and
+As discussed in the reference, resonant oscillators are combination of hard-sync and
 amplitude modulation (AM). Hard-synced cosine is used as carrier, and waveforms like
 saw-tooth, triangle, trapezoid are used as modulator.
 
 This implementation tries to resemble original Pure Data patch, so to make it easy to
-figure out what's going on when adding more variations later. That's why seemingly useless
-`const` are used everywhere.
+figure out what's going on when adding more variations later. That's why intermediate
+variables are used everywhere.
 
 Amplitude of `Res*` variants are normalized in [-1, 0]. Others are in [-1, 1].
 
@@ -27,6 +27,51 @@ From the comments on original Pd patch:
 */
 
 import {clamp} from "../util.js";
+
+export const czOscillatorTypeItems = [
+  "Saw",
+  "Square",
+  "Pulse",
+  "Pulse2",
+  "SinePulse",
+  "HalfSine",
+  "ResSaw",
+  "ResTriangle",
+  "ResTrapezoid",
+  "ByteWaveQuadratic",
+  "ByteWaveXor",
+  "ByteWaveAnd",
+];
+
+export function selectCzOscillator(czOscillatorType) {
+  switch (czOscillatorTypeItems[czOscillatorType]) {
+    default:
+    case "Saw":
+      return czSaw;
+    case "Square":
+      return czSquare;
+    case "Pulse":
+      return czPulse;
+    case "Pulse2":
+      return czPulse2;
+    case "SinePulse":
+      return czSinePulse;
+    case "HalfSine":
+      return czHalfSine;
+    case "ResSaw":
+      return (phase, mod) => czResSaw(phase, Math.floor(64 * mod));
+    case "ResTriangle":
+      return (phase, mod) => czResTriangle(phase, Math.floor(64 * mod));
+    case "ResTrapezoid":
+      return (phase, mod) => czResTrapezoid(phase, Math.floor(64 * mod));
+    case "ByteWaveQuadratic":
+      return byteWaveQuadratic;
+    case "ByteWaveXor":
+      return byteWaveXor;
+    case "ByteWaveAnd":
+      return byteWaveAnd;
+  }
+};
 
 export function czSaw(phase, mod) {
   const v1 = phase;
@@ -122,4 +167,26 @@ export function czResTrapezoid(phase, mod) {
   const am = clamp(phase - 1, -0.5, 0.5);
 
   return cos * am;
+}
+
+export function byteWaveQuadratic(phase, mod) {
+  let phi = phase;
+  phi -= Math.floor(phi);
+  phi = Math.floor(phi * (2 + mod * mod * 1022));
+  phi *= phi;
+  return (phi % 257) / 128 - 1;
+}
+
+export function byteWaveXor(phase, mod) {
+  const pow2 = 256;
+  const phi = Math.floor(phase * pow2);
+  const mask = Math.floor(mod * pow2);
+  return (phi ^ mask) * 2 / pow2 - 1;
+}
+
+export function byteWaveAnd(phase, mod) {
+  const pow2 = 256;
+  const phi = Math.floor(phase * pow2);
+  const mask = Math.floor(mod * pow2);
+  return (phi & mask) * 2 / pow2 - 1;
 }

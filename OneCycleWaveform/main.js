@@ -39,48 +39,6 @@ const localRecipeBook = {
   },
 };
 
-function randomize() {
-  if (selectRandom.value === "Full") {
-  } else { // selectRandom.value  === "Default"
-    for (const key in param) {
-      if (key === "renderSamples") continue;
-      if (key === "nWaveform") continue;
-      if (key === "randomAmount") continue;
-      if (key === "reduceGlitch") continue;
-      if (key === "automationScaling") continue;
-      if (key === "powerOf") {
-        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 20);
-        continue;
-      }
-      if (key === "skew") {
-        param[key].ui = util.uniformDistributionMap(Math.random(), -40, 20);
-        continue;
-      }
-      if (key === "spectralSpread") {
-        param[key].ui = util.uniformDistributionMap(Math.random(), -20, 20);
-        continue;
-      }
-      if (key === "highpass") continue;
-      if (key === "lowpass") continue;
-      if (key === "notchRange") {
-        param[key].ui
-          = util.uniformDistributionMap(Math.random(), -60, util.ampToDB(0.04));
-        continue;
-      }
-      if (Array.isArray(param[key])) {
-        param[key].forEach(e => { e.normalized = Math.random(); });
-      } else if (param[key].scale instanceof parameter.MenuItemScale) {
-        param[key].normalized = Math.random();
-      } else {
-        param[key].normalized = Math.random();
-      }
-    }
-  }
-
-  widget.refresh(ui);
-  render();
-}
-
 function createArrayParameters(defaultDspValues, size, scale) {
   let arr = new Array(size);
   for (let i = 0; i < arr.length; ++i) {

@@ -45,6 +45,20 @@ export function exponentialMap(value, low, high) {
   return Math.pow(2, logL + value * (logH - logL));
 }
 
+// Shuffle `array` only in range of [start, end), in-place. `end` is exclusive.
+export function shuffleArray(rng, array, start, end) {
+  if (start === undefined) start = 0;
+  if (end === undefined) end = array.length;
+
+  for (let i = start; i < end - 1; ++i) {
+    const j = start + Math.floor(rng.number() * (end - start));
+    const tmp = array[i];
+    array[i] = array[j];
+    array[j] = tmp;
+  }
+  return array;
+}
+
 // `x` in [0, 1].
 export function superellipse(x, n) { return x < 0 ? 1 : (1 - x ** n) ** (1 / n); }
 

@@ -455,7 +455,7 @@ matrix.
 
 This implementation use the sequence from https://oeis.org/A000952 to determine the size
 of matrix. It's possible to construct this kind of conference matrix greater than size
-of 398, but they are out of scope of FDNReverb.
+of 398.
 */
 export function constructConference(matrix) {
   const candidates = [
