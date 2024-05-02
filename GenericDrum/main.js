@@ -220,7 +220,7 @@ const playControl = widget.playControl(
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);
-    onMatrixSizeChanged(param.matrixSize.defaultDsp);
+    onMatrixSizeChanged(param.matrixSize.dsp);
     widget.refresh(ui);
   },
   [...recipeBook.keys()],
