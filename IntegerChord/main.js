@@ -40,7 +40,30 @@ const localRecipeBook = {
     // filterCutoffKeyFollow: () => {},
 
     chordGainSlope: () => {},
-    chordNotes: () => {},
+    chordNotes: (prm) => {
+      const presetScales = [
+        [0, 4, 8, 9, 18, 20, 24],  // [0, 2, 4, 5, 7, 9, 11].
+        [0, 5, 7, 9, 18, 20, 22],  // [0, 2, 3, 5, 7, 9, 10].
+        [0, 1, 7, 9, 18, 19, 22],  // [0, 1, 3, 5, 7, 8, 10].
+        [0, 4, 8, 10, 18, 20, 24], // [0, 2, 4, 6, 7, 9, 11].
+        [0, 4, 8, 9, 18, 20, 21],  // [0, 2, 4, 5, 7, 9, 10].
+        [0, 5, 7, 9, 18, 19, 22],  // [0, 2, 3, 5, 7, 8, 10].
+        [0, 1, 7, 9, 14, 19, 22],  // [0, 1, 3, 5, 6, 8, 10].
+      ];
+      let chord = presetScales[Math.floor(Math.random() * presetScales.length)];
+
+      // `nRemove` must be a separate variable. `chord.length` changes in the loop below.
+      const targetLength = Math.floor(Math.random() * chord.length) + 1;
+      const nRemove = chord.length - targetLength;
+      for (let i = 0; i < nRemove; ++i) {
+        const removeIndex = Math.floor(Math.random() * chord.length);
+        chord.splice(removeIndex, 1);
+      }
+
+      for (let idx = 0; idx < prm.length; ++idx) {
+        prm[idx].dsp = chord.includes(idx) ? 1 : 0;
+      }
+    },
   },
 };
 
