@@ -122,7 +122,7 @@ onmessage = async (event) => {
       envelopeInterval, Math.ceil(modDecayDuration / envelopeInterval),
       x => superellipse(x, pv.modCurve)),
 
-    fdn: new FeedbackDelayNetwork(pv.matrixSize, upRate, pv.maxDelayTime),
+    fdn: new FeedbackDelayNetwork(pv.matrixSize, upRate * pv.maxDelayTime),
 
     limiter: new basiclimiter.Limiter(),
   };

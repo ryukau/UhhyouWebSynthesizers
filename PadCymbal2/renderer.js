@@ -137,7 +137,7 @@ onmessage = async (event) => {
   for (let i = 0; i < pv.nDelay; ++i) {
     let timeInSeconds = (1 + rng.number()) * pv.delayTime / (i + 1);
 
-    let delay = new LongAllpass(upRate, timeInSeconds, upRate < 8 ? Delay : IntDelay);
+    let delay = new LongAllpass(upRate * timeInSeconds, upRate < 8 ? Delay : IntDelay);
     delay.prepare(upRate * timeInSeconds, pv.feedback);
     dsp.delay.push(delay);
 

@@ -103,7 +103,7 @@ onmessage = (event) => {
       // FIR lowpass filter. With sufficiently high sampling rate, it's better to use
       // `IntDelay` to prevent loss by linear interpolation, to preserve metalic high
       // tones.
-      let delay = new LongAllpass(upRate, timeInSeconds, upRate < 8 ? Delay : IntDelay);
+      let delay = new LongAllpass(upRate * timeInSeconds, upRate < 8 ? Delay : IntDelay);
       delay.prepare(upRate * timeInSeconds, pv.feedback);
       dsp.delay.push(delay);
 

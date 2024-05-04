@@ -10,15 +10,14 @@ import * as util from "../common/util.js";
 export class TimeModulatedFDN extends FeedbackDelayNetwork {
   constructor(
     size,
-    sampleRate,
-    maxSecond,
+    maxDelayTimeInSamples,
     lowpassType,
     highpassType,
     delayType,
     timeModulation,
     rateLimit,
   ) {
-    super(size, sampleRate, maxSecond, lowpassType, highpassType, delayType);
+    super(size, maxDelayTimeInSamples, lowpassType, highpassType, delayType);
 
     this.delayTime = new Array(size);
     for (let i = 0; i < size; ++i) this.delayTime[i] = new RateLimiter(rateLimit);
@@ -125,7 +124,7 @@ export class SerialComb {
       let timeInSeconds = delayTimeSeconds / timeDenom;
       timeInSeconds += delayTimeRandomness * rng.number();
 
-      let delay = new LongAllpass(sampleRate, timeInSeconds, Delay);
+      let delay = new LongAllpass(sampleRate * timeInSeconds, Delay);
       delay.prepare(sampleRate * timeInSeconds, feedback);
       this.delay.push(delay);
 

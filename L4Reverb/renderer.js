@@ -16,7 +16,7 @@ onmessage = (event) => {
 
   let rng = new PcgRandom(BigInt(pv.seed + pv.channel * 65537));
 
-  let l4 = new delay.Lattice4(upRate, pv.maxDelayTime, pv.latticeSize);
+  let l4 = new delay.Lattice4(upRate * pv.maxDelayTime, pv.latticeSize);
 
   const rand = (base, ratio) => base * lerp(1, rng.number(), ratio);
 

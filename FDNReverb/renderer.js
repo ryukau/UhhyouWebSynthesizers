@@ -17,8 +17,7 @@ onmessage = (event) => {
 
   let fdn = new FeedbackDelayNetwork(
     pv.matrixSize,
-    upRate,
-    pv.maxDelayTime,
+    upRate * pv.maxDelayTime,
   );
 
   let rng = new PcgRandom(BigInt(pv.seed + pv.channel * 65537));

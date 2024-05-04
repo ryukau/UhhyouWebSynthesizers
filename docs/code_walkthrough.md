@@ -153,8 +153,6 @@ GUI is mostly defined in `index.js`, and GUI widgets are likely comes from `canv
 ### Concerns or Possible Changes
 There are some reserved parameter names as a result of dirty hack. See `Audio.render()` in `common/wave.js`.
 
-`*Delay` classes in `common/dsp/delay.js` takes seconds for constructor, but samples for `setTime` method. It's better to use samples to represent time in DSP.
-
 ## Aims
 UhhyouWebSynthesizers are mostly about experimentation. So the code aims to produce prototypes as fast as possible.
 

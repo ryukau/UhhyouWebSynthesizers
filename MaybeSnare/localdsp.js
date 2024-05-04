@@ -38,8 +38,7 @@ export class RandomPulse {
 export class SnaredFDN extends FeedbackDelayNetwork {
   constructor(
     size,
-    sampleRate,
-    maxSecond,
+    maxDelayTimeInSamples,
     lowpassType,
     highpassType,
     delayType,
@@ -49,7 +48,7 @@ export class SnaredFDN extends FeedbackDelayNetwork {
     pulseLoss,
     pulseDecayInSamples,
   ) {
-    super(size, sampleRate, maxSecond, lowpassType, highpassType, delayType);
+    super(size, maxDelayTimeInSamples, lowpassType, highpassType, delayType);
 
     this.delayTime = new Array(size);
     this.pulsar = new Array(size);
@@ -96,8 +95,7 @@ export class SnaredFDN extends FeedbackDelayNetwork {
 export class TimeModulatedFDN extends FeedbackDelayNetwork {
   constructor(
     size,
-    sampleRate,
-    maxSecond,
+    maxDelayTimeInSamples,
     lowpassType,
     highpassType,
     delayType,
@@ -105,7 +103,7 @@ export class TimeModulatedFDN extends FeedbackDelayNetwork {
     rateLimit,
     impactPosition,
   ) {
-    super(size, sampleRate, maxSecond, lowpassType, highpassType, delayType);
+    super(size, maxDelayTimeInSamples, lowpassType, highpassType, delayType);
 
     this.delayTime = new Array(size);
     for (let i = 0; i < size; ++i) this.delayTime[i] = new RateLimiter(rateLimit);

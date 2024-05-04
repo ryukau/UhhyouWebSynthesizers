@@ -17,7 +17,7 @@ const exp2Scaler = Math.log(2);
 class AdaptiveNotchComb {
   constructor(
     sampleRate, delaySeconds, notchNarrowness, notchStepSizeScale, notchMixGain) {
-    this.delay = new delay.IntDelay(sampleRate, delaySeconds);
+    this.delay = new delay.IntDelay(sampleRate * delaySeconds);
     this.delay.setTime(sampleRate * delaySeconds);
     this.fbGain = 1;
     this.fbSig = 0;

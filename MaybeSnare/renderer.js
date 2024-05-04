@@ -52,11 +52,11 @@ onmessage = (event) => {
     batterFeedback: pv.batterFeedback, // * Math.cos(Math.asin(pv.fdnCross)),
     snareFeedback: pv.snareFeedback,   //* Math.cos(Math.asin(pv.fdnCross)),
     fdnBatter: new TimeModulatedFDN(
-      pv.batterMatrixSize, upRate, 1 / pv.batterFrequency, svf.SVFHighShelf, svf.SVFHP,
+      pv.batterMatrixSize, upRate / pv.batterFrequency, svf.SVFHighShelf, svf.SVFHP,
       delayType(pv.batterDelayInterp), pv.batterTimeModulation, pv.batterTimeRateLimit,
       pv.impactPosition),
     fdnSnare: new SnaredFDN(
-      pv.snareMatrixSize, upRate, 1 / pv.snareFrequency, svf.SVFHighShelf, svf.SVFHP,
+      pv.snareMatrixSize, upRate / pv.snareFrequency, svf.SVFHighShelf, svf.SVFHP,
       delayType(pv.snareDelayInterp), pv.snareTimeModulation, pv.snareTimeRateLimit,
       pv.pulseThreshold, pv.pulseLoss, Math.floor(upRate * pv.pulseDecayTime)),
     bufBatter: 0,

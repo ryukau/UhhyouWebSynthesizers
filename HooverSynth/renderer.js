@@ -69,8 +69,7 @@ class Chorus {
   constructor(sampleRate, baseTimeSeconds, modTimeSeconds) {
     this.baseTime = Math.ceil(sampleRate * baseTimeSeconds);
     this.modTime = Math.ceil(sampleRate * modTimeSeconds);
-    this.delay
-      = new delay.IntDelay(sampleRate, (this.baseTime + this.modTime) / sampleRate);
+    this.delay = new delay.IntDelay(this.baseTime + this.modTime);
   }
 
   process(input, mod) {

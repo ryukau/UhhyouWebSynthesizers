@@ -47,7 +47,7 @@ class SinOsc {
 class LpComb {
   // *Cut = *Hz / sampleRate.
   constructor(sampleRate, combHz, feedback, lowpassHz, highpassHz) {
-    this.delay = new delay.IntDelay(sampleRate, 0.1);
+    this.delay = new delay.IntDelay(sampleRate * 0.1);
     this.lp = 0;
     this.hp = 0;
 

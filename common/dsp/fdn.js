@@ -9,8 +9,7 @@ import * as smoo from "./smoother.js";
 export class FeedbackDelayNetwork {
   constructor(
     size,
-    sampleRate,
-    maxSecond,
+    maxDelayTimeInSamples,
     lowpassType = smoo.DoubleEMAFilter,
     highpassType = smoo.EMAHighpass,
     delayType = delay.Delay,
@@ -29,7 +28,7 @@ export class FeedbackDelayNetwork {
     this.lowpass = new Array(size);
     this.highpass = new Array(size);
     for (let i = 0; i < size; ++i) {
-      this.delay[i] = new delayType(sampleRate, maxSecond);
+      this.delay[i] = new delayType(maxDelayTimeInSamples);
       this.lowpass[i] = new lowpassType();
       this.highpass[i] = new highpassType();
     }

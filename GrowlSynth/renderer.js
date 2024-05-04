@@ -205,7 +205,7 @@ class ModComb {
     delayTimeMod,
     delayTimeSlewRate,
   ) {
-    this.outDelay = new delay.IntDelay(sampleRate, jitterSeconds);
+    this.outDelay = new delay.IntDelay(sampleRate * jitterSeconds);
     this.outDelay.setTime(sampleRate * jitterSeconds);
 
     this.delay = new delay.Delay(sampleRate, delayTimeSeconds * 2);

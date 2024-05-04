@@ -125,10 +125,11 @@ onmessage = async (event) => {
     spreadSamples[idx]
       = uniformDistributionMap(rng.number(), 1, Math.ceil(upRate * pv.timeSpreadSeconds));
   }
-  dsp.spreadDelay = new MultiTapDelay(upRate, pv.timeSpreadSeconds, spreadSamples.length);
+  dsp.spreadDelay = new MultiTapDelay(
+    Math.ceil(upRate * pv.timeSpreadSeconds) + 2, spreadSamples.length);
   dsp.spreadDelay.setTime(spreadSamples);
 
-  dsp.fdn = new FeedbackDelayNetwork(8, upRate, pv.reverbBaseSecond);
+  dsp.fdn = new FeedbackDelayNetwork(8, upRate * pv.reverbBaseSecond);
   dsp.fdn.randomizeMatrix("SpecialOrthogonal", pv.seed + 2);
   for (let i = 0; i < dsp.fdn.delay.length; ++i) {
     dsp.fdn.delay[i].setTime(

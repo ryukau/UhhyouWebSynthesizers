@@ -7,19 +7,16 @@ export class IntDelay {
   #wptr;
   #buf;
 
-  constructor(sampleRate, maxSecond) {
+  constructor(maxDelayTimeInSamples) {
     this.#wptr = 0;
-
-    const size = Math.ceil(sampleRate * maxSecond) + 2;
-    this.#buf = new Array(size < 4 ? 4 : size);
-
+    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples), 4));
     this.reset();
   }
 
   reset() { this.#buf.fill(0); }
 
   setTime(timeInSample) {
-    this.timeInt = clamp(Math.floor(timeInSample), 0, this.#buf.length - 2);
+    this.timeInt = clamp(Math.floor(timeInSample), 0, this.#buf.length - 1);
   }
 
   // Always call `setTime` before `process`.
@@ -44,12 +41,9 @@ export class Delay {
   #wptr;
   #buf;
 
-  constructor(sampleRate, maxSecond) {
+  constructor(maxDelayTimeInSamples) {
     this.#wptr = 0;
-
-    const size = Math.ceil(sampleRate * maxSecond) + 2;
-    this.#buf = new Array(size < 4 ? 4 : size);
-
+    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples) + 2, 4));
     this.reset();
   }
 
@@ -89,12 +83,9 @@ export class MultiTapDelay {
   #timeInt;
   #rFraction;
 
-  constructor(sampleRate, maxSecond, nTap) {
+  constructor(maxDelayTimeInSamples, nTap) {
     this.#wptr = 0;
-
-    const size = Math.ceil(sampleRate * maxSecond) + 2;
-    this.#buf = new Array(size < 4 ? 4 : size);
-
+    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples) + 2, 4));
     this.#timeInt = new Array(nTap).fill(0);
     this.#rFraction = new Array(nTap).fill(0);
 
@@ -163,10 +154,10 @@ https://ccrma.stanford.edu/~jos/pasp/Allpass_Two_Combs.html
 export class LongAllpass {
   #buffer;
 
-  constructor(sampleRate, maxTime, DelayType = Delay) {
+  constructor(maxDelayTimeInSamples, DelayType = Delay) {
     this.#buffer = 0;
     this.gain = 0;
-    this.delay = new DelayType(sampleRate, maxTime);
+    this.delay = new DelayType(maxDelayTimeInSamples);
   }
 
   reset() {
@@ -198,20 +189,19 @@ export class NestedLongAllpass {
   #buffer;
 
   constructor(
-    sampleRate,
-    maxTime,
-    size,
-    factoryFunc = (fs, time) => new LongAllpass(fs, time),
+    delayTimeInSamples,
+    nAllpass,
+    factoryFunc = (maxSamples) => new LongAllpass(maxSamples),
   ) {
-    this.#in = new Array(size).fill(0);
-    this.#buffer = new Array(size).fill(0);
+    this.#in = new Array(nAllpass).fill(0);
+    this.#buffer = new Array(nAllpass).fill(0);
 
-    this.allpass = new Array(size);
-    for (let i = 0; i < size; ++i) {
-      this.allpass[i] = factoryFunc(sampleRate, maxTime, size);
+    this.allpass = new Array(nAllpass);
+    for (let i = 0; i < nAllpass; ++i) {
+      this.allpass[i] = factoryFunc(delayTimeInSamples, nAllpass);
     }
 
-    this.feed = new Array(size).fill(0); // in [-1, 1].
+    this.feed = new Array(nAllpass).fill(0); // in [-1, 1].
   }
 
   reset() {
@@ -237,21 +227,19 @@ export class NestedLongAllpass {
 }
 
 export class Lattice2 extends NestedLongAllpass {
-  constructor(sampleRate, maxTime, size) {
-    super(
-      sampleRate, maxTime, size,
-      (fs, time, size) => new NestedLongAllpass(fs, time, size));
+  constructor(delaySamples, size) {
+    super(delaySamples, size, (nSample, size) => new NestedLongAllpass(nSample, size));
   }
 }
 
 export class Lattice3 extends NestedLongAllpass {
-  constructor(sampleRate, maxTime, size) {
-    super(sampleRate, maxTime, size, (fs, time, size) => new Lattice2(fs, time, size));
+  constructor(delaySamples, size) {
+    super(delaySamples, size, (nSample, size) => new Lattice2(nSample, size));
   }
 }
 
 export class Lattice4 extends NestedLongAllpass {
-  constructor(sampleRate, maxTime, size) {
-    super(sampleRate, maxTime, size, (fs, time, size) => new Lattice3(fs, time, size));
+  constructor(delaySamples, size) {
+    super(delaySamples, size, (nSample, size) => new Lattice3(nSample, size));
   }
 }

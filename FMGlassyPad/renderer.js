@@ -29,12 +29,9 @@ export class DentDelay {
   #wptr;
   #buf;
 
-  constructor(sampleRate, maxSecond) {
+  constructor(maxDelayTimeInSamples) {
     this.#wptr = 0;
-
-    const size = Math.ceil(sampleRate * maxSecond) + 2;
-    this.#buf = new Array(size < 4 ? 4 : size);
-
+    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples) + 2, 4));
     this.reset();
   }
 
@@ -268,7 +265,7 @@ onmessage = async (event) => {
   // FDN.
   // **Note**: Max memory consumption is approximately 256 MiB * 8 delay.
   dsp.fdn = new FeedbackDelayNetwork(
-    8, upRate, Math.min(pv.renderDuration, 2 ** 38 / upRate), smoother.DoubleEMAFilter,
+    8, Math.min(upRate * pv.renderDuration, 2 ** 38), smoother.DoubleEMAFilter,
     smoother.EMAHighpass, DentDelay);
   dsp.fdn.randomizeMatrix(
     "SpecialOrthogonal", Math.floor(Number.MAX_SAFE_INTEGER * rng.number()));
@@ -280,7 +277,7 @@ onmessage = async (event) => {
   }
 
   // Flanger.
-  dsp.delay = new delay.MultiTapDelay(upRate, 0.1, pv.nTap);
+  dsp.delay = new delay.MultiTapDelay(Math.ceil(upRate * 0.1) + 2, pv.nTap);
   dsp.times = new Array(pv.nTap).fill(0);
   dsp.baseTimes = new Array(pv.nTap).fill(0);
   for (let i = 0; i < dsp.baseTimes.length; ++i) {

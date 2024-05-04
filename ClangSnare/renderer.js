@@ -57,10 +57,10 @@ onmessage = (event) => {
       pv.combLowpassGain, 0, pv.combLowpassCutoffSlope, pv.combOvertoneStart,
       pv.combTimeUniformOvertoneRatio),
     fdnBatter: new TimeModulatedFDN(
-      pv.matrixSize, upRate, 1 / pv.frequency, svf.SVFHighShelf, svf.SVFHP, delayType,
+      pv.matrixSize, upRate / pv.frequency, svf.SVFHighShelf, svf.SVFHP, delayType,
       pv.fdnTimeModulation, pv.fdnTimeRateLimit),
     fdnSnare: new TimeModulatedFDN(
-      pv.matrixSize, upRate, 1 / pv.frequency, svf.SVFHighShelf, svf.SVFHP, delayType,
+      pv.matrixSize, upRate / pv.frequency, svf.SVFHighShelf, svf.SVFHP, delayType,
       pv.fdnTimeModulation, pv.fdnTimeRateLimit),
     bufBatter: 0,
     bufSnare: 0,

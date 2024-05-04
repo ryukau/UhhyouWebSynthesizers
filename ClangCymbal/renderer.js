@@ -34,7 +34,7 @@ onmessage = (event) => {
       pv.densityHz / upRate, pv.noisePulseRatio, upRate * pv.noiseDecay),
     noiseEnvelope: new DoubleEmaADEnvelope(),
     fdn: new FeedbackDelayNetwork(
-      pv.matrixSize, upRate, 1 / pv.frequency, SVFLP, SVFHP, delayType),
+      pv.matrixSize, upRate / pv.frequency, SVFLP, SVFHP, delayType),
   };
 
   dsp.noiseEnvelope.noteOn(1, pv.oscAttack * upRate, pv.oscDecay * upRate);

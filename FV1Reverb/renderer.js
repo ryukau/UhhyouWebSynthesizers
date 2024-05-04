@@ -9,11 +9,11 @@ import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import * as menuitems from "./menuitems.js";
 
 class LoopSection {
-  constructor(nAllpass, sampleRate, timeInSample, feed, feedback, delayType) {
+  constructor(nAllpass, timeInSample, feed, feedback, delayType) {
     this.feedback = feedback;
     this.allpass = new Array(nAllpass);
     for (let i = 0; i < nAllpass; ++i) {
-      this.allpass[i] = new LongAllpass(sampleRate, 1, delayType);
+      this.allpass[i] = new LongAllpass(timeInSample[i], delayType);
       this.allpass[i].prepare(timeInSample[i], feed[i]);
     }
   }
@@ -63,7 +63,7 @@ onmessage = (event) => {
         * uniformDistributionMap(dsp.rng.number(), randomFeedMin, 1);
     }
     dsp.sections[idx]
-      = new LoopSection(pv.nAllpass, upRate, timeInSample, feed, pv.feedback, delayType);
+      = new LoopSection(pv.nAllpass, timeInSample, feed, pv.feedback, delayType);
   }
 
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);

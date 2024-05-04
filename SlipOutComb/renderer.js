@@ -49,7 +49,7 @@ class SlipOutComb {
     this.fbDecay = Math.pow(Number.EPSILON, 1 / (feedbackDecaySeconds * sampleRate));
 
     this.feedback = 0;
-    this.delay = new delay.IntDelay(sampleRate, 2 * delaySamples / sampleRate);
+    this.delay = new delay.IntDelay(2 * delaySamples);
     this.bandpass = new MatchedBiquad();
   }
 

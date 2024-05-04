@@ -67,7 +67,7 @@ class FilteredDelay {
     this.delayTimeModAmount = delayTimeModAmount;
     this.timeSlew = new RateLimiter(0.5);
 
-    this.delay = new IntDelay(sampleRate, 2 * delaySamples / sampleRate);
+    this.delay = new IntDelay(2 * delaySamples);
     this.bandpass = new MatchedBiquad();
   }
 
@@ -129,10 +129,10 @@ class EasyFDN {
 }
 
 class SerialAllpass {
-  constructor(upRate, gain, delaySamples) {
+  constructor(gain, delaySamples) {
     this.allpass = new Array(delaySamples.length);
     for (let idx = 0; idx < delaySamples.length; ++idx) {
-      this.allpass[idx] = new LongAllpass(upRate, delaySamples[idx] / upRate);
+      this.allpass[idx] = new LongAllpass(delaySamples[idx]);
       this.allpass[idx].prepare(delaySamples[idx], gain);
     }
   }
@@ -310,7 +310,7 @@ function prepareSerialAllpass(upRate, nAllpass, allpassMaxTimeHz, gain, rng) {
     sumFraction += samples - delaySamples[idx];
   }
   delaySamples[0] += Math.round(sumFraction);
-  return new SerialAllpass(upRate, gain, delaySamples);
+  return new SerialAllpass(gain, delaySamples);
 }
 
 function process(upRate, pv, dsp) {
