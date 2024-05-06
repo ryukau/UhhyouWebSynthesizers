@@ -27,7 +27,30 @@ const localRecipeBook = {
     nUnison: () => {},
     chord1Ratio: () => {},
     unisonPitchSpreadCents: () => {},
-    chord2Notes: () => {},
+    chord2Notes: (prm) => {
+      const presetScales = [
+        [0, 2, 4, 5, 9, 11, 14], // [0, 2, 4, 5, 7, 9, 11].
+        [0, 2, 3, 5, 9, 11, 12], // [0, 2, 3, 5, 7, 9, 10].
+        [0, 1, 3, 5, 9, 10, 12], // [0, 1, 3, 5, 7, 8, 10].
+        [0, 2, 4, 6, 9, 11, 14], // [0, 2, 4, 6, 7, 9, 11].
+        [0, 2, 4, 5, 9, 11, 13], // [0, 2, 4, 5, 7, 9, 10].
+        [0, 2, 3, 5, 9, 10, 12], // [0, 2, 3, 5, 7, 8, 10].
+        [0, 1, 3, 5, 8, 10, 12], // [0, 1, 3, 5, 6, 8, 10].
+      ];
+      let chord = presetScales[Math.floor(Math.random() * presetScales.length)];
+
+      // `nRemove` must be a separate variable. `chord.length` changes in the loop below.
+      const targetLength = Math.floor(Math.random() * chord.length) + 1;
+      const nRemove = chord.length - targetLength;
+      for (let i = 0; i < nRemove; ++i) {
+        const removeIndex = Math.floor(Math.random() * chord.length);
+        chord.splice(removeIndex, 1);
+      }
+
+      for (let idx = 0; idx < prm.length; ++idx) {
+        prm[idx].dsp = chord.includes(idx) ? 1 : 0;
+      }
+    },
     lfoFreqHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.01, 4); },
   },
 };
