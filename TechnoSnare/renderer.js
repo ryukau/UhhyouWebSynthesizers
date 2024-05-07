@@ -16,7 +16,7 @@ import {
   exponentialMap,
   lerp,
   normalDistributionMap,
-  uniformDistributionMap
+  uniformFloatMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -36,7 +36,7 @@ class SinOsc {
   process(rng, phaseDelta) {
     this.env *= this.decay;
     const mod = (0.7 + 0.3 * this.env)
-      * Math.exp(uniformDistributionMap(rng.number(), -this.noise, this.noise));
+      * Math.exp(uniformFloatMap(rng.number(), -this.noise, this.noise));
 
     this.phase += this.freqRatio * phaseDelta * mod;
     this.phase -= Math.floor(this.phase);
@@ -92,7 +92,7 @@ class SealHighTone {
 
   process(freqNormalized, rng) {
     this.carrierPhase += freqNormalized
-      + uniformDistributionMap(rng.number(), -this.noiseRange, this.noiseRange);
+      + uniformFloatMap(rng.number(), -this.noiseRange, this.noiseRange);
     this.carrierPhase -= Math.floor(this.carrierPhase);
     const car = Math.sin(2 * Math.PI * this.carrierPhase);
 

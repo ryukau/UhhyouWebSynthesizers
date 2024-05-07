@@ -19,7 +19,7 @@ function randomEq(prm, lowHz, highHz, lowQ, highQ, lowDB, highDB) {
   Q.dsp = util.exponentialMap(Math.random(), lowQ, highQ);
 
   const gain = prm[2];
-  gain.ui = util.uniformDistributionMap(Math.random(), lowDB, highDB);
+  gain.ui = util.uniformFloatMap(Math.random(), lowDB, highDB);
 }
 
 const localRecipeBook = {

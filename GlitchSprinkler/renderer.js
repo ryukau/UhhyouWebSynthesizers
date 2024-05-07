@@ -3,11 +3,7 @@
 
 import {downSampleLinearPhase} from "../common/dsp/multirate.js";
 import {nextPrime} from "../common/dsp/prime.js";
-import {
-  computePolynomial,
-  uniformDistributionMap,
-  uniformIntDistributionMap
-} from "../common/util.js";
+import {computePolynomial, uniformFloatMap, uniformIntMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
@@ -30,8 +26,8 @@ function process(upRate, pv, dsp) {
 }
 
 function setNote(upRate, pv, dsp, isRandomizing) {
-  const randInt = (low, high) => uniformIntDistributionMap(dsp.rng.number(), low, high);
-  const randFloat = (low, high) => uniformDistributionMap(dsp.rng.number(), low, high);
+  const randInt = (low, high) => uniformIntMap(dsp.rng.number(), low, high);
+  const randFloat = (low, high) => uniformFloatMap(dsp.rng.number(), low, high);
 
   let frequencyHz = dsp.frequencyHz;
   let oscSync = pv.oscSync;
@@ -59,8 +55,7 @@ function setNote(upRate, pv, dsp, isRandomizing) {
   }
   const chordMaxOvertone = pv.chordMaxOvertone % Math.ceil(upRate / 2 / frequencyHz);
   for (let idx = 1; idx < dsp.chordPitch.length; ++idx) {
-    dsp.chordPitch[idx]
-      = uniformIntDistributionMap(dsp.rng.number(), 1, chordMaxOvertone);
+    dsp.chordPitch[idx] = uniformIntMap(dsp.rng.number(), 1, chordMaxOvertone);
   }
 
   dsp.wavetable.length = dsp.cycleSamples;

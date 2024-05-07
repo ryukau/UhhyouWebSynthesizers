@@ -12,8 +12,8 @@ import {
   computePolynomial,
   lerp,
   shuffleArray,
-  uniformDistributionMap,
-  uniformIntDistributionMap
+  uniformFloatMap,
+  uniformIntMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -96,7 +96,7 @@ function setNote(upRate, pv, dsp, notePeriodSamples, noteDurationSamples, startP
   dsp.gainDecay = Math.pow(dsp.decayTo, 1.0 / noteDurationSamples);
 
   // Filter.
-  const randFloat = (low, high) => uniformDistributionMap(dsp.rng.number(), low, high);
+  const randFloat = (low, high) => uniformFloatMap(dsp.rng.number(), low, high);
   dsp.filter.reset();
   let cutoffNormalized = dsp.cutoffRatio
     / lerp(dsp.longestPeriodSamples, dsp.periodSamples, pv.filterCutoffKeyFollow);
@@ -108,8 +108,7 @@ function setNote(upRate, pv, dsp, notePeriodSamples, noteDurationSamples, startP
 }
 
 function randomChord(pv, dsp) {
-  const randInt
-    = (low, high) => uniformIntDistributionMap(dsp.rngStereo.number(), low, high);
+  const randInt = (low, high) => uniformIntMap(dsp.rngStereo.number(), low, high);
 
   let chord = [];
   let gain = [];
@@ -232,7 +231,7 @@ onmessage = async (event) => {
       sound[i] += process(upRate, pv, dsp) * chord[note].gain;
     }
 
-    startIndex += uniformIntDistributionMap(
+    startIndex += uniformIntMap(
       dsp.rngStereo.number(), 0, Math.floor(upRate * pv.chordRandomStartSeconds));
   }
 

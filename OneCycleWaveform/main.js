@@ -18,15 +18,13 @@ const localRecipeBook = {
     randomAmount: () => {},
     reduceGlitch: () => {},
     automationScaling: () => {},
-    powerOf: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 20); },
-    skew: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 20); },
-    spectralSpread:
-      (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -20, 20); },
+    powerOf: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 20); },
+    skew: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 20); },
+    spectralSpread: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -20, 20); },
     highpass: () => {},
     lowpass: () => {},
-    notchRange: (prm) => {
-      prm.ui = util.uniformDistributionMap(Math.random(), -60, util.ampToDB(0.04));
-    },
+    notchRange:
+      (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -60, util.ampToDB(0.04)); },
   },
   "Full": {
     renderSamples: () => {},

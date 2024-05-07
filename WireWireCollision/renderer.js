@@ -30,10 +30,9 @@ onmessage = async (event) => {
   const getRandomRangeFunc = (ratio, range) => {
     const upper = Math.min(1, ratio + range);
     const lower = Math.max(0, ratio - range);
-    return (rng) => util.uniformDistributionMap(rng.number(), lower, upper);
+    return (rng) => util.uniformFloatMap(rng.number(), lower, upper);
   };
-  const slightRandomize
-    = () => 2 ** util.uniformDistributionMap(dsp.rng.number(), -0.1, 0.1);
+  const slightRandomize = () => 2 ** util.uniformFloatMap(dsp.rng.number(), -0.1, 0.1);
 
   let dsp = {
     rng: new PcgRandom(BigInt(pv.seed + pv.channel * 65537)),

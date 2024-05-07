@@ -9,8 +9,8 @@ import {
   clamp,
   computePolynomial,
   lerp,
-  uniformDistributionMap,
-  uniformIntDistributionMap
+  uniformFloatMap,
+  uniformIntMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -90,7 +90,7 @@ function setNote(upRate, pv, dsp, notePeriodSamples) {
   dsp.gainDecay = Math.pow(pv.arpeggioDecayTo, 1.0 / dsp.noteSamples);
 
   // Filter.
-  const randFloat = (low, high) => uniformDistributionMap(dsp.rng.number(), low, high);
+  const randFloat = (low, high) => uniformFloatMap(dsp.rng.number(), low, high);
 
   dsp.filter.reset();
   let cutoffNormalized = dsp.cutoffRatio
@@ -100,8 +100,7 @@ function setNote(upRate, pv, dsp, notePeriodSamples) {
 }
 
 function randomChord(pv, dsp, rootPeriodSamples) {
-  const randInt
-    = (low, high) => uniformIntDistributionMap(dsp.rngStereo.number(), low, high);
+  const randInt = (low, high) => uniformIntMap(dsp.rngStereo.number(), low, high);
 
   let chord = [rootPeriodSamples];
   let gain = [1];

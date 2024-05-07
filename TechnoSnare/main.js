@@ -41,8 +41,7 @@ const localRecipeBook = {
     bodyNoiseMix: (prm) => {
       const curve = 2;
       const inv = 1 / curve;
-      prm.dsp
-        = util.uniformDistributionMap(Math.random(), 1e-2 ** inv, 0.5 ** inv) ** curve;
+      prm.dsp = util.uniformFloatMap(Math.random(), 1e-2 ** inv, 0.5 ** inv) ** curve;
     },
     adaptiveFilterMix: () => {},
     limiterEnable: () => {},
@@ -53,19 +52,18 @@ const localRecipeBook = {
     bodyNoise: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-2, 3); },
     bodyPitchBaseHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 40); },
     bodyPitchModHz:
-      (prm) => { prm.dsp = 100 * util.uniformDistributionMap(Math.random(), 0, 1) ** 2; },
+      (prm) => { prm.dsp = 100 * util.uniformFloatMap(Math.random(), 0, 1) ** 2; },
     bodyLowpassHz: (prm) => {
       prm.dsp = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp);
     },
     bodyHighpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 60, 120); },
-    bodyModOctave: (prm) => {
-      prm.dsp = util.uniformDistributionMap(Math.random(), scales.octave.minDsp, 3);
-    },
+    bodyModOctave: (
+      prm) => { prm.dsp = util.uniformFloatMap(Math.random(), scales.octave.minDsp, 3); },
     noiseAttackSeconds: () => {},
     noiseEnvelopeCurve:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 1, 20); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1, 20); },
     noiseBandpassHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 1000, 16000); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1000, 16000); },
     hightoneGain: (prm) => { prm.dsp = util.dbToAmp(-40); },
   },
   "Snare2": {
@@ -78,8 +76,7 @@ const localRecipeBook = {
     sampleRateScaler: () => {},
     dcHighpassHz: () => {},
     toneSlope: () => {},
-    bodyNoiseMix:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.6); },
+    bodyNoiseMix: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.1, 0.6); },
     adaptiveFilterMix: () => {},
     limiterEnable: () => {},
     limiterThreshold: () => {},
@@ -93,21 +90,19 @@ const localRecipeBook = {
       prm.dsp = value;
       param["noiseEnvelopeCurve"].dsp = value;
     },
-    bodyNoise: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 3, 6.2); },
+    bodyNoise: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 3, 6.2); },
     bodyPitchBaseHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 40); },
-    bodyPitchModHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 10); },
+    bodyPitchModHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 10); },
     bodyLowpassHz: (prm) => {
       prm.dsp = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp);
     },
     bodyHighpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 60, 120); },
-    bodyModOctave: (prm) => {
-      prm.dsp = util.uniformDistributionMap(Math.random(), scales.octave.minDsp, 3);
-    },
+    bodyModOctave: (
+      prm) => { prm.dsp = util.uniformFloatMap(Math.random(), scales.octave.minDsp, 3); },
     noiseAttackSeconds: () => {},
     noiseEnvelopeCurve: () => {},
     noiseBandpassHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 1000, 16000); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1000, 16000); },
     hightoneGain: (prm) => { prm.dsp = util.dbToAmp(-40); },
   },
   "Full": {

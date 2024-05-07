@@ -23,9 +23,7 @@ export function normalDistributionMap(v1, v2, mu = 0, sigma = 1) {
 }
 
 // `value` is in [0, 1).
-export function uniformDistributionMap(value, low, high) {
-  return low + value * (high - low);
-}
+export function uniformFloatMap(value, low, high) { return low + value * (high - low); }
 
 // `value` is in [0, 1).
 export function triangleDistributionMap(v1, v2, low, high) {
@@ -34,7 +32,7 @@ export function triangleDistributionMap(v1, v2, low, high) {
 
 // `value` is in [0, 1).
 // `low` and `high` are integer. Output interval is [low, high].
-export function uniformIntDistributionMap(value, low, high) {
+export function uniformIntMap(value, low, high) {
   return Math.floor(low + value * (high + 1 - low));
 }
 

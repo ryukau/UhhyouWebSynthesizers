@@ -13,8 +13,7 @@ const version = 0;
 
 const localRecipeBook = {
   "All": {
-    renderDuration:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.1, 2); },
+    renderDuration: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.1, 2); },
     fadeIn: () => {},
     fadeOut: () => {},
     overSample: () => {},
@@ -24,16 +23,13 @@ const localRecipeBook = {
     renderDuration: () => {},
     fadeIn: () => {},
     fadeOut: () => {},
-    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -30, 0); },
+    decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -30, 0); },
     overSample: () => {},
     sampleRateScaler: () => {},
     noiseStereo: () => {},
-    noiseDecay:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 0.05); },
-    clickDecay:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 0.05); },
-    filter2Cut:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 120); },
+    noiseDecay: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.05); },
+    clickDecay: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.05); },
+    filter2Cut: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 120); },
     eqGain: () => {},
     eqFeedback: () => {},
   },

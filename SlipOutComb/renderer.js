@@ -8,7 +8,7 @@ import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {EMAFilter} from "../common/dsp/smoother.js";
 import {MatchedBiquad} from "../common/dsp/svf.js";
-import {clamp, exponentialMap, lerp, uniformDistributionMap} from "../common/util.js";
+import {clamp, exponentialMap, lerp, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
@@ -143,7 +143,7 @@ class Bypass {
 }
 
 function process(upRate, pv, dsp) {
-  let sig = dsp.noiseGain * uniformDistributionMap(dsp.rng.number(), -1, 1);
+  let sig = dsp.noiseGain * uniformFloatMap(dsp.rng.number(), -1, 1);
   dsp.noiseGain *= dsp.noiseDecay;
 
   sig = dsp.fdn.process(sig);
@@ -175,7 +175,7 @@ onmessage = async (event) => {
   const pitchRatio = (index, spread, rndCent) => {
     const rndRange = exp2Scaler * rndCent / 1200;
     return lerp(1, index + 1, spread)
-      * Math.exp(uniformDistributionMap(rng.number(), rndRange, rndRange));
+      * Math.exp(uniformFloatMap(rng.number(), rndRange, rndRange));
   };
   for (let idx = 0; idx < combs.length; ++idx) {
     const delayCutRatio = pitchRatio(idx, pv.delayTimeSpread, pv.delayTimeRandomCent);

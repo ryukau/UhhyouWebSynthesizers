@@ -12,7 +12,7 @@ import {
   dbToAmp,
   exponentialMap,
   normalDistributionMap,
-  uniformDistributionMap
+  uniformFloatMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -227,7 +227,7 @@ onmessage = async (event) => {
       pv.modReductionThreshold, Math.pow(1 + pv.modResumeRate, 1 / upFold),
       pv.enableClipper, pv.clipperScale, fdnDelaySeconds, fdnLowpassCutoff);
     fdn.randomizeMatrix(
-      Math.floor(uniformDistributionMap(rng.number(), 0, Number.MAX_SAFE_INTEGER)));
+      Math.floor(uniformFloatMap(rng.number(), 0, Number.MAX_SAFE_INTEGER)));
     dsp.fdn.push(fdn);
   }
 

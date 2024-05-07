@@ -11,7 +11,7 @@ import {
   sosMatchedLowpass,
   sosMatchedPeak
 } from "../common/dsp/sos.js";
-import {lerp, uniformDistributionMap} from "../common/util.js";
+import {lerp, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import PocketFFT from "../lib/pocketfft/pocketfft.js";
 
@@ -117,7 +117,7 @@ onmessage = async (event) => {
   const sourceLowpassCutoff = Math.min(pv.sourceLowpassCutoffHz / pv.sampleRate, 0.5);
 
   let rng = new PcgRandom(BigInt(pv.seed + pv.channel * 65537));
-  let spectrumNoise = () => uniformDistributionMap(rng.number(), 0, 2);
+  let spectrumNoise = () => uniformFloatMap(rng.number(), 0, 2);
 
   let real = new Array(baseLength).fill(0);
   for (let i = 0; i < real.length; ++i) real[i] = spectrumNoise();

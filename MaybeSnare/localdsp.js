@@ -25,7 +25,7 @@ export class RandomPulse {
     const diff = this.gain - signal;
     if (diff >= this.threshold) {
       this.setDecay(
-        this.decayTimeInSamples * util.uniformDistributionMap(rng.number(), 0.8, 1.25));
+        this.decayTimeInSamples * util.uniformFloatMap(rng.number(), 0.8, 1.25));
       this.gain = this.loss * diff;
       this.loss *= 0.99;
     } else {

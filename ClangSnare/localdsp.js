@@ -61,7 +61,7 @@ export class ParallelLowpassComb {
     this.delay = [];
     this.filter = [];
     for (let i = 0; i < nDelay; ++i) {
-      const timeInSeconds = 10 ** (util.uniformDistributionMap(rng.number(), -4, -2));
+      const timeInSeconds = 10 ** (util.uniformFloatMap(rng.number(), -4, -2));
       this.delay.push(new Delay(sampleRate, timeInSeconds));
       this.filter.push(new SVF(timeInSeconds / sampleRate, Math.SQRT1_2));
     }

@@ -12,7 +12,7 @@ import {
   exponentialMap,
   lerp,
   normalDistributionMap,
-  uniformDistributionMap
+  uniformFloatMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -123,7 +123,7 @@ onmessage = async (event) => {
   let spreadSamples = new Array(pv.nResonator);
   for (let idx = 0; idx < spreadSamples.length; ++idx) {
     spreadSamples[idx]
-      = uniformDistributionMap(rng.number(), 1, Math.ceil(upRate * pv.timeSpreadSeconds));
+      = uniformFloatMap(rng.number(), 1, Math.ceil(upRate * pv.timeSpreadSeconds));
   }
   dsp.spreadDelay = new MultiTapDelay(
     Math.ceil(upRate * pv.timeSpreadSeconds) + 2, spreadSamples.length);

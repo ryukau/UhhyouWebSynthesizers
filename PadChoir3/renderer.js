@@ -254,8 +254,8 @@ onmessage = async (event) => {
 
   layerPad(fft, buffer, 1, upRate, pv, dsp);
   for (let layer = 1; layer <= pv.nChord; ++layer) {
-    const ptRnd = () => util.uniformDistributionMap(
-      dsp.rngCh.number(), pitchRandLower, pitchRandUpper);
+    const ptRnd
+      = () => util.uniformFloatMap(dsp.rngCh.number(), pitchRandLower, pitchRandUpper);
     layerPad(fft, buffer, ptRnd() * pv.chordPitch1 * layer, upRate, pv, dsp);
     layerPad(fft, buffer, ptRnd() * pv.chordPitch2 * layer, upRate, pv, dsp);
     layerPad(fft, buffer, ptRnd() * pv.chordPitch3 * layer, upRate, pv, dsp);

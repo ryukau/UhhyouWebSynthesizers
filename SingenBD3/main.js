@@ -18,14 +18,13 @@ const localRecipeJsonPath = [
 
 const localRecipeBook = {
   "Default": {
-    renderDuration:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.8); },
+    renderDuration: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.1, 0.8); },
     fadeIn: () => {},
     fadeOut: () => {},
-    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 0); },
+    decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 0); },
     overSample: () => {},
     sampleRateScaler: () => {},
-    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    baseFreq: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 90); },
     pitchSuperellipseCurve: () => {},
     modCurve: () => {},
     limiterAttack: () => {},
@@ -41,12 +40,11 @@ const localRecipeBook = {
     overSample: () => {},
     sampleRateScaler: () => {},
     baseFreq: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 90); },
-    pitchDropBezier:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 1, 3); },
+    pitchDropBezier: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1, 3); },
     pitchDropBezierPower:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.9, 1.1); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.9, 1.1); },
     pitchDropSuperellipse:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 3.0, 10.0); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 3.0, 10.0); },
     pitchSuperellipseCurve: () => {},
     pitchSuperellipseDuration: (prm) => {
       prm.dsp = util.exponentialMap(Math.random(), 0.1, scales.decaySecond.maxDsp);
@@ -60,10 +58,10 @@ const localRecipeBook = {
   },
   "Micro BD": {
     renderDuration:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.3); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.3); },
     fadeIn: () => {},
     fadeOut: () => {},
-    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -20, 0); },
+    decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -20, 0); },
     overSample: () => {},
     sampleRateScaler: () => {},
     overtoneRandomizeType: () => {},
@@ -76,7 +74,7 @@ const localRecipeBook = {
       prm[2].normalized = 1; // x2
       prm[3].normalized = 0; // y2
     },
-    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    baseFreq: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 90); },
     pitchDropBezier: (prm) => { prm.normalized = 0; },
     pitchDropSuperellipse: (prm) => { prm.normalized = 0; },
     mod1Amount: (prm) => { prm.normalized = 0; },
@@ -84,38 +82,38 @@ const localRecipeBook = {
   },
   "Short Bass": {
     renderDuration:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.3); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.3); },
     fadeIn: () => {},
     fadeOut: () => {},
-    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 0); },
+    decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 0); },
     stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
     limiterAttack: () => {},
     limiterSustain: () => {},
     limiterRelease: () => {},
-    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    baseFreq: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 90); },
     pitchDropBezier: (prm) => { prm.normalized = 0; },
     pitchDropSuperellipse: (prm) => { prm.normalized = 0; },
     mod1Amount: (prm) => { prm.normalized = 0; },
   },
   "FM Bass": {
     renderDuration:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.05, 0.8); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.8); },
     fadeIn: () => {},
     fadeOut: () => {},
-    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 0); },
+    decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 0); },
     stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
     limiterAttack: () => {},
     limiterSustain: () => {},
     limiterRelease: () => {},
-    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    baseFreq: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 90); },
     pitchDropBezier: (prm) => { prm.normalized = 0; },
     pitchDropSuperellipse: (prm) => { prm.normalized = 0; },
     modDecayDuration:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.01, 10); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.01, 10); },
     mod2Amount: (prm) => {
       prm.normalized = util.exponentialMap(Math.random(), Number.EPSILON, 0.2);
     },

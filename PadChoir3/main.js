@@ -20,10 +20,8 @@ const localRecipeBook = {
     baseFrequencyHz: () => {},
     phaseRandomAmount: () => {},
     pitchRandomOctave: () => {},
-    lowpassPower:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 2); },
-    formantTracking:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 0.6); },
+    lowpassPower: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 2); },
+    formantTracking: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.6); },
   },
   "Chord": {
     renderDuration: () => {},

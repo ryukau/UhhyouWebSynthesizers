@@ -106,13 +106,13 @@ Recipe data is written as `localRecipeBook` object that looks like following.
 const localRecipeBook = {
   "Default": {
     renderDuration:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.1, 0.8); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.1, 0.8); },
     fadeIn: () => {},
     fadeOut: () => {},
-    decayTo: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, 0); },
+    decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 0); },
     overSample: () => {},
     sampleRateScaler: () => {},
-    baseFreq: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 90); },
+    baseFreq: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 90); },
   },
 };
 ```
@@ -158,7 +158,7 @@ They are also used for more parameter specific scalings. For example, feedback o
 To get the value range of a parameter, following properties are available on `Parameter` class:
 
 | Type         | Min            | Max            |
-| ------------ | -------------- | -------------- |
+|--------------|----------------|----------------|
 | `display`    | `minDisplay`   | `maxDisplay`   |
 | `dsp`        | `scale.minDsp` | `scale.maxDsp` |
 | `ui`         | `scale.minUi`  | `scale.maxUi`  |

@@ -42,9 +42,8 @@ const localRecipeBook = {
     clickAmp: () => {},
     overSample: () => {},
     oscAttack: () => {},
-    oscDecay: (prm) => { prm.ui = util.uniformDistributionMap(Math.random(), -40, -6); },
-    densityHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 500, 10000); },
+    oscDecay: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, -6); },
+    densityHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 10000); },
     combMix: () => {},
     combSum: (prm) => {
       let index;
@@ -53,30 +52,24 @@ const localRecipeBook = {
       } while (menuitems.combSumItems[index] === "Tail");
       prm.dsp = index;
     },
-    combTimeBase:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 0.01); },
-    combTimeRandom:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 0.01); },
-    combHighpassHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 100); },
-    fdnMix:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0.25, 0.85); },
+    combTimeBase: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.01); },
+    combTimeRandom: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.01); },
+    combHighpassHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 100); },
+    fdnMix: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.25, 0.85); },
     fdnCross: () => {},
     matrixType: () => {},
-    identityAmount: (prm) => {
-      prm.dsp = util.dbToAmp(util.uniformDistributionMap(Math.random(), -20, 40));
-    },
-    frequency:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 20, 400); },
+    identityAmount:
+      (prm) => { prm.dsp = util.dbToAmp(util.uniformFloatMap(Math.random(), -20, 40)); },
+    frequency: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 20, 400); },
     lowpassCutoffBatterHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 500, 4000); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
     lowpassCutoffSnareHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 500, 4000); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
     lowpassQ: () => {},
     highpassCutoffBatterHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 100); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 100); },
     highpassCutoffSnareHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 10, 100); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 100); },
     highpassQ: (prm) => {
       const end = param.matrixSize.dsp;
       const start = Math.max(0, end - 4);

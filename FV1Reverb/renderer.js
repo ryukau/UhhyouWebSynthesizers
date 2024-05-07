@@ -3,7 +3,7 @@
 
 import {Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
-import {exponentialMap, uniformDistributionMap} from "../common/util.js";
+import {exponentialMap, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
@@ -59,8 +59,8 @@ onmessage = (event) => {
       const serialIndex = idx + jdx * pv.nSection;
       timeInSample[jdx] = pv.timeMultiplier * upRate * pv.delayTime[serialIndex]
         * exponentialMap(dsp.rng.number(), randomDelayMin, 1);
-      feed[jdx] = pv.feed[serialIndex]
-        * uniformDistributionMap(dsp.rng.number(), randomFeedMin, 1);
+      feed[jdx]
+        = pv.feed[serialIndex] * uniformFloatMap(dsp.rng.number(), randomFeedMin, 1);
     }
     dsp.sections[idx]
       = new LoopSection(pv.nAllpass, timeInSample, feed, pv.feedback, delayType);

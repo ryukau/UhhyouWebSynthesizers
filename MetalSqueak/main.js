@@ -23,7 +23,7 @@ const localRecipeBook = {
     overSample: () => {},
     sampleRateScaler: () => {},
     lowpassHz: () => {},
-    allpassMod: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), -4, 4); },
+    allpassMod: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), -4, 4); },
     modReductionThreshold: () => {},
   },
 };

@@ -133,8 +133,7 @@ onmessage = async (event) => {
     : dsp.rngCh;
   dsp.overtone.push(1);
   for (let idx = 1; idx < pv.nOvertone; ++idx) {
-    dsp.overtone.push(
-      util.uniformDistributionMap(otRng.number(), 1, pv.pitchRandomRange));
+    dsp.overtone.push(util.uniformFloatMap(otRng.number(), 1, pv.pitchRandomRange));
   }
 
   // FDN.

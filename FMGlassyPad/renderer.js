@@ -11,8 +11,8 @@ import {
   exponentialMap,
   lagrange3Interp,
   lerp,
-  uniformDistributionMap,
-  uniformIntDistributionMap
+  uniformFloatMap,
+  uniformIntMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -308,7 +308,7 @@ onmessage = async (event) => {
     carrierRatios.push(modRatio);
 
     const modOctave = 2 ** (4 - Math.floor(Math.log2(modRatio)));
-    const modSemitone = uniformDistributionMap(rng.number(), -4 / 12, 2 / 12);
+    const modSemitone = uniformFloatMap(rng.number(), -4 / 12, 2 / 12);
     modulatorRatios.push(modOctave + modSemitone);
   }
 
@@ -321,8 +321,8 @@ onmessage = async (event) => {
     const unisonRatio = pv.nUnison <= 1 ? 1 : unison / (pv.nUnison - 1);
     const baseFreq = pv.frequencyHz / upRate;
     const spreadCent = pv.unisonPitchSpreadCents * unisonRatio
-      + uniformDistributionMap(rng.number(), 0, pv.centsRandomize);
-    const spreadOctave = uniformIntDistributionMap(rng.number(), 0, pv.octaveRandomize);
+      + uniformFloatMap(rng.number(), 0, pv.centsRandomize);
+    const spreadOctave = uniformIntMap(rng.number(), 0, pv.octaveRandomize);
     const unisonFreq = baseFreq * 2 ** (spreadOctave + spreadCent / 1200);
 
     for (let note = 0; note < chordRatios.length; ++note) {

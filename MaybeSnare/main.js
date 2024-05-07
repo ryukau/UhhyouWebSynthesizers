@@ -12,19 +12,17 @@ import * as menuitems from "./menuitems.js";
 const version = 0;
 
 function randomMatrixSize(prm) {
-  prm.dsp = Math.floor(util.uniformDistributionMap(Math.random(), 8, 32));
+  prm.dsp = Math.floor(util.uniformFloatMap(Math.random(), 8, 32));
 };
 function randomIdentityAmount(prm) {
-  prm.dsp = util.dbToAmp(util.uniformDistributionMap(Math.random(), -20, 40));
+  prm.dsp = util.dbToAmp(util.uniformFloatMap(Math.random(), -20, 40));
 };
-function randomFrequency(prm) {
-  prm.dsp = util.uniformDistributionMap(Math.random(), 20, 90);
-};
+function randomFrequency(prm) { prm.dsp = util.uniformFloatMap(Math.random(), 20, 90); };
 function randomFeedback(prm) {
   prm.dsp = 1 - util.exponentialMap(Math.random(), 0.02, 0.15);
 };
 function randomHighpassCutoffHz(prm) {
-  prm.dsp = util.uniformDistributionMap(Math.random(), 10, 100);
+  prm.dsp = util.uniformFloatMap(Math.random(), 10, 100);
 };
 
 const localRecipeBook = {
@@ -39,10 +37,9 @@ const localRecipeBook = {
     overSample: () => {},
 
     fdnMix: () => {},
-    fdnCross: (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 0, 20); },
-    crossDecayTime: (prm) => {
-      prm.dsp = util.dbToAmp(util.uniformDistributionMap(Math.random(), -20, 20));
-    },
+    fdnCross: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 20); },
+    crossDecayTime:
+      (prm) => { prm.dsp = util.dbToAmp(util.uniformFloatMap(Math.random(), -20, 20)); },
 
     batterMatrixSize: (prm) => randomMatrixSize(prm),
     batterMatrixType: () => {},
@@ -51,7 +48,7 @@ const localRecipeBook = {
     batterFrequency: (prm) => randomFrequency(prm),
     batterFeedback: (prm) => randomFeedback(prm),
     batterLowpassCutoffHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 500, 4000); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
     batterLowpassQ: () => {},
     batterHighpassQ: () => {},
     batterHighpassCutoffHz: (prm) => randomHighpassCutoffHz(prm),
@@ -63,7 +60,7 @@ const localRecipeBook = {
     snareFrequency: (prm) => randomFrequency(prm),
     snareFeedback: (prm) => randomFeedback(prm),
     snareLowpassCutoffHz:
-      (prm) => { prm.dsp = util.uniformDistributionMap(Math.random(), 500, 16000); },
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 16000); },
     snareLowpassQ: () => {},
     snareHighpassQ: () => {},
     snareHighpassCutoffHz: (prm) => randomHighpassCutoffHz(prm),

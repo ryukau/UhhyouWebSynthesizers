@@ -10,7 +10,7 @@ import {nextPrime} from "../common/dsp/prime.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {RateLimiter} from "../common/dsp/smoother.js";
 import {MatchedBiquad, SVFHP} from "../common/dsp/svf.js";
-import {circularModes, clamp, lerp, uniformDistributionMap} from "../common/util.js";
+import {circularModes, clamp, lerp, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
@@ -194,7 +194,7 @@ class EnergyStoreNoise {
   process(value, preventBlowUp, rng) {
     this.sum += Math.abs(value);
     if (preventBlowUp) this.sum = Math.min(0.25, this.sum);
-    const out = uniformDistributionMap(rng.number(), -this.sum, this.sum);
+    const out = uniformFloatMap(rng.number(), -this.sum, this.sum);
     this.sum -= Math.abs(out);
     return out;
   }
@@ -264,8 +264,7 @@ function prepareFdn(upRate, upFold, sampleRateScaler, pv, rng, isSecondary) {
   const pitchRatio = (index, spread, rndCent) => {
     const rndRange = exp2Scaler * rndCent / 1200;
     const freqSpread = lerp(1, pitchFunc(index), spread);
-    return freqSpread
-      * Math.exp(uniformDistributionMap(rng.number(), rndRange, rndRange));
+    return freqSpread * Math.exp(uniformFloatMap(rng.number(), rndRange, rndRange));
   };
 
   let combs = new Array(pv.matrixSize);
@@ -317,7 +316,7 @@ function process(upRate, pv, dsp) {
   let sig = 0;
 
   if (dsp.noiseGain > Number.EPSILON) {
-    const noise = dsp.noiseGain * uniformDistributionMap(dsp.rng.number(), -1, 1);
+    const noise = dsp.noiseGain * uniformFloatMap(dsp.rng.number(), -1, 1);
     dsp.noiseGain *= dsp.noiseDecay;
     sig += dsp.noiseLowpass.process(noise);
   }

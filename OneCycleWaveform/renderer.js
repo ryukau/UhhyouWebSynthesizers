@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {clamp, exponentialMap, lerp, uniformDistributionMap} from "../common/util.js";
+import {clamp, exponentialMap, lerp, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import PocketFFT from "../lib/pocketfft/pocketfft.js";
 
@@ -192,7 +192,7 @@ class ParamLin {
     let bs = this.base;
     if (this.startFromDefault) bs = lerp(this.defaultValue, bs, interpRatio);
 
-    const random = uniformDistributionMap(rng.number(), -this.range, this.range);
+    const random = uniformFloatMap(rng.number(), -this.range, this.range);
     return clamp(bs + random, this.lower, this.upper);
   }
 }

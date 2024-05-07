@@ -232,9 +232,9 @@ onmessage = (event) => {
 
     vc.osc = new Oscillator(vc.upRate, rng.number());
     vc.frequency = pv.frequency * 2
-      ** (util.uniformDistributionMap(rng.number(), -1, 1) * pv.randomDetune / 600)
+      ** (util.uniformFloatMap(rng.number(), -1, 1) * pv.randomDetune / 600)
     vc.sigma = Math.sqrt(pv.sigma2) * 2
-      ** (util.uniformDistributionMap(rng.number(), -1, 1) * pv.randomPulseWidth);
+      ** (util.uniformFloatMap(rng.number(), -1, 1) * pv.randomPulseWidth);
     vc.tenseness = 1 - Math.cos((1 - pv.noiseMix) * Math.PI / 2);
     vc.noiseGain = 1 - Math.sqrt(vc.tenseness);
     vc.pulseGain = 0.08 * Math.pow(vc.tenseness, 0.25);
@@ -245,10 +245,10 @@ onmessage = (event) => {
     let diameter = pv.vocalTractDiameter.slice();
     const low = 2 ** (-1 / 10);
     const high = 2 ** (1 / 10);
-    const scale = util.uniformDistributionMap(rng.number(), low, high);
+    const scale = util.uniformFloatMap(rng.number(), low, high);
     const rand = (value, random, max = 1) => {
       return util.clamp(
-        value + util.uniformDistributionMap(rng.number(), -random, random), 0, max)
+        value + util.uniformFloatMap(rng.number(), -random, random), 0, max)
     };
     for (let i = 12; i < diameter.length - 4; ++i) {
       const x = (i - 12) / (diameter.length - 16);

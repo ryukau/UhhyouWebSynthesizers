@@ -50,7 +50,7 @@ onmessage = async (event) => {
   const getRandomRangeFunc = (ratio, range) => {
     const upper = Math.min(1, ratio + range);
     const lower = Math.max(0, ratio - range);
-    return (rng) => util.uniformDistributionMap(rng.number(), lower, upper);
+    return (rng) => util.uniformFloatMap(rng.number(), lower, upper);
   };
 
   let dsp = {

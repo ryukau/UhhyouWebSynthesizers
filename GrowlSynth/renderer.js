@@ -12,7 +12,7 @@ import {HP1, LP1} from "../common/dsp/onepole.js"
 import {normalizedCutoffToOnePoleKp, RateLimiter} from "../common/dsp/smoother.js";
 import {SVF, SVFBell, SVFHighShelf, SVFNotch} from "../common/dsp/svf.js";
 import {OverlapOscillator} from "../common/dsp/wavetable.js";
-import {dbToAmp, exponentialMap, lerp, uniformDistributionMap} from "../common/util.js";
+import {dbToAmp, exponentialMap, lerp, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import {newPocketFFTHelper} from "../lib/pocketfft/pocketffthelper.js";
 
@@ -272,7 +272,7 @@ function process(upRate, pv, dsp) {
 
   sig += 2 * lerp(s0, s1, pv.pulseType);
 
-  let noise = uniformDistributionMap(dsp.rng.number(), -pv.noiseGain, pv.noiseGain);
+  let noise = uniformFloatMap(dsp.rng.number(), -pv.noiseGain, pv.noiseGain);
   noise *= envOut * dsp.noiseEnvelope.process(grainFreq);
   noise = dsp.noiseFormant.process(noise, 2 ** (pv.pulseBendOct * envOut) / 16);
   sig += noise;
@@ -355,7 +355,7 @@ onmessage = async (event) => {
   for (let idx = 0; idx < pv.delayCount; ++idx) {
     dsp.modComb.push(new ModComb(
       upRate,
-      uniformDistributionMap(dsp.rng.number(), 0.0, pv.maxJitterSecond),
+      uniformFloatMap(dsp.rng.number(), 0.0, pv.maxJitterSecond),
       1 / (pv.frequencyHz * exponentialMap(dsp.rng.number(), freqRandLow, freqRandHigh)),
       exponentialMap(dsp.rng.number(), 0.98, 1) * pv.feedbackGain,
       exponentialMap(dsp.rng.number(), 0.5, 2) * pv.lowpassHz / upRate,
