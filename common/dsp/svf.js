@@ -106,9 +106,9 @@ export class SVFBell {
   }
 
   setCutoff(cutoffNormalized, Q, shelvingGainAmp) {
-    this.#A = Math.sqrt(shelvingGainAmp);
+    this.#A = shelvingGainAmp;
     this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI);
-    this.#k = 1 / Q / this.#A;
+    this.#k = 1 / (Q * this.#A);
   }
 
   process(v0) {

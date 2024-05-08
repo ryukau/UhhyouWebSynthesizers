@@ -123,7 +123,6 @@ class EasyFDN {
     if (this.threshold < sum) {
       this.crossGain *= sum > 100 ? this.crossGainRate : this.crossDecay;
     }
-    // return sum + input;
     return sum;
   }
 }

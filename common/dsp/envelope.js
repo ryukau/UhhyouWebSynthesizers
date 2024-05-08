@@ -271,3 +271,29 @@ export class ExpPolyEnvelope {
     return this.gain * Math.pow(this.t, this.a) * Math.exp(this.b * this.t);
   }
 }
+
+export class ExpADEnvelope {
+  constructor(attackSamples, decaySamples, threshold = 1e-3) {
+    attackSamples = Math.max(attackSamples, 1);
+    decaySamples = Math.max(decaySamples, 1);
+
+    this.threshold = threshold;
+
+    this.valueA = 1;
+    this.valueD = 1;
+    this.alphaA = Math.pow(this.threshold, 1 / attackSamples);
+    this.alphaD = Math.pow(this.threshold, 1 / decaySamples);
+
+    const log_a = Math.log(this.alphaA);
+    const log_d = Math.log(this.alphaD);
+    const t_p = Math.log(log_d / (log_a + log_d)) / log_a;
+    this.gain = 1 / ((1 - Math.pow(this.alphaA, t_p)) * Math.pow(this.alphaD, t_p));
+  }
+
+  process() {
+    this.valueA *= this.alphaA;
+    this.valueD *= this.alphaD;
+    return this.gain * (1 - this.threshold - this.valueA)
+      * (this.valueD - this.threshold);
+  }
+}

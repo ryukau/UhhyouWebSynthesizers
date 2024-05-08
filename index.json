@@ -99,6 +99,18 @@
       },
       "list": [
         {
+          "href": "./CollidingComb/synth.html",
+          "name": "CollidingComb",
+          "tag": {
+            "ja": "ドラム",
+            "en": "Drum"
+          },
+          "description": {
+            "ja": "GenericDrum の軽量版。",
+            "en": "A lightweight version of GenericDrum."
+          }
+        },
+        {
           "href": "./SquareMorph/synth.html",
           "name": "SquareMorph",
           "tag": {
