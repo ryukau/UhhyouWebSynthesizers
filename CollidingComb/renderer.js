@@ -119,7 +119,7 @@ class CollidingComb {
 
     this.threshold = 100;
     this.safetyGain = 1;
-    this.safetyFall = Math.pow(Number.EPSILON, 0.001 * sampleRate);
+    this.safetyFall = Math.pow(Number.EPSILON, 1 / 1024);
     this.safetyRise = 0.01;
   }
 
