@@ -31,7 +31,7 @@ export function triangleDistributionMap(v1, v2, low, high) {
 }
 
 // `value` is in [0, 1).
-// `low` and `high` are integer. Output interval is [low, high].
+// `low` and `high` are integer. Output interval is [low, high]. `high` is inclusive.
 export function uniformIntMap(value, low, high) {
   return Math.floor(low + value * (high + 1 - low));
 }

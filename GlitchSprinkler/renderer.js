@@ -8,6 +8,8 @@ import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
 
+const stereoSeed = 65537;
+
 function process(upRate, pv, dsp) {
   if (++dsp.phase >= dsp.cycleSamples) dsp.phase = 0;
 
@@ -26,10 +28,24 @@ function process(upRate, pv, dsp) {
 }
 
 function setNote(upRate, pv, dsp, isRandomizing) {
+  if (pv.enableProgression && dsp.timeInSixteenthNote > dsp.timeOfNextProgression) {
+    dsp.timeOfNextProgression = pv.progressionDuration
+      * Math.ceil(dsp.timeInSixteenthNote / pv.progressionDuration);
+    const index = Math.floor(dsp.rngProgression.number() * dsp.progressionScale.length);
+    const octave
+      = dsp.progressionScale[index] + uniformIntMap(dsp.rngProgression.number(), -1, 1);
+    dsp.progressionPitch = 2 ** octave;
+
+    if (pv.resetArpeggio) {
+      dsp.rng = new PcgRandom(BigInt(pv.seed + pv.channel * stereoSeed));
+      isRandomizing = false;
+    }
+  }
+
   const randInt = (low, high) => uniformIntMap(dsp.rng.number(), low, high);
   const randFloat = (low, high) => uniformFloatMap(dsp.rng.number(), low, high);
 
-  let frequencyHz = dsp.frequencyHz;
+  let frequencyHz = dsp.frequencyHz * dsp.progressionPitch;
   let oscSync = pv.oscSync;
   let fmIndex = pv.fmIndex;
 
@@ -73,6 +89,7 @@ function setNote(upRate, pv, dsp, isRandomizing) {
   }
 
   const durMul = randInt(1, pv.arpeggioDurationVariation);
+  dsp.timeInSixteenthNote += durMul;
   dsp.noteSamples += dsp.baseNoteDuration
     * (durMul - Math.ceil(dsp.noteSamples / dsp.baseNoteDuration));
 
@@ -80,8 +97,8 @@ function setNote(upRate, pv, dsp, isRandomizing) {
   dsp.gainDecay = Math.pow(pv.arpeggioDecayTo, 1.0 / dsp.noteSamples);
 }
 
-function constructScale(pv) {
-  let scaleOct = generateScaleOctave(pv);
+function constructScale(pv, scaleIndex) {
+  let scaleOct = generateScaleOctave(pv, scaleIndex);
 
   const maxOvertone = 2 ** Math.floor(pv.pitchVariation);
   let primes = [];
@@ -116,8 +133,14 @@ function iota(n) {
   return array;
 }
 
-function generateScaleOctave(pv) {
-  const scale = menuitems.pitchScaleItems[pv.pitchScale];
+function rangeInt(start, end) {
+  let array = new Array(end - start);
+  for (let i = 0; i < array.length; ++i) array[i] = start + i;
+  return array;
+}
+
+function generateScaleOctave(pv, scaleIndex) {
+  const scale = menuitems.pitchScaleItems[scaleIndex];
   switch (scale) {
     default:
     case "Chromatic":
@@ -162,15 +185,29 @@ function generateScaleOctave(pv) {
       return [0, 3, 4, 5, 7].map(v => v / 12);
     case "ET 12 [0, 3, 6, 7, 10]":
       return [0, 3, 6, 7, 10].map(v => v / 12);
+    case "ET 12 [0, 3, 7]":
+      return [0, 3, 7].map(v => v / 12);
     case "ET 12 [0, 5, 7, 10, 11]":
       return [0, 5, 7, 10, 11].map(v => v / 12);
+    case "ET 12 [0, 4, 7]":
+      return [0, 4, 7].map(v => v / 12);
     case "ET 12 [0, 4, 7, 11, 14, 18, 21]":
       return [0, 4, 7, 11, 14, 18, 21].map(v => v / 12);
+    case "ET 12 [0, 7]":
+      return [0, 7].map(v => v / 12);
     case "Wild 3":
       return [
         0,    0, 0, 0, 2, 2.2, 2.4,  2.8, 3, 3.2, 3.5, 3.8, 4,  4.2,   4.4,   4.8,
         4.98, 5, 5, 5, 7, 7,   7.02, 7.2, 9, 9.1, 9.4, 9.6, 11, 11.02, 11.04, 11.2,
       ].map(v => v / 12);
+    case "Overtone 4 to 7":
+      return rangeInt(4, 8).map(v => (Math.log2(v) % 1.0));
+    case "Overtone 8 to 15":
+      return rangeInt(8, 16).map(v => (Math.log2(v) % 1.0));
+    case "Overtone 16 to 31":
+      return rangeInt(16, 32).map(v => (Math.log2(v) % 1.0));
+    case "The 42 melody":
+      return [2, 10, 34, 40, 42].map(v => (Math.log2(v) % 1.0));
   }
   return [0]; // Shouldn't reach here.
 }
@@ -182,14 +219,21 @@ onmessage = async (event) => {
 
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
-  const rng = new PcgRandom(BigInt(pv.seed + pv.channel * 65537));
 
   let dsp = {};
+
+  dsp.rngProgression = new PcgRandom(BigInt(pv.seed + pv.channel));
+  dsp.rng = new PcgRandom(BigInt(pv.seed + pv.channel * stereoSeed));
+
+  dsp.timeInSixteenthNote = 0;
+  dsp.timeOfNextProgression = -1;
+  dsp.progressionScale = generateScaleOctave(pv, pv.progressionScale);
+  dsp.progressionPitch = 1;
+
   dsp.frequencyHz = pv.frequencyHz * 2 ** pv.oscOctave;
   dsp.wavetable = new Array(1024).fill(0);
   dsp.chordPitch = new Array(pv.chordNoteCount).fill(0);
   dsp.chordPitch[0] = 1;
-  dsp.rng = rng;
   dsp.noteSamples = 0;
   if (pv.tempoBpm <= 0) {
     console.info("Tempo must be positive non 0.");
@@ -197,7 +241,7 @@ onmessage = async (event) => {
     return;
   }
   dsp.baseNoteDuration = Math.round(upRate * 15 / pv.tempoBpm);
-  dsp.scaleOctave = constructScale(pv);
+  dsp.scaleOctave = constructScale(pv, pv.pitchScale);
   setNote(upRate, pv, dsp, false);
 
   // Process.

@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -28,6 +28,9 @@ const localRecipeBook = {
     pitchDriftCent: () => {},
     arpeggioDecayTo: () => {},
     arpeggioRestChance: () => {},
+    enableProgression: () => {},
+    resetArpeggio: () => {},
+    progressionDuration: () => {},
     chordChance: () => {},
   },
 };
@@ -72,6 +75,8 @@ const scales = {
   pitchVariation: new parameter.IntScale(0, 16),
   pitchOctaveWrap: new parameter.IntScale(1, 8),
 
+  progressionDuration: new parameter.IntScale(1, 32),
+
   chordNoteCount: new parameter.IntScale(1, 32),
   chordChance: new parameter.LinearScale(0, 1),
   chordMaxOvertone: new parameter.IntScale(2, 64),
@@ -101,6 +106,12 @@ const param = {
   pitchDriftCent: new parameter.Parameter(25, scales.pitchDriftCent),
   pitchVariation: new parameter.Parameter(0, scales.pitchVariation),
   pitchOctaveWrap: new parameter.Parameter(2, scales.pitchOctaveWrap),
+
+  enableProgression: new parameter.Parameter(0, scales.boolean),
+  resetArpeggio: new parameter.Parameter(1, scales.boolean),
+  progressionDuration: new parameter.Parameter(16, scales.progressionDuration, true),
+  progressionScale: new parameter.Parameter(
+    menuitems.pitchScaleItems.indexOf("Overtone 8 to 15"), scales.pitchScale),
 
   chordNoteCount: new parameter.Parameter(3, scales.chordNoteCount),
   chordChance: new parameter.Parameter(0.5, scales.chordChance),
@@ -172,6 +183,7 @@ const playControl = widget.playControl(
 const detailRender = widget.details(divLeft, "Render");
 const detailOsc = widget.details(divRightA, "Oscillator");
 const detailArpeggio = widget.details(divRightB, "Arpeggio");
+const detailProgression = widget.details(divRightB, "Progression");
 const detailChord = widget.details(divRightB, "Overtone Chord");
 
 const ui = {
@@ -200,7 +212,8 @@ const ui = {
   arpeggioDecayTo: new widget.NumberInput(
     detailArpeggio, "Decay To [dB]", param.arpeggioDecayTo, render),
   arpeggioDurationVariation: new widget.NumberInput(
-    detailArpeggio, "Duration Variation", param.arpeggioDurationVariation, render),
+    detailArpeggio, "Duration Variation [beat/4]", param.arpeggioDurationVariation,
+    render),
   arpeggioRestChance: new widget.NumberInput(
     detailArpeggio, "Rest Chance", param.arpeggioRestChance, render),
   equalTemperament: new widget.NumberInput(
@@ -212,6 +225,17 @@ const ui = {
     detailArpeggio, "Pitch Variation", param.pitchVariation, render),
   pitchOctaveWrap: new widget.NumberInput(
     detailArpeggio, "Pitch Wrap [oct]", param.pitchOctaveWrap, render),
+
+  enableProgression: new widget.ToggleButtonLine(
+    detailProgression, ["Progression - Off", "Progression - On"], param.enableProgression,
+    render),
+  resetArpeggio: new widget.ToggleButtonLine(
+    detailProgression, ["Reset Arpeggio - Off", "Reset Arpeggio - On"],
+    param.resetArpeggio, render),
+  progressionDuration: new widget.NumberInput(
+    detailProgression, "Duration [beat/4]", param.progressionDuration, render),
+  progressionScale:
+    new widget.ComboBoxLine(detailProgression, "Scale", param.progressionScale, render),
 
   chordNoteCount:
     new widget.NumberInput(detailChord, "Note Count", param.chordNoteCount, render),
