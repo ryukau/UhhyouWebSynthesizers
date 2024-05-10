@@ -37,21 +37,6 @@ class CutoffEnvelope {
   }
 }
 
-class TriangleLfo {
-  constructor() { this.phase = 0; }
-
-  reset(periodSamples, resetPhase) {
-    this.period = periodSamples;
-    if (resetPhase) this.phase = Math.floor(this.period / 4);
-  }
-
-  process() {
-    const sawtooth = this.phase / this.period;
-    if (++this.phase >= this.period) this.phase = 0;
-    return 4 * Math.abs(sawtooth - 0.5) - 1;
-  }
-}
-
 function process(upRate, pv, dsp) {
   if (++dsp.phase >= dsp.periodSamples) dsp.phase = 0;
 
@@ -225,10 +210,21 @@ onmessage = async (event) => {
   for (let note = 0; note < chord.length; ++note) {
     const phase = getPhase(note / chord.length);
     const duration = sound.length - startIndex;
-    setNote(upRate, pv, dsp, chord[note].period, duration, phase);
+    for (let unison = 0; unison < pv.nUnison; ++unison) {
+      const ratio = pv.nUnison <= 1 ? 1 : unison / (pv.nUnison - 1);
 
-    for (let i = startIndex + 1; i < sound.length; ++i) {
-      sound[i] += process(upRate, pv, dsp) * chord[note].gain;
+      // `pv.unisonDetuneType` relates to `unisonDetuneTypeItems` in `menuitems.js`.
+      const detuneCent
+        = (pv.unisonDetuneType === 0 ? ratio : unison) * pv.unisonDetuneCent;
+      const period = Math.floor(chord[note].period * 0.5 ** (detuneCent / 1200));
+      if (period <= 1) break;
+
+      const phs = phase + pv.unisonPhaseSpread * ratio;
+      setNote(upRate, pv, dsp, period, duration, phs - Math.floor(phs));
+
+      for (let i = startIndex + 1; i < sound.length; ++i) {
+        sound[i] += process(upRate, pv, dsp) * chord[note].gain;
+      }
     }
 
     startIndex += uniformIntMap(

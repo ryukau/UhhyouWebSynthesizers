@@ -10,7 +10,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -26,6 +26,11 @@ const localRecipeBook = {
     limiterEnable: () => {},
     limiterThreshold: () => {},
     limiterAttackSeconds: () => {},
+
+    nUnison: () => {},
+    unisonDetuneCent: () => {},
+    unisonPhaseSpread: () => {},
+    unisonDetuneType: () => {},
 
     frequencyHz: () => {},
     oscOctave: () => {},
@@ -103,6 +108,11 @@ const scales = {
   limiterThreshold: new parameter.DecibelScale(-60, 40, false),
   limiterAttackSeconds: new parameter.DecibelScale(-100, -40, false),
 
+  nUnison: new parameter.IntScale(1, 64),
+  phaseSpread: new parameter.LinearScale(-1, 1),
+  unisonDetuneCent: new parameter.DecibelScale(-20, util.ampToDB(1200), true),
+  unisonDetuneType: new parameter.MenuItemScale(menuitems.unisonDetuneTypeItems),
+
   seed: new parameter.IntScale(0, 2 ** 32),
   frequencyHz: new parameter.DecibelScale(util.ampToDB(20), util.ampToDB(20000), false),
   oscOctave: new parameter.IntScale(-16, 16),
@@ -119,7 +129,6 @@ const scales = {
 
   arpeggioDirection: new parameter.MenuItemScale(menuitems.arpeggioDirectionItems),
   chordMaxOctave: new parameter.IntScale(0, 8),
-  chordPhaseOffset: new parameter.LinearScale(-1, 1),
   chordRandomStartSeconds: new parameter.DecibelScale(-80, 0, true),
   chordGainSlope: new parameter.DecibelScale(-12, 12, false),
 };
@@ -138,6 +147,11 @@ const param = {
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
   limiterAttackSeconds: new parameter.Parameter(0.01, scales.limiterAttackSeconds, true),
 
+  nUnison: new parameter.Parameter(1, scales.nUnison, true),
+  unisonPhaseSpread: new parameter.Parameter(0, scales.phaseSpread, true),
+  unisonDetuneCent: new parameter.Parameter(20, scales.unisonDetuneCent, true),
+  unisonDetuneType: new parameter.Parameter(0, scales.unisonDetuneType, true),
+
   seed: new parameter.Parameter(0, scales.seed, true),
   frequencyHz: new parameter.Parameter(40, scales.frequencyHz, true),
   oscOctave: new parameter.Parameter(0, scales.oscOctave, true),
@@ -155,7 +169,7 @@ const param = {
 
   arpeggioDirection: new parameter.Parameter(0, scales.arpeggioDirection),
   chordMaxOctave: new parameter.Parameter(3, scales.chordMaxOctave),
-  chordPhaseOffset: new parameter.Parameter(1, scales.chordPhaseOffset),
+  chordPhaseOffset: new parameter.Parameter(1, scales.phaseSpread),
   chordRandomStartSeconds:
     new parameter.Parameter(0, scales.chordRandomStartSeconds, true),
   chordGainSlope: new parameter.Parameter(1, scales.chordGainSlope),
@@ -255,6 +269,7 @@ const playControl = widget.playControl(
 
 const detailRender = widget.details(divLeft, "Render");
 const detailLimiter = widget.details(divLeft, "Limiter");
+const detailUnison = widget.details(divLeft, "Unison");
 const detailOsc = widget.details(divRightA, "Oscillator");
 const detailFilter = widget.details(divRightA, "Filter");
 const detailChord = widget.details(divRightB, "Chord");
@@ -281,6 +296,15 @@ const ui = {
     detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
   limiterAttackSeconds: new widget.NumberInput(
     detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
+
+  nUnison:
+    new widget.NumberInput(detailUnison, "nUnison [voice/note]", param.nUnison, render),
+  unisonPhaseSpread:
+    new widget.NumberInput(detailUnison, "Phase Spread", param.unisonPhaseSpread, render),
+  unisonDetuneCent:
+    new widget.NumberInput(detailUnison, "Detune [cent]", param.unisonDetuneCent, render),
+  unisonDetuneType:
+    new widget.ComboBoxLine(detailUnison, "Detune Type", param.unisonDetuneType, render),
 
   waveform: new widget.WaveformXYPad(
     detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 23,
