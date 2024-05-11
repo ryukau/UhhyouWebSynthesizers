@@ -118,6 +118,7 @@ export class WaveformXYPad {
     this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
+    this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -147,6 +148,13 @@ export class WaveformXYPad {
   }
 
   setControlPoints(waveform) {
+    const triangle = (t) => {
+      // Output amplitude is in [0, 1]. Starting amp is 0.5, then rise, fall, rise.
+      t += 0.75;
+      t -= Math.floor(t);
+      return Math.abs(2 * t - 1);
+    };
+
     for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
       const ratio = (idx + 1) / (this.#controlPoints.length + 1);
 
@@ -154,6 +162,43 @@ export class WaveformXYPad {
         this.#controlPoints[idx] = {
           x: ratio * this.canvas.width,
           y: ratio * this.canvas.height,
+        };
+      } else if (waveform === "pulse") {
+        this.#controlPoints[idx] = {
+          x: ratio * this.canvas.width,
+          y: idx <= 0 ? 0 : this.canvas.height / 2,
+        };
+      } else if (waveform === "triangle") {
+        this.#controlPoints[idx] = {
+          x: ratio * this.canvas.width,
+          y: triangle(ratio) * this.canvas.height,
+        };
+      } else if (waveform === "trapezoid") {
+        this.#controlPoints[idx] = {
+          x: ratio * this.canvas.width,
+          y: clamp(1.5 * triangle(ratio) - 0.25, 0, 1) * this.canvas.height,
+        };
+      } else if (waveform === "fmA") {
+        this.#controlPoints[idx] = {
+          x: ratio * this.canvas.width,
+          y: (Math.sin(2 * Math.PI * ratio + 4 * Math.sin(2 * Math.PI * ratio)) + 1)
+            * this.canvas.height / 2,
+        };
+      } else if (waveform === "fmB") {
+        this.#controlPoints[idx] = {
+          x: ratio * this.canvas.width,
+          y: (Math.sin(2 * Math.PI * ratio + Math.sin(2 * Math.PI * ratio)) + 1)
+            * this.canvas.height / 2,
+        };
+      } else if (waveform === "alternate") {
+        this.#controlPoints[idx] = {
+          x: ratio * this.canvas.width,
+          y: (idx % 2) * this.canvas.height,
+        };
+      } else if (waveform === "chirp") {
+        this.#controlPoints[idx] = {
+          x: 10 ** (-2 * ratio) * this.canvas.width,
+          y: (idx % 2) * this.canvas.height,
         };
       } else { // "sine"
         this.#controlPoints[idx] = {
@@ -286,6 +331,7 @@ export class WaveformXYPad {
 
   onPointerDown(event) {
     this.canvas.setPointerCapture(event.pointerId);
+    this.canvas.focus();
     this.#isMouseDown = true;
 
     const mouse = this.#getMousePosition(event);
@@ -347,6 +393,35 @@ export class WaveformXYPad {
     const sensi = event.shiftKey ? 0.01 : event.ctrlKey ? 1 : 0.2;
 
     this.draw();
+  }
+
+  onKeyDown(event) {
+    if (event.key === "r") {
+      this.randomize();
+      this.draw();
+    } else if (event.key === "1") {
+      this.setControlPoints("sine");
+    } else if (event.key === "2") {
+      this.setControlPoints("fmA");
+    } else if (event.key === "3") {
+      this.setControlPoints("fmB");
+    } else if (event.key === "4") {
+      this.setControlPoints("sawtooth");
+    } else if (event.key === "5") {
+      this.setControlPoints("triangle");
+    } else if (event.key === "6") {
+      this.setControlPoints("trapezoid");
+    } else if (event.key === "7") {
+      this.setControlPoints("alternate");
+    } else if (event.key === "8") {
+      this.setControlPoints("pulse");
+    } else if (event.key === "9") {
+      this.setControlPoints("chirp");
+    } else {
+      return;
+    }
+
+    this.onChangeFunc();
   }
 
   draw() {
