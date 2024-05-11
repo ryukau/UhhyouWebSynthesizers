@@ -10,7 +10,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 1;
+const version = 2;
 
 const localRecipeBook = {
   "Default": {
@@ -44,6 +44,7 @@ const localRecipeBook = {
     // filterCutoffDecayT60: () => {},
     // filterCutoffKeyFollow: () => {},
 
+    chordPitchStackUp: () => {},
     chordGainSlope: () => {},
     chordNotes: (prm) => {
       const presetScales = [
@@ -106,7 +107,7 @@ const scales = {
   sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
 
   limiterThreshold: new parameter.DecibelScale(-60, 40, false),
-  limiterAttackSeconds: new parameter.DecibelScale(-100, -40, false),
+  limiterAttackSeconds: new parameter.DecibelScale(-100, -20, false),
 
   nUnison: new parameter.IntScale(1, 64),
   phaseSpread: new parameter.LinearScale(-1, 1),
@@ -129,6 +130,7 @@ const scales = {
 
   arpeggioDirection: new parameter.MenuItemScale(menuitems.arpeggioDirectionItems),
   chordMaxOctave: new parameter.IntScale(0, 8),
+  chordPitchStackUp: new parameter.IntScale(0, 8),
   chordRandomStartSeconds: new parameter.DecibelScale(-80, 0, true),
   chordGainSlope: new parameter.DecibelScale(-12, 12, false),
 };
@@ -145,7 +147,7 @@ const param = {
 
   limiterEnable: new parameter.Parameter(0, scales.boolean),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
-  limiterAttackSeconds: new parameter.Parameter(0.01, scales.limiterAttackSeconds, true),
+  limiterAttackSeconds: new parameter.Parameter(0.1, scales.limiterAttackSeconds, true),
 
   nUnison: new parameter.Parameter(1, scales.nUnison, true),
   unisonPhaseSpread: new parameter.Parameter(0, scales.phaseSpread, true),
@@ -169,6 +171,7 @@ const param = {
 
   arpeggioDirection: new parameter.Parameter(0, scales.arpeggioDirection),
   chordMaxOctave: new parameter.Parameter(3, scales.chordMaxOctave),
+  chordPitchStackUp: new parameter.Parameter(0, scales.chordPitchStackUp),
   chordPhaseOffset: new parameter.Parameter(1, scales.phaseSpread),
   chordRandomStartSeconds:
     new parameter.Parameter(0, scales.chordRandomStartSeconds, true),
@@ -335,6 +338,8 @@ const ui = {
     detailChord, "Arpeggio Direction", param.arpeggioDirection, render),
   chordMaxOctave:
     new widget.NumberInput(detailChord, "Max Octave", param.chordMaxOctave, render),
+  chordPitchStackUp:
+    new widget.NumberInput(detailChord, "Stack Up", param.chordPitchStackUp, render),
   chordPhaseOffset:
     new widget.NumberInput(detailChord, "Phase Offset", param.chordPhaseOffset, render),
   chordRandomStartSeconds: new widget.NumberInput(

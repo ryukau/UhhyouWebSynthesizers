@@ -92,7 +92,7 @@ function setNote(upRate, pv, dsp, notePeriodSamples, noteDurationSamples, startP
   dsp.dcHighpass.reset();
 }
 
-function randomChord(pv, dsp) {
+function randomChord(pv, dsp, chordMaxOctave) {
   const randInt = (low, high) => uniformIntMap(dsp.rngStereo.number(), low, high);
 
   let chord = [];
@@ -105,7 +105,7 @@ function randomChord(pv, dsp) {
     // Try several times until `period` is sufficiently large.
     let period;
     for (let i = 0; i < 4; ++i) {
-      const octaveShift = idx < 1 ? 1 : 2 ** randInt(0, -pv.chordMaxOctave);
+      const octaveShift = idx < 1 ? 1 : 2 ** randInt(0, -chordMaxOctave);
       period = Math.round(dsp.rootPeriodSamples * baseRatio * octaveShift);
       if (period >= 2) break;
     }
@@ -127,7 +127,7 @@ function processLimiter(upRate, pv, sound) {
   const limiter = new Limiter(
     Math.floor(upRate * pv.limiterAttackSeconds), 0, 0, pv.limiterThreshold);
 
-  // Followin code is discarding latency part without changing the length of `sound`.
+  // Discard latency part without changing the length of `sound`.
   if (limiter.latency <= sound.length) {
     for (let i = 0; i < limiter.latency; ++i) limiter.process(sound[i]);
 
@@ -183,7 +183,19 @@ onmessage = async (event) => {
   // Process.
   const scale = constructIntJustScale(2, -24, 1, pv.chordNotes);
   dsp.chordRatio = scale.map(period => period / scale[0]);
-  let chord = randomChord(pv, dsp);
+
+  let chord;
+  if (pv.chordPitchStackUp <= 0) {
+    chord = randomChord(pv, dsp, pv.chordMaxOctave);
+  } else {
+    dsp.chordRatio.pop();
+    const baseRatio = dsp.chordRatio.slice(1);
+    for (let idx = 1; idx < pv.chordPitchStackUp; ++idx) {
+      const lastRatio = dsp.chordRatio.at(-1);
+      dsp.chordRatio = dsp.chordRatio.concat(baseRatio.map(v => lastRatio * v));
+    }
+    chord = randomChord(pv, dsp, 0);
+  }
 
   const arpeggioDirection = menuitems.arpeggioDirectionItems[pv.arpeggioDirection];
   if (arpeggioDirection === "Down") {
