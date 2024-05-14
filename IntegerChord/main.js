@@ -131,7 +131,7 @@ const scales = {
   arpeggioDirection: new parameter.MenuItemScale(menuitems.arpeggioDirectionItems),
   chordMaxOctave: new parameter.IntScale(0, 8),
   chordPitchStackUp: new parameter.IntScale(0, 8),
-  chordRandomStartSeconds: new parameter.DecibelScale(-80, 0, true),
+  chordRandomStartSeconds: new parameter.DecibelScale(-80, 20, true),
   chordGainSlope: new parameter.DecibelScale(-12, 12, false),
 };
 
