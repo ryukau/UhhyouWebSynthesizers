@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<script type="module">
+  import * as lambartw from "./lambartw.js";
+
+  // console.log(lambartw.LambertW0(-1 / Math.E));
+  // console.log(lambartw.LambertWm1(-1 / Math.E));
+
+  const nValue = 1024;
+  const notEqualNaN = (a, b) => a != b && (!isNaN(a) || !isNaN(b));
+
+  let test1_0 = [];
+  let test1_m1 = [];
+  for (let i = 0; i < nValue; ++i) {
+    const ratio = i / (nValue - 1);
+    const z = -1 / Math.E * ratio;
+
+    const w0 = lambartw.LambertW0(z);
+    const w0_branch = lambartw.LambertW(z, 0);
+    if (notEqualNaN(w0, w0_branch)) {
+      console.error(`Value mismatch on W0 at z=${z}, w0=${w0}, w=${w0_branch}`);
+    }
+    test1_0.push(w0);
+
+    const wm1 = lambartw.LambertWm1(z);
+    const wm1_branch = lambartw.LambertW(z, -1);
+    if (notEqualNaN(wm1, wm1_branch)) {
+      console.error(`Value mismatch on Wm1 at z=${z}, w0=${wm1}, w=${wm1_branch}`);
+    }
+    test1_m1.push(lambartw.LambertWm1(z));
+  }
+
+  let test2_0 = [];
+  for (let i = 0; i < nValue; ++i) {
+    const ratio = i / (nValue - 1);
+    const z = 30 * ratio;
+
+    const w0 = lambartw.LambertW0(z);
+    const w0_branch = lambartw.LambertW(z, 0);
+    if (notEqualNaN(w0, w0_branch)) {
+      console.error(`Value mismatch on W0 at z=${z}, w0=${w0}, w=${w0_branch}`);
+    }
+    test2_0.push(w0);
+  }
+
+  console.log(JSON.stringify({ test1_0, test1_m1, test2_0 }));
+</script>
+
+</html>
