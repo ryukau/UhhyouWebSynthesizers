@@ -1,8 +1,10 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {ExpADEnvelope} from "../common/dsp/envelope.js";
 import {Limiter} from "../common/dsp/limiter.js";
 import {downSampleLinearPhase} from "../common/dsp/multirate.js";
+import {BiquadOsc} from "../common/dsp/recursivesine.js";
 import {selectFilter} from "../common/dsp/resonantfilter.js";
 import {EMAFilter} from "../common/dsp/smoother.js";
 import {SVF} from "../common/dsp/svf.js";
@@ -10,6 +12,7 @@ import {constructIntJustScale} from "../common/dsp/tuning.js";
 import {
   clamp,
   computePolynomial,
+  exponentialMap,
   lerp,
   shuffleArray,
   uniformFloatMap,
@@ -18,6 +21,57 @@ import {
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
+
+class MultiSine {
+  // `baseFreq` is normalized frequency in [0, 0.5).
+  constructor(nSine, rng, baseFreq, baseAttackSample, baseDecaySample, sort) {
+    // Do not render partials beyond Nyquist frequency.
+    if (baseFreq * nSine >= 0.5) nSine = Math.floor(0.5 / baseFreq);
+
+    this.osc = new Array(nSine);
+    this.env = new Array(nSine);
+
+    const randomPitch = () => exponentialMap(
+      rng.number(), 0.9885140203528962, 1.0116194403019225); // ±20 cents.
+    const randomGain = () => exponentialMap(rng.number(), 0.5, 2);
+
+    let oscFreq = new Array(nSine);
+    this.oscGain = new Array(nSine);
+    let envAttack = new Array(nSine);
+    let envDecay = new Array(nSine);
+    for (let i = 0; i < nSine; ++i) {
+      oscFreq[i] = baseFreq * (i + 1) * randomPitch();
+      this.oscGain[i] = baseFreq / oscFreq[i] * randomGain();
+      envAttack[i]
+        = exponentialMap(rng.number(), baseAttackSample / 16, baseAttackSample);
+      envDecay[i] = exponentialMap(rng.number(), baseDecaySample / 16, baseDecaySample);
+    }
+
+    this.gain = 1 / this.oscGain.reduce((p, c) => p + c, 0);
+
+    const ascend = (a, b) => a - b;
+    const descend = (a, b) => b - a;
+    if (sort) {
+      oscFreq.sort(ascend);
+      envAttack.sort(descend);
+      envDecay.sort(descend);
+    }
+
+    for (let i = 0; i < nSine; ++i) {
+      const phase = rng.number();
+      this.osc[i] = new BiquadOsc(oscFreq[i], phase);
+      this.env[i] = new ExpADEnvelope(envAttack[i], envDecay[i]);
+    }
+  }
+
+  process() {
+    let sum = 0;
+    for (let i = 0; i < this.osc.length; ++i) {
+      sum += this.oscGain[i] * this.env[i].process() * this.osc[i].process();
+    }
+    return sum * this.gain;
+  }
+}
 
 class CutoffEnvelope {
   constructor() { this.reset(8000 / 48000, 1024); }
@@ -45,6 +99,8 @@ function process(upRate, pv, dsp) {
   let index = Math.floor((dsp.fmIndex * sig + 1) * dsp.phase) % dsp.periodSamples;
   if (index < 0) index += dsp.periodSamples;
   sig = dsp.wavetable[index];
+
+  if (pv.oscPolySineMix > 0) sig = lerp(sig, dsp.multisine.process(), pv.oscPolySineMix);
 
   sig *= dsp.gainEnv;
   dsp.gainEnv *= dsp.gainDecay;
@@ -79,6 +135,16 @@ function setNote(upRate, pv, dsp, notePeriodSamples, noteDurationSamples, startP
 
   dsp.gainEnv = 1;
   dsp.gainDecay = Math.pow(dsp.decayTo, 1.0 / noteDurationSamples);
+
+  // MultiSine oscillator.
+  dsp.multisine = new MultiSine(
+    64,
+    dsp.rngStereo,
+    dsp.periodSamples / upRate * dsp.oscSinePitch,
+    upRate * 0.01,
+    upRate * pv.oscSineDecaySeconds,
+    false,
+  );
 
   // Filter.
   const randFloat = (low, high) => uniformFloatMap(dsp.rng.number(), low, high);
@@ -166,6 +232,7 @@ onmessage = async (event) => {
   const rootHz = pv.frequencyHz * 2 ** pv.oscOctave;
   dsp.rootPeriodSamples = Math.max(2, upRate / rootHz);
   dsp.wavetable = new Array(1024).fill(0);
+  dsp.oscSinePitch = 2 ** (pv.oscSinePitch / 12);
 
   dsp.cutoffRatio = 2 ** pv.filterCutoffOctave;
   dsp.cutoffEnv = new CutoffEnvelope();

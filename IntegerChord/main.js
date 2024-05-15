@@ -10,7 +10,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 2;
+const version = 3;
 
 const localRecipeBook = {
   "Default": {
@@ -34,6 +34,7 @@ const localRecipeBook = {
 
     frequencyHz: () => {},
     oscOctave: () => {},
+    // oscSinePitch: () => {},
 
     useFilter: () => {},
     filterType: (prm) => {/*prm.normalized = Math.random();*/},
@@ -119,6 +120,9 @@ const scales = {
   oscOctave: new parameter.IntScale(-16, 16),
   fmIndex: new parameter.DecibelScale(-60, 40, true),
   distortionGain: new parameter.DecibelScale(0, 60, false),
+  oscPolySineMix: new parameter.LinearScale(0, 1),
+  oscSineDecaySeconds: new parameter.DecibelScale(-40, 40, false),
+  oscSinePitch: new parameter.LinearScale(-36, 36),
 
   filterType: new parameter.MenuItemScale(menuitems.filterTypeItems),
   filterCascade: new parameter.IntScale(1, 16),
@@ -158,8 +162,10 @@ const param = {
   frequencyHz: new parameter.Parameter(40, scales.frequencyHz, true),
   oscOctave: new parameter.Parameter(0, scales.oscOctave, true),
   fmIndex: new parameter.Parameter(0, scales.fmIndex, true),
-
   saturationGain: new parameter.Parameter(util.dbToAmp(0), scales.distortionGain, true),
+  oscPolySineMix: new parameter.Parameter(0.5, scales.oscPolySineMix, true),
+  oscSineDecaySeconds: new parameter.Parameter(1, scales.oscSineDecaySeconds, true),
+  oscSinePitch: new parameter.Parameter(0, scales.oscSinePitch, true),
 
   filterType: new parameter.Parameter(1, scales.filterType),
   filterCascade: new parameter.Parameter(1, scales.filterCascade, true),
@@ -319,6 +325,12 @@ const ui = {
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
   saturationGain: new widget.NumberInput(
     detailOsc, "Saturation Gain [dB]", param.saturationGain, render),
+  oscPolySineMix: new widget.NumberInput(
+    detailOsc, "Mix Poly Osc./Multi Sine", param.oscPolySineMix, render),
+  oscSineDecaySeconds: new widget.NumberInput(
+    detailOsc, "Multi Sine - Decay [s]", param.oscSineDecaySeconds, render),
+  oscSinePitch: new widget.NumberInput(
+    detailOsc, "Multi Sine - Pitch [st.]", param.oscSinePitch, render),
 
   filterType: new widget.ComboBoxLine(detailFilter, "Type", param.filterType, render),
   filterCascade:
