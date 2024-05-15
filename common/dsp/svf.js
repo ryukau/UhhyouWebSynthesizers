@@ -309,9 +309,9 @@ export class BiquadResonator {
   }
 }
 
-// Resonator (this ComplexResonator and BiquadResonator above) is basically a lowpass with
-// high Q. Perhaps useful for some musical tunings, but it's probably better to use other
-// SVF most of times.
+// A resonator (this ComplexResonator and BiquadResonator above) is basically a peaking
+// with high Q. Perhaps useful for some musical tunings, but it's probably better to use
+// other SVF most of times.
 //
 // Complex transfer function:
 //
