@@ -10,7 +10,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 3;
+const version = 4;
 
 const localRecipeBook = {
   "Default": {
@@ -35,6 +35,7 @@ const localRecipeBook = {
     frequencyHz: () => {},
     oscOctave: () => {},
     // oscSinePitch: () => {},
+    oscSinePitchMod: () => {},
 
     useFilter: () => {},
     filterType: (prm) => {/*prm.normalized = Math.random();*/},
@@ -166,6 +167,7 @@ const param = {
   oscPolySineMix: new parameter.Parameter(0.5, scales.oscPolySineMix, true),
   oscSineDecaySeconds: new parameter.Parameter(1, scales.oscSineDecaySeconds, true),
   oscSinePitch: new parameter.Parameter(0, scales.oscSinePitch, true),
+  oscSinePitchMod: new parameter.Parameter(0, scales.boolean),
 
   filterType: new parameter.Parameter(1, scales.filterType),
   filterCascade: new parameter.Parameter(1, scales.filterCascade, true),
@@ -331,6 +333,9 @@ const ui = {
     detailOsc, "Multi Sine - Decay [s]", param.oscSineDecaySeconds, render),
   oscSinePitch: new widget.NumberInput(
     detailOsc, "Multi Sine - Pitch [st.]", param.oscSinePitch, render),
+  oscSinePitchMod: new widget.ToggleButtonLine(
+    detailOsc, ["Multi Sine Pitch - Align", "Multi Sine Pitch - Invert"],
+    param.oscSinePitchMod, render),
 
   filterType: new widget.ComboBoxLine(detailFilter, "Type", param.filterType, render),
   filterCascade:

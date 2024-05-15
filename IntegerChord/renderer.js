@@ -47,12 +47,12 @@ class MultiSine {
       envDecay[i] = exponentialMap(rng.number(), baseDecaySample / 16, baseDecaySample);
     }
 
-    this.gain = 1 / this.oscGain.reduce((p, c) => p + c, 0);
+    const normalizeGain = 1 / this.oscGain.reduce((p, c) => p + c, 0);
+    for (let i = 0; i < nSine; ++i) this.oscGain[i] *= normalizeGain;
 
     const ascend = (a, b) => a - b;
     const descend = (a, b) => b - a;
     if (sort) {
-      oscFreq.sort(ascend);
       envAttack.sort(descend);
       envDecay.sort(descend);
     }
@@ -69,7 +69,7 @@ class MultiSine {
     for (let i = 0; i < this.osc.length; ++i) {
       sum += this.oscGain[i] * this.env[i].process() * this.osc[i].process();
     }
-    return sum * this.gain;
+    return sum;
   }
 }
 
@@ -137,10 +137,12 @@ function setNote(upRate, pv, dsp, notePeriodSamples, noteDurationSamples, startP
   dsp.gainDecay = Math.pow(dsp.decayTo, 1.0 / noteDurationSamples);
 
   // MultiSine oscillator.
+  const multiSineBaseFreq
+    = pv.oscSinePitchMod == 0 ? (1 / dsp.periodSamples) : dsp.periodSamples / upRate;
   dsp.multisine = new MultiSine(
     64,
     dsp.rngStereo,
-    dsp.periodSamples / upRate * dsp.oscSinePitch,
+    multiSineBaseFreq * dsp.oscSinePitch,
     upRate * 0.01,
     upRate * pv.oscSineDecaySeconds,
     false,
