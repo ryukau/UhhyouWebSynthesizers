@@ -12,7 +12,8 @@ H(z) = ------------------------
          1 + a1*z^-1 + a2*z^-2
 ```
 
-To construct filter from sos, use `SosFilter` in `multirate.js`.
+To construct filter from sos, use `SosFilterImmediate`. `SosFilterMultiRate` in
+`multirate.js` is also used, if latency is acceptable.
 
 Common parameter:
 - `cutoffNormalized`: cutoffHz / sampleRate.
@@ -22,6 +23,64 @@ Reference:
 - https://www.w3.org/TR/audio-eq-cookbook/
 - https://ryukau.github.io/filter_notes/matched_iir_filter/matched_iir_filter.html
 */
+
+export class SosFilterImmediate {
+  #x1;
+  #x2;
+  #y1;
+  #y2;
+
+  constructor(coefficent) {
+    //
+    // Transfer function of one section is:
+    //
+    // H(z) = (b0 + b1 * z^-1 + b2 * z^-2) / (1 + a1 * z^-1 + a2 * z^-2).
+    //
+    // Also this.co = [[b0, b1, b2, a1, a2], ...].
+    //
+    this.co = structuredClone(coefficent);
+    if (typeof this.co[0] === "number") this.co = [this.co];
+
+    for (let i = 0; i < this.co.length; ++i) { // `scipy.signal` sos format case.
+      if (this.co[i].length == 6) this.co[i].splice(3, 1);
+    }
+
+    if (this.co[0].length != 5) {
+      console.error("SosFilterImmediate coefficient is ill formatted.", this.co);
+    }
+
+    this.#x1 = new Array(this.co.length).fill(0);
+    this.#x2 = new Array(this.co.length).fill(0);
+    this.#y1 = new Array(this.co.length).fill(0);
+    this.#y2 = new Array(this.co.length).fill(0);
+  }
+
+  reset() {
+    this.#x1.fill(0);
+    this.#x2.fill(0);
+    this.#y1.fill(0);
+    this.#y2.fill(0);
+  }
+
+  process(input) {
+    for (let i = 0; i < this.co.length; ++i) {
+      const y0                         //
+        = this.co[i][0] * input        //
+        + this.co[i][1] * this.#x1[i]  //
+        + this.co[i][2] * this.#x2[i]  //
+        - this.co[i][3] * this.#y1[i]  //
+        - this.co[i][4] * this.#y2[i]; //
+
+      this.#x2[i] = this.#x1[i];
+      this.#x1[i] = input;
+      this.#y2[i] = this.#y1[i];
+      this.#y1[i] = y0;
+
+      input = y0;
+    }
+    return input;
+  }
+}
 
 function getBiquadQParam(cutoffNormalized, Q) {
   const ω0 = 2 * Math.PI * cutoffNormalized;

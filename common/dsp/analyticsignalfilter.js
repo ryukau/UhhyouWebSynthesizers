@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {HalfBandIIR, SosFilter} from "./multirate.js";
+import {HalfBandIIR, SosFilterMultiRate} from "./multirate.js";
 
 export class AnalyticSignalFilter {
   #coRe =
@@ -241,11 +241,11 @@ export class AntiAliasedAmplitudeModulatorFull {
     ],
   ]
 
-  #lowpassCar = new SosFilter(this.#sosLowpass);
-  #lowpassMod = new SosFilter(this.#sosLowpass);
-  #lowpassDown = new SosFilter(this.#sosLowpass);
+  #lowpassCar = new SosFilterMultiRate(this.#sosLowpass);
+  #lowpassMod = new SosFilterMultiRate(this.#sosLowpass);
+  #lowpassDown = new SosFilterMultiRate(this.#sosLowpass);
 
-  #bandpassAm = new SosFilter(this.#sosBandpass);
+  #bandpassAm = new SosFilterMultiRate(this.#sosBandpass);
 
   #forwardShifter = new FrequencyShifter();
   #backwardShifter = new FrequencyShifter();

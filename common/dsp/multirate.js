@@ -50,7 +50,7 @@ export function downSampleIIR(data, fold) {
     console.error(`Coefficents not available for IIR ${fold} fold down-sampling.`);
   };
 
-  let decimationLowpass = new SosFilter(getCoefficient(fold));
+  let decimationLowpass = new SosFilterMultiRate(getCoefficient(fold));
   let frame = [0, 0];
   const halfFold = Math.floor(fold / 2);
   for (let i = 0; i < targetDurationSamples; ++i) {
@@ -135,7 +135,9 @@ export class HalfBandIIR {
   }
 }
 
-export class SosFilter {
+// This implementation introduces latency. It works okay for up-sampling and
+// down-sampling, but not suitable for other use cases.
+export class SosFilterMultiRate {
   #x0;
   #x1;
   #x2;
@@ -159,7 +161,7 @@ export class SosFilter {
     }
 
     if (this.co[0].length != 5) {
-      console.error("SosFilter coefficient is ill formatted.", this.co);
+      console.error("SosFilterMultiRate coefficient is ill formatted.", this.co);
     }
 
     this.#x0 = new Array(this.co.length).fill(0);

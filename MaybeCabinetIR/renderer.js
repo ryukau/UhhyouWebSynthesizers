@@ -1,14 +1,10 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {SosFilter} from "../common/dsp/multirate.js";
 import {
-  sosBiquadHighpass,
-  sosBiquadHighShelf,
   sosBiquadLowpass,
-  sosBiquadPeak,
+  SosFilterImmediate,
   sosMatchedHighpass,
-  sosMatchedLowpass,
   sosMatchedPeak
 } from "../common/dsp/sos.js";
 import {lerp, uniformFloatMap} from "../common/util.js";
@@ -18,14 +14,14 @@ import PocketFFT from "../lib/pocketfft/pocketfft.js";
 function toAmp(decibel) { return 10 ** (decibel / 40); }
 
 function sosfilt(sos, x) {
-  let filter = new SosFilter(sos);
+  let filter = new SosFilterImmediate(sos);
   for (let i = 0; i < x.length; ++i) x[i] = filter.process(x[i]);
   return x;
 }
 
 // IIR filter becomes linear phase when applied forward and backward.
 function sosfiltfilt(sos, x) {
-  let filter = new SosFilter(sos);
+  let filter = new SosFilterImmediate(sos);
   for (let i = 0; i < x.length; ++i) x[i] = filter.process(x[i]);
 
   filter.reset();

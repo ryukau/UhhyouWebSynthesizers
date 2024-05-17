@@ -6,10 +6,10 @@ import {SingleSideBandAmplitudeModulator} from "../common/dsp/analyticsignalfilt
 import * as delay from "../common/dsp/delay.js";
 import {ExpPolyEnvelope} from "../common/dsp/envelope.js";
 import {Limiter} from "../common/dsp/limiter.js"
-import {downSampleIIR, SosFilter} from "../common/dsp/multirate.js";
+import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {normalizedCutoffToOnePoleKp} from "../common/dsp/smoother.js";
-import {sosMatchedBandpass} from "../common/dsp/sos.js";
+import {SosFilterImmediate, sosMatchedBandpass} from "../common/dsp/sos.js";
 import {SVF} from "../common/dsp/svf.js";
 import {
   clamp,
@@ -226,7 +226,7 @@ onmessage = async (event) => {
 
   dsp.noiseEnvelope
     = new ExpPolyEnvelope(upRate, pv.noiseAttackSeconds, pv.noiseEnvelopeCurve);
-  dsp.noiseBandpass = new SosFilter(sosMatchedBandpass(
+  dsp.noiseBandpass = new SosFilterImmediate(sosMatchedBandpass(
     clamp(pv.noiseBandpassHz / upRate, 10 / 48000, 0.49998), Math.SQRT1_2));
 
   dsp.noiseComb = [];
