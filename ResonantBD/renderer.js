@@ -86,7 +86,7 @@ function process(upRate, pv, dsp) {
   sig *= pv.limiterInputGain;
   const peakAmp = dsp.limiter.processPeakHold(Math.abs(sig));
   const linear = peakAmp > 1 ? 1 / peakAmp : 1;
-  const saturated = peakAmp >= Number.EPSILON ? peakAmp / Math.tanh(peakAmp) : 1;
+  const saturated = peakAmp >= Number.EPSILON ? Math.tanh(peakAmp) / peakAmp : 1;
   sig = dsp.limiter.applyGain(
     sig, peakAmp, util.lerp(linear, saturated, pv.limiterSaturationMix));
 
