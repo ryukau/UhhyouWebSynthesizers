@@ -198,7 +198,8 @@ class ExpCompressor {
   }
 }
 
-class LinkwitzRileyIIR {
+// Only double of even order, like 4, 8, 12, ..., are possible with this implementation.
+class LinkwitzRileyIirEven {
   constructor(nSection, cutoffNormalized, filterType) {
     const convertFilterType = (filterType) => {
       if (filterType == "lowpass") return "lp2bq";
@@ -227,7 +228,7 @@ class LinkwitzRileyIIR {
   }
 }
 
-class ThreeBandSplitter {
+class BandSplitter {
   // `crossoversNormalized` is an Array of normalized frequencies in [0, 0.5).
   // `crossoversNormalized` will be sorted in descending order.
   //
@@ -250,9 +251,9 @@ class ThreeBandSplitter {
     this.lp = new Array(indices.length);
     this.ap = new Array(indices.length);
     for (let i = 0; i < indices.length; ++i) {
-      this.hp[i] = new LinkwitzRileyIIR(steep[i], cross[i], "highpass");
-      this.lp[i] = new LinkwitzRileyIIR(steep[i], cross[i], "lowpass");
-      this.ap[i] = new LinkwitzRileyIIR(steep[i], cross[i], "allpass");
+      this.hp[i] = new LinkwitzRileyIirEven(steep[i], cross[i], "highpass");
+      this.lp[i] = new LinkwitzRileyIirEven(steep[i], cross[i], "lowpass");
+      this.ap[i] = new LinkwitzRileyIirEven(steep[i], cross[i], "allpass");
     }
     this.output = new Array(3).fill(0);
   }
@@ -270,7 +271,7 @@ class ThreeBandSplitter {
       this.output[i] = this.hp[i].process(input);
       input = this.lp[i].process(input);
     }
-    this.output[2] = input;
+    this.output[this.output.length - 1] = input;
     return this.output;
   }
 
@@ -293,21 +294,28 @@ export class DrumCompressor {
     ];
 
     this.saturator = [
-      (x) => softclipInnerAlgebraicAbs(x, 0.05),
-      (x) => softclipInnerAlgebraicAbs(x, 2.0),
-      (x) => softclipOuterAlgebraicAbs(x, 0.5),
+      // (x) => softclipInnerAlgebraicAbs(x, 0.05),
+      // (x) => softclipInnerAlgebraicAbs(x, 2.0),
+      // (x) => softclipOuterAlgebraicAbs(x, 0.5),
+
+      (x) => x, // bypass
+      (x) => x, // bypass
+      (x) => x, // bypass
     ];
 
-    this.gain = [2, 1, 1];
+    this.inputGain = [2, 1, 1];
+    this.outputGain = [1, 1, 1];
 
-    this.splitter = new ThreeBandSplitter([200 / sampleRate, 3200 / sampleRate], [2, 1]);
+    this.splitter = new BandSplitter([200 / sampleRate, 3200 / sampleRate], [2, 1]);
   }
 
   process(input) {
     const band = this.splitter.split(input);
     for (let i = 0; i < this.compressor.length; ++i) {
-      band[i] = this.compressor[i].process(this.gain[i] * band[i]);
-      // band[i] = this.saturator[i](band[i]);
+      band[i] *= this.inputGain[i];
+      band[i] = this.compressor[i].process(band[i]);
+      band[i] = this.saturator[i](band[i]);
+      band[i] *= this.outputGain[i];
     }
     return this.splitter.merge(band);
   }
