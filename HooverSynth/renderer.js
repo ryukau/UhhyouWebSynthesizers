@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import * as delay from "../common/dsp/delay.js";
+import {DrumCompressor} from "../common/dsp/drumcompressor.js";
 import {Limiter} from "../common/dsp/limiter.js";
 import {downSampleLinearPhase} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
@@ -66,10 +67,10 @@ class TriangleLFO {
 }
 
 class Chorus {
-  constructor(sampleRate, baseTimeSeconds, modTimeSeconds) {
+  constructor(sampleRate, baseTimeSeconds, modTimeSeconds, delayType = delay.IntDelay) {
     this.baseTime = Math.ceil(sampleRate * baseTimeSeconds);
     this.modTime = Math.ceil(sampleRate * modTimeSeconds);
-    this.delay = new delay.IntDelay(this.baseTime + this.modTime);
+    this.delay = new delayType(this.baseTime + this.modTime);
   }
 
   process(input, mod) {
@@ -142,6 +143,9 @@ function process(upRate, pv, dsp) {
 
   if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
   if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
+  if (pv.compressorEnable === 1) {
+    sig = dsp.compressor.process(pv.compressorInputGain * sig);
+  }
   if (pv.limiterEnable === 1) sig = dsp.limiter.process(sig);
   return sig;
 }
@@ -179,19 +183,35 @@ onmessage = async (event) => {
   dsp.pwmLfo = new Array(pv.chorusDelayCount);
   dsp.pwmLfoFreqRatio = new Array(pv.chorusDelayCount);
   dsp.chorus = new Array(pv.chorusDelayCount);
+  const delayType = pv.chorusDelayInterpType == 0 ? delay.IntDelay
+    : pv.chorusDelayInterpType == 1               ? delay.Delay
+                                                  : delay.CubicDelay;
   for (let idx = 0; idx < dsp.chorus.length; ++idx) {
     dsp.pwmLfo[idx] = new TriangleLFO();
     dsp.pwmLfoFreqRatio[idx] = Math.exp(exp2Scaler * lerp(0, idx, pv.chorusLfoSpread));
     dsp.chorus[idx]
-      = new Chorus(upRate, pv.chorusTimeBaseSeconds, pv.chorusTimeModSeconds);
+      = new Chorus(upRate, pv.chorusTimeBaseSeconds, pv.chorusTimeModSeconds, delayType);
   }
 
+  dsp.compressor = new DrumCompressor(upRate, "hoover");
+
   dsp.limiter = new Limiter(
-    Math.floor(upRate * 0.002), Math.floor(upRate * 0.002), 0, pv.limiterThreshold);
+    Math.floor(upRate * 0.012), Math.floor(upRate * 0.002), 0, pv.limiterThreshold);
+
+  // Discard silence of delay at start.
+  let counter = 0;
+  let sig = 0;
+  do {
+    sig = process(upRate, pv, dsp);
+    if (++counter >= sound.length) { // Avoid infinite loop on silent signal.
+      postMessage({sound: sound, status: "Output is completely silent."});
+      return;
+    }
+  } while (sig === 0);
 
   // Process.
   for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
-  sound = downSampleLinearPhase(sound, upFold);
+  sound = downSampleLinearPhase(sound, upFold); // This line is adding latency.
 
   // Post effect.
   let gainEnv = 1;

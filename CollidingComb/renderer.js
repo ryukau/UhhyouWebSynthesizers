@@ -290,13 +290,18 @@ onmessage = async (event) => {
   }
 
   // Discard silence of delay at start.
+  let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
+  let counter = 0;
   let sig = 0;
   do {
     sig = process(upRate, pv, dsp);
+    if (++counter >= sound.length) { // Avoid infinite loop on silent signal.
+      postMessage({sound: sound, status: "Output is completely silent."});
+      return;
+    }
   } while (sig === 0);
 
   // Process.
-  let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
   sound[0] = sig;
   for (let i = 1; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
   sound = downSampleIIR(sound, upFold);

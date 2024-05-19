@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -20,12 +20,18 @@ const localRecipeBook = {
     stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
-    dcHighpassHz: () => {},
     toneSlope: () => {},
+    dcHighpassHz: () => {},
+
     negativeEnvelope: () => {},
+
     noteNumber: () => {},
     mainPwmAmount: () => {},
+
+    chorusDelayInterpType: () => {},
     chorusAM: () => {},
+
+    compressorEnable: () => {},
     limiterEnable: () => {},
   },
 };
@@ -65,11 +71,13 @@ const scales = {
   ratio: new parameter.LinearScale(0, 1),
   octave: new parameter.IntScale(-1, 3),
 
+  chorusDelayInterpType: new parameter.MenuItemScale(menuitems.delayInterpTypeItems),
   chorusAM: new parameter.DecibelScale(-30, 0, true),
   chorusTimeSeconds:
     new parameter.DecibelScale(util.ampToDB(1e-4), util.ampToDB(0.2), true),
   chorusDelayCount: new parameter.IntScale(1, 8),
 
+  compressorInputGain: new parameter.DecibelScale(-40, 40, false),
   limiterThreshold: new parameter.DecibelScale(-20, 20, false),
 };
 
@@ -100,6 +108,7 @@ const param = {
   subOctave: new parameter.Parameter(0, scales.octave, true),
   pwmSawOctave: new parameter.Parameter(1, scales.octave, true),
 
+  chorusDelayInterpType: new parameter.Parameter(2, scales.chorusDelayInterpType),
   chorusMix: new parameter.Parameter(1, scales.ratio, true),
   chorusAM: new parameter.Parameter(0, scales.chorusAM, true),
   chorusTimeBaseSeconds: new parameter.Parameter(0.01, scales.chorusTimeSeconds, true),
@@ -107,6 +116,8 @@ const param = {
   chorusDelayCount: new parameter.Parameter(1, scales.chorusDelayCount, true),
   chorusLfoSpread: new parameter.Parameter(1, scales.ratio, true),
 
+  compressorEnable: new parameter.Parameter(1, scales.boolean, true),
+  compressorInputGain: new parameter.Parameter(1, scales.compressorInputGain, false),
   limiterEnable: new parameter.Parameter(0, scales.boolean, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
 };
@@ -195,10 +206,15 @@ const ui = {
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
 
+  compressorEnable: new widget.ToggleButtonLine(
+    detailLimiter, ["Compressor - Off", "Compressor - On"], param.compressorEnable,
+    render),
+  compressorInputGain: new widget.NumberInput(
+    detailLimiter, "Compressor Input Gain [dB]", param.compressorInputGain, render),
   limiterEnable: new widget.ToggleButtonLine(
-    detailLimiter, ["Off", "On"], param.limiterEnable, render),
+    detailLimiter, ["Limiter - Off", "Limiter - On"], param.limiterEnable, render),
   limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+    detailLimiter, "Limiter Threshold [dB]", param.limiterThreshold, render),
 
   negativeEnvelope: new widget.ToggleButtonLine(
     detailEnvelope, ["Positive", "Negative"], param.negativeEnvelope, render),
@@ -230,6 +246,8 @@ const ui = {
   pwmSawOctave: new widget.NumberInput(
     detailOscillator, "PWM Saw Pitch [oct]", param.pwmSawOctave, render),
 
+  chorusDelayInterpType: new widget.ComboBoxLine(
+    detailChorus, "Delay Interpolation", param.chorusDelayInterpType, render),
   chorusMix: new widget.NumberInput(detailChorus, "Mix", param.chorusMix, render),
   chorusAM: new widget.NumberInput(detailChorus, "AM", param.chorusAM, render),
   chorusTimeBaseSeconds: new widget.NumberInput(

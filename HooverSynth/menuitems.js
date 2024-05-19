@@ -5,3 +5,8 @@ import {oversampleLinearPhaseItems} from "../common/dsp/multirate.js";
 
 export const oversampleItems = oversampleLinearPhaseItems;
 export const sampleRateScalerItems = ["1", "2", "4", "8", "16"];
+export const delayInterpTypeItems = [
+  "None - Noisy Modulation",
+  "Linear",
+  "Cubic - Slightly brighter",
+];

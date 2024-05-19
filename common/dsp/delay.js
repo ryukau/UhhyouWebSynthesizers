@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {clamp} from "../util.js";
+import {clamp, lagrange3Interp} from "../util.js";
 
 export class IntDelay {
   #wptr;
@@ -68,6 +68,52 @@ export class Delay {
 
     // Read from buffer.
     return this.#buf[rptr0] + this.rFraction * (this.#buf[rptr1] - this.#buf[rptr0]);
+  }
+
+  // Convenient method for audio-rate modulation.
+  processMod(input, timeInSample) {
+    this.setTime(timeInSample);
+    return this.process(input);
+  }
+}
+
+export class CubicDelay {
+  #wptr;
+  #buf;
+
+  constructor(maxDelayTimeInSamples) {
+    this.#wptr = 0;
+    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples) + 4, 4));
+    this.reset();
+  }
+
+  reset() { this.#buf.fill(0); }
+
+  setTime(timeInSample) {
+    const clamped = clamp(timeInSample - 1, 0, this.#buf.length - 4);
+    this.timeInt = Math.floor(clamped);
+    this.rFraction = clamped - this.timeInt;
+  }
+
+  // Always call `setTime` before `process`.
+  process(input) {
+    // Write to buffer.
+    if (++this.#wptr >= this.#buf.length) this.#wptr = 0;
+    this.#buf[this.#wptr] = input;
+
+    let rptr0 = this.#wptr - this.timeInt;
+    let rptr1 = rptr0 - 1;
+    let rptr2 = rptr0 - 2;
+    let rptr3 = rptr0 - 3;
+    if (rptr0 < 0) rptr0 += this.#buf.length;
+    if (rptr1 < 0) rptr1 += this.#buf.length;
+    if (rptr2 < 0) rptr2 += this.#buf.length;
+    if (rptr3 < 0) rptr3 += this.#buf.length;
+
+    // Read from buffer.
+    return lagrange3Interp(
+      this.#buf[rptr0], this.#buf[rptr1], this.#buf[rptr2], this.#buf[rptr3],
+      this.rFraction);
   }
 
   // Convenient method for audio-rate modulation.

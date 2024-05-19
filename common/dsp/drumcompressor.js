@@ -289,28 +289,44 @@ class BandSplitter {
 }
 
 export class DrumCompressor {
-  constructor(sampleRate) {
-    this.compressor = [
-      new ExpCompressor(2 / 4, sampleRate * 1.0, sampleRate * 1.0, "innerTanh"),
-      new ExpCompressor(2 / 4, sampleRate * 0.1, sampleRate * 0.1, "innerTanh"),
-      new ExpCompressor(1 / 4, sampleRate * 0.2, sampleRate * 0.2, "outerTanh"),
-    ];
+  constructor(sampleRate, recipeName) {
+    if (recipeName == "hoover") {
+      this.compressor = [
+        new ExpCompressor(2 / 4, sampleRate * 0.1, sampleRate * 0.1, "outerTanh"),
+        new ExpCompressor(2 / 4, sampleRate * 0.4, sampleRate * 0.4, "innerTanh"),
+        new ExpCompressor(4 / 4, sampleRate * 1.0, sampleRate * 1.0, "innerTanh"),
+      ];
 
-    this.saturator = [
-      // (x) => softclipInnerAlgebraicAbs(x, 0.05),
-      // (x) => softclipInnerAlgebraicAbs(x, 2.0),
-      // (x) => softclipOuterAlgebraicAbs(x, 0.5),
+      this.saturator = [
+        (x) => softclipOuterAlgebraicAbs(x, 0.5),
+        (x) => softclipInnerAlgebraicAbs(x, 0.5),
+        (x) => softclipInnerAlgebraicAbs(x, 1.0),
+      ];
 
-      (x) => x, // bypass
-      (x) => x, // bypass
-      (x) => x, // bypass
-    ];
+      this.inputGain = [1.2, 1, 2];
+      this.outputGain = [1, 1, 1.5];
 
-    this.inputGain = [2, 1, 1];
-    this.outputGain = [1, 1, 1];
+      this.splitter = new BandSplitter([3200 / sampleRate, 200 / sampleRate], [1, 2]);
+      this.corrector = new BandSplitter([3200 / sampleRate, 200 / sampleRate], [1, 2]);
+    } else {
+      this.compressor = [
+        new ExpCompressor(2 / 4, sampleRate * 1.0, sampleRate * 1.0, "innerTanh"),
+        new ExpCompressor(2 / 4, sampleRate * 0.1, sampleRate * 0.1, "innerTanh"),
+        new ExpCompressor(1 / 4, sampleRate * 0.2, sampleRate * 0.2, "outerTanh"),
+      ];
 
-    this.splitter = new BandSplitter([200 / sampleRate, 3200 / sampleRate], [2, 1]);
-    this.corrector = new BandSplitter([200 / sampleRate, 3200 / sampleRate], [2, 1]);
+      this.saturator = [
+        (x) => x, // bypass
+        (x) => x, // bypass
+        (x) => x, // bypass
+      ];
+
+      this.inputGain = [2, 1, 1];
+      this.outputGain = [1, 1, 1];
+
+      this.splitter = new BandSplitter([1000 / sampleRate, 200 / sampleRate], [1, 2]);
+      this.corrector = new BandSplitter([1000 / sampleRate, 200 / sampleRate], [1, 2]);
+    }
   }
 
   process(input) {
