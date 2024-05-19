@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {IntDelay} from "../common/dsp/delay.js";
+import {DrumCompressor} from "../common/dsp/drumcompressor.js";
 import {ExpADEnvelope} from "../common/dsp/envelope.js";
 import {Limiter} from "../common/dsp/limiter.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
@@ -179,6 +180,7 @@ function process(upRate, pv, dsp) {
 
   if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
   if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
+  if (pv.useCompressor) sig = dsp.compressor.process(pv.compressorInputGain * sig);
   sig = dsp.limiter.process(sig);
   return sig;
 }
@@ -273,6 +275,7 @@ onmessage = async (event) => {
   dsp.slopeFilter = new SlopeFilter(Math.floor(Math.log2(24000 / 1000)));
   dsp.slopeFilter.setCutoff(upRate, 1000, pv.toneSlope, true);
   dsp.dcHighpass = new SVFHP(pv.dcHighpassHz / upRate, Math.SQRT1_2);
+  dsp.compressor = new DrumCompressor(upRate);
 
   if (pv.limiterType === 1) {
     dsp.limiter = new Limiter(

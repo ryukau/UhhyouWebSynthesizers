@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -24,6 +24,7 @@ const localRecipeBook = {
     toneSlope: () => {},
 
     limiterType: () => {},
+    useCompressor: () => {},
     limiterThreshold: () => {},
     limiterSmoothingSeconds: () => {},
 
@@ -68,6 +69,7 @@ const scales = {
   dcHighpassHz: new parameter.DecibelScale(-20, 40, true),
   toneSlope: new parameter.DecibelScale(-12, 0, false),
 
+  compressorInputGain: new parameter.DecibelScale(-20, 60, false),
   limiterType: new parameter.MenuItemScale(menuitems.limiterTypeItems),
   limiterThreshold: new parameter.DecibelScale(-60, 40, false),
   limiterSmoothingSeconds: new parameter.DecibelScale(-80, -20, false),
@@ -106,6 +108,8 @@ const param = {
   dcHighpassHz: new parameter.Parameter(0, scales.dcHighpassHz, true),
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
 
+  useCompressor: new parameter.Parameter(1, scales.boolean, true),
+  compressorInputGain: new parameter.Parameter(1, scales.compressorInputGain, false),
   limiterType: new parameter.Parameter(0, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
   limiterSmoothingSeconds:
@@ -198,10 +202,11 @@ const playControl = widget.playControl(
 );
 
 const detailRender = widget.details(divLeft, "Render");
-const detailLimiter = widget.details(divLeft, "Limiter");
 const detailOsc = widget.details(divRightA, "Oscillator");
 const detailPitch = widget.details(divRightA, "Pitch");
 const detailComb = widget.details(divRightA, "Comb");
+const detailCompressor = widget.details(divRightB, "Compressor");
+const detailLimiter = widget.details(divRightB, "Limiter");
 
 const ui = {
   renderDuration:
@@ -219,6 +224,12 @@ const ui = {
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
   toneSlope:
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+
+  useCompressor: new widget.ToggleButtonLine(
+    detailCompressor, ["Compressor - Off", "Compressor - On"], param.useCompressor,
+    render),
+  compressorInputGain: new widget.NumberInput(
+    detailCompressor, "Input Gain [dB]", param.compressorInputGain, render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
   limiterThreshold: new widget.NumberInput(
