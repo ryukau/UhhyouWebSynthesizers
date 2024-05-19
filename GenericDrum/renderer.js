@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {IntDelay, LongAllpass} from "../common/dsp/delay.js";
+import {DrumCompressor, drumCompressorRecipes} from "../common/dsp/drumcompressor.js";
 import {DoubleEmaADEnvelope} from "../common/dsp/envelope.js";
 import {constructHouseholder} from "../common/dsp/fdn.js";
 import {Limiter} from "../common/dsp/limiter.js";
@@ -371,7 +372,8 @@ function process(upRate, pv, dsp) {
 
   if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
   if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
-  sig = dsp.limiter.process(sig);
+  if (pv.compressorType > 0) sig = dsp.compressor.process(pv.compressorInputGain * sig);
+  if (pv.limiterType > 0) sig = dsp.limiter.process(sig);
   return sig;
 }
 
@@ -423,6 +425,10 @@ onmessage = async (event) => {
   dsp.isWireEngaged = false;
   dsp.isSecondaryEngaged = false;
 
+  dsp.compressor = pv.compressorType == 0
+    ? new Bypass()
+    : new DrumCompressor(upRate, drumCompressorRecipes[pv.compressorType - 1]);
+
   if (pv.limiterType === 1) {
     dsp.limiter = new Limiter(
       pv.limiterSmoothingSeconds * upRate, 0.001 * upRate, 0, pv.limiterThreshold);
@@ -431,8 +437,6 @@ onmessage = async (event) => {
     for (let i = 0; i < dsp.limiter.latency; ++i) process(upRate, pv, dsp);
   } else if (pv.limiterType === 2) {
     dsp.limiter = new Tanh(pv.limiterThreshold);
-  } else {
-    dsp.limiter = new Bypass();
   }
 
   // Discard silence at start.

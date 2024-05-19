@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 1;
+const version = 2;
 
 const localRecipeJsonPath = [
   "recipe/full.json",
@@ -30,6 +30,8 @@ const localRecipeBook = {
     sampleRateScaler: () => {},
     dcHighpassHz: () => {},
     toneSlope: () => {},
+
+    compressorType: (prm) => { prm.normalized = Math.random(); },
 
     membraneWireMix: () => {},
     matrixSize: () => {},
@@ -86,6 +88,8 @@ const scales = {
   dcHighpassHz: new parameter.DecibelScale(-20, 40, true),
   toneSlope: new parameter.DecibelScale(-12, 0, false),
 
+  compressorType: new parameter.MenuItemScale(menuitems.compressorTypeItems),
+  compressorInputGain: new parameter.DecibelScale(-20, 60, false),
   limiterType: new parameter.MenuItemScale(menuitems.limiterTypeItems),
   limiterThreshold: new parameter.DecibelScale(-60, 40, false),
   limiterSmoothingSeconds: new parameter.DecibelScale(-80, -20, false),
@@ -129,6 +133,8 @@ const param = {
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
   preventBlowUp: new parameter.Parameter(0, scales.boolean, false),
 
+  compressorType: new parameter.Parameter(0, scales.compressorType),
+  compressorInputGain: new parameter.Parameter(1, scales.compressorInputGain, false),
   limiterType: new parameter.Parameter(1, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
   limiterSmoothingSeconds:
@@ -235,6 +241,7 @@ const playControl = widget.playControl(
 );
 
 const detailRender = widget.details(divLeft, "Render");
+const detailCompressor = widget.details(divLeft, "Compressor");
 const detailLimiter = widget.details(divLeft, "Limiter");
 const detailOsc = widget.details(divRightA, "Impact Noise");
 const detailWire = widget.details(divRightA, "Wire");
@@ -263,6 +270,10 @@ const ui = {
   preventBlowUp: new widget.CheckBoxLine(
     detailRender, "Prevent Blow Up", ["Off", "On"], param.preventBlowUp, render),
 
+  compressorType:
+    new widget.ComboBoxLine(detailCompressor, "Type", param.compressorType, render),
+  compressorInputGain: new widget.NumberInput(
+    detailCompressor, "Input Gain [dB]", param.compressorInputGain, render),
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
   limiterThreshold: new widget.NumberInput(
     detailLimiter, "Threshold [dB]", param.limiterThreshold, render),

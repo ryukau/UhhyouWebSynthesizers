@@ -193,7 +193,7 @@ onmessage = async (event) => {
       = new Chorus(upRate, pv.chorusTimeBaseSeconds, pv.chorusTimeModSeconds, delayType);
   }
 
-  dsp.compressor = new DrumCompressor(upRate, "hoover");
+  dsp.compressor = new DrumCompressor(upRate, "low");
 
   dsp.limiter = new Limiter(
     Math.floor(upRate * 0.012), Math.floor(upRate * 0.002), 0, pv.limiterThreshold);

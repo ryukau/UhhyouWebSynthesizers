@@ -288,9 +288,15 @@ class BandSplitter {
   correctDry(input) { return this.merge(this.split(input)); }
 }
 
+export const drumCompressorRecipes = [
+  "low",
+  "flat",
+  "high",
+];
+
 export class DrumCompressor {
   constructor(sampleRate, recipeName) {
-    if (recipeName == "hoover") {
+    if (recipeName == "low") {
       this.compressor = [
         new ExpCompressor(2 / 4, sampleRate * 0.1, sampleRate * 0.1, "outerTanh"),
         new ExpCompressor(2 / 4, sampleRate * 0.4, sampleRate * 0.4, "innerTanh"),
@@ -308,7 +314,25 @@ export class DrumCompressor {
 
       this.splitter = new BandSplitter([3200 / sampleRate, 200 / sampleRate], [1, 2]);
       this.corrector = new BandSplitter([3200 / sampleRate, 200 / sampleRate], [1, 2]);
-    } else {
+    } else if (recipeName == "flat") {
+      this.compressor = [
+        new ExpCompressor(4.5 / 4, sampleRate * 0.1, sampleRate * 0.1, "outerTanh"),
+        new ExpCompressor(4 / 4, sampleRate * 0.2, sampleRate * 0.2, "outerTanh"),
+        new ExpCompressor(4 / 4, sampleRate * 0.4, sampleRate * 0.4, "outerTanh"),
+      ];
+
+      this.saturator = [
+        (x) => x, // bypass
+        (x) => x, // bypass
+        (x) => x, // bypass
+      ];
+
+      this.inputGain = [1.25, 1, 1];
+      this.outputGain = [1, 1, 1];
+
+      this.splitter = new BandSplitter([3000 / sampleRate, 200 / sampleRate], [1, 1]);
+      this.corrector = new BandSplitter([3000 / sampleRate, 200 / sampleRate], [1, 1]);
+    } else if (recipeName == "high") {
       this.compressor = [
         new ExpCompressor(2 / 4, sampleRate * 1.0, sampleRate * 1.0, "innerTanh"),
         new ExpCompressor(2 / 4, sampleRate * 0.1, sampleRate * 0.1, "innerTanh"),
@@ -326,6 +350,9 @@ export class DrumCompressor {
 
       this.splitter = new BandSplitter([1000 / sampleRate, 200 / sampleRate], [1, 2]);
       this.corrector = new BandSplitter([1000 / sampleRate, 200 / sampleRate], [1, 2]);
+    } else {
+      // Let it fail if `recipeName == "bypass"`.
+      console.error(`Invalid recipeName: ${recipeName}`, new Error());
     }
   }
 

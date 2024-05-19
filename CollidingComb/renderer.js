@@ -275,7 +275,7 @@ onmessage = async (event) => {
   dsp.slopeFilter = new SlopeFilter(Math.floor(Math.log2(24000 / 1000)));
   dsp.slopeFilter.setCutoff(upRate, 1000, pv.toneSlope, true);
   dsp.dcHighpass = new SVFHP(pv.dcHighpassHz / upRate, Math.SQRT1_2);
-  dsp.compressor = new DrumCompressor(upRate);
+  dsp.compressor = new DrumCompressor(upRate, "high");
 
   if (pv.limiterType === 1) {
     dsp.limiter = new Limiter(
