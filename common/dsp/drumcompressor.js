@@ -264,6 +264,7 @@ class BandSplitter {
       this.hp[i].reset();
       this.ap[i].reset();
     }
+    this.output.fill(0);
   }
 
   split(input) {
@@ -283,6 +284,8 @@ class BandSplitter {
     }
     return input.at(-1) + sig;
   }
+
+  correctDry(input) { return this.merge(this.split(input)); }
 }
 
 export class DrumCompressor {
@@ -307,6 +310,7 @@ export class DrumCompressor {
     this.outputGain = [1, 1, 1];
 
     this.splitter = new BandSplitter([200 / sampleRate, 3200 / sampleRate], [2, 1]);
+    this.corrector = new BandSplitter([200 / sampleRate, 3200 / sampleRate], [2, 1]);
   }
 
   process(input) {
@@ -318,5 +322,19 @@ export class DrumCompressor {
       band[i] *= this.outputGain[i];
     }
     return this.splitter.merge(band);
+  }
+
+  // NY compression. `mix` is in [0, 1].
+  processNY(input, mix) {
+    const band = this.splitter.split(input);
+    for (let i = 0; i < this.compressor.length; ++i) {
+      band[i] *= this.inputGain[i];
+      band[i] = this.compressor[i].process(band[i]);
+      band[i] = this.saturator[i](band[i]);
+      band[i] *= this.outputGain[i];
+    }
+    const comp = this.splitter.merge(band);
+    const dry = this.corrector.correctDry(input);
+    return comp + mix * (dry - comp);
   }
 }

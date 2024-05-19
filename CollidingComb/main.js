@@ -60,7 +60,7 @@ function render() {
 const scales = {
   boolean: new parameter.IntScale(0, 1),
 
-  renderDuration: new parameter.DecibelScale(-40, 40, false),
+  renderDuration: new parameter.DecibelScale(-60, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   stereoMerge: new parameter.LinearScale(0, 1),
