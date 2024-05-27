@@ -63,7 +63,7 @@ const scales = {
   cutoffHz: new parameter.DecibelScale(0, 120, false),
 
   delayCount: new parameter.IntScale(1, 8),
-  delayHz: new parameter.DecibelScale(util.ampToDB(200), util.ampToDB(22000), false),
+  delayHz: new parameter.DecibelScale(util.ampToDB(1), util.ampToDB(22000), false),
   delayMod: new parameter.LinearScale(-4, 4),
   allpassCutRatio: new parameter.LinearScale(-8, 8),
   allpassMod: new parameter.LinearScale(-6, 6),
