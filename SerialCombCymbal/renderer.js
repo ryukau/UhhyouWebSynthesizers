@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
+import {CubicDelay, Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
 import {downSampleLinearPhase} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js"
 import {timeToOnePoleKp} from "../common/dsp/smoother.js"
@@ -36,7 +36,7 @@ function process(upFold, pv, dsp) {
 }
 
 function getDelayProcessFunc(pv) {
-  if (menuitems.delayType[pv.delayType] === "Lattice")
+  if (menuitems.delayNetworkType[pv.delayNetworkType] === "Lattice")
     return (upFold, pv, dsp, sig) => {
       const bypassHighpass = pv.highpassHz <= pv.minHighpassHz;
       const bypassLowpass = pv.lowpassHz >= pv.maxLowpassHz;
@@ -59,7 +59,7 @@ function getDelayProcessFunc(pv) {
       return out - util.lerp(pv.feedback * sig, 0, pv.noiseMix);
     };
 
-  // menuitems.delayType[pv.delayType] === "Allpass"
+  // menuitems.delayNetworkType[pv.delayNetworkType] === "Allpass"
   return (upFold, pv, dsp, sig) => {
     const bypassHighpass = pv.highpassHz <= pv.minHighpassHz;
     const bypassLowpass = pv.lowpassHz >= pv.maxLowpassHz;
@@ -98,6 +98,9 @@ onmessage = (event) => {
     };
 
     const isOvertone = menuitems.timeDistribution[pv.timeDistribution] === "Overtone";
+    const delayType = pv.delayInterpType == 0 ? IntDelay
+      : pv.delayInterpType == 1               ? Delay
+                                              : CubicDelay;
     for (let i = 0; i < pv.nDelay; ++i) {
       let timeInSeconds = isOvertone ? pv.delayTime / (i + 1) : pv.delayTime / pv.nDelay;
       timeInSeconds += pv.timeRandomness * dsp.rng.number();
@@ -105,11 +108,7 @@ onmessage = (event) => {
       const delayTimeSamples = upRate * timeInSeconds;
       dsp.baseDelayTime.push(delayTimeSamples);
 
-      // `Delay` uses linear interpolation, and linear interpolation can be considered as
-      // FIR lowpass filter. With sufficiently high sampling rate, it's better to use
-      // `IntDelay` to prevent loss by linear interpolation, to preserve metalic high
-      // tones.
-      let delay = new LongAllpass(delayTimeSamples, upRate < 8 ? Delay : IntDelay);
+      let delay = new LongAllpass(delayTimeSamples, delayType);
       delay.prepare(delayTimeSamples, pv.feedback);
       dsp.delay.push(delay);
 
@@ -119,10 +118,23 @@ onmessage = (event) => {
       dsp.lowpass.push(new SVF((lpOffset + 1) * pv.lowpassHz / upRate, pv.lowpassQ));
     }
 
-    // // TODO: Add parameter to reverse highpass order.
-    // dsp.delay.reverse();
-    dsp.highpass.reverse();
-    dsp.lowpass.reverse();
+    const reorderArray = (array, orderingType) => {
+      // `orderingType` corresponds to:
+      // - 0: Ascending
+      // - 1: Descending
+      // - 2: Random.
+      // See `cascadingOrderItems` in `menuitem.js`.
+
+      if (orderingType == 0) return array;
+      if (orderingType == 1) {
+        array.reverse();
+        return array;
+      }
+      return util.shuffleArray(dsp.rng, array, 0, array.length);
+    };
+    reorderArray(dsp.delay, pv.delayCascadingOrder);
+    reorderArray(dsp.highpass, pv.highpassCascadingOrder);
+    reorderArray(dsp.lowpass, pv.lowpassCascadingOrder);
 
     for (let i = 0; i < sound.length; ++i) sound[i] += process(upFold, pv, dsp);
 

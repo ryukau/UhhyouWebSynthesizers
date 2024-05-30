@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 1;
+const version = 2;
 
 const localRecipeBook = {
   "Default": {
@@ -30,11 +30,85 @@ const localRecipeBook = {
     noiseMix: () => {},
 
     nDelay: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 1, 32); },
+    delayInterpType: (prm) => { prm.normalized = Math.random(); },
+    delayNetworkType: (prm) => { prm.normalized = Math.random(); },
+
+    timeMultiplier: () => {},
+    delayTimeModAmount: (prm) => { prm.normalized = Math.random(); },
+    feedback: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), -1, 1); },
+
+    highpassHz: (prm) => {prm.dsp = util.exponentialMap(Math.random(), 1, 2000)},
+    highpassQ: () => {},
+    lowpassHz: () => {},
+    lowpassQ: () => {},
+
+    delayCascadingOrder: (prm) => { prm.normalized = Math.random(); },
+    highpassCascadingOrder: (prm) => { prm.normalized = Math.random(); },
+    lowpassCascadingOrder: (prm) => { prm.normalized = Math.random(); },
+  },
+
+  "Allpass": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    toneSlope: () => {},
+    slopeStartHz: () => {},
+
+    nLayer: () => {},
+    highpassCutoffMultiplier: () => {},
+    lowpassCutoffMultiplier: () => {},
+
+    noiseDecay: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-4, 0.5); },
+    noiseMix: () => {},
+
+    nDelay: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 1, 32); },
+    delayNetworkType: (prm) => { prm.dsp = 0; },
+
     timeMultiplier: () => {},
     delayTimeModAmount: (prm) => { prm.normalized = Math.random(); },
     feedback: (prm) => {
       const sign = Math.random() < 0.5 ? -1 : 1;
       prm.dsp = sign * (1 - util.exponentialMap(Math.random(), 1e-3, 0.5));
+    },
+
+    highpassHz: (prm) => {prm.dsp = util.exponentialMap(Math.random(), 1, 2000)},
+    highpassQ: () => {},
+    lowpassHz: () => {},
+    lowpassQ: () => {},
+  },
+
+  "Lattice": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    toneSlope: () => {},
+    slopeStartHz: () => {},
+
+    nLayer: () => {},
+    highpassCutoffMultiplier: () => {},
+    lowpassCutoffMultiplier: () => {},
+
+    noiseDecay: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-4, 0.5); },
+    noiseMix: () => {},
+
+    nDelay: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 1, 32); },
+    delayNetworkType: (prm) => { prm.dsp = 1; },
+
+    timeMultiplier: () => {},
+    delayTimeModAmount: (prm) => { prm.normalized = Math.random(); },
+    feedback: (prm) => {
+      if (Math.random() < 0.75) {
+        const v = util.uniformFloatMap(Math.random(), 0, 1);
+        prm.dsp = -v * v;
+      } else {
+        prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.75);
+      }
     },
 
     highpassHz: (prm) => {prm.dsp = util.exponentialMap(Math.random(), 1, 2000)},
@@ -78,8 +152,11 @@ const scales = {
   noiseMix: new parameter.DecibelScale(-60, 0, true),
 
   nDelay: new parameter.IntScale(1, 256),
+  delayInterpType: new parameter.MenuItemScale(menuitems.delayInterpTypeItems),
+  delayNetworkType: new parameter.MenuItemScale(menuitems.delayNetworkType),
+  delayCascadingOrder: new parameter.MenuItemScale(menuitems.cascadingOrderItems),
+
   seed: new parameter.IntScale(0, 2 ** 32),
-  delayType: new parameter.MenuItemScale(menuitems.delayType),
   timeDistribution: new parameter.MenuItemScale(menuitems.timeDistribution),
   delayTime: new parameter.DecibelScale(-80, -20, true),
   delayTimeModAmount: new parameter.DecibelScale(-20, 60, true),
@@ -93,7 +170,7 @@ const scales = {
 
 const param = {
   renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
-  fadeIn: new parameter.Parameter(0.001, scales.fade, true),
+  fadeIn: new parameter.Parameter(0.0, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
   overSample: new parameter.Parameter(1, scales.overSample),
@@ -110,9 +187,11 @@ const param = {
   noiseMix: new parameter.Parameter(0, scales.noiseMix),
 
   nDelay: new parameter.Parameter(8, scales.nDelay),
+  delayInterpType: new parameter.Parameter(2, scales.delayInterpType),
+  delayNetworkType: new parameter.Parameter(
+    menuitems.delayNetworkType.indexOf("Allpass"), scales.delayNetworkType),
+
   seed: new parameter.Parameter(0, scales.seed),
-  delayType:
-    new parameter.Parameter(menuitems.delayType.indexOf("Allpass"), scales.delayType),
   timeDistribution: new parameter.Parameter(
     menuitems.timeDistribution.indexOf("Overtone"), scales.timeDistribution),
   delayTime: new parameter.Parameter(0.01, scales.delayTime, true),
@@ -126,6 +205,10 @@ const param = {
   lowpassCutoffSlope: new parameter.Parameter(0, scales.cutoffSlope),
   lowpassHz: new parameter.Parameter(scales.lowpassHz.maxDsp, scales.lowpassHz, true),
   lowpassQ: new parameter.Parameter(Math.SQRT1_2, scales.filterQ),
+
+  delayCascadingOrder: new parameter.Parameter(0, scales.delayCascadingOrder),
+  highpassCascadingOrder: new parameter.Parameter(1, scales.delayCascadingOrder),
+  lowpassCascadingOrder: new parameter.Parameter(1, scales.delayCascadingOrder),
 };
 
 const recipeBook
@@ -144,7 +227,8 @@ const audio = new wave.Audio(
 const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
 const divLeft = widget.div(divMain, undefined, "controlBlock");
-const divRight = widget.div(divMain, undefined, "controlBlock");
+const divRightA = widget.div(divMain, undefined, "controlBlock");
+const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
@@ -189,9 +273,11 @@ const playControl = widget.playControl(
 
 const detailRender = widget.details(divLeft, "Render");
 const detailLayer = widget.details(divLeft, "Layer");
-const detailExciter = widget.details(divRight, "Exciter");
-const detailDelay = widget.details(divRight, "Delay");
-const detailFilter = widget.details(divRight, "Filter");
+const detailExciter = widget.details(divRightA, "Exciter");
+const detailDelayNetwork = widget.details(divRightA, "Delay - Network");
+const detailDelayPitch = widget.details(divRightA, "Delay - Pitch");
+const detailFilter = widget.details(divRightA, "Filter");
+const detailDelayCascadingOrder = widget.details(divRightB, "Delay - Cascading Order");
 
 const ui = {
   renderDuration:
@@ -221,18 +307,22 @@ const ui = {
   noiseMix:
     new widget.NumberInput(detailExciter, "Noise Mix [dB]", param.noiseMix, render),
 
-  nDelay: new widget.NumberInput(detailDelay, "nDelay", param.nDelay, render),
-  seed: new widget.NumberInput(detailDelay, "Seed", param.seed, render),
-  delayType: new widget.ComboBoxLine(detailDelay, "Delay Type", param.delayType, render),
+  nDelay: new widget.NumberInput(detailDelayNetwork, "nDelay", param.nDelay, render),
+  delayInterpType: new widget.ComboBoxLine(
+    detailDelayNetwork, "Delay Interpolation", param.delayInterpType, render),
+  delayNetworkType: new widget.ComboBoxLine(
+    detailDelayNetwork, "Delay Type", param.delayNetworkType, render),
+
+  seed: new widget.NumberInput(detailDelayPitch, "Seed", param.seed, render),
   timeDistribution: new widget.ComboBoxLine(
-    detailDelay, "Time Distribution", param.timeDistribution, render),
+    detailDelayPitch, "Time Distribution", param.timeDistribution, render),
   delayTime:
-    new widget.NumberInput(detailDelay, "Delay Time [s]", param.delayTime, render),
-  timeRandomness:
-    new widget.NumberInput(detailDelay, "Time Randomness", param.timeRandomness, render),
+    new widget.NumberInput(detailDelayPitch, "Delay Time [s]", param.delayTime, render),
+  timeRandomness: new widget.NumberInput(
+    detailDelayPitch, "Time Randomness", param.timeRandomness, render),
   delayTimeModAmount: new widget.NumberInput(
-    detailDelay, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
-  feedback: new widget.NumberInput(detailDelay, "Feedback", param.feedback, render),
+    detailDelayPitch, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
+  feedback: new widget.NumberInput(detailDelayPitch, "Feedback", param.feedback, render),
 
   highpassCutoffSlope: new widget.NumberInput(
     detailFilter, "Highpass Slope", param.highpassCutoffSlope, render),
@@ -244,6 +334,13 @@ const ui = {
   lowpassHz:
     new widget.NumberInput(detailFilter, "Lowpass Cutoff [Hz]", param.lowpassHz, render),
   lowpassQ: new widget.NumberInput(detailFilter, "Lowpass Q", param.lowpassQ, render),
+
+  delayCascadingOrder: new widget.ComboBoxLine(
+    detailDelayCascadingOrder, "Delay", param.delayCascadingOrder, render),
+  highpassCascadingOrder: new widget.ComboBoxLine(
+    detailDelayCascadingOrder, "Highpass", param.highpassCascadingOrder, render),
+  lowpassCascadingOrder: new widget.ComboBoxLine(
+    detailDelayCascadingOrder, "Lowpass", param.lowpassCascadingOrder, render),
 };
 
 render();
