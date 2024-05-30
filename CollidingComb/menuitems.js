@@ -18,6 +18,12 @@ export const toneSortingItems = [
   "High is longer",
 ];
 
+export const delayInterpTypeItems = [
+  "None - Noisy Modulation",
+  "Linear",
+  "Cubic - Slightly brighter",
+];
+
 export const pitchTypeItems = [
   "Harmonic",
   "Harmonic+12",

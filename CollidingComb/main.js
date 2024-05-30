@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 1;
+const version = 2;
 
 const localRecipeBook = {
   "Default": {
@@ -34,6 +34,7 @@ const localRecipeBook = {
     toneSorting: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 0, 1); },
 
     nComb: (prm) => {prm.dsp = util.uniformIntMap(Math.random(), 2, 16)},
+    delayInterpType: (prm) => { prm.normalized = Math.random(); },
     // pitchType: (prm) => { prm.normalized = Math.random(); },
     delayTimeHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 20, 2000); },
     delayTimeModAmount:
@@ -88,13 +89,14 @@ const scales = {
   pitchRandomCent: new parameter.LinearScale(0, 1200),
 
   nComb: new parameter.IntScale(1, 16),
+  delayInterpType: new parameter.MenuItemScale(menuitems.delayInterpTypeItems),
   pitchType: new parameter.MenuItemScale(menuitems.pitchTypeItems),
   delayTimeHz: new parameter.DecibelScale(util.ampToDB(2), util.ampToDB(10000), false),
   delayTimeModAmount: new parameter.DecibelScale(-20, 100, true),
   bandpassCutRatio: new parameter.LinearScale(-8, 8),
   bandpassQ: new parameter.DecibelScale(-40, 40, false),
   feedbackGain: new parameter.DecibelScale(-6, 0, false),
-  collisionDistance: new parameter.DecibelScale(-80, 0, true),
+  collisionDistance: new parameter.DecibelScale(-80, 20, true),
 };
 
 const param = {
@@ -131,6 +133,7 @@ const param = {
     new parameter.Parameter(util.syntonicCommaCents, scales.pitchRandomCent, true),
 
   nComb: new parameter.Parameter(4, scales.nComb, true),
+  delayInterpType: new parameter.Parameter(0, scales.delayInterpType),
   pitchType: new parameter.Parameter(0, scales.pitchType, true),
   delayTimeHz: new parameter.Parameter(100, scales.delayTimeHz, true),
   delayTimeModAmount: new parameter.Parameter(0.0, scales.delayTimeModAmount, true),
@@ -158,7 +161,7 @@ const divMain = widget.div(document.body, "main", undefined);
 
 const divLeft = widget.div(divMain, undefined, "controlBlock");
 const divRightA = widget.div(divMain, undefined, "controlBlock");
-const divRightB = widget.div(divMain, undefined, "controlBlock");
+// const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
@@ -202,11 +205,11 @@ const playControl = widget.playControl(
 );
 
 const detailRender = widget.details(divLeft, "Render");
+const detailCompressor = widget.details(divLeft, "Compressor");
+const detailLimiter = widget.details(divLeft, "Limiter");
 const detailOsc = widget.details(divRightA, "Oscillator");
 const detailPitch = widget.details(divRightA, "Pitch");
 const detailComb = widget.details(divRightA, "Comb");
-const detailCompressor = widget.details(divRightB, "Compressor");
-const detailLimiter = widget.details(divRightB, "Limiter");
 
 const ui = {
   renderDuration:
@@ -262,6 +265,8 @@ const ui = {
     detailPitch, "Delay Time Random [cent]", param.delayTimeRandomCent, render),
 
   nComb: new widget.NumberInput(detailComb, "nComb", param.nComb, render),
+  delayInterpType: new widget.ComboBoxLine(
+    detailComb, "Delay Interpolation", param.delayInterpType, render),
   pitchType: new widget.ComboBoxLine(detailComb, "Pitch Type", param.pitchType, render),
   delayTimeHz:
     new widget.NumberInput(detailComb, "Delay [Hz]", param.delayTimeHz, render),

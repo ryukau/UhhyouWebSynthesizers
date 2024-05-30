@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {IntDelay} from "../common/dsp/delay.js";
+import {CubicDelay, Delay, IntDelay} from "../common/dsp/delay.js";
 import {DrumCompressor} from "../common/dsp/drumcompressor.js";
 import {ExpADEnvelope} from "../common/dsp/envelope.js";
 import {Limiter} from "../common/dsp/limiter.js";
@@ -80,6 +80,7 @@ class MultiSine {
 
 class FilteredDelay {
   constructor(
+    delayInterpType,
     delaySamples,
     delayTimeModAmount,
     cutoffNormalized,
@@ -92,21 +93,17 @@ class FilteredDelay {
     this.delayTimeModAmount = delayTimeModAmount;
     this.timeSlew = new RateLimiter(0.5);
 
-    this.delay = new IntDelay(2 * delaySamples);
+    const delayType = delayInterpType == 0 ? IntDelay
+      : delayInterpType == 1               ? Delay
+                                           : CubicDelay;
+    this.delay = new delayType(2 * delaySamples);
     this.biquad = new MatchedBiquad();
-
-    // this.energy = 0;
   }
 
   process(input) {
     const sig = this.biquad.bp(input, this.cutoff, this.fltQ);
-    this.timeSlew.process(Math.abs(this.delayTimeModAmount * input));
-    const out = this.delay.processMod(sig, this.delaySamples - this.timeSlew.value);
-
-    // // This may be inaccurate. Maybe use fixed point math.
-    // this.energy = Math.max(0, this.energy + sig * sig - out * out);
-
-    return out;
+    const mod = Math.abs(this.delayTimeModAmount * input);
+    return this.delay.processMod(sig, this.delaySamples - this.timeSlew.process(mod));
   }
 }
 
@@ -264,6 +261,7 @@ onmessage = async (event) => {
     const delayCutRatio = pitchRatio(idx, pv.delayTimeSpread, pv.delayTimeRandomCent);
 
     delays[idx] = new FilteredDelay(
+      pv.delayInterpType,
       upRate / (pv.delayTimeHz * delayCutRatio),
       pv.delayTimeModAmount * upFold * sampleRateScaler,
       bandpassCutHz / upRate,
