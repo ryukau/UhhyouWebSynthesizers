@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -21,12 +21,26 @@ const localRecipeBook = {
     sampleRateScaler: () => {},
     toneSlope: () => {},
     slopeStartHz: () => {},
+
     nLayer: () => {},
-    timeMultiplier: () => {},
     highpassCutoffMultiplier: () => {},
     lowpassCutoffMultiplier: () => {},
+
+    noiseDecay: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-4, 0.5); },
     noiseMix: () => {},
+
+    nDelay: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 1, 32); },
+    timeMultiplier: () => {},
+    delayTimeModAmount: (prm) => { prm.normalized = Math.random(); },
+    feedback: (prm) => {
+      const sign = Math.random() < 0.5 ? -1 : 1;
+      prm.dsp = sign * (1 - util.exponentialMap(Math.random(), 1e-3, 0.5));
+    },
+
+    highpassHz: (prm) => {prm.dsp = util.exponentialMap(Math.random(), 1, 2000)},
+    highpassQ: () => {},
     lowpassHz: () => {},
+    lowpassQ: () => {},
   },
 };
 
@@ -48,6 +62,8 @@ function render() {
 }
 
 const scales = {
+  boolean: new parameter.IntScale(0, 1),
+
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
@@ -66,13 +82,12 @@ const scales = {
   delayType: new parameter.MenuItemScale(menuitems.delayType),
   timeDistribution: new parameter.MenuItemScale(menuitems.timeDistribution),
   delayTime: new parameter.DecibelScale(-80, -20, true),
+  delayTimeModAmount: new parameter.DecibelScale(-20, 60, true),
   feedback: new parameter.LinearScale(-1, 1),
 
   cutoffSlope: new parameter.LinearScale(0, 1),
-  highpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(1), util.freqToMidiPitch(48000), true),
-  lowpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(10), util.freqToMidiPitch(1000000), false),
+  highpassHz: new parameter.DecibelScale(util.ampToDB(1), util.ampToDB(48000), true),
+  lowpassHz: new parameter.DecibelScale(util.ampToDB(10), util.ampToDB(1000000), false),
   filterQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
 };
 
@@ -102,6 +117,7 @@ const param = {
     menuitems.timeDistribution.indexOf("Overtone"), scales.timeDistribution),
   delayTime: new parameter.Parameter(0.01, scales.delayTime, true),
   timeRandomness: new parameter.Parameter(0.001, scales.delayTime, true),
+  delayTimeModAmount: new parameter.Parameter(0.0, scales.delayTimeModAmount, true),
   feedback: new parameter.Parameter(-0.98, scales.feedback, true),
 
   highpassCutoffSlope: new parameter.Parameter(0, scales.cutoffSlope),
@@ -214,6 +230,8 @@ const ui = {
     new widget.NumberInput(detailDelay, "Delay Time [s]", param.delayTime, render),
   timeRandomness:
     new widget.NumberInput(detailDelay, "Time Randomness", param.timeRandomness, render),
+  delayTimeModAmount: new widget.NumberInput(
+    detailDelay, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
   feedback: new widget.NumberInput(detailDelay, "Feedback", param.feedback, render),
 
   highpassCutoffSlope: new widget.NumberInput(

@@ -51,7 +51,8 @@ function getDelayProcessFunc(pv) {
         let apSig = out;
         if (!bypassHighpass) apSig = dsp.highpass[i].hp(apSig);
         if (!bypassLowpass) apSig = dsp.lowpass[i].lp(apSig);
-        const apOut = dsp.delay[i].process(apSig);
+        const delaySamples = dsp.baseDelayTime[i] - pv.delayTimeModAmount * Math.abs(ap);
+        const apOut = dsp.delay[i].processMod(apSig, delaySamples, pv.feedback);
         out = dsp.outBuf[i] + pv.feedback * dsp.inBuf[i];
         dsp.outBuf[i] = apOut;
       }
@@ -68,7 +69,8 @@ function getDelayProcessFunc(pv) {
     for (let i = 0; i < pv.nDelay; ++i) {
       if (!bypassHighpass) ap = dsp.highpass[i].hp(ap);
       if (!bypassLowpass) ap = dsp.lowpass[i].lp(ap);
-      ap = dsp.delay[i].process(ap);
+      const delaySamples = dsp.baseDelayTime[i] - pv.delayTimeModAmount * Math.abs(ap);
+      ap = dsp.delay[i].processMod(ap, delaySamples, pv.feedback);
     }
     dsp.feedbackBuffer = ap;
     return sig;
@@ -86,6 +88,7 @@ onmessage = (event) => {
       noiseDecay: new EMADecayEnvelope(upRate * pv.noiseDecay),
       rng: new PcgRandom(BigInt(pv.seed + pv.channel * 65537)),
       delay: [],
+      baseDelayTime: [],
       highpass: [],
       lowpass: [],
       feedbackBuffer: 0,
@@ -99,12 +102,15 @@ onmessage = (event) => {
       let timeInSeconds = isOvertone ? pv.delayTime / (i + 1) : pv.delayTime / pv.nDelay;
       timeInSeconds += pv.timeRandomness * dsp.rng.number();
 
+      const delayTimeSamples = upRate * timeInSeconds;
+      dsp.baseDelayTime.push(delayTimeSamples);
+
       // `Delay` uses linear interpolation, and linear interpolation can be considered as
       // FIR lowpass filter. With sufficiently high sampling rate, it's better to use
       // `IntDelay` to prevent loss by linear interpolation, to preserve metalic high
       // tones.
-      let delay = new LongAllpass(upRate * timeInSeconds, upRate < 8 ? Delay : IntDelay);
-      delay.prepare(upRate * timeInSeconds, pv.feedback);
+      let delay = new LongAllpass(delayTimeSamples, upRate < 8 ? Delay : IntDelay);
+      delay.prepare(delayTimeSamples, pv.feedback);
       dsp.delay.push(delay);
 
       const hpOffset = pv.highpassCutoffSlope * i * 8 / pv.nDelay;
