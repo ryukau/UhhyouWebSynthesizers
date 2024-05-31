@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {selectCzOscillator} from "../common/dsp/czoscillator.js";
-import {lerp, normalDistributionMap, shuffleArray} from "../common/util.js";
+import {lerp, shuffleArray} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
 
 // Fast Walsh Hadamard transform ported from `sympy.discrete.transforms.fwht`.
-// `seq.length` must be equals to 2^n.
+// `seq.length` must equal to 2^n.
 function fwht(seq, inverse = true) {
   const n = seq.length;
   for (let h = 2; h <= n; h *= 2) {
