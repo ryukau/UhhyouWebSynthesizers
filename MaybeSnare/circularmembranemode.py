@@ -2,7 +2,7 @@ from scipy.special import jn_zeros
 import matplotlib.pyplot as plt
 import numpy as np
 
-size = 8
+size = 16
 
 ratio = []
 base = jn_zeros(0, 1)[0]

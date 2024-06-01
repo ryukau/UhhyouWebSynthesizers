@@ -91,12 +91,31 @@ onmessage = (event) => {
       delayProcessFunc: getDelayProcessFunc(pv),
     };
 
-    const isOvertone = menuitems.timeDistribution[pv.timeDistribution] === "Overtone";
+    const getDelayTimeFunc = (timeDistribution) => {
+      switch (menuitems.timeDistribution[timeDistribution]) {
+        default:
+        case "Overtone":
+          return (index) => pv.delayTime / (index + 1);
+        case "Uniform":
+          return (index) => pv.delayTime / pv.nDelay;
+        case "Circular Membrane Mode":
+          return (index) => {
+            if (index >= util.circularModes.length) {
+              console.warn("Index out of bounds for `util.circularModes`");
+              return 0;
+            }
+            return pv.delayTime * util.circularModes[index];
+          }
+      }
+    };
+    const delayTimeFunc = getDelayTimeFunc(pv.timeDistribution);
+
     const delayType = pv.delayInterpType == 0 ? IntDelay
       : pv.delayInterpType == 1               ? Delay
                                               : CubicDelay;
+
     for (let i = 0; i < pv.nDelay; ++i) {
-      let timeInSeconds = isOvertone ? pv.delayTime / (i + 1) : pv.delayTime / pv.nDelay;
+      let timeInSeconds = delayTimeFunc(i);
       timeInSeconds += pv.timeRandomness * dsp.rng.number();
 
       const delayTimeSamples = upRate * timeInSeconds;

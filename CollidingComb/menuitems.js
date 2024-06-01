@@ -19,7 +19,7 @@ export const toneSortingItems = [
 ];
 
 export const delayInterpTypeItems = [
-  "None - Noisy Modulation",
+  "None - Noisy modulation",
   "Linear",
   "Cubic - Slightly brighter",
 ];
