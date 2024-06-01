@@ -38,9 +38,6 @@ function process(upFold, pv, dsp) {
 function getDelayProcessFunc(pv) {
   if (menuitems.delayNetworkType[pv.delayNetworkType] === "Lattice")
     return (upFold, pv, dsp, sig) => {
-      const bypassHighpass = pv.highpassHz <= pv.minHighpassHz;
-      const bypassLowpass = pv.lowpassHz >= pv.maxLowpassHz;
-
       let ap = sig;
       for (let i = 0; i < dsp.outBuf.length; ++i) {
         ap -= pv.feedback * dsp.outBuf[i];
@@ -49,8 +46,8 @@ function getDelayProcessFunc(pv) {
       let out = dsp.inBuf.at(-1);
       for (let i = dsp.delay.length - 1; i >= 0; --i) {
         let apSig = out;
-        if (!bypassHighpass) apSig = dsp.highpass[i].hp(apSig);
-        if (!bypassLowpass) apSig = dsp.lowpass[i].lp(apSig);
+        apSig = dsp.highpass[i].hp(apSig);
+        apSig = dsp.lowpass[i].lp(apSig);
         const delaySamples = dsp.baseDelayTime[i] - pv.delayTimeModAmount * Math.abs(ap);
         const apOut = dsp.delay[i].processMod(apSig, delaySamples, pv.feedback);
         out = dsp.outBuf[i] + pv.feedback * dsp.inBuf[i];
@@ -61,14 +58,11 @@ function getDelayProcessFunc(pv) {
 
   // menuitems.delayNetworkType[pv.delayNetworkType] === "Allpass"
   return (upFold, pv, dsp, sig) => {
-    const bypassHighpass = pv.highpassHz <= pv.minHighpassHz;
-    const bypassLowpass = pv.lowpassHz >= pv.maxLowpassHz;
-
     let ap = sig - pv.feedback * dsp.feedbackBuffer;
     sig = dsp.feedbackBuffer + util.lerp(0, pv.feedback * sig, pv.noiseMix);
     for (let i = 0; i < pv.nDelay; ++i) {
-      if (!bypassHighpass) ap = dsp.highpass[i].hp(ap);
-      if (!bypassLowpass) ap = dsp.lowpass[i].lp(ap);
+      ap = dsp.highpass[i].hp(ap);
+      ap = dsp.lowpass[i].lp(ap);
       const delaySamples = dsp.baseDelayTime[i] - pv.delayTimeModAmount * Math.abs(ap);
       ap = dsp.delay[i].processMod(ap, delaySamples, pv.feedback);
     }
