@@ -17,6 +17,7 @@ const localRecipeBook = {
     fadeIn: () => {},
     fadeOut: () => {},
     decayTo: () => {},
+    stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
     toneSlope: () => {},
@@ -141,6 +142,7 @@ const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
+  stereoMerge: new parameter.LinearScale(0, 1),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
   sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   toneSlope: new parameter.DecibelScale(-20, 20, true),
@@ -173,6 +175,7 @@ const param = {
   fadeIn: new parameter.Parameter(0.0, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
+  stereoMerge: new parameter.Parameter(0.0, scales.stereoMerge),
   overSample: new parameter.Parameter(1, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   toneSlope: new parameter.Parameter(1, scales.toneSlope),
@@ -285,6 +288,8 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
+  stereoMerge:
+    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
   overSample:
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
   sampleRateScaler: new widget.ComboBoxLine(
