@@ -104,7 +104,8 @@ onmessage = (event) => {
               console.warn("Index out of bounds for `util.circularModes`");
               return 0;
             }
-            return pv.delayTime * util.circularModes[index];
+            return pv.delayTime * util.circularModes[index]
+              / util.circularModes[pv.nDelay - 1];
           }
       }
     };

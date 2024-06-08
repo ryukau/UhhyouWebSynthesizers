@@ -8,7 +8,7 @@ export const sampleRateScalerItems = ["1", "2", "4", "8", "16"];
 
 export const delayNetworkType = ["Allpass", "Lattice"];
 export const timeDistribution = ["Overtone", "Uniform", "Circular Membrane Mode"];
-export const cascadingOrderItems = ["Ascending", "Descending", "Random"];
+export const cascadingOrderItems = ["Forward", "Reverse", "Random"];
 
 export const delayInterpTypeItems = [
   "None - Noisy modulation",

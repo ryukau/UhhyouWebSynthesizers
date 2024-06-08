@@ -79,6 +79,8 @@ const localRecipeBook = {
     highpassQ: () => {},
     lowpassHz: () => {},
     lowpassQ: () => {},
+
+    delayCascadingOrder: (prm) => { prm.normalized = Math.random(); },
   },
 
   "Lattice": {
@@ -116,6 +118,8 @@ const localRecipeBook = {
     highpassQ: () => {},
     lowpassHz: () => {},
     lowpassQ: () => {},
+
+    delayCascadingOrder: (prm) => { prm.normalized = Math.random(); },
   },
 };
 
