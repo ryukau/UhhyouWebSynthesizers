@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -22,6 +22,9 @@ const localRecipeBook = {
     sampleRateScaler: () => {},
     dcHighpassHz: () => {},
     toneSlope: () => {},
+    // safeFeedback: () => {},
+
+    bandpassCutSlewRate: () => {},
   },
 };
 
@@ -99,6 +102,7 @@ const param = {
   overSample: new parameter.Parameter(1, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
+  safeFeedback: new parameter.Parameter(0, scales.boolean),
 
   limiterType: new parameter.Parameter(1, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
@@ -128,6 +132,7 @@ const param = {
   delayTimeModSeconds: new parameter.Parameter(0.125, scales.delayTimeModSeconds, true),
   delayTimeModAmount: new parameter.Parameter(0.0, scales.delayTimeModAmount, true),
   bandpassCutHz: new parameter.Parameter(100, scales.bandpassCutHz, true),
+  bandpassCutSlewRate: new parameter.Parameter(100, scales.bandpassCutHz, true),
   bandpassQ: new parameter.Parameter(Math.SQRT1_2, scales.bandpassQ, true),
   bandpassCutModRiseCents:
     new parameter.Parameter(1, scales.bandpassCutModRiseCents, true),
@@ -203,7 +208,7 @@ const playControl = widget.playControl(
 const detailTips = widget.details(divLeft, "Tips");
 const paragraphNote1 = widget.paragraph(detailTips, undefined, undefined);
 paragraphNote1.textContent
-  = "Reducing `FDN -> Cross Feedback Decay` or `Comb -> Feedback Decay` may stop the feedback to blow up. When the synth is blowing up, dashed line will appear in Waveform view.";
+  = "A quick way to stop blow-up is to turn on `Render -> Safe Feedback`. A more manual way is to reduce `FDN -> Cross Feedback Decay`, `Comb -> Feedback Decay`, or `Comb -> BP Cut Slew Rate`.";
 
 const detailRender = widget.details(divLeft, "Render");
 const detailLimiter = widget.details(divRightA, "Limiter");
@@ -226,6 +231,9 @@ const ui = {
     detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   toneSlope:
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  safeFeedback: new widget.ToggleButtonLine(
+    detailRender, ["Safe Feedback - Off", "Safe Feedback - On"], param.safeFeedback,
+    render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
   limiterThreshold: new widget.NumberInput(
@@ -267,6 +275,8 @@ const ui = {
     detailComb, "Delay Moddulation Amount [oct]", param.delayTimeModAmount, render),
   bandpassCutHz:
     new widget.NumberInput(detailComb, "BP Cut [Hz]", param.bandpassCutHz, render),
+  bandpassCutSlewRate: new widget.NumberInput(
+    detailComb, "BP Cut Slew Rate [Hz]", param.bandpassCutSlewRate, render),
   bandpassQ: new widget.NumberInput(detailComb, "BP Q", param.bandpassQ, render),
   bandpassCutModRiseCents: new widget.NumberInput(
     detailComb, "BP Cut Modulation Rise [cent]", param.bandpassCutModRiseCents, render),

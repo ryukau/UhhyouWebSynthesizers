@@ -6,7 +6,7 @@ import {constructHouseholder} from "../common/dsp/fdn.js";
 import {Limiter} from "../common/dsp/limiter.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
-import {EMAFilter} from "../common/dsp/smoother.js";
+import {EMAFilter, RateLimiter} from "../common/dsp/smoother.js";
 import {MatchedBiquad} from "../common/dsp/svf.js";
 import {clamp, exponentialMap, lerp, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
@@ -22,6 +22,7 @@ class SlipOutComb {
     delayTimeModAmount,
     delayTimeModSeconds,
     bandpassCut,
+    bandpassCutSlewRate,
     bandpassQ,
     bandpassCutModRiseCents,
     bandpassCutModFallCents,
@@ -29,6 +30,7 @@ class SlipOutComb {
     feedbackGain,
     feedbackLossThreshold,
     feedbackDecaySeconds,
+    safeFeedback,
   ) {
     this.delaySamples = delaySamples;
     this.bpCut = bandpassCut;
@@ -40,6 +42,7 @@ class SlipOutComb {
     this.delayMod.setCutoffFromTime(delayTimeModSeconds * sampleRate);
 
     this.bpCutMod = 0;
+    this.bpCutSlewLimiter = new RateLimiter(bandpassCutSlewRate, 0);
     this.bpCutRise = exp2Scaler * bandpassCutModRiseCents / 1200; // In cents.
     this.bpCutFall = exp2Scaler * bandpassCutModFallCents / 1200; // In cents.
 
@@ -51,6 +54,8 @@ class SlipOutComb {
     this.feedback = 0;
     this.delay = new delay.IntDelay(2 * delaySamples);
     this.bandpass = new MatchedBiquad();
+
+    this.safeFeedback = safeFeedback;
   }
 
   process(input) {
@@ -66,7 +71,10 @@ class SlipOutComb {
         : 0;
     }
 
-    if (fbAbs > this.fbLossThreshold) {
+    if (this.safeFeedback && fbAbs >= 1e5) {
+      this.fbGain = 0.5;
+      this.delayMod.process(this.delayModTarget);
+    } else if (fbAbs > this.fbLossThreshold) {
       this.fbGain = Math.max(this.fbGain * this.fbDecay, Number.EPSILON);
       this.delayMod.process(this.delayModTarget);
     } else {
@@ -74,9 +82,12 @@ class SlipOutComb {
       this.delayMod.process(0);
     }
 
+    let cutMod = Math.exp(this.bpCutMod);
+    if (!isFinite(cutMod)) cutMod = 1;
+
     let sig = this.bandpass.bp(
       input + this.fbGain * this.feedback,
-      this.bpCut * Math.exp(this.bpCutMod),
+      this.bpCut * this.bpCutSlewLimiter.process(cutMod),
       this.bpQ,
     );
 
@@ -88,7 +99,14 @@ class SlipOutComb {
 
 class EasyFDN {
   constructor(
-    sampleRate, crossGain, crossLossThreshold, crossDecaySeconds, crossfeeds, delays) {
+    sampleRate,
+    crossGain,
+    crossLossThreshold,
+    crossDecaySeconds,
+    crossfeeds,
+    safeFeedback,
+    delays,
+  ) {
     const create2dArray = (x, y) => {
       let a = new Array(x);
       for (let i = 0; i < a.length; ++i) a[i] = new Array(y).fill(0);
@@ -107,6 +125,7 @@ class EasyFDN {
     this.buf = create2dArray(2, size);
     this.bufIndex = 0;
 
+    this.safeFeedback = safeFeedback;
     this.delay = delays;
   }
 
@@ -124,7 +143,10 @@ class EasyFDN {
     }
 
     const output = front.reduce((sum, val) => sum + val, 0);
-    if (Math.abs(output) > this.lossThreshold) {
+    const absed = Math.abs(output);
+    if (this.safeFeedback && absed >= 1e5) {
+      this.crossGain = 0.5;
+    } else if (absed > this.lossThreshold) {
       this.crossGain = Math.max(this.crossGain * this.crossGainDecay, Number.EPSILON);
     } else {
       this.crossGain = Math.min(this.crossGain * this.crossGainRise, this.crossGainBase);
@@ -177,6 +199,8 @@ onmessage = async (event) => {
     return lerp(1, index + 1, spread)
       * Math.exp(uniformFloatMap(rng.number(), rndRange, rndRange));
   };
+  const bandpassCutSlewRate
+    = pv.bandpassCutSlewRate >= 1e5 ? 0.5 : pv.bandpassCutSlewRate / upRate;
   for (let idx = 0; idx < combs.length; ++idx) {
     const delayCutRatio = pitchRatio(idx, pv.delayTimeSpread, pv.delayTimeRandomCent);
     const bpCutRatio = pitchRatio(idx, pv.bandpassCutSpread, pv.bandpassCutRandomCent);
@@ -187,6 +211,7 @@ onmessage = async (event) => {
       pv.delayTimeModAmount,
       pv.delayTimeModSeconds,
       (pv.bandpassCutHz * bpCutRatio) / upRate,
+      bandpassCutSlewRate,
       pv.bandpassQ,
       pv.bandpassCutModRiseCents / upFold,
       pv.bandpassCutModFallCents / upFold,
@@ -194,11 +219,18 @@ onmessage = async (event) => {
       pv.feedbackGain,
       pv.feedbackLossThreshold,
       pv.feedbackDecaySeconds,
+      pv.safeFeedback,
     );
   }
   dsp.fdn = new EasyFDN(
-    upRate, pv.crossFeedbackGain, pv.crossFeedbackLossThreshold,
-    pv.crossFeedbackDecaySeconds, pv.crossFeedbackRatio.slice(0, pv.matrixSize), combs);
+    upRate,
+    pv.crossFeedbackGain,
+    pv.crossFeedbackLossThreshold,
+    pv.crossFeedbackDecaySeconds,
+    pv.crossFeedbackRatio.slice(0, pv.matrixSize),
+    pv.safeFeedback,
+    combs,
+  );
 
   dsp.slopeFilter = new SlopeFilter(Math.floor(Math.log2(24000 / 1000)));
   dsp.slopeFilter.setCutoff(upRate, 1000, pv.toneSlope, true);
