@@ -4,7 +4,7 @@ This document provides an overview of code structure, so to reduce the time to f
 For simple things, using search tools is probably faster than reading this text. [`rg`](https://github.com/BurntSushi/ripgrep), [`fd`](https://github.com/sharkdp/fd), and [`fzf`](https://github.com/junegunn/fzf) are example of search tools. I personally use [VS Code's built in search box](https://code.visualstudio.com/docs/editor/codebasics#_search-across-files).
 
 ## Directory Structure
-Directories start with a capital letter are synthesizers. Below is a list of directories that starts with a small letter.
+Directories start with a capital letter are synthesizers. Below is a list of directories that start with a small letter.
 
 - `common`: Common components used across synthesizers.
 - `docs`: Documentations.
@@ -33,7 +33,7 @@ A parameter has 3 different representations:
 - Display value.
 - Normalized value. Used in GUI, but only internally.
 
-Why not use raw value everywhere? That's because sometimes human perception differs from machine representation. [Sound pressure level](https://en.wikipedia.org/wiki/Sound_pressure#Sound_pressure_level) is an example of this problem, as decibel approximates human perception of loudness better than raw amplitude. So there must be an scaling mechanism to represent a same value in different ways.
+Why not use raw value everywhere? That's because sometimes human perception differs from machine representation. [Sound pressure level](https://en.wikipedia.org/wiki/Sound_pressure#Sound_pressure_level) is an example of this problem, as decibel approximates human perception of loudness better than raw amplitude. So there must be a scaling mechanism to represent a same value in different ways.
 
 Raw value is used in DSP. They are refered as "DSP values" or `*.dsp` in code. For example, -20 dB becomes 0.1 on raw value.
 
@@ -152,6 +152,8 @@ GUI is mostly defined in `index.js`, and GUI widgets are likely comes from `canv
 
 ### Concerns or Possible Changes
 There are some reserved parameter names as a result of dirty hack. See `Audio.render()` in `common/wave.js`.
+
+It might be better to separate the code to read exported randomization recipes, and the code to read local randomization recipes.
 
 ## Aims
 UhhyouWebSynthesizers are mostly about experimentation. So the code aims to produce prototypes as fast as possible.
