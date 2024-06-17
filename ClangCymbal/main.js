@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -18,11 +18,18 @@ const localRecipeBook = {
     fadeOut: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
+    stereoMerge: () => {},
+
     matrixSize: () => {},
     matrixType: () => {},
     frequency: () => {},
+
     lowpassCutoffBaseHz: () => {},
     highpassCutoffBaseHz: () => {},
+    lowpassCutoffOffsetOctave: (prm) => {},
+    highpassCutoffOffsetOctave: (prm) => {},
+    lowpassQ: (prm) => {},
+    highpassQ: (prm) => {},
   },
 };
 
@@ -83,11 +90,12 @@ const scales = {
 
 const param = {
   renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
-  fadeIn: new parameter.Parameter(0.001, scales.fade, true),
+  fadeIn: new parameter.Parameter(0.0001, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   expDecayTo: new parameter.Parameter(0.01, scales.expDecayTo, false),
   overSample: new parameter.Parameter(1, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
+  stereoMerge: new parameter.Parameter(0, scales.defaultScale),
   seed: new parameter.Parameter(0, scales.seed),
 
   oscAttack: new parameter.Parameter(0, scales.attackSecond, true),
@@ -195,6 +203,8 @@ const ui = {
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
   sampleRateScaler: new widget.ComboBoxLine(
     detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge:
+    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
   oscAttack: new widget.NumberInput(detailOsc, "Attack [s]", param.oscAttack, render),
