@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 1;
+const version = 2;
 
 const localRecipeBook = {
   "Default": {
@@ -82,6 +82,8 @@ const scales = {
   delayInterp: new parameter.MenuItemScale(menuitems.delayInterpItems),
   identityAmount: new parameter.DecibelScale(-60, 60, false),
   frequency: new parameter.MidiPitchScale(0, 144, false),
+  delayTimeModAmount: new parameter.DecibelScale(-20, 60, true),
+
   filterCutoffBaseOctave: new parameter.MidiPitchScale(
     util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
   filterCutoffOffsetOctave: new parameter.LinearScale(-10.0, 10.0),
@@ -106,10 +108,12 @@ const param = {
 
   matrixSize: new parameter.Parameter(8, scales.matrixSize),
   matrixType: new parameter.Parameter(0, scales.matrixType),
-  delayInterp: new parameter.Parameter(1, scales.delayInterp),
+  delayInterp: new parameter.Parameter(2, scales.delayInterp),
   identityAmount: new parameter.Parameter(0.5, scales.identityAmount, true),
   frequency: new parameter.Parameter(util.midiPitchToFreq(60), scales.frequency, true),
   overtoneRandomization: new parameter.Parameter(0.01, scales.defaultScale),
+  delayTimeModAmount: new parameter.Parameter(0, scales.delayTimeModAmount, true),
+
   lowpassCutoffBaseHz: new parameter.Parameter(
     scales.filterCutoffBaseOctave.maxDsp, scales.filterCutoffBaseOctave, true),
   highpassCutoffBaseHz: new parameter.Parameter(100, scales.filterCutoffBaseOctave, true),
@@ -224,6 +228,8 @@ const ui = {
   frequency: new widget.NumberInput(detailFDN, "Frequency [Hz]", param.frequency, render),
   overtoneRandomization: new widget.NumberInput(
     detailFDN, "Overtone Random", param.overtoneRandomization, render),
+  delayTimeModAmount: new widget.NumberInput(
+    detailFDN, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
 
   lowpassCutoffBaseHz: new widget.NumberInput(
     detailLP, "Cutoff Base [Hz]", param.lowpassCutoffBaseHz, render),

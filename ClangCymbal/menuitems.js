@@ -9,6 +9,7 @@ export const sampleRateScalerItems = ["1", "2", "4", "8", "16"];
 export const delayInterpItems = [
   "None",
   "Linear",
+  "Cubic",
 ];
 
 export const matrixTypeItems = [

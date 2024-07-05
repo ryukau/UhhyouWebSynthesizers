@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {Delay, IntDelay} from "../common/dsp/delay.js";
+import {CubicDelay, Delay, IntDelay} from "../common/dsp/delay.js";
 import {DoubleEmaADEnvelope} from "../common/dsp/envelope.js";
 import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
@@ -10,6 +10,24 @@ import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import {SampleAndHoldNoise} from "./localdsp.js";
 import * as menuitems from "./menuitems.js";
+
+class ModDelay {
+  constructor(delayType, modAmount, maxDelayTimeInSamples) {
+    this.delay = new delayType(maxDelayTimeInSamples);
+    this.time = maxDelayTimeInSamples;
+    this.modAmount = modAmount;
+  }
+
+  setTime(timeInSample) {
+    this.time = timeInSample;
+    this.delay.setTime(timeInSample);
+  }
+
+  process(input) {
+    const delaySamples = this.time - this.modAmount * Math.abs(input);
+    return this.delay.processMod(input, delaySamples);
+  }
+}
 
 function process(upFold, pv, dsp) {
   const upRate = upFold * pv.sampleRate;
@@ -23,8 +41,14 @@ onmessage = (event) => {
   const pv = event.data; // Parameter values.
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
+  const sampleRateScaler = menuitems.sampleRateScalerItems[pv.sampleRateScaler];
 
-  const delayTypeMap = {None: IntDelay, Linear: Delay};
+  const delayTimeModulation = pv.delayTimeModAmount * upFold * sampleRateScaler;
+  const delayTypeMap = {
+    None: ModDelay.bind(null, IntDelay, delayTimeModulation),
+    Linear: ModDelay.bind(null, Delay, delayTimeModulation),
+    Cubic: ModDelay.bind(null, CubicDelay, delayTimeModulation),
+  };
   const delayType = delayTypeMap[menuitems.delayInterpItems[pv.delayInterp]];
 
   let dsp = {
