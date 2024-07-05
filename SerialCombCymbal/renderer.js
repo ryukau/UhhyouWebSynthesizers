@@ -48,7 +48,7 @@ function getDelayProcessFunc(pv) {
         let apSig = out;
         apSig = dsp.highpass[i].hp(apSig);
         apSig = dsp.lowpass[i].lp(apSig);
-        const delaySamples = dsp.baseDelayTime[i] - pv.delayTimeModAmount * Math.abs(ap);
+        const delaySamples = dsp.baseDelayTime[i] - dsp.delayTimeModAmount * Math.abs(ap);
         const apOut = dsp.delay[i].processMod(apSig, delaySamples, pv.feedback);
         out = dsp.outBuf[i] + pv.feedback * dsp.inBuf[i];
         dsp.outBuf[i] = apOut;
@@ -63,7 +63,7 @@ function getDelayProcessFunc(pv) {
     for (let i = 0; i < pv.nDelay; ++i) {
       ap = dsp.highpass[i].hp(ap);
       ap = dsp.lowpass[i].lp(ap);
-      const delaySamples = dsp.baseDelayTime[i] - pv.delayTimeModAmount * Math.abs(ap);
+      const delaySamples = dsp.baseDelayTime[i] - dsp.delayTimeModAmount * Math.abs(ap);
       ap = dsp.delay[i].processMod(ap, delaySamples, pv.feedback);
     }
     dsp.feedbackBuffer = ap;
@@ -75,6 +75,7 @@ onmessage = (event) => {
   const pv = event.data; // Parameter values.
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
+  const sampleRateScaler = menuitems.sampleRateScalerItems[pv.sampleRateScaler];
 
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
   for (let layer = 0; layer < pv.nLayer; ++layer) {
@@ -85,6 +86,7 @@ onmessage = (event) => {
       baseDelayTime: [],
       highpass: [],
       lowpass: [],
+      delayTimeModAmount: pv.delayTimeModAmount * upFold * sampleRateScaler / 2,
       feedbackBuffer: 0,
       inBuf: new Array(pv.nDelay).fill(0),
       outBuf: new Array(pv.nDelay).fill(0),
