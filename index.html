@@ -9,6 +9,12 @@
   <style>
     @import url("style/font.css");
 
+    @media (prefers-color-scheme: dark) {
+      html {
+        filter: invert(0.8745098039215686);
+      }
+    }
+
     body {
       font-family: var(--font-family);
       font-weight: var(--font-weight-base);
@@ -145,7 +151,7 @@
         <option value="en">English</option>
         <option value="ja">日本語</option>
       </select>
-      <span id="lastModified">Last Modified: 2024-05-08</span>
+      <span id="lastModified">Last Modified: 2024-08-06</span>
     </p>
   </header>
 

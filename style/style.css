@@ -12,6 +12,12 @@
   --input-range-width: 60%;
 }
 
+@media (prefers-color-scheme: dark) {
+  html {
+    filter: invert(0.8745);
+  }
+}
+
 html {
   height: 100%;
 }
