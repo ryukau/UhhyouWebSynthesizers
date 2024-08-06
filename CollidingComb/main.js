@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 2;
+const version = 3;
 
 const localRecipeBook = {
   "Default": {
@@ -84,6 +84,7 @@ const scales = {
   tonePhaseSpread: new parameter.LinearScale(0, 1),
   toneAttackScaler: new parameter.DecibelScale(-60, 60, true),
   toneSorting: new parameter.MenuItemScale(menuitems.toneSortingItems),
+  toneSaturation: new parameter.DecibelScale(-20, 60, true),
 
   pitchSpread: new parameter.LinearScale(0, 1),
   pitchRandomCent: new parameter.LinearScale(0, 1200),
@@ -127,6 +128,7 @@ const param = {
   tonePhaseSpread: new parameter.Parameter(1, scales.tonePhaseSpread, true),
   toneAttackScaler: new parameter.Parameter(1, scales.toneAttackScaler, true),
   toneSorting: new parameter.Parameter(0, scales.toneSorting),
+  toneSaturation: new parameter.Parameter(1, scales.toneSaturation),
 
   delayTimeSpread: new parameter.Parameter(1, scales.pitchSpread, true),
   delayTimeRandomCent:
@@ -258,6 +260,8 @@ const ui = {
     detailOsc, "Tone - Attack Scaler", param.toneAttackScaler, render),
   toneSorting:
     new widget.ComboBoxLine(detailOsc, "Tone - Sorting", param.toneSorting, render),
+  toneSaturation: new widget.NumberInput(
+    detailOsc, "Tone - Saturation [dB]", param.toneSaturation, render),
 
   delayTimeSpread: new widget.NumberInput(
     detailPitch, "Delay Time Spread", param.delayTimeSpread, render),

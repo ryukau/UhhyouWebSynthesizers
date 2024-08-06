@@ -13,6 +13,7 @@ import {RateLimiter} from "../common/dsp/smoother.js";
 import {MatchedBiquad, SVFHP} from "../common/dsp/svf.js";
 import {
   circularModes,
+  clamp,
   exponentialMap,
   lerp,
   uniformFloatMap,
@@ -36,12 +37,14 @@ class MultiSine {
     upperDecaySample,
     attackScaler,
     sortOrder,
+    saturationGain,
   ) {
     upperFreq = Math.min(upperFreq, 0.49);
 
     this.osc = new Array(nSine);
     this.env = new Array(nSine);
     this.gain = 1 / Math.sqrt(nSine);
+    this.saturationGain = saturationGain;
 
     const randomDecay
       = () => exponentialMap(rng.number(), lowerDecaySample, upperDecaySample);
@@ -72,7 +75,8 @@ class MultiSine {
   process() {
     let sum = 0;
     for (let i = 0; i < this.osc.length; ++i) {
-      sum += this.env[i].process() * this.osc[i].process();
+      sum += this.env[i].process()
+        * clamp(this.osc[i].process() * this.saturationGain, -1, 1);
     }
     return sum * this.gain;
   }
@@ -247,6 +251,7 @@ onmessage = async (event) => {
     pv.oscDecaySeconds * upRate,
     pv.toneAttackScaler,
     pv.toneSorting,
+    pv.toneSaturation,
   );
 
   const pitchFunc = getPitchFunc(pv);
