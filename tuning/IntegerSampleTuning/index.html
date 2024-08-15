@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset=utf-8>
+  <title>Integer Sample Pitch Table</title>
+  <link rel="icon" type="image/svg+xml" href="../../style/favicon/favicon.svg">
+  <link rel="icon" type="image/png" href="../../style/favicon/favicon.png">
+  <style>
+    :root {
+      --background-color: #ffffff;
+      --foreground-color: #000000;
+      --table-odd-background-color: #eeeeee;
+      --link-color: #0000ee;
+      --visited-color: #551a8b;
+      --active-color: #ff0000;
+      --border-color-light: #bbbbbb;
+      --border-color: #888888;
+      --border-color-dark: #444444;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html {
+        filter: invert(0.8745);
+      }
+    }
+
+    details {
+      margin: 1rem 0 1rem 0;
+    }
+
+
+    h2,
+    summary {
+      font-weight: normal;
+      font-size: medium;
+
+      text-decoration: underline dotted var(--border-color-light);
+      text-underline-offset: 0.5rem;
+    }
+
+    table {
+      border-spacing: 0px;
+      border-collapse: separate;
+      border-left: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+      border-top: 1px solid var(--border-color);
+      border-bottom: hidden;
+    }
+
+    tr:nth-child(odd) {
+      background: var(--table-odd-background-color);
+    }
+
+    tr:nth-child(even) {
+      background: var(--background-color);
+    }
+
+    th {
+      height: 2em;
+      padding: 4px 1em 4px 1em;
+      background: var(--background-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th:not(:first-child) {
+      border-left: 1px solid var(--border-color);
+    }
+
+    td {
+      height: 1.5em;
+      padding: 4px 1em 4px 1em;
+      border-bottom: 1px solid var(--border-color);
+      text-align: right;
+    }
+
+    td:not(:first-child) {
+      border-left: 1px solid var(--border-color);
+    }
+
+    .error {
+      color: var(--active-color);
+    }
+
+    .emphasis {
+      font-size: large;
+      font-weight: bold;
+    }
+
+    input[type="number"] {
+      max-width: 12rem;
+      font-size: large;
+      height: 1.5rem;
+      margin: 0.25rem;
+    }
+
+    input.inline[type="number"] {
+      max-width: 6rem;
+    }
+
+    #parameters {
+      max-width: 700px;
+      margin-left: 4rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+    }
+
+    #parameters>div {
+      margin: 0.5rem 0 0.5rem 0;
+    }
+
+    #parameters>div::after {
+      content: " : ";
+      margin-right: 1rem;
+    }
+
+    #status::before {
+      content: "Status: ";
+    }
+
+    #control {
+      box-sizing: border-box;
+      position: fixed;
+      padding-right: 2%;
+      left: 2%;
+      width: 38%;
+      height: 99%;
+      overflow: scroll;
+    }
+
+    #tableView {
+      box-sizing: border-box;
+      position: fixed;
+      padding-right: 1rem;
+      left: 40%;
+      width: 60%;
+      height: 99%;
+      overflow: scroll;
+    }
+
+
+    .link-index::before {
+      display: inline-block;
+      background-image: url('../../style/favicon/favicon.svg');
+      content: "";
+      vertical-align: middle;
+      background-size: 3rem 3rem;
+      width: 3rem;
+      height: 3rem;
+      margin: 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="control">
+    <h1>Integer Sample Tuning</h1>
+
+    <details>
+      <summary>Glossary</summary>
+      <ul>
+        <li>ET : Equal temperament.</li>
+        <li>MIDI [st.] : MIDI note number in 12 ET semitone.</li>
+      </ul>
+    </details>
+
+    <details>
+      <summary>Explanation</summary>
+      <p>Integer sample tuning only have pitches whose period is exactly an integer number of samples. This can be used as a cheap anti-aliasing for digital synthesizers that doesn't change a pitch after note-on.</p>
+      <p>On construction, a small integer period is selected as a highest note. Lower pitches are obtained relative to the highest note. Semitone intervals in this table are based on 12 ET, but any other tuning can be used.</p>
+      <p>This tuning is used in a synthesizer called GlitchSprinkler which is available as <a href="https://ryukau.github.io/VSTPlugins/manual/GlitchSprinkler/GlitchSprinkler_en.html">plugin</a> and <a href="https://ryukau.github.io/UhhyouWebSynthesizers/GlitchSprinkler/synth.html">web synth</a>.</p>
+    </details>
+
+    <h2>Parameters</h2>
+    <p id="status">Initializing.</p>
+
+    <div id="parameters">
+      <div>Min period [sample]</div>
+      <input id="minPeriodSample" type="number" value="2" min="2" step="1"></input>
+      <div>Sampling rate [Hz]</div>
+      <input id="sampleRateHz" type="number" value="48000" min="0" step="any"></input>
+      <div>Lowest frequency [Hz]</div>
+      <input id="lowestFreqHz" type="number" value="1" min="0" step="any"></input>
+      <div>A<sub>4</sub> frequency [Hz]</div>
+      <input id="centerHz" type="number" value="440" min="0" step="any"></input>
+      <div>Max denominator</div>
+      <input id="maxDenominator" type="number" value="1" min="1" step="1"></input>
+      <div>Error highlight threshold [cent]</div>
+      <input id="errorThresholdCent" type="number" value="1" min="0" step="any"></input>
+    </div>
+
+    <p>Errors above <span id="errorThresholdIndicator" class="emphasis">(not yet computed)</span> cents, and closest pitches that doesn't match the target are <span id="errorThresholdIndicator" class="error">highlighted</span>.</p>
+
+    <p>The difference between 12 ET and this tuning is <span id="differenceTo12Et" class="emphasis">(not yet computed)</span> semitones.</p>
+
+    <p>The difference between target and actual pitch is <span id="differenceToTarget" class="emphasis">(not yet computed)</span> cents.</p>
+
+    <hr>
+    <p><a class="link-index" href="../../index.html">Back to Index</a></p>
+  </div>
+
+  <div id="tableView">
+    <div id="tuningTableContainer">(Tuning table is not yet computed.)</div>
+  </div>
+
+  <script src="main.js" type="module"></script>
+</body>
+
+</html>

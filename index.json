@@ -5,22 +5,16 @@
   },
   "sections": [
     {
-      "title": {
-        "ja": "インパルス応答",
-        "en": "Impulse Response"
-      },
+      "title": {"ja": "インパルス応答", "en": "Impulse Response"},
       "summary": {
-        "ja": "IRコンボルバに読み込んで使うインパルス応答を合成します。",
+        "ja": "IRコンボルバに読み込んで使うインパルス応答を合成します。" ,
         "en": "These are intended to be used with external IR convolver."
       },
       "list": [
         {
           "href": "./FV1Reverb/synth.html",
           "name": "FV1Reverb",
-          "tag": {
-            "ja": "リバーブ",
-            "en": "Reverb"
-          },
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
           "description": {
             "ja": "Spin Semiconductor の <a href=\"http://www.spinsemi.com/knowledge_base/effects.html\">FV-1</a> に基づくループ構造のリバーブ。",
             "en": "Reverb using the loop structure of Spin Semiconductor <a href=\"http://www.spinsemi.com/knowledge_base/effects.html\">FV-1</a>."
@@ -29,10 +23,7 @@
         {
           "href": "./MaybeCabinetIR/synth.html",
           "name": "MaybeCabinetIR",
-          "tag": {
-            "ja": "FIR フィルタ",
-            "en": "FIR filter"
-          },
+          "tag": {"ja": "FIR フィルタ", "en": "FIR filter"},
           "description": {
             "ja": "ギターキャビネットに似せたインパルス応答。",
             "en": "Fake guitar cabinet impulse responses."
@@ -41,10 +32,7 @@
         {
           "href": "./L4Reverb/synth.html",
           "name": "L4Reverb",
-          "tag": {
-            "ja": "リバーブ",
-            "en": "Reverb"
-          },
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
           "description": {
             "ja": "格子構造のオールパスフィルタを 4 つ入れ子にしたリバーブ。",
             "en": "Reverb using 4 times nested lattice allpass filter."
@@ -53,10 +41,7 @@
         {
           "href": "./FDNReverb/synth.html",
           "name": "FDNReverb",
-          "tag": {
-            "ja": "リバーブ",
-            "en": "Reverb"
-          },
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
           "description": {
             "ja": "Feedback delay network (FDN) を1つ使ったリバーブ。",
             "en": "Reverb using a feedback delay network."
@@ -65,22 +50,16 @@
         {
           "href": "./oldsynth/Pulseverb/index.html",
           "name": "Pulseverb",
-          "tag": {
-            "ja": "リバーブ",
-            "en": "Reverb"
-          },
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
           "description": {
-            "ja": "インパルスを適当にモジュレーションしたリバーブ。",
+            "ja": "インパルスを適当にモジュレーションしたリバーブ。"         ,
             "en": "Reverb using modulated band-limited impulse train (BLIT)."
           }
         },
         {
           "href": "./oldsynth/Freeverb/index.html",
           "name": "Freeverb",
-          "tag": {
-            "ja": "リバーブ",
-            "en": "Reverb"
-          },
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
           "description": {
             "ja": "Freeverbアルゴリズムによるリバーブ。",
             "en": "Reverb using Freeverb algorithm."
@@ -89,34 +68,22 @@
       ]
     },
     {
-      "title": {
-        "ja": "シンセサイザ",
-        "en": "Synthesizer"
-      },
-      "summary": {
-        "ja": "",
-        "en": ""
-      },
+      "title": {"ja": "シンセサイザ", "en": "Synthesizer"},
+      "summary": {"ja": "", "en": ""},
       "list": [
         {
           "href": "./CollidingComb/synth.html",
           "name": "CollidingComb",
-          "tag": {
-            "ja": "ドラム",
-            "en": "Drum"
-          },
+          "tag": {"ja": "ドラム", "en": "Drum"},
           "description": {
-            "ja": "GenericDrum の軽量版。",
+            "ja": "GenericDrum の軽量版。"               ,
             "en": "A lightweight version of GenericDrum."
           }
         },
         {
           "href": "./SquareMorph/synth.html",
           "name": "SquareMorph",
-          "tag": {
-            "ja": "波形",
-            "en": "Waveform"
-          },
+          "tag": {"ja": "波形", "en": "Waveform"},
           "description": {
             "ja": "Walsh-Hadamard あるいは Haar 変換によってモーフィングする波形。",
             "en": "Morphing waveform using Walsh-Hadamard, or Haar transform."
@@ -125,22 +92,16 @@
         {
           "href": "./IntegerChord/synth.html",
           "name": "IntegerChord",
-          "tag": {
-            "ja": "コード",
-            "en": "Chord"
-          },
+          "tag": {"ja": "コード", "en": "Chord"},
           "description": {
-            "ja": "波形の周期が整数サンプルとなるスケールを使用。",
+            "ja": "波形の周期が整数サンプルとなるスケールを使用。"         ,
             "en": "The period of waveforms are aligned to integer samples."
           }
         },
         {
           "href": "./GenericDrum/synth.html",
           "name": "GenericDrum",
-          "tag": {
-            "ja": "ドラム",
-            "en": "Drum"
-          },
+          "tag": {"ja": "ドラム", "en": "Drum"},
           "description": {
             "ja": "ClangSnare を基に使い易く調整した汎用ドラムシンセサイザ。",
             "en": "Generic drum synthesizer based on ClangSnare. Tuned for ease of use."
@@ -149,10 +110,7 @@
         {
           "href": "./HooverSynth/synth.html",
           "name": "HooverSynth",
-          "tag": {
-            "ja": "フーバー",
-            "en": "Hoover"
-          },
+          "tag": {"ja": "フーバー", "en": "Hoover"},
           "description": {
             "ja": "フーバーサウンドに特化したシンセサイザ。",
             "en": "Hoover sound syntheiszer."
@@ -161,10 +119,7 @@
         {
           "href": "./ResonantDrop/synth.html",
           "name": "ResonantDrop",
-          "tag": {
-            "ja": "ノイズ",
-            "en": "Noise"
-          },
+          "tag": {"ja": "ノイズ", "en": "Noise"},
           "description": {
             "ja": "パラパラと小さな物が落ちるような音。レゾネータを使用。",
             "en": "Sound of falling small objects. Using resonators."
@@ -173,10 +128,7 @@
         {
           "href": "./AdaptiveNotchComb/synth.html",
           "name": "AdaptiveNotchComb",
-          "tag": {
-            "ja": "金属音",
-            "en": "Metal"
-          },
+          "tag": {"ja": "金属音", "en": "Metal"},
           "description": {
             "ja": "適応ノッチフィルタをフィードバック経路に設置した、フィードバックコムフィルタ。",
             "en": "Feedback comb filter that has adaptive notch filters on feedback path."
@@ -185,10 +137,7 @@
         {
           "href": "./SlipOutComb/synth.html",
           "name": "SlipOutComb",
-          "tag": {
-            "ja": "ノイズ",
-            "en": "Noise"
-          },
+          "tag": {"ja": "ノイズ", "en": "Noise"},
           "description": {
             "ja": "発散からすり抜けるようにバンドパスのカットオフを変調するフィードバックコムフィルタ。",
             "en": "Feedback comb filter that modulates bandpass cutoff to slip out from divergence."
@@ -197,34 +146,25 @@
         {
           "href": "./FMGlassyPad/synth.html",
           "name": "FMGlassyPad",
-          "tag": {
-            "ja": "パッド",
-            "en": "Pad"
-          },
+          "tag": {"ja": "パッド", "en": "Pad"},
           "description": {
-            "ja": "ユニゾンした FM シンセによるパッド音。",
+            "ja": "ユニゾンした FM シンセによるパッド音。"  ,
             "en": "Pad sound of FM synthesizer with unison."
           }
         },
         {
           "href": "./TechnoSnare/synth.html",
           "name": "TechnoSnare",
-          "tag": {
-            "ja": "スネア",
-            "en": "Snare"
-          },
+          "tag": {"ja": "スネア", "en": "Snare"},
           "description": {
-            "ja": "古いリズムマシンのようなスネアドラム。",
+            "ja": "古いリズムマシンのようなスネアドラム。"          ,
             "en": "Snare drum sound similar to old rhythm machines."
           }
         },
         {
           "href": "./IntegerArpeggio/synth.html",
           "name": "IntegerArpeggio",
-          "tag": {
-            "ja": "アルペジオ",
-            "en": "Arpeggio"
-          },
+          "tag": {"ja": "アルペジオ", "en": "Arpeggio"},
           "description": {
             "ja": "波形の周期が整数サンプルとなるスケールを使用。スライサに読み込んで使用。",
             "en": "The period of waveforms are aligned to integer samples. Intended to be used with a slicer."
@@ -233,10 +173,7 @@
         {
           "href": "./GlitchSprinkler/synth.html",
           "name": "GlitchSprinkler",
-          "tag": {
-            "ja": "メロディーループ",
-            "en": "Melody loop"
-          },
+          "tag": {"ja": "メロディーループ", "en": "Melody loop"},
           "description": {
             "ja": "単純なシンセサイザの音によるマイクロトーナルを用いたフレーズ。",
             "en": "Microtonal phrase that consists of simple synthesizer tones."
@@ -245,10 +182,7 @@
         {
           "href": "./MetalSqueak/synth.html",
           "name": "MetalSqueak",
-          "tag": {
-            "ja": "シンバル",
-            "en": "Cymbal"
-          },
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
           "description": {
             "ja": "フィードバック経路にオールパスを備えた FDN による金属が擦れるような音。",
             "en": "Texture of metals squeaking. FDN that has allpass on feedback path."
@@ -257,22 +191,13 @@
         {
           "href": "./GrowlSynth/synth.html",
           "name": "GrowlSynth",
-          "tag": {
-            "ja": "声",
-            "en": "Voice"
-          },
-          "description": {
-            "ja": "動物のうなり声。",
-            "en": "Animal growl."
-          }
+          "tag": {"ja": "声", "en": "Voice"},
+          "description": {"ja": "動物のうなり声。", "en": "Animal growl."}
         },
         {
           "href": "./SalmonTube/synth.html",
           "name": "SalmonTube",
-          "tag": {
-            "ja": "声",
-            "en": "Voice"
-          },
+          "tag": {"ja": "声", "en": "Voice"},
           "description": {
             "ja": "Pink Trombone の移植。習作。",
             "en": "A port of Pink Trombone. This one is made to understand the internals."
@@ -281,10 +206,7 @@
         {
           "href": "./OneCycleWaveform/synth.html",
           "name": "OneCycleWaveform",
-          "tag": {
-            "ja": "波形",
-            "en": "Waveform"
-          },
+          "tag": {"ja": "波形", "en": "Waveform"},
           "description": {
             "ja": "オシレータの 1 周期分の波形を生成。",
             "en": "Single cycle waveform generator."
@@ -293,22 +215,16 @@
         {
           "href": "./MaybeSnare/synth.html",
           "name": "MaybeSnare",
-          "tag": {
-            "ja": "スネア",
-            "en": "Snare"
-          },
+          "tag": {"ja": "スネア", "en": "Snare"},
           "description": {
-            "ja": "自己変調する FDN を使用。",
+            "ja": "自己変調する FDN を使用。" ,
             "en": "Using self modulating FDN."
           }
         },
         {
           "href": "./WireWireCollision/synth.html",
           "name": "WireWireCollision",
-          "tag": {
-            "ja": "シミュレーション",
-            "en": "Simulation"
-          },
+          "tag": {"ja": "シミュレーション", "en": "Simulation"},
           "description": {
             "ja": "2 つの弦の衝突。 (<a href=\"docs/Wave1DTest/test.html\">視覚化デモ</a>)",
             "en": "Collision of 2 wires. (<a href=\"docs/Wave1DTest/test.html\">Visual demo</a>)"
@@ -317,34 +233,25 @@
         {
           "href": "./WireWallCollision/synth.html",
           "name": "WireWallCollision",
-          "tag": {
-            "ja": "シミュレーション",
-            "en": "Simulation"
-          },
+          "tag": {"ja": "シミュレーション", "en": "Simulation"},
           "description": {
-            "ja": "1 つの弦が固い壁に衝突。",
+            "ja": "1 つの弦が固い壁に衝突。"         ,
             "en": "A wire colliding into rigid wall."
           }
         },
         {
           "href": "./ClangSnare/synth.html",
           "name": "ClangSnare",
-          "tag": {
-            "ja": "スネア",
-            "en": "Snare"
-          },
+          "tag": {"ja": "スネア", "en": "Snare"},
           "description": {
-            "ja": "ClangCymbal の改変。",
+            "ja": "ClangCymbal の改変。" ,
             "en": "Based on ClangCymbal."
           }
         },
         {
           "href": "./PadChoir3/synth.html",
           "name": "PadChoir3",
-          "tag": {
-            "ja": "パッド",
-            "en": "Pad"
-          },
+          "tag": {"ja": "パッド", "en": "Pad"},
           "description": {
             "ja": "フォルマントデータを使った PADchoir 。",
             "en": "PADchoir using formant data."
@@ -353,10 +260,7 @@
         {
           "href": "./ResonantBD/synth.html",
           "name": "ResonantBD",
-          "tag": {
-            "ja": "バスドラム",
-            "en": "Bass drum"
-          },
+          "tag": {"ja": "バスドラム", "en": "Bass drum"},
           "description": {
             "ja": "古いリズムマシンのようなバスドラム。 SVF の発振を使用。",
             "en": "Similar to bass drums of old rhythm machines. Using oscillation of SVF."
@@ -365,10 +269,7 @@
         {
           "href": "./SingenBD3/synth.html",
           "name": "SingenBD3",
-          "tag": {
-            "ja": "バスドラム",
-            "en": "Bass drum"
-          },
+          "tag": {"ja": "バスドラム", "en": "Bass drum"},
           "description": {
             "ja": "FM を用いたバスドラムシンセサイザ。",
             "en": "FM bass drum synthesizer."
@@ -377,10 +278,7 @@
         {
           "href": "./PadCymbal2/synth.html",
           "name": "PadCymbal2",
-          "tag": {
-            "ja": "シンバル",
-            "en": "Cymbal"
-          },
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
           "description": {
             "ja": "レイヤと直列コムフィルタを追加した改良版 PADcymbal 。",
             "en": "Improved PADcymbal with the addition of layer and serial comb filter."
@@ -389,10 +287,7 @@
         {
           "href": "./ClangCymbal/synth.html",
           "name": "ClangCymbal",
-          "tag": {
-            "ja": "シンバル",
-            "en": "Cymbal"
-          },
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
           "description": {
             "ja": "FDN が発散しないように調整されている点が FDNCymbal と異なる。ほぼ <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_ja.html\">VST 3 版</a>と同じ。",
             "en": "Stable feedback is the difference to FDNCymbal. Mostly as same as <a href=\"https://ryukau.github.io/VSTPlugins/manual/ClangSynth/ClangSynth_en.html\">VST 3 version</a>."
@@ -401,10 +296,7 @@
         {
           "href": "./SerialCombCymbal/synth.html",
           "name": "SerialCombCymbal",
-          "tag": {
-            "ja": "シンバル",
-            "en": "Cymbal"
-          },
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
           "description": {
             "ja": "直列につないだコムフィルタ。",
             "en": "Serial comb filter."
@@ -413,10 +305,7 @@
         {
           "href": "./KSCymbal/synth.html",
           "name": "KSCymbal",
-          "tag": {
-            "ja": "シンバル",
-            "en": "Cymbal"
-          },
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
           "description": {
             "ja": "2 つの Karplus-Strong を適当にぶつけて音を合成。",
             "en": "Crude collision of 2 Karplus-Strong string."
@@ -425,10 +314,7 @@
       ]
     },
     {
-      "title": {
-        "ja": "古いシンセサイザ",
-        "en": "Old Synthesizer"
-      },
+      "title": {"ja": "古いシンセサイザ", "en": "Old Synthesizer"},
       "summary": {
         "ja": "コードのスタイルが古いシンセサイザ。 (<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers/blob/main/docs/code_walkthrough.md#old-synth\">詳細</a>)",
         "en": "Synthesizers using old style code. (<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers/blob/main/docs/code_walkthrough.md#old-synth\">Details</a>)"
@@ -437,10 +323,7 @@
         {
           "href": "./oldsynth/FMTechnoBass/index.html",
           "name": "FMTechnoBass",
-          "tag": {
-            "ja": "ベース",
-            "en": "Bass"
-          },
+          "tag": {"ja": "ベース", "en": "Bass"},
           "description": {
             "ja": "FM ベースシンセサイザ。",
             "en": "FM bass synthesizer."
@@ -449,10 +332,7 @@
         {
           "href": "./oldsynth/WobblingMetalBoard/index.html",
           "name": "WobblingMetalBoard",
-          "tag": {
-            "ja": "ノイズ",
-            "en": "Noise"
-          },
+          "tag": {"ja": "ノイズ", "en": "Noise"},
           "description": {
             "ja": "薄い金属板を揺らしたときのような音。",
             "en": "Sound of wobbling thin metal plate."
@@ -461,10 +341,7 @@
         {
           "href": "./oldsynth/Bubbles/index.html",
           "name": "Bubbles",
-          "tag": {
-            "ja": "水音",
-            "en": "Water"
-          },
+          "tag": {"ja": "水音", "en": "Water"},
           "description": {
             "ja": "水滴が水面に落ちた時に生じる泡の音。",
             "en": "Sound of bubbles that is formed when droplets fall onto water surface."
@@ -473,34 +350,22 @@
         {
           "href": "./oldsynth/Singen0.3/index.html",
           "name": "Singen0.3",
-          "tag": {
-            "ja": "FM",
-            "en": "FM"
-          },
-          "description": {
-            "ja": "FM シンセサイザ。",
-            "en": "FM synthesizer."
-          }
+          "tag": {"ja": "FM", "en": "FM"},
+          "description": {"ja": "FM シンセサイザ。", "en": "FM synthesizer."}
         },
         {
           "href": "./oldsynth/PADchoir2/index.html",
           "name": "PADchoir2",
-          "tag": {
-            "ja": "パッド",
-            "en": "Pad"
-          },
+          "tag": {"ja": "パッド", "en": "Pad"},
           "description": {
-            "ja": "UI を変更した PADchoir 。",
+            "ja": "UI を変更した PADchoir 。"              ,
             "en": "PADchoir with an alternative interface."
           }
         },
         {
           "href": "./oldsynth/FDNCymbal/index.html",
           "name": "FDNCymbal",
-          "tag": {
-            "ja": "シンバル",
-            "en": "Cymbal"
-          },
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
           "description": {
             "ja": "Feedback Delay Network を使用。",
             "en": "Using feedback delay network."
@@ -509,10 +374,7 @@
         {
           "href": "./oldsynth/PADchoir/index.html",
           "name": "PADchoir",
-          "tag": {
-            "ja": "パッド",
-            "en": "Pad"
-          },
+          "tag": {"ja": "パッド", "en": "Pad"},
           "description": {
             "ja": "PADsynth アルゴリズムを使用。",
             "en": "Using PADsynth algorithm."
@@ -521,10 +383,7 @@
         {
           "href": "./oldsynth/WaveBox/index.html",
           "name": "WaveBox",
-          "tag": {
-            "ja": "シミュレーション",
-            "en": "Simulation"
-          },
+          "tag": {"ja": "シミュレーション", "en": "Simulation"},
           "description": {
             "ja": "箱のように配置されたノードを伝わる 3 次元の波。レンダリングに時間がかかる。",
             "en": "3D wave propagation. Simulation nodes are placed like a box. Rendering takes time."
@@ -533,10 +392,7 @@
         {
           "href": "./oldsynth/WaveCymbal2/index.html",
           "name": "WaveCymbal2",
-          "tag": {
-            "ja": "金属音",
-            "en": "Metal"
-          },
+          "tag": {"ja": "金属音", "en": "Metal"},
           "description": {
             "ja": "WaveCymbal の波のシミュレーションを implicit な方法に変更。",
             "en": "WaveCymbal that use implicit method for wave propagation."
@@ -545,10 +401,7 @@
         {
           "href": "./oldsynth/WaveCymbal/index.html",
           "name": "WaveCymbal",
-          "tag": {
-            "ja": "金属音",
-            "en": "Metal"
-          },
+          "tag": {"ja": "金属音", "en": "Metal"},
           "description": {
             "ja": "シンバルというより紐につないだ空き缶を引きずったときのような音。 1 次元の波のシミュレーションと Karplus-Strong アルゴリズムの組み合わせ。",
             "en": "Sounds like dragging a bunch of empty cans rather than a cymbal. Using a combination of 1D wave simulation and Karplus-Strong algorithm."
@@ -557,10 +410,7 @@
         {
           "href": "./oldsynth/Pluck/index.html",
           "name": "Pluck",
-          "tag": {
-            "ja": "金属音",
-            "en": "Metal"
-          },
+          "tag": {"ja": "金属音", "en": "Metal"},
           "description": {
             "ja": "Karplus-Strong アルゴリズムの一種を使用。",
             "en": "A variation of Karplus-Strong algorithm."
@@ -569,10 +419,7 @@
         {
           "href": "./oldsynth/PADcymbal/index.html",
           "name": "PADcymbal",
-          "tag": {
-            "ja": "シンバル",
-            "en": "Cymbal"
-          },
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
           "description": {
             "ja": "ランダムな周波数成分を PADsynth アルゴリズムに入力してシンバルのような音を合成。",
             "en": "Random frequency components are fed into PADsynth algorithm to generate cymbal-ish sound."
@@ -581,34 +428,19 @@
         {
           "href": "./oldsynth/Singen0.2/index.html",
           "name": "Singen0.2",
-          "tag": {
-            "ja": "FM",
-            "en": "FM"
-          },
-          "description": {
-            "ja": "FM シンセサイザ。",
-            "en": "FM synthesizer."
-          }
+          "tag": {"ja": "FM", "en": "FM"},
+          "description": {"ja": "FM シンセサイザ。", "en": "FM synthesizer."}
         },
         {
           "href": "./oldsynth/ECAFM/index.html",
           "name": "ECAFM",
-          "tag": {
-            "ja": "FM",
-            "en": "FM"
-          },
-          "description": {
-            "ja": "ECAC + FM 。",
-            "en": "ECAC + FM."
-          }
+          "tag": {"ja": "FM", "en": "FM"},
+          "description": {"ja": "ECAC + FM 。", "en": "ECAC + FM."}
         },
         {
           "href": "./oldsynth/SingenBD2/index.html",
           "name": "SingenBD2",
-          "tag": {
-            "ja": "バスドラム",
-            "en": "Bass drum"
-          },
+          "tag": {"ja": "バスドラム", "en": "Bass drum"},
           "description": {
             "ja": "FM バスドラム。より多機能な SingenBD3 の利用を推奨。",
             "en": "FM bass drum. Recommend to use SingenBD3 which has better functionality."
@@ -617,22 +449,13 @@
         {
           "href": "./oldsynth/Singen0.1/index.html",
           "name": "Singen0.1",
-          "tag": {
-            "ja": "FM",
-            "en": "FM"
-          },
-          "description": {
-            "ja": "FM シンセサイザ。",
-            "en": "FM synthesizer."
-          }
+          "tag": {"ja": "FM", "en": "FM"},
+          "description": {"ja": "FM シンセサイザ。", "en": "FM synthesizer."}
         },
         {
           "href": "./oldsynth/SinChord/index.html",
           "name": "SinChord",
-          "tag": {
-            "ja": "パッド",
-            "en": "Pad"
-          },
+          "tag": {"ja": "パッド", "en": "Pad"},
           "description": {
             "ja": "エイリアスノイズが出る素朴なオシレータで適当なコードを合成。",
             "en": "Random chord using naive aliasing oscillators."
@@ -641,25 +464,34 @@
       ]
     },
     {
-      "title": {
-        "ja": "WebAudio",
-        "en": "WebAudio"
-      },
-      "summary": {
-        "ja": "",
-        "en": ""
-      },
+      "title": {"ja": "WebAudio", "en": "WebAudio"},
+      "summary": {"ja": "", "en": ""},
       "list": [
         {
           "href": "./oldsynth/ECAC/index.html",
           "name": "ECAC",
-          "tag": {
-            "ja": "",
-            "en": ""
-          },
+          "tag": {"ja": "", "en": ""},
           "description": {
-            "ja": "Elementary Cellular Automaton に基づいて倍音を加算合成。",
+            "ja": "Elementary Cellular Automaton に基づいて倍音を加算合成。" ,
             "en": "Additive synthesizer using elementary cellular automaton."
+          }
+        }
+      ]
+    },
+    {
+      "title": {"ja": "調律の表", "en": "Tuning Table"},
+      "summary": {
+        "ja": "標準的でない調律の表。"     ,
+        "en": "Non stardard tuning tables."
+      },
+      "list": [
+        {
+          "href": "./tuning/IntegerSampleTuning/index.html",
+          "name": "IntegerSampleTuning",
+          "tag": {"ja": "", "en": ""},
+          "description": {
+            "ja": "1 周期が正確に整数サンプルとなるピッチのみを使用。",
+            "en": "OOnly have pitches whose period is exactly an integer number of samples."
           }
         }
       ]
