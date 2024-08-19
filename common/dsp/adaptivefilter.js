@@ -83,8 +83,9 @@ export class AdaptiveNotchCPZ {
     const gain
       = this.a >= 0 ? (1 + a1 + a2) / (2 + this.a) : (1 - a1 + a2) / (2 - this.a);
 
-    const y0 = x0 + this.a * this.x1 + this.x2 - a1 * this.y1 - a2 * this.y2;
-    const s0 = this.x1 * (1 - this.rho * y0);
+    const denom = a1 * this.y1 + a2 * this.y2
+    const y0 = x0 + this.a * this.x1 + this.x2 - denom;
+    const s0 = (1 - this.rho) * x0 - this.rho * (1 - this.rho) * this.x2 - denom;
     this.a = clamp(this.a - 2 * y0 * s0 * this.mu, -this.aBound, this.aBound);
 
     this.x2 = this.x1;
