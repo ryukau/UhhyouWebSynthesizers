@@ -149,6 +149,10 @@
       height: 3rem;
       margin: 0.5rem;
     }
+
+    pre {
+      overflow-x: scroll;
+    }
   </style>
 </head>
 
@@ -167,7 +171,13 @@
     <details>
       <summary>Explanation</summary>
       <p>Integer sample tuning only have pitches whose period is exactly an integer number of samples. This can be used as a cheap anti-aliasing for digital synthesizers that doesn't change a pitch after note-on.</p>
-      <p>On construction, a small integer period is selected as a highest note. Lower pitches are obtained relative to the highest note. Semitone intervals in this table are based on 12 ET, but any other tuning can be used.</p>
+      <p>On construction, a small integer period is selected as a highest note. Lower pitches are obtained relative to the highest note. Semitone intervals in this table are based on 12 ET, but any other tuning can be used. Below is an example in JavaScript.</p>
+      <pre>var minPeriod = 2;
+var period = new Array(128);
+for (var i = 0; i < period.length; ++i) {
+  period[i] = Math.floor(minPeriod * 2**(i / 12));
+}
+console.log(period);</pre>
       <p>This tuning is used in a synthesizer called GlitchSprinkler which is available as <a href="https://ryukau.github.io/VSTPlugins/manual/GlitchSprinkler/GlitchSprinkler_en.html">plugin</a> and <a href="https://ryukau.github.io/UhhyouWebSynthesizers/GlitchSprinkler/synth.html">web synth</a>.</p>
     </details>
 
