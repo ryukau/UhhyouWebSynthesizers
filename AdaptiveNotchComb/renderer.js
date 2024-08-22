@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {AdaptiveNotchCPZ} from "../common/dsp/adaptivefilter.js";
+import {AdaptiveNotchAM, AdaptiveNotchCPZ} from "../common/dsp/adaptivefilter.js";
 import * as delay from "../common/dsp/delay.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {HP1} from "../common/dsp/onepole.js";
@@ -16,13 +16,18 @@ const exp2Scaler = Math.log(2);
 
 class AdaptiveNotchComb {
   constructor(
-    sampleRate, delaySeconds, notchNarrowness, notchStepSizeScale, notchMixGain) {
+    sampleRate,
+    delaySeconds,
+    notchNarrowness,
+    notchStepSizeScale,
+    notchMixGain,
+    adaptiveNotchType = AdaptiveNotchCPZ) {
     this.delay = new delay.IntDelay(sampleRate * delaySeconds);
     this.delay.setTime(sampleRate * delaySeconds);
     this.fbGain = 1;
     this.fbSig = 0;
 
-    this.notch = new AdaptiveNotchCPZ(
+    this.notch = new adaptiveNotchType(
       sampleRate, 1 / delaySeconds, notchNarrowness, notchStepSizeScale);
     this.mix = notchMixGain;
   }
@@ -103,13 +108,19 @@ onmessage = async (event) => {
 
   dsp.combs = [];
   let combLatency = 0; // Probably this isn't very accurate.
+  const getAdaptiveNotchType = (adaptiveNotchIndex) => {
+    const notchType = menuitems.adaptiveNotchTypeItems[adaptiveNotchIndex];
+    if (notchType === "AM") return AdaptiveNotchAM;
+    return AdaptiveNotchCPZ;
+  };
   for (let idx = 0; idx < pv.combCount; ++idx) {
     const freqSpread = lerp(1, 1 + idx, pv.combFrequencySpread);
     const freqRandom = Math.exp(rng.number() * exp2Scaler * pv.combRandomOctave);
     const delayHz = pv.combBaseHz * freqSpread * freqRandom;
     combLatency += upRate / delayHz;
     dsp.combs.push(new AdaptiveNotchComb(
-      upRate, 1 / delayHz, pv.notchNarrowness, pv.notchStepSizeScale, pv.combNotchMix));
+      upRate, 1 / delayHz, pv.notchNarrowness, pv.notchStepSizeScale, pv.combNotchMix,
+      getAdaptiveNotchType(pv.adaptiveNotchType)));
   }
   combLatency = Math.floor(combLatency) - pv.combCount;
 

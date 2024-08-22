@@ -37,15 +37,67 @@ export class AdaptiveFilterLMS {
   }
 }
 
-// Adaptive notch filter based on the one described in section II of the paper below.
-// Computation of `s0` is modified from the paper.
+// Adaptive notch filter based on the description in the section II of the paper below.
 // - "DSP Implementation of Adaptive Notch Filters With Overflow Avoidance in Fixed-Point
 //   Arithmetic" by Satoru Ishibashi, Shunsuke Koshita, Masahide Abe and Masayuki
 //   Kawamata. (http://www.apsipa.org/proceedings/2018/pdfs/0001355.pdf)
 export class AdaptiveNotchCPZ {
   constructor(sampleRate, initialGuessHz, narrownessOfNotch = 0.99, stepSizeScale = 1) {
-    // `mu` means step size here. But there's no specification for this value. If `mu` is
-    // too large, cutoff moves too fast and the filter blows up.
+    // `mu` is step size. But there's no specification for this value. If `mu` is too
+    // large, cutoff moves too fast and the filter blows up.
+    this.mu = 1 / (stepSizeScale * sampleRate);
+
+    this.rho = narrownessOfNotch;
+
+    initialGuessHz = Math.min(Math.max(initialGuessHz, 0), sampleRate / 2);
+    this.a = -2 * Math.cos(2 * Math.PI * initialGuessHz / sampleRate);
+
+    this.v1 = 0;
+    this.v2 = 0;
+
+    this.aBound = 1.98;
+  }
+
+  process(x0) {
+    const a1 = this.rho * this.a;
+    const a2 = this.rho * this.rho;
+
+    const v0 = x0 - a1 * this.v1 - a2 * this.v2;
+    const y0 = v0 + this.a * this.v1 + this.v2;
+    const s0 = (1 - this.rho) * v0 - this.rho * (1 - this.rho) * this.v2;
+    this.a = clamp(this.a - 2 * y0 * s0 * this.mu, -this.aBound, this.aBound);
+
+    this.v2 = this.v1;
+    this.v1 = v0;
+
+    return y0;
+  }
+
+  processNormalized(x0) {
+    const a1 = this.rho * this.a;
+    const a2 = this.rho * this.rho;
+    const gain
+      = this.a >= 0 ? (1 + a1 + a2) / (2 + this.a) : (1 - a1 + a2) / (2 - this.a);
+
+    const v0 = x0 - a1 * this.v1 - a2 * this.v2;
+    const y0 = v0 + this.a * this.v1 + this.v2;
+    const s0 = (1 - this.rho) * v0 - this.rho * (1 - this.rho) * this.v2;
+    this.a = clamp(this.a - 2 * y0 * s0 * this.mu, -this.aBound, this.aBound);
+
+    this.v2 = this.v1;
+    this.v1 = v0;
+
+    return y0 * gain;
+  }
+}
+
+// This adaptive notch works somewhat okay for higher frequencies.
+// Recommended setting:
+// - `narrownessOfNotch` : 0.7.
+// - `initialGuessHz` : 0.5.
+// - `stepSizeScale * sampleRate` : 1 / 256.
+export class AdaptiveNotchAM {
+  constructor(sampleRate, initialGuessHz, narrownessOfNotch = 0.99, stepSizeScale = 1) {
     this.mu = 1 / (stepSizeScale * sampleRate);
 
     this.rho = narrownessOfNotch;

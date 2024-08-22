@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -22,6 +22,7 @@ const localRecipeBook = {
     sampleRateScaler: () => {},
     dcHighpassHz: () => {},
     toneSlope: () => {},
+    adaptiveNotchType: (prm) => { prm.normalized = Math.random(); },
     combCascadeGain: () => {},
     notchInvert: (prm) => { prm.normalized = Math.random(); },
   },
@@ -56,6 +57,7 @@ const scales = {
   noiseDistribution: new parameter.MenuItemScale(menuitems.noiseDistributionItems),
   cutoffHz: new parameter.DecibelScale(util.ampToDB(20), util.ampToDB(20000), false),
 
+  adaptiveNotchType: new parameter.MenuItemScale(menuitems.adaptiveNotchTypeItems),
   combHz: new parameter.DecibelScale(util.ampToDB(20), util.ampToDB(4000), false),
   combRandomOctave: new parameter.LinearScale(0, 2),
   combFrequencySpread: new parameter.LinearScale(0, 1),
@@ -82,6 +84,7 @@ const param = {
   noiseDistribution: new parameter.Parameter(0, scales.noiseDistribution),
   bandpassCutoffHz: new parameter.Parameter(1000, scales.cutoffHz, true),
 
+  adaptiveNotchType: new parameter.Parameter(0, scales.adaptiveNotchType),
   combCount: new parameter.Parameter(8, scales.notchCount, true),
   highpassCutoffHz: new parameter.Parameter(100, scales.cutoffHz, true),
   combBaseHz: new parameter.Parameter(100, scales.combHz, true),
@@ -190,6 +193,8 @@ const ui = {
   bandpassCutoffHz:
     new widget.NumberInput(detailOsc, "BP Cut [Hz]", param.bandpassCutoffHz, render),
 
+  adaptiveNotchType: new widget.ComboBoxLine(
+    detailComb, "Adaptive Notch Type", param.adaptiveNotchType, render),
   combCount: new widget.NumberInput(detailComb, "Count", param.combCount, render),
   highpassCutoffHz:
     new widget.NumberInput(detailComb, "HP Cut [Hz]", param.highpassCutoffHz, render),
