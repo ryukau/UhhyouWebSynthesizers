@@ -220,6 +220,9 @@ class OscillatorControls {
 
 function random(randomBody) {
   if (randomBody) {
+    fmType = Math.floor(Math.random() * radioButtonModulationType.length);
+    radioButtonModulationType.refresh(fmType);
+
     oscBodyControls.random(fmType);
   }
   oscHeadControls.random(true);
@@ -325,8 +328,8 @@ var radioButtonModulationType
         : value === "Lin FM"          ? 3
         : value === "Exp FM"          ? 4
         : value === "Lin Abs FM"      ? 5
-        : value === "Exp Abs FM"      ? 5
-                                      : 6; // "Abs PM"
+        : value === "Exp Abs FM"      ? 6
+                                      : 7; // "Abs PM"
       refresh();
     });
 radioButtonModulationType.add("Muffled FM");

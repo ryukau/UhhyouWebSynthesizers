@@ -247,12 +247,25 @@ class RadioButton {
     this.onChangeFunc(this.value);
   }
 
-  add(label) {
+  get length() { return this.buttons.length; }
+
+  refresh(index) {
+    index = Math.floor(index);
+    let values = this.buttons.map(radio => radio.value);
+
+    this.divButtons.innerHTML = "";
+    this.buttons = [];
+    for (let idx = 0; idx < values.length; ++idx) {
+      this.add(values[idx], idx === index);
+    }
+  }
+
+  add(label, checked = undefined) {
     var input = document.createElement("input");
     input.type = "radio";
     input.name = this.name;
     input.value = label;
-    if (this.buttons.length <= 0) {
+    if ((this.buttons.length <= 0 && checked === undefined) || checked === true) {
       input.setAttribute("checked", true);
       this.value = label;
     }
