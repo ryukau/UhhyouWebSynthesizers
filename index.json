@@ -491,7 +491,7 @@
           "tag": {"ja": "", "en": ""},
           "description": {
             "ja": "1 周期が正確に整数サンプルとなるピッチのみを使用。",
-            "en": "OOnly have pitches whose period is exactly an integer number of samples."
+            "en": "Only have pitches whose period is exactly an integer number of samples."
           }
         }
       ]
