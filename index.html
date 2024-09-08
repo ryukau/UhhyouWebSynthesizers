@@ -151,7 +151,7 @@
         <option value="en">English</option>
         <option value="ja">日本語</option>
       </select>
-      <span id="lastModified">Last Modified: 2024-08-28</span>
+      <span id="lastModified">Last Modified: 2024-09-08</span>
     </p>
   </header>
 
@@ -739,10 +739,21 @@
       }
     }
 
-    document.getElementById("language").addEventListener(
-      "change", e => changeLanguage(e.target.value), false);
+    const selector = document.getElementById("language");
+    selector.addEventListener("change", e => changeLanguage(e.target.value), false);
 
-    changeLanguage(document.getElementById("language").value);
+    const availableLanguages
+      = Array.from(selector.getElementsByTagName("option")).map(v => v.value);
+    let targetLang;
+    outerLoop: for (let lang of navigator.languages) {
+      for (let available of availableLanguages) {
+        if (!lang.includes(available)) continue;
+        targetLang = available;
+        selector.value = targetLang;
+        break outerLoop;
+      }
+    }
+    changeLanguage(targetLang !== undefined ? targetLang : selector.value);
   </script>
 </body>
 

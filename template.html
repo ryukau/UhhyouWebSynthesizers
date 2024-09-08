@@ -197,10 +197,21 @@
       }
     }
 
-    document.getElementById("language").addEventListener(
-      "change", e => changeLanguage(e.target.value), false);
+    const selector = document.getElementById("language");
+    selector.addEventListener("change", e => changeLanguage(e.target.value), false);
 
-    changeLanguage(document.getElementById("language").value);
+    const availableLanguages
+      = Array.from(selector.getElementsByTagName("option")).map(v => v.value);
+    let targetLang;
+    outerLoop: for (let lang of navigator.languages) {
+      for (let available of availableLanguages) {
+        if (!lang.includes(available)) continue;
+        targetLang = available;
+        selector.value = targetLang;
+        break outerLoop;
+      }
+    }
+    changeLanguage(targetLang !== undefined ? targetLang : selector.value);
   </script>
 </body>
 
