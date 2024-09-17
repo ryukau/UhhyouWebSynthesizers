@@ -160,8 +160,8 @@
     <h1 id="title">Uhhyou Web Synthesizers</h1>
     <img src="style/favicon/favicon.svg" alt="Logo image. This logo is a stylized all-pass filter block diagram." />
   </div>
-  {%- for lang, _ in languages.items() %}
   <div id="main">
+    {%- for lang, _ in languages.items() %}
     <div class="languageBlock" lang="{{ lang }}">
       {{ introduction[lang] }}
       {%- for sect in sections %}
