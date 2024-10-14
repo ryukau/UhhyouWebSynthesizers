@@ -12,6 +12,15 @@
       },
       "list": [
         {
+          "href": "./ParallelComb/synth.html",
+          "name": "ParallelComb",
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
+          "description": {
+            "ja": "ペンで机を叩いた音をシンバルのように変えるインパルス応答。",
+            "en": "Impulse response to add cymbal texture for pen taps."
+          }
+        },
+        {
           "href": "./FV1Reverb/synth.html",
           "name": "FV1Reverb",
           "tag": {"ja": "リバーブ", "en": "Reverb"},
