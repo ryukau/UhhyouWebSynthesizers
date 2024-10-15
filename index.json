@@ -16,8 +16,8 @@
           "name": "ParallelComb",
           "tag": {"ja": "シンバル", "en": "Cymbal"},
           "description": {
-            "ja": "ペンで机を叩いた音をシンバルのように変えるインパルス応答。",
-            "en": "Impulse response to add cymbal texture for pen taps."
+            "ja": "ペンで机を叩いた音をシンバルのように変えるインパルス応答。 <a href=\"https://www.youtube.com/watch?v=QYUbXN5f4yA\">henry bracey による説明</a>に基づく。",
+            "en": "Impulse response to add cymbal texture for pen taps. Based on <a href=\"https://www.youtube.com/watch?v=QYUbXN5f4yA\">a description by henry bracey</a>."
           }
         },
         {
@@ -80,6 +80,15 @@
       "title": {"ja": "シンセサイザ", "en": "Synthesizer"},
       "summary": {"ja": "", "en": ""},
       "list": [
+        {
+          "href": "./RoughlySnare/synth.html",
+          "name": "RoughlySnare",
+          "tag": {"ja": "スネア", "en": "Snare"},
+          "description": {
+            "ja": "MikeMorenoDSP の PureData パッチ <a href=\"https://github.com/MikeMorenoDSP/pd-mkmr/blob/fcd602f7eecb96e739a3ab0a88ce0fa42badb0d6/instruments/mymembrane~.pd\">mymembrane~</a> に基づいたスネアドラムのシンセサイザ。",
+            "en": "Snare drum synthesizer based on MikeMorenoDSP's <a href=\"https://github.com/MikeMorenoDSP/pd-mkmr/blob/fcd602f7eecb96e739a3ab0a88ce0fa42badb0d6/instruments/mymembrane~.pd\">mymembrane~</a> PureData patch."
+          }
+        },
         {
           "href": "./CollidingComb/synth.html",
           "name": "CollidingComb",
