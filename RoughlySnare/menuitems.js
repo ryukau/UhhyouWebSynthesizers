@@ -17,3 +17,8 @@ export const delayInterpTypeItems = [
   "Linear",
   "Cubic",
 ];
+
+export const pitchTypeItems = [
+  "Ideal Timpani",
+  "Real Timpani",
+];
