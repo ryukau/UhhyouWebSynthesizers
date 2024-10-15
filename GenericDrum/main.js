@@ -329,7 +329,7 @@ const ui = {
   delayTimeHz:
     new widget.NumberInput(detailPrimary, "Delay [Hz]", param.delayTimeHz, render),
   delayTimeModAmount: new widget.NumberInput(
-    detailPrimary, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
+    detailPrimary, "Delay Modulation [sample]", param.delayTimeModAmount, render),
   bandpassCutRatio:
     new widget.NumberInput(detailPrimary, "BP Cut [oct]", param.bandpassCutRatio, render),
   bandpassQ: new widget.NumberInput(detailPrimary, "BP Q", param.bandpassQ, render),
