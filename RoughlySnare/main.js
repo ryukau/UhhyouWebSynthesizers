@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 4;
+const version = 5;
 
 const localRecipeBook = {
   "Default": {
@@ -62,21 +62,23 @@ const scales = {
   seed: new parameter.IntScale(0, 2 ** 32),
   pitchType: new parameter.MenuItemScale(menuitems.pitchTypeItems),
   delayInterpType: new parameter.MenuItemScale(menuitems.delayInterpTypeItems),
-  frequencyHz: new parameter.DecibelScale(util.ampToDB(20), util.ampToDB(500), false),
+  frequencyHz: new parameter.DecibelScale(util.ampToDB(10), util.ampToDB(1000), false),
+  allpassGain: new parameter.LinearScale(-1, 1),
+  allpassDelayRatio: new parameter.LinearScale(0.001, 0.999),
   feedback: new parameter.LinearScale(0, 1),
   damping: new parameter.LinearScale(0, 1),
   highpassHz: new parameter.DecibelScale(util.ampToDB(1), util.ampToDB(500), false),
-  allpassGain: new parameter.LinearScale(-1, 1),
   noiseLevel: new parameter.DecibelScale(-60, 20, false),
-  pitchDecaySecond: new parameter.DecibelScale(-40, 0, false),
+  envelopeDecaySecond: new parameter.DecibelScale(-40, 0, false),
   pitchMod: new parameter.DecibelScale(-20, 20, true),
   delayTimeMod: new parameter.DecibelScale(-20, 100, true),
+  delayTimeEnv: new parameter.LinearScale(0, 1),
 
   reverbMix: new parameter.DecibelScale(-60, 0, true),
   reverbTimeMultiplier: new parameter.DecibelScale(-20, 20, false),
   reverbLowpassHz: new parameter.MidiPitchScale(
     util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
-  reverbFeedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
+  reverbFeedback: new parameter.NegativeDecibelScale(-40, 0, 1, true),
 };
 
 const param = {
@@ -97,19 +99,21 @@ const param = {
   seed: new parameter.Parameter(0, scales.seed, true),
   pitchType: new parameter.Parameter(0, scales.pitchType),
   delayInterpType: new parameter.Parameter(2, scales.delayInterpType),
-  frequencyHz: new parameter.Parameter(200, scales.frequencyHz, true),
+  frequencyHz: new parameter.Parameter(170, scales.frequencyHz, true),
+  allpassDelayRatio: new parameter.Parameter(5 / 9, scales.allpassDelayRatio, true),
+  allpassGain: new parameter.Parameter(0.66, scales.allpassGain, true),
   feedback: new parameter.Parameter(0.77, scales.feedback, true),
   damping: new parameter.Parameter(0.4, scales.damping, true),
   highpassHz: new parameter.Parameter(20, scales.highpassHz, true),
-  allpassGain: new parameter.Parameter(0.66, scales.allpassGain, true),
-  allpassFrequencyHz: new parameter.Parameter(250, scales.frequencyHz, true),
   noiseLevel: new parameter.Parameter(1.3, scales.noiseLevel, true),
-  pitchDecaySecond: new parameter.Parameter(0.08, scales.pitchDecaySecond, true),
+  envelopeDecaySecond: new parameter.Parameter(0.08, scales.envelopeDecaySecond, true),
   pitchMod: new parameter.Parameter(1, scales.pitchMod, true),
   delayTimeMod: new parameter.Parameter(1150, scales.delayTimeMod, true),
+  delayTimeEnv: new parameter.Parameter(1, scales.delayTimeEnv, true),
+  allpassTimeEnv: new parameter.Parameter(0.33, scales.delayTimeEnv, true),
 
   reverbMix: new parameter.Parameter(0.1, scales.reverbMix),
-  reverbTimeMultiplier: new parameter.Parameter(1, scales.reverbTimeMultiplier, true),
+  reverbTimeMultiplier: new parameter.Parameter(0.17, scales.reverbTimeMultiplier, true),
   reverbLowpassHz:
     new parameter.Parameter(scales.reverbLowpassHz.maxDsp, scales.reverbLowpassHz, true),
   reverbFeedback: new parameter.Parameter(0.8, scales.reverbFeedback, true),
@@ -207,20 +211,24 @@ const ui = {
     detailOsc, "Delay Interpolation", param.delayInterpType, render),
   frequencyHz:
     new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
+  allpassDelayRatio: new widget.NumberInput(
+    detailOsc, "Allpass:Delay Ratio", param.allpassDelayRatio, render),
+  allpassGain:
+    new widget.NumberInput(detailOsc, "Allpass Gain", param.allpassGain, render),
   feedback: new widget.NumberInput(detailOsc, "Feedback", param.feedback, render),
   damping: new widget.NumberInput(detailOsc, "Damping", param.damping, render),
   highpassHz:
     new widget.NumberInput(detailOsc, "Highpass [Hz]", param.highpassHz, render),
-  allpassGain:
-    new widget.NumberInput(detailOsc, "Allpass Gain", param.allpassGain, render),
-  allpassFrequencyHz: new widget.NumberInput(
-    detailOsc, "Allpass Frequency [Hz]", param.allpassFrequencyHz, render),
   noiseLevel: new widget.NumberInput(detailOsc, "Noise Level", param.noiseLevel, render),
-  pitchDecaySecond:
-    new widget.NumberInput(detailOsc, "Pitch Decay [s]", param.pitchDecaySecond, render),
-  pitchMod: new widget.NumberInput(detailOsc, "Pitch Mod.", param.pitchMod, render),
+  envelopeDecaySecond: new widget.NumberInput(
+    detailOsc, "Env. Decay [s]", param.envelopeDecaySecond, render),
+  pitchMod: new widget.NumberInput(detailOsc, "Env. -> Pitch", param.pitchMod, render),
   delayTimeMod:
     new widget.NumberInput(detailOsc, "Delay Mod. [sample]", param.delayTimeMod, render),
+  delayTimeEnv:
+    new widget.NumberInput(detailOsc, "Env. -> Delay Mod.", param.delayTimeEnv, render),
+  allpassTimeEnv: new widget.NumberInput(
+    detailOsc, "Env. -> Allpass Mod.", param.allpassTimeEnv, render),
 
   reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
   reverbTimeMultiplier: new widget.NumberInput(

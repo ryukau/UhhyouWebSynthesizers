@@ -124,13 +124,15 @@ class AllpassDelayCascade {
     delayFrequencyHz,
     feedbackGain,
     noiseLevel,
-    pitchDecaySecond,
+    envelopeDecaySecond,
     pitchMod,
     delayTimeMod,
+    delayTimeEnv,
+    allpassTimeEnv,
     velocity,
   ) {
     this.snareNoise = new NoiseGenerator(sampleRate);
-    this.pitchEnvelope = new LinearDecay(Math.floor(sampleRate * pitchDecaySecond));
+    this.pitchEnvelope = new LinearDecay(Math.floor(sampleRate * envelopeDecaySecond));
 
     this.allpass = new LongAllpass(sampleRate, CubicDelay);
     this.lp = new LP1(lowpassFreqHz * (2 ** (8 * lowpassDamping - 1)) / sampleRate);
@@ -145,6 +147,8 @@ class AllpassDelayCascade {
     this.noiseLevel = noiseLevel;
     this.pitchMod = pitchMod;
     this.delayTimeMod = delayTimeMod;
+    this.delayTimeEnv = delayTimeEnv;
+    this.allpassTimeEnv = allpassTimeEnv;
     this.velocity = velocity;
   }
 
@@ -184,14 +188,16 @@ class AllpassDelayCascade {
 
     const apTime = 2 * this.allpassTimeSample
       / ((1 + this.pitchMod * pitchPow10) * (2 + this.velocity));
+    const apMod = 1 + this.allpassTimeEnv * (pitchPow10 * this.delayTimeMod - 1);
     let sig = this.allpass.processMod(
-      input, apTime - Math.abs(this.fb) * this.delayTimeMod, this.allpassGain);
+      input, apTime - Math.abs(this.fb) * apMod, this.allpassGain);
     sig = this.lp.process(sig);
     sig *= (1 + pitchPow20);
 
     const delayTime
       = this.delayTimeSample / ((1 + this.pitchMod * pitchPow20) * (1 + this.velocity));
-    sig = this.delay.processMod(sig, delayTime - Math.abs(sig) * this.delayTimeMod);
+    const delayMod = 1 + this.delayTimeEnv * (pitchPow10 * this.delayTimeMod - 1);
+    sig = this.delay.processMod(sig, delayTime - Math.abs(sig) * delayMod);
     sig = this.hp.process(sig);
     sig = hv_tanh(sig);
 
@@ -323,33 +329,37 @@ onmessage = async (event) => {
   const pitches = getPitchType();
 
   let snareDelay = new Array(6);
+  const delayFreqHz = pv.frequencyHz * (1 - pv.allpassDelayRatio);
+  const allpassFreqHz = pv.frequencyHz * pv.allpassDelayRatio;
   const delayTimeMod = pv.delayTimeMod * upFold * sampleRateScaler;
   for (let idx = 0; idx < snareDelay.length; ++idx) {
     snareDelay[idx] = new AllpassDelayCascade(
       upRate,
-      pv.frequencyHz,
+      delayFreqHz,
       pv.damping,
       pv.highpassHz,
-      pv.allpassFrequencyHz * pitches[idx],
+      allpassFreqHz * pitches[idx],
       pv.allpassGain,
-      pv.frequencyHz * pitches[idx],
+      delayFreqHz * pitches[idx],
       pv.feedback,
       pv.noiseLevel * sampleRateScaler,
-      pv.pitchDecaySecond,
+      pv.envelopeDecaySecond,
       pv.pitchMod,
       delayTimeMod,
+      pv.delayTimeEnv,
+      pv.allpassTimeEnv,
       pv.velocity,
     );
   }
   dsp.snare = new FDN(snareDelay, pv.feedback, pv.seed + 257);
 
   let reverbDelay = new Array(6);
-  const fdnBaseTime = pv.reverbTimeMultiplier * upRate / pv.frequencyHz;
+  const fdnBaseTime = pv.reverbTimeMultiplier * upRate / delayFreqHz;
   const fdnRandomFunc = () => exponentialMap(
     rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
   for (let idx = 0; idx < reverbDelay.length; ++idx) {
     reverbDelay[idx] = new ReverbDelay(
-      upRate / pv.frequencyHz * 4,
+      upRate / delayFreqHz * 4,
       Math.min(pv.reverbLowpassHz / upRate, 0.5),
       20 / upRate,
       fdnBaseTime * pitches[idx] * fdnRandomFunc(),
