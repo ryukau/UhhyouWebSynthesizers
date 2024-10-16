@@ -182,7 +182,7 @@ const playControl = widget.playControl(
 
 const detailRender = widget.details(divLeft, "Render");
 const detailLimiter = widget.details(divLeft, "Limiter");
-const detailOsc = widget.details(divRightA, "Oscillator");
+const detailSnare = widget.details(divRightA, "Snare");
 const detailReverb = widget.details(divRightA, "Reverb");
 
 const ui = {
@@ -204,31 +204,32 @@ const ui = {
   limiterSmoothingSeconds: new widget.NumberInput(
     detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
 
-  velocity: new widget.NumberInput(detailOsc, "Velocity", param.velocity, render),
-  seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
-  pitchType: new widget.ComboBoxLine(detailOsc, "Pitch Type", param.pitchType, render),
+  velocity: new widget.NumberInput(detailSnare, "Velocity", param.velocity, render),
+  seed: new widget.NumberInput(detailSnare, "Seed", param.seed, render),
+  pitchType: new widget.ComboBoxLine(detailSnare, "Pitch Type", param.pitchType, render),
   delayInterpType: new widget.ComboBoxLine(
-    detailOsc, "Delay Interpolation", param.delayInterpType, render),
+    detailSnare, "Delay Interpolation", param.delayInterpType, render),
   frequencyHz:
-    new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
+    new widget.NumberInput(detailSnare, "Frequency [Hz]", param.frequencyHz, render),
   allpassDelayRatio: new widget.NumberInput(
-    detailOsc, "Allpass:Delay Ratio", param.allpassDelayRatio, render),
+    detailSnare, "Allpass:Delay Ratio", param.allpassDelayRatio, render),
   allpassGain:
-    new widget.NumberInput(detailOsc, "Allpass Gain", param.allpassGain, render),
-  feedback: new widget.NumberInput(detailOsc, "Feedback", param.feedback, render),
-  damping: new widget.NumberInput(detailOsc, "Damping", param.damping, render),
+    new widget.NumberInput(detailSnare, "Allpass Gain", param.allpassGain, render),
+  feedback: new widget.NumberInput(detailSnare, "Feedback", param.feedback, render),
+  damping: new widget.NumberInput(detailSnare, "Damping", param.damping, render),
   highpassHz:
-    new widget.NumberInput(detailOsc, "Highpass [Hz]", param.highpassHz, render),
-  noiseLevel: new widget.NumberInput(detailOsc, "Noise Level", param.noiseLevel, render),
+    new widget.NumberInput(detailSnare, "Highpass [Hz]", param.highpassHz, render),
+  noiseLevel:
+    new widget.NumberInput(detailSnare, "Noise Level", param.noiseLevel, render),
   envelopeDecaySecond: new widget.NumberInput(
-    detailOsc, "Env. Decay [s]", param.envelopeDecaySecond, render),
-  pitchMod: new widget.NumberInput(detailOsc, "Env. -> Pitch", param.pitchMod, render),
-  delayTimeMod:
-    new widget.NumberInput(detailOsc, "Delay Mod. [sample]", param.delayTimeMod, render),
+    detailSnare, "Env. Decay [s]", param.envelopeDecaySecond, render),
+  pitchMod: new widget.NumberInput(detailSnare, "Env. -> Pitch", param.pitchMod, render),
+  delayTimeMod: new widget.NumberInput(
+    detailSnare, "Delay Mod. [sample]", param.delayTimeMod, render),
   delayTimeEnv:
-    new widget.NumberInput(detailOsc, "Env. -> Delay Mod.", param.delayTimeEnv, render),
+    new widget.NumberInput(detailSnare, "Env. -> Delay Mod.", param.delayTimeEnv, render),
   allpassTimeEnv: new widget.NumberInput(
-    detailOsc, "Env. -> Allpass Mod.", param.allpassTimeEnv, render),
+    detailSnare, "Env. -> Allpass Mod.", param.allpassTimeEnv, render),
 
   reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
   reverbTimeMultiplier: new widget.NumberInput(
