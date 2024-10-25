@@ -105,6 +105,7 @@ class FilteredComb {
   constructor(
     delayInterpType,
     delaySamples,
+    delayTimeModAmount,
     filterType,
     cutoffNormalized,
     filterQ,
@@ -115,8 +116,10 @@ class FilteredComb {
     const delayType = delayInterpType == 0 ? IntDelay
       : delayInterpType == 1               ? Delay
                                            : CubicDelay;
-    this.delay = new delayType(delaySamples);
-    this.delay.setTime(delaySamples - 1);
+    this.delay = new delayType(2 * delaySamples);
+    // this.delay.setTime(delaySamples - 1);
+    this.timeBase = delaySamples - 1;
+    this.timeMod = delayTimeModAmount;
 
     this.outputGain = outputGain;
     this.feedback = feedbackGain;
@@ -146,7 +149,8 @@ class FilteredComb {
   process(input, summed) {
     let sig = input - this.feedback * this.buffer;
     sig = this.filter.process(sig);
-    this.buffer = this.delay.process(sig);
+    this.buffer
+      = this.delay.processMod(sig, this.timeBase - Math.abs(sig) * this.timeMod);
     return this.outputGain * lerp(this.buffer, this.crossSign * summed, this.crossRatio);
   }
 }
@@ -168,6 +172,7 @@ onmessage = async (event) => {
 
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
+  const sampleRateScaler = menuitems.sampleRateScalerItems[pv.sampleRateScaler];
 
   const stereoSeed = pv.stereoSeed === 1 ? 0 : 65537;
   const rng = new PcgRandom(BigInt(pv.seed + pv.channel * stereoSeed));
@@ -207,6 +212,7 @@ onmessage = async (event) => {
     dsp.comb[idx] = new FilteredComb(
       pv.delayInterpType,
       randTime * Math.exp(semitoneScaler * pv.combPitch[idx]),
+      pv.delayTimeModAmount * sampleRateScaler,
       pv.filterType,
       1 / randCutoff / Math.exp(semitoneScaler * pv.bandpassPitch[idx]),
       pv.bandpassQ[idx],

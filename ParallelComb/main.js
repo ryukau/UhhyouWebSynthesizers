@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 3;
+const version = 4;
 
 const localRecipeBook = {
   "Default": {
@@ -27,6 +27,7 @@ const localRecipeBook = {
     feedbackBase: () => {},
     cascadeGain: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), -0.2, 0.2); },
     crossRatio: () => {},
+    delayTimeModAmount: () => {},
 
     feedbackRatio: () => {},
     bandpassQ: () => {},
@@ -84,6 +85,7 @@ const scales = {
   delayInterpType: new parameter.MenuItemScale(menuitems.delayInterpTypeItems),
   feedbackBase: new parameter.LinearScale(-0.999, 0.999),
   delayTimeBaseSecond: new parameter.DecibelScale(-100, -40, false),
+  delayTimeModAmount: new parameter.LinearScale(-2, 2),
   crossRatio: new parameter.LinearScale(-1, 1),
 
   combGain: new parameter.DecibelScale(-30, 0, true),
@@ -110,7 +112,8 @@ const param = {
   filterType: new parameter.Parameter(0, scales.filterType),
   delayInterpType: new parameter.Parameter(0, scales.delayInterpType),
   delayTimeBaseSecond:
-    new parameter.Parameter(10 / 44100, scales.delayTimeBaseSecond, true),
+    new parameter.Parameter(30 / 44100, scales.delayTimeBaseSecond, true),
+  delayTimeModAmount: new parameter.Parameter(0, scales.delayTimeModAmount, true),
   feedbackBase: new parameter.Parameter(0.999, scales.feedbackBase, true),
   cascadeGain: new parameter.Parameter(0, scales.crossRatio, true),
   crossRatio: new parameter.Parameter(0, scales.crossRatio, true),
@@ -228,6 +231,8 @@ const ui = {
     detailCombA, "Delay Interpolation", param.delayInterpType, render),
   delayTimeBaseSecond: new widget.NumberInput(
     detailCombA, "Delay Base [sample]", param.delayTimeBaseSecond, render),
+  delayTimeModAmount: new widget.NumberInput(
+    detailCombA, "Delay Modulation [sample]", param.delayTimeModAmount, render),
   feedbackBase:
     new widget.NumberInput(detailCombA, "Feedback", param.feedbackBase, render),
   cascadeGain:
