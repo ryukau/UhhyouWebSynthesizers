@@ -15,3 +15,14 @@ export const stereoSeedItems = [
   "Mono",
   "Stereo",
 ];
+
+export const reverbPitchTypeItems = [
+  "jn_zeros",
+  "jn_zeros_tr",
+  "jnp_zeros",
+  "jnp_zeros_tr",
+  "yn_zeros",
+  "yn_zeros_tr",
+  "ynp_zeros",
+  "ynp_zeros_tr",
+];

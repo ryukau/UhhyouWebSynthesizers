@@ -86,8 +86,8 @@ export function computePolynomial(x, a) {
   return v;
 }
 
-// Frequency ratio of circular membrane modes. Generated using
-// `MaybeSnare/circularmembranemode.py`.
+// Frequency ratio of circular membrane modes. Generated using `printSingleArrayCircular`
+// in `tuning/circularmembranemode.py`.
 export const circularModes = [
   1.000000000000000,  1.5933405056951118, 2.135548786649403,  2.295417267427694,
   2.6530664045492145, 2.9172954551172228, 3.1554648154083624, 3.5001474903090264,

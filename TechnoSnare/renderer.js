@@ -5,10 +5,15 @@ import {AdaptiveFilterLMS} from "../common/dsp/adaptivefilter.js"
 import {SingleSideBandAmplitudeModulator} from "../common/dsp/analyticsignalfilter.js"
 import * as delay from "../common/dsp/delay.js";
 import {ExpPolyEnvelope} from "../common/dsp/envelope.js";
+import {randomSpecialOrthogonal} from "../common/dsp/fdn.js";
 import {Limiter} from "../common/dsp/limiter.js"
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
-import {normalizedCutoffToOnePoleKp} from "../common/dsp/smoother.js";
+import {
+  DoubleEMAFilter,
+  EMAHighpass,
+  normalizedCutoffToOnePoleKp
+} from "../common/dsp/smoother.js";
 import {SosFilterImmediate, sosMatchedBandpass} from "../common/dsp/sos.js";
 import {SVF} from "../common/dsp/svf.js";
 import {
@@ -16,10 +21,12 @@ import {
   exponentialMap,
   lerp,
   normalDistributionMap,
+  syntonicCommaRatio,
   uniformFloatMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
+import {membranePitchTable} from "./membranepitch.js";
 import * as menuitems from "./menuitems.js";
 
 class SinOsc {
@@ -146,6 +153,60 @@ class CascadedSVF {
   }
 }
 
+class FDN {
+  // `delay` is Array.
+  constructor(delay, feedbackGain, seed) {
+    const create2dArray = (x, y) => {
+      let a = new Array(x);
+      for (let i = 0; i < a.length; ++i) a[i] = new Array(y).fill(0);
+      return a;
+    };
+
+    this.delay = delay;
+    this.matrix = create2dArray(this.delay.length, this.delay.length);
+    this.buf = create2dArray(2, this.delay.length);
+    this.bufIndex = 0;
+    this.feedbackGain = feedbackGain;
+
+    randomSpecialOrthogonal(this.matrix, seed);
+  }
+
+  process(input, rng) {
+    this.bufIndex ^= 1;
+    let front = this.buf[this.bufIndex];
+    let back = this.buf[this.bufIndex ^ 1];
+    front.fill(0);
+    for (let i = 0; i < front.length; ++i) {
+      for (let j = 0; j < front.length; ++j) front[i] += this.matrix[i][j] * back[j];
+    }
+
+    for (let i = 0; i < front.length; ++i) {
+      front[i] = this.delay[i].process(input + this.feedbackGain * front[i], rng);
+    }
+
+    return front.reduce((sum, val) => sum + val, 0);
+  }
+}
+
+class ReverbDelay {
+  constructor(maxDelayTimeInSamples, lowpassCutoff, highpassCutoff, delayTimeSample) {
+    this.lowpass = new DoubleEMAFilter();
+    this.lowpass.setCutoff(lowpassCutoff);
+
+    this.highpass = new EMAHighpass();
+    this.highpass.setCutoff(highpassCutoff);
+
+    this.delay = new delay.CubicDelay(maxDelayTimeInSamples);
+    this.delay.setTime(delayTimeSample);
+  }
+
+  process(input) {
+    input = this.lowpass.process(input);
+    input = this.highpass.process(input);
+    return this.delay.process(input);
+  }
+}
+
 function process(upRate, pv, dsp) {
   const bodyEnv = dsp.bodyEnvelope.process();
   const oscFreq = dsp.bodyBaseFreq + dsp.bodyEnvToPitch * bodyEnv;
@@ -181,6 +242,8 @@ function process(upRate, pv, dsp) {
 
   let sig = lerp(syn, noise, pv.bodyNoiseMix);
   sig += pv.hightoneGain * hightone;
+
+  sig += pv.reverbMix * dsp.reverb.process(sig);
 
   if (pv.dcHighpassHz > 0) sig = dsp.dcHighpass.hp(sig);
   if (pv.toneSlope < 1) sig = dsp.slopeFilter.process(sig);
@@ -250,6 +313,32 @@ onmessage = async (event) => {
   dsp.adaptiveFilter = new AdaptiveFilterLMS(256, 0.1);
   dsp.limiter = new Limiter(
     Math.floor(upRate * pv.limiterAttackSeconds), 0, 0, pv.limiterThreshold);
+
+  let reverbDelay = new Array(16);
+
+  const getPitchDebug = () => {
+    let key = menuitems.reverbPitchTypeItems[pv.reverbPitchType];
+    console.log(key);
+    let src = structuredClone(membranePitchTable[key][pv.reverbPitchIndex]);
+    src.shift();
+    return src.map(v => v / src[0]);
+  };
+  const pitches = getPitchDebug();
+  console.log(pitches);
+
+  const fdnBaseTime = upRate / pv.reverbTimeFrequencyHz;
+  const fdnRandomFunc = () => exponentialMap(
+    rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
+  for (let idx = 0; idx < reverbDelay.length; ++idx) {
+    const delayTime = fdnBaseTime * pitches[idx] * fdnRandomFunc();
+    reverbDelay[idx] = new ReverbDelay(
+      Math.floor(delayTime * 2 + 0.5),
+      Math.min(pv.reverbLowpassHz / upRate, 0.5),
+      20 / upRate,
+      delayTime,
+    );
+  }
+  dsp.reverb = new FDN(reverbDelay, pv.reverbFeedback, pv.seed + 2);
 
   // Discard latency part.
   if (pv.limiterEnable === 1) {
