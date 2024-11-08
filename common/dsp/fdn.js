@@ -165,7 +165,18 @@ Randomize `matrix` as special orthogonal matrix. This algorithm is ported from
 */
 export function randomSpecialOrthogonal(matrix, seed) {
   let rng = new PcgRandom(BigInt(seed));
+  let seedArray = new Array(matrix.length * (matrix.length + 1) / 2);
+  for (let i = 0; i < seedArray.length; ++i) seedArray[i] = normalDist(rng);
+  constructSpecialOrthogonal(matrix, seedArray);
+}
 
+/**
+Construct `matrix` as special orthogonal matrix.
+
+Length of `seedArray` must be triangular number of matrix size `N`,
+which is `N * (N + 1) / 2`.
+*/
+export function constructSpecialOrthogonal(matrix, seedArray) {
   for (let i = 0; i < matrix.length; ++i) {
     matrix[i].fill(0);
     matrix[i][i] = 1;
@@ -173,9 +184,11 @@ export function randomSpecialOrthogonal(matrix, seed) {
 
   let x = new Array(matrix.length);
   let D = new Array(matrix.length);
+  let offset = 0;
   for (let n = 0; n < matrix.length; ++n) {
     const xRange = matrix.length - n;
-    for (let i = 0; i < xRange; ++i) x[i] = normalDist(rng);
+    for (let i = 0; i < xRange; ++i) x[i] = seedArray[offset + i];
+    offset += xRange;
 
     let norm2 = 0;
     for (let i = 0; i < xRange; ++i) norm2 += x[i] * x[i];
@@ -185,7 +198,8 @@ export function randomSpecialOrthogonal(matrix, seed) {
     D[n] = x0 >= 0 ? 1 : -1;
     x[0] += D[n] * Math.sqrt(norm2);
 
-    const denom = Math.sqrt((norm2 - x0 * x0 + x[0] * x[0]) / 2);
+    let denom = Math.sqrt((norm2 - x0 * x0 + x[0] * x[0]) / 2);
+    if (denom <= Number.EPSILON) denom = Number.EPSILON;
     for (let i = 0; i < xRange; ++i) x[i] /= denom;
 
     for (let row = 0; row < matrix.length; ++row) {

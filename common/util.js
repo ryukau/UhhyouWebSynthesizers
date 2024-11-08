@@ -67,6 +67,8 @@ export function chebyshev1_5(x) {
   return 16 * x * x * x * x * x - 20 * x * x * x + 5 * x;
 }
 
+export function triangularNumber(n) { return (n * n + n) / 2; }
+
 // Range of t is in [0, 1]. Interpoltes between y1 and y2.
 // y0 is current, y3 is earlier sample.
 export function lagrange3Interp(y0, y1, y2, y3, t) {

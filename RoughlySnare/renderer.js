@@ -27,20 +27,18 @@ tanh is approximated (`hv.tanh`).
 */
 
 import {CubicDelay, Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
-import {FeedbackDelayNetwork, randomSpecialOrthogonal} from "../common/dsp/fdn.js";
-import {Limiter, MovingAverageFilter} from "../common/dsp/limiter.js";
+import {constructSpecialOrthogonal, randomSpecialOrthogonal} from "../common/dsp/fdn.js";
+import {Limiter} from "../common/dsp/limiter.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {HP1, LP1} from "../common/dsp/onepole.js";
 import {DoubleEMAFilter, EMAFilter, EMAHighpass} from "../common/dsp/smoother.js";
-import {SVFBP, SVFLP} from "../common/dsp/svf.js";
+import {SVFBP, SVFHP, SVFLP} from "../common/dsp/svf.js";
 import {
-  circularModes,
   clamp,
   dbToAmp,
   exponentialMap,
   lerp,
   syntonicCommaRatio,
-  uniformFloatMap
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
@@ -52,15 +50,78 @@ function hv_tanh(x) {
   return x * (x * x + 27) / (x * x * 9 + 27);
 }
 
-class Impulse {
-  constructor(sampleRate, sineFreqNormalized, noiseTransientSample) {
+class ImpulseSine {
+  constructor(
+    sampleRate,
+    sineFreqNormalized,
+    sineModLevel,
+    sineModDecay,
+    lowpass,
+    noiseTransientSample,
+  ) {
     this.phase = 0;
+    this.pm = sineModLevel;
     this.freq = sineFreqNormalized;
 
+    // TODO: decide which decay envelope to use.
     this.noiseRamp = 1 / Math.max(1, noiseTransientSample);
     this.noiseSustainSample = Math.floor(sampleRate * sineFreqNormalized);
     this.noiseGate = 0;
     this.noiseLowpass = new SVFLP(sineFreqNormalized, 10);
+
+    this.expDecay = Math.pow(sineModDecay, 1 / this.noiseSustainSample);
+    this.expGain = 1;
+
+    this.windowPhaseGain = exponentialMap(lowpass, 1, this.noiseSustainSample);
+    this.lowpass = 1 - lowpass;
+  }
+
+  process(rng) {
+    this.expGain *= this.expDecay;
+
+    // let noise = 2 * rng.number() - 1;
+    // this.noiseGate = --this.noiseSustainSample >= 0
+    //   ? Math.min(1, this.noiseGate + this.noiseRamp)
+    //   : Math.max(0, this.noiseGate - this.noiseRamp);
+    // noise = this.noiseLowpass.process(2 * this.expGain * noise);
+
+    let sin = 0;
+    if (this.phase < 1) {
+      const triangle = 1 - Math.abs(1 - 2 * this.phase);
+      const wPhase = Math.min(this.windowPhaseGain * triangle, 1);
+      const window = Math.sin(0.5 * Math.PI * wPhase);
+
+      const phi = 2 * Math.PI * this.phase;
+      sin = Math.sin(phi);
+      sin = Math.sin(sin + this.expGain * this.pm * phi);
+      sin = lerp(sin, window * sin, this.lowpass);
+      this.phase += this.freq;
+    }
+
+    return sin; // + noise;
+  }
+}
+
+// The original implementation in Pd used this excitation.
+class ImpulseOriginal {
+  constructor(
+    sampleRate,
+    sineFreqNormalized,
+    sineModLevel,
+    sineModDecay,
+    lowpass,
+    noiseTransientSample,
+  ) {
+    const freq = exponentialMap(lowpass, 0.25, 4) * sineFreqNormalized;
+
+    this.phase = 0;
+    this.freq = freq;
+
+    this.noiseRamp = 1 / Math.max(1, noiseTransientSample);
+    this.noiseSustainSample = Math.floor(sampleRate * freq);
+    this.noiseGate = 0;
+    this.noiseLowpass = new SVFLP(freq, exponentialMap(sineModDecay, Math.SQRT1_2, 40));
+    this.noiseGain = 1 + sineModLevel * 15;
   }
 
   process(rng) {
@@ -76,7 +137,47 @@ class Impulse {
       : Math.max(0, this.noiseGate - this.noiseRamp);
     noise = this.noiseLowpass.process(2 * this.noiseGate * noise);
 
+    // Additional gain not present in originnal. This noise is too quiet.
+    noise *= this.noiseGain;
+
     return sin + noise;
+  }
+}
+
+class ImpulseExpDecay {
+  constructor(
+    sampleRate,
+    sineFreqNormalized,
+    sineModLevel,
+    sineModDecay,
+    lowpass,
+  ) {
+    const freq = exponentialMap(lowpass, 10 / 48000, 22000 / 48000) * 24000 / sampleRate;
+
+    this.lowpass = new SVFLP(freq, Math.SQRT1_2);
+
+    const decaySamples = Math.floor(sampleRate * sineFreqNormalized);
+    this.expDecay = Math.pow(sineModDecay, 1 / decaySamples);
+
+    // // Solution of `integrate((1/4)^log(f-g)/log(2), f, a, b);`. Maxima is used.
+    // const integralSlopePart
+    //   = Math.pow(0.5 - freq, -0.3862943611198906) / 0.2677588472764575;
+    // this.expGain = 1 / (freq * integralSlopePart);
+    // // or,
+    // this.expGain = 1 / freq;
+
+    this.expGain = 1;
+
+    this.phase = 0;
+    this.freqScale = sineModLevel * 1000 / sampleRate;
+  }
+
+  process(rng) {
+    this.phase += this.freqScale * this.expGain;
+    this.phase -= Math.floor(this.phase);
+
+    this.expGain *= this.expDecay;
+    return this.lowpass.process(this.expGain * Math.cos(this.phase));
   }
 }
 
@@ -92,6 +193,17 @@ class LinearDecay {
   }
 }
 
+class ExpDecay {
+  constructor(decaySample) {
+    this.gain = 1;
+
+    decaySample *= 15;
+    this.decay = decaySample < 1 ? 1 : Math.pow(1e-3, 1 / decaySample);
+  }
+
+  process() { return this.gain *= this.decay; }
+}
+
 class NoiseGenerator {
   constructor(sampleRate) {
     this.inputHp = new HP1(100 / sampleRate);
@@ -102,7 +214,7 @@ class NoiseGenerator {
     this.noiseBp = new SVFBP(3000 / sampleRate, Math.SQRT2 - 1);
   }
 
-  process(rng, input) {
+  process(input, rng) {
     let envelope = this.inputHp.process(input);
     envelope = 10 * Math.sqrt(this.rmsMeter.process(envelope * envelope));
 
@@ -130,14 +242,16 @@ class AllpassDelayCascade {
     delayTimeEnv,
     allpassTimeEnv,
     velocity,
+    DelayType,
   ) {
     this.snareNoise = new NoiseGenerator(sampleRate);
+
     this.pitchEnvelope = new LinearDecay(Math.floor(sampleRate * envelopeDecaySecond));
 
-    this.allpass = new LongAllpass(sampleRate, CubicDelay);
+    this.allpass = new LongAllpass(sampleRate, DelayType);
     this.lp = new LP1(lowpassFreqHz * (2 ** (8 * lowpassDamping - 1)) / sampleRate);
     this.fb = 0;
-    this.delay = new CubicDelay(0.1 * sampleRate);
+    this.delay = new DelayType(0.1 * sampleRate);
     this.hp = new HP1(highpassHz / sampleRate);
 
     this.allpassTimeSample = sampleRate / allpassFrequencyHz;
@@ -176,7 +290,7 @@ class AllpassDelayCascade {
     this.fb = hv_tanh(this.fb);
 
     sig = hv_tanh(sig + 2 * input);
-    sig += this.noiseLevel * this.snareNoise.process(rng, sig);
+    sig += this.noiseLevel * this.snareNoise.process(sig, rng);
     return sig;
   }
 
@@ -201,25 +315,32 @@ class AllpassDelayCascade {
     sig = this.hp.process(sig);
     sig = hv_tanh(sig);
 
-    sig += this.noiseLevel * this.snareNoise.process(rng, sig);
+    sig += this.noiseLevel * this.snareNoise.process(sig, rng);
     this.fb = sig;
     return sig;
   }
 }
 
 class ReverbDelay {
-  constructor(maxDelayTimeInSamples, lowpassCutoff, highpassCutoff, delayTimeSample) {
+  constructor(
+    maxDelayTimeInSamples,
+    lowpassCutoff,
+    highpassCutoff,
+    delayTimeSample,
+    DelayType = CubicDelay,
+  ) {
     this.lowpass = new DoubleEMAFilter();
     this.lowpass.setCutoff(lowpassCutoff);
 
     this.highpass = new EMAHighpass();
     this.highpass.setCutoff(highpassCutoff);
 
-    this.delay = new CubicDelay(maxDelayTimeInSamples);
+    this.delay = new DelayType(maxDelayTimeInSamples);
     this.delay.setTime(delayTimeSample);
   }
 
   process(input) {
+    // input = Math.tanh(input);
     input = this.lowpass.process(input);
     input = this.highpass.process(input);
     return this.delay.process(input);
@@ -296,8 +417,6 @@ class Bypass {
 function process(upRate, pv, dsp) {
   let pulse = dbToAmp(-24 * (1 - pv.velocity)) * dsp.impulse.process(dsp.rng);
   let sig = dsp.snare.process(pulse, dsp.rng);
-
-  // sig += pv.reverbMix * dsp.fdn.process(sig, pv.reverbFeedback);
   sig += pv.reverbMix * dsp.reverb.process(sig);
   sig = dsp.limiter.process(sig);
   return sig;
@@ -316,19 +435,58 @@ onmessage = async (event) => {
   let dsp = {};
   dsp.rng = rng;
 
-  dsp.impulse = new Impulse(upRate, pv.frequencyHz / upRate, 0.00025 * upRate);
-
-  const getPitchType = () => {
-    const pitchType = menuitems.pitchTypeItems[pv.pitchType];
-    if (pitchType === "Real Timpani") {
-      return [1.00, 1.504, 1.742, 2.00, 2.245, 2.494, 2.800, 2.852, 2.979, 3.462];
+  const getImpulse = () => {
+    const excitationType = menuitems.excitationTypeItems[pv.excitationType];
+    if (excitationType === "Original") {
+      return new ImpulseOriginal(
+        upRate,
+        pv.frequencyHz / upRate,
+        pv.excitationSineModLevel,
+        pv.excitationSineModDecay,
+        pv.excitationLowpass,
+        0.00025 * upRate,
+      );
     }
-    // "Ideal Timpani" case.
-    return [1.0, 1.35, 1.67, 1.99, 2.30, 2.61];
-  };
-  const pitches = getPitchType();
 
-  let snareDelay = new Array(6);
+    if (excitationType === "Exp. Decay") {
+      return new ImpulseExpDecay(
+        upRate,
+        pv.frequencyHz / upRate,
+        pv.excitationSineModLevel,
+        pv.excitationSineModDecay,
+        pv.excitationLowpass,
+        0.00025 * upRate,
+      );
+    }
+
+    // excitationType === "Sine (1 Cycle)"
+    return new ImpulseSine(
+      upRate,
+      pv.frequencyHz / upRate,
+      pv.excitationSineModLevel,
+      pv.excitationSineModDecay,
+      pv.excitationLowpass,
+      0.00025 * upRate,
+    );
+  };
+  dsp.impulse = getImpulse();
+
+  const getDelayType = () => {
+    const delayType = menuitems.delayInterpTypeItems[pv.delayInterpType];
+    return delayType === "None" ? IntDelay : delayType === "Linear" ? Delay : CubicDelay;
+  };
+
+  // Real timpani: [1.00, 1.504, 1.742, 2.00, 2.245, 2.494, 2.800, 2.852, 2.979, 3.462];
+  const pitches = [
+    1.0000000000000,    1.3402965524420327, 1.6650969425972044, 1.9804083333912088,
+    2.2891849959679758, 2.593129431504782,  2.893324828534451,  3.1905089688660495,
+    3.485210133885118,  3.7778213670634533, 4.068644098913255,  4.357915263770598,
+    4.645824938472086,  4.932528252461517,  5.218153685402315,  5.502809003876363,
+    5.7865856073569075, 6.0695617737731915, 6.351805126135265,  6.633374536485119,
+  ];
+  const DelayType = getDelayType();
+
+  let snareDelay = new Array(pv.fdnSize);
   const delayFreqHz = pv.frequencyHz * (1 - pv.allpassDelayRatio);
   const allpassFreqHz = pv.frequencyHz * pv.allpassDelayRatio;
   const delayTimeMod = pv.delayTimeMod * upFold * sampleRateScaler;
@@ -349,11 +507,12 @@ onmessage = async (event) => {
       pv.delayTimeEnv,
       pv.allpassTimeEnv,
       pv.velocity,
+      DelayType,
     );
   }
   dsp.snare = new FDN(snareDelay, pv.feedback, pv.seed + 257);
 
-  let reverbDelay = new Array(6);
+  let reverbDelay = new Array(pv.fdnSize);
   const fdnBaseTime = pv.reverbTimeMultiplier * upRate / delayFreqHz;
   const fdnRandomFunc = () => exponentialMap(
     rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);

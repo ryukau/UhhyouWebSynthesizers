@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 5;
+const version = 6;
 
 const localRecipeBook = {
   "Default": {
@@ -31,6 +31,14 @@ function getSampleRateScaler() {
   return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
 }
 
+function createArrayParameters(defaultDspValues, scale, size) {
+  let arr = new Array(size);
+  for (let i = 0; i < arr.length; ++i) {
+    arr[i] = new parameter.Parameter(defaultDspValues[i], scale, true);
+  }
+  return arr;
+}
+
 function render() {
   audio.render(
     parameter.toMessage(param, {
@@ -40,6 +48,8 @@ function render() {
     playControl.togglebuttonQuickSave.state === 1,
   );
 }
+
+function onFdnSizeChanged(value) { render(); }
 
 const scales = {
   boolean: new parameter.IntScale(0, 1),
@@ -60,16 +70,24 @@ const scales = {
 
   velocity: new parameter.LinearScale(0, 2),
   seed: new parameter.IntScale(0, 2 ** 32),
-  pitchType: new parameter.MenuItemScale(menuitems.pitchTypeItems),
+
+  excitationType: new parameter.MenuItemScale(menuitems.excitationTypeItems),
+  excitationLowpass: new parameter.LinearScale(0, 1),
+  excitationSineModLevel: new parameter.DecibelScale(-40, 40, true),
+  excitationSineModDecay: new parameter.DecibelScale(-40, 0, false),
+
+  fdnSize: new parameter.IntScale(1, 16),
   delayInterpType: new parameter.MenuItemScale(menuitems.delayInterpTypeItems),
   frequencyHz: new parameter.DecibelScale(util.ampToDB(10), util.ampToDB(1000), false),
   allpassGain: new parameter.LinearScale(-1, 1),
   allpassDelayRatio: new parameter.LinearScale(0.001, 0.999),
-  feedback: new parameter.LinearScale(0, 1),
+  feedback: new parameter.LinearScale(-1, 1),
+
   damping: new parameter.LinearScale(0, 1),
   highpassHz: new parameter.DecibelScale(util.ampToDB(1), util.ampToDB(500), false),
-  noiseLevel: new parameter.DecibelScale(-60, 20, false),
-  envelopeDecaySecond: new parameter.DecibelScale(-40, 0, false),
+  noiseLevel: new parameter.DecibelScale(-60, 20, true),
+
+  envelopeDecaySecond: new parameter.DecibelScale(-40, 40, false),
   pitchMod: new parameter.DecibelScale(-20, 20, true),
   delayTimeMod: new parameter.DecibelScale(-20, 100, true),
   delayTimeEnv: new parameter.LinearScale(0, 1),
@@ -97,15 +115,24 @@ const param = {
 
   velocity: new parameter.Parameter(0.5, scales.velocity, true),
   seed: new parameter.Parameter(0, scales.seed, true),
-  pitchType: new parameter.Parameter(0, scales.pitchType),
+
+  excitationType: new parameter.Parameter(0, scales.excitationType, true),
+  excitationLowpass: new parameter.Parameter(0.5, scales.excitationLowpass, true),
+  excitationSineModLevel: new parameter.Parameter(0, scales.excitationSineModLevel, true),
+  excitationSineModDecay:
+    new parameter.Parameter(0.5, scales.excitationSineModDecay, true),
+
+  fdnSize: new parameter.Parameter(6, scales.fdnSize, true),
   delayInterpType: new parameter.Parameter(2, scales.delayInterpType),
   frequencyHz: new parameter.Parameter(170, scales.frequencyHz, true),
   allpassDelayRatio: new parameter.Parameter(5 / 9, scales.allpassDelayRatio, true),
   allpassGain: new parameter.Parameter(0.66, scales.allpassGain, true),
   feedback: new parameter.Parameter(0.77, scales.feedback, true),
+
   damping: new parameter.Parameter(0.4, scales.damping, true),
   highpassHz: new parameter.Parameter(20, scales.highpassHz, true),
   noiseLevel: new parameter.Parameter(1.3, scales.noiseLevel, true),
+
   envelopeDecaySecond: new parameter.Parameter(0.08, scales.envelopeDecaySecond, true),
   pitchMod: new parameter.Parameter(1, scales.pitchMod, true),
   delayTimeMod: new parameter.Parameter(1150, scales.delayTimeMod, true),
@@ -137,7 +164,7 @@ const divMain = widget.div(document.body, "main", undefined);
 
 const divLeft = widget.div(divMain, undefined, "controlBlock");
 const divRightA = widget.div(divMain, undefined, "controlBlock");
-// const divRightB = widget.div(divMain, undefined, "controlBlock");
+const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
@@ -166,7 +193,7 @@ const playControl = widget.playControl(
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);
-    render();
+    onFdnSizeChanged(param.fdnSize.dsp);
     widget.refresh(ui);
   },
   [...recipeBook.keys()],
@@ -182,8 +209,12 @@ const playControl = widget.playControl(
 
 const detailRender = widget.details(divLeft, "Render");
 const detailLimiter = widget.details(divLeft, "Limiter");
-const detailSnare = widget.details(divRightA, "Snare");
-const detailReverb = widget.details(divRightA, "Reverb");
+const detailSnareMisc = widget.details(divRightA, "Misc.");
+const detailSnareExcitation = widget.details(divRightA, "Excitation");
+const detailSnareDelay = widget.details(divRightA, "Delay");
+const detailSnareTone = widget.details(divRightB, "Tone Shaping");
+const detailSnareModulation = widget.details(divRightB, "Modulation");
+const detailBodyResonance = widget.details(divRightB, "Body Resonance");
 
 const ui = {
   renderDuration:
@@ -204,41 +235,56 @@ const ui = {
   limiterSmoothingSeconds: new widget.NumberInput(
     detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
 
-  velocity: new widget.NumberInput(detailSnare, "Velocity", param.velocity, render),
-  seed: new widget.NumberInput(detailSnare, "Seed", param.seed, render),
-  pitchType: new widget.ComboBoxLine(detailSnare, "Pitch Type", param.pitchType, render),
-  delayInterpType: new widget.ComboBoxLine(
-    detailSnare, "Delay Interpolation", param.delayInterpType, render),
-  frequencyHz:
-    new widget.NumberInput(detailSnare, "Frequency [Hz]", param.frequencyHz, render),
-  allpassDelayRatio: new widget.NumberInput(
-    detailSnare, "Allpass:Delay Ratio", param.allpassDelayRatio, render),
-  allpassGain:
-    new widget.NumberInput(detailSnare, "Allpass Gain", param.allpassGain, render),
-  feedback: new widget.NumberInput(detailSnare, "Feedback", param.feedback, render),
-  damping: new widget.NumberInput(detailSnare, "Damping", param.damping, render),
-  highpassHz:
-    new widget.NumberInput(detailSnare, "Highpass [Hz]", param.highpassHz, render),
-  noiseLevel:
-    new widget.NumberInput(detailSnare, "Noise Level", param.noiseLevel, render),
-  envelopeDecaySecond: new widget.NumberInput(
-    detailSnare, "Env. Decay [s]", param.envelopeDecaySecond, render),
-  pitchMod: new widget.NumberInput(detailSnare, "Env. -> Pitch", param.pitchMod, render),
-  delayTimeMod: new widget.NumberInput(
-    detailSnare, "Delay Mod. [sample]", param.delayTimeMod, render),
-  delayTimeEnv:
-    new widget.NumberInput(detailSnare, "Env. -> Delay Mod.", param.delayTimeEnv, render),
-  allpassTimeEnv: new widget.NumberInput(
-    detailSnare, "Env. -> Allpass Mod.", param.allpassTimeEnv, render),
+  velocity: new widget.NumberInput(detailSnareMisc, "Velocity", param.velocity, render),
+  seed: new widget.NumberInput(detailSnareMisc, "Seed", param.seed, render),
 
-  reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
+  excitationType:
+    new widget.ComboBoxLine(detailSnareExcitation, "Type", param.excitationType, render),
+  excitationLowpass: new widget.NumberInput(
+    detailSnareExcitation, "Lowpass", param.excitationLowpass, render),
+  excitationSineModLevel: new widget.NumberInput(
+    detailSnareExcitation, "Mod. Level", param.excitationSineModLevel, render),
+  excitationSineModDecay: new widget.NumberInput(
+    detailSnareExcitation, "Mod. Decay", param.excitationSineModDecay, render),
+
+  fdnSize:
+    new widget.NumberInput(detailSnareDelay, "FDN Size", param.fdnSize, onFdnSizeChanged),
+  delayInterpType: new widget.ComboBoxLine(
+    detailSnareDelay, "Delay Interpolation", param.delayInterpType, render),
+  frequencyHz:
+    new widget.NumberInput(detailSnareDelay, "Frequency [Hz]", param.frequencyHz, render),
+  allpassDelayRatio: new widget.NumberInput(
+    detailSnareDelay, "Allpass:Delay Ratio", param.allpassDelayRatio, render),
+  allpassGain:
+    new widget.NumberInput(detailSnareDelay, "Allpass Gain", param.allpassGain, render),
+  feedback: new widget.NumberInput(detailSnareDelay, "Feedback", param.feedback, render),
+
+  damping: new widget.NumberInput(detailSnareTone, "Damping", param.damping, render),
+  highpassHz:
+    new widget.NumberInput(detailSnareTone, "Highpass [Hz]", param.highpassHz, render),
+  noiseLevel:
+    new widget.NumberInput(detailSnareTone, "Noise Level", param.noiseLevel, render),
+
+  envelopeDecaySecond: new widget.NumberInput(
+    detailSnareModulation, "Env. Decay [s]", param.envelopeDecaySecond, render),
+  pitchMod: new widget.NumberInput(
+    detailSnareModulation, "Env. -> Pitch", param.pitchMod, render),
+  delayTimeMod: new widget.NumberInput(
+    detailSnareModulation, "Delay Mod. [sample]", param.delayTimeMod, render),
+  delayTimeEnv: new widget.NumberInput(
+    detailSnareModulation, "Env. -> Delay Mod.", param.delayTimeEnv, render),
+  allpassTimeEnv: new widget.NumberInput(
+    detailSnareModulation, "Env. -> Allpass Mod.", param.allpassTimeEnv, render),
+
+  reverbMix:
+    new widget.NumberInput(detailBodyResonance, "Mix [dB]", param.reverbMix, render),
   reverbTimeMultiplier: new widget.NumberInput(
-    detailReverb, "Time Multiplier", param.reverbTimeMultiplier, render),
+    detailBodyResonance, "Time Multiplier", param.reverbTimeMultiplier, render),
   reverbLowpassHz: new widget.NumberInput(
-    detailReverb, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
+    detailBodyResonance, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
   reverbFeedback:
-    new widget.NumberInput(detailReverb, "Feedback", param.reverbFeedback, render),
+    new widget.NumberInput(detailBodyResonance, "Feedback", param.reverbFeedback, render),
 };
 
-render();
+onFdnSizeChanged(param.fdnSize.dsp);
 window.addEventListener("load", (ev) => { widget.refresh(ui); });

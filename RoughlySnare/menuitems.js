@@ -12,13 +12,14 @@ export const limiterTypeItems = [
   "Tanh",
 ];
 
+export const excitationTypeItems = [
+  "Original",
+  "Sine (1 Cycle)",
+  "Exp. Decay",
+];
+
 export const delayInterpTypeItems = [
   "None",
   "Linear",
   "Cubic",
-];
-
-export const pitchTypeItems = [
-  "Ideal Timpani",
-  "Real Timpani",
 ];
