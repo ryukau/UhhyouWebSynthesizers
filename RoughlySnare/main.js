@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 6;
+const version = 7;
 
 const localRecipeBook = {
   "Default": {
@@ -24,6 +24,16 @@ const localRecipeBook = {
     limiterType: () => {},
     limiterThreshold: () => {},
     limiterSmoothingSeconds: () => {},
+
+    excitationType: (prm) => { prm.normalized = Math.random(); },
+
+    fdnSize: () => {},
+    frequencyHz: () => {},
+
+    reverbMix: () => {},
+    reverbTimeMultiplier: (prm) => { prm.dsp = 2 * Math.pow(Math.random(), 1.1); },
+    reverbFeedback:
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.7, 0.85); },
   },
 };
 
@@ -83,8 +93,8 @@ const scales = {
   allpassDelayRatio: new parameter.LinearScale(0.001, 0.999),
   feedback: new parameter.LinearScale(-1, 1),
 
-  damping: new parameter.LinearScale(0, 1),
-  highpassHz: new parameter.DecibelScale(util.ampToDB(1), util.ampToDB(500), false),
+  lowpassHz: new parameter.DecibelScale(0, 100, false),
+  highpassHz: new parameter.DecibelScale(0, 80, false),
   noiseLevel: new parameter.DecibelScale(-60, 20, true),
 
   envelopeDecaySecond: new parameter.DecibelScale(-40, 40, false),
@@ -104,7 +114,7 @@ const param = {
   fadeIn: new parameter.Parameter(0.0, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
-  stereoMerge: new parameter.Parameter(0.75, scales.stereoMerge),
+  stereoMerge: new parameter.Parameter(0, scales.stereoMerge),
   overSample: new parameter.Parameter(0, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
 
@@ -129,10 +139,11 @@ const param = {
   allpassGain: new parameter.Parameter(0.66, scales.allpassGain, true),
   feedback: new parameter.Parameter(0.77, scales.feedback, true),
 
-  damping: new parameter.Parameter(0.4, scales.damping, true),
+  lowpassHz: new parameter.Parameter(340, scales.lowpassHz, true),
   highpassHz: new parameter.Parameter(20, scales.highpassHz, true),
   noiseLevel: new parameter.Parameter(1.3, scales.noiseLevel, true),
 
+  attackMod: new parameter.Parameter(1000, scales.delayTimeMod, true),
   envelopeDecaySecond: new parameter.Parameter(0.08, scales.envelopeDecaySecond, true),
   pitchMod: new parameter.Parameter(1, scales.pitchMod, true),
   delayTimeMod: new parameter.Parameter(1150, scales.delayTimeMod, true),
@@ -259,12 +270,15 @@ const ui = {
     new widget.NumberInput(detailSnareDelay, "Allpass Gain", param.allpassGain, render),
   feedback: new widget.NumberInput(detailSnareDelay, "Feedback", param.feedback, render),
 
-  damping: new widget.NumberInput(detailSnareTone, "Damping", param.damping, render),
+  lowpassHz:
+    new widget.NumberInput(detailSnareTone, "Lowpass [Hz]", param.lowpassHz, render),
   highpassHz:
     new widget.NumberInput(detailSnareTone, "Highpass [Hz]", param.highpassHz, render),
   noiseLevel:
     new widget.NumberInput(detailSnareTone, "Noise Level", param.noiseLevel, render),
 
+  attackMod:
+    new widget.NumberInput(detailSnareModulation, "Attack Mod.", param.attackMod, render),
   envelopeDecaySecond: new widget.NumberInput(
     detailSnareModulation, "Env. Decay [s]", param.envelopeDecaySecond, render),
   pitchMod: new widget.NumberInput(
