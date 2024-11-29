@@ -1,31 +1,6 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-/*
-Based on `instruments/mymembrane~.pd` in the reference linked below.
-
-Reference: https://github.com/MikeMorenoDSP/pd-mkmr
-
-## Notes on reference implementation.
-
-```
-input -+-> allpass -> lowpass --------+-> gain env. -> tanh -> output
-       |                              |
-       +- tanh <- highpass <- delay <-+
-```
-
-- highpass cutoff is 20 Hz.
-- velocity is normalized in [0, 1].
-- velocity to impulse gain map: [-24, 0] dB.
-- velocity to lowpass cutoff map: `cut * (2**vel / 3)`.
-- pitch bend is 80 ms linear decay. It modulates:
-  - delay time: inverse of `freq * (1 + bend**10) * (vel + 2)`.
-  - allpass time: inverse of `apfreq * (1 + bend**20) * (vel + 1)`.
-  - gain envelope: `bend * sqrt(vel) * 0.7 + 1`.
-
-tanh is approximated (`hv.tanh`).
-*/
-
 import {CubicDelay, Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
 import {constructSpecialOrthogonal, randomSpecialOrthogonal} from "../common/dsp/fdn.js";
 import {Limiter} from "../common/dsp/limiter.js";
@@ -39,16 +14,11 @@ import {
   exponentialMap,
   lerp,
   syntonicCommaRatio,
+  triangularNumber,
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
-
-// `hv.tanh` in reference Pure Data patch.
-function hv_tanh(x) {
-  x = clamp(x, -3, 3);
-  return x * (x * x + 27) / (x * x * 9 + 27);
-}
 
 class ImpulseSine {
   constructor(
@@ -79,12 +49,6 @@ class ImpulseSine {
   process(rng) {
     this.expGain *= this.expDecay;
 
-    // let noise = 2 * rng.number() - 1;
-    // this.noiseGate = --this.noiseSustainSample >= 0
-    //   ? Math.min(1, this.noiseGate + this.noiseRamp)
-    //   : Math.max(0, this.noiseGate - this.noiseRamp);
-    // noise = this.noiseLowpass.process(2 * this.expGain * noise);
-
     let sin = 0;
     if (this.phase < 1) {
       const triangle = 1 - Math.abs(1 - 2 * this.phase);
@@ -94,7 +58,7 @@ class ImpulseSine {
       const phi = 2 * Math.PI * this.phase;
       sin = Math.sin(phi);
       sin = Math.sin(sin + this.expGain * this.pm * phi);
-      sin = lerp(sin, window * sin, this.lowpass);
+      sin = lerp(sin, wPhase * sin, this.lowpass);
       this.phase += this.freq;
     }
 
@@ -159,13 +123,6 @@ class ImpulseExpDecay {
     const decaySamples = Math.floor(sampleRate * sineFreqNormalized);
     this.expDecay = Math.pow(sineModDecay, 1 / decaySamples);
 
-    // // Solution of `integrate((1/4)^log(f-g)/log(2), f, a, b);`. Maxima is used.
-    // const integralSlopePart
-    //   = Math.pow(0.5 - freq, -0.3862943611198906) / 0.2677588472764575;
-    // this.expGain = 1 / (freq * integralSlopePart);
-    // // or,
-    // this.expGain = 1 / freq;
-
     this.expGain = 1;
 
     this.phase = 0;
@@ -181,23 +138,9 @@ class ImpulseExpDecay {
   }
 }
 
-class LinearDecay {
-  constructor(decaySample) {
-    this.counter = decaySample;
-    this.decaySample = decaySample;
-  }
-
-  process() {
-    if (this.counter <= 0) return 0;
-    return this.counter-- / this.decaySample;
-  }
-}
-
 class ExpDecay {
   constructor(decaySample) {
     this.gain = 1;
-
-    decaySample *= 15;
     this.decay = decaySample < 1 ? 1 : Math.pow(1e-3, 1 / decaySample);
   }
 
@@ -205,10 +148,10 @@ class ExpDecay {
 }
 
 class NoiseGenerator {
-  constructor(sampleRate) {
+  constructor(sampleRateHz) {
     this.rmsMeter = new EMAFilter();
-    this.rmsMeter.setCutoff(20 / sampleRate);
-    this.noiseBp = new SVFBP(3000 / sampleRate, Math.SQRT2 - 1);
+    this.rmsMeter.setCutoff(20 / sampleRateHz);
+    this.noiseBp = new SVFBP(3000 / sampleRateHz, Math.SQRT2 - 1);
   }
 
   process(input, rng) {
@@ -223,12 +166,11 @@ class AllpassDelayCascade {
     sampleRate,
     lowpassHz,
     highpassHz,
-    allpassHz,
+    allpassFrequencyHz,
     allpassGain,
-    delayHz,
+    delayFrequencyHz,
     feedbackGain,
     noiseLevel,
-    attackMod,
     envelopeDecaySecond,
     pitchMod,
     delayTimeMod,
@@ -239,21 +181,20 @@ class AllpassDelayCascade {
   ) {
     this.snareNoise = new NoiseGenerator(sampleRate);
 
-    this.pitchEnvShort = new LinearDecay(Math.floor(sampleRate * 0.1));
-    this.pitchEnvelope = new LinearDecay(Math.floor(sampleRate * envelopeDecaySecond));
+    // Original algorithm was using `LinearDecay` instead of `ExpDecay`.
+    this.pitchEnvelope = new ExpDecay(Math.floor(sampleRate * envelopeDecaySecond));
 
     this.allpass = new LongAllpass(sampleRate, DelayType);
     this.lp = new LP1(lowpassHz / sampleRate);
     this.fb = 0;
     this.delay = new DelayType(0.1 * sampleRate);
-    this.hp = new HP1(highpassHz / sampleRate);
+    this.hp = new SVFHP(highpassHz / sampleRate, Math.SQRT1_2);
 
-    this.allpassTimeSample = sampleRate / allpassHz;
+    this.allpassTimeSample = sampleRate / allpassFrequencyHz;
     this.allpassGain = allpassGain;
-    this.delayTimeSample = sampleRate / delayHz;
+    this.delayTimeSample = sampleRate / delayFrequencyHz;
     this.feedbackGain = feedbackGain;
     this.noiseLevel = noiseLevel;
-    this.attackMod = attackMod;
     this.pitchMod = pitchMod;
     this.delayTimeMod = delayTimeMod;
     this.delayTimeEnv = delayTimeEnv;
@@ -261,45 +202,15 @@ class AllpassDelayCascade {
     this.velocity = velocity;
   }
 
-  ipow10(x) {
-    const x2 = x * x;
-    const x4 = x2 * x2;
-    return x2 * x4 * x4;
-  }
-
-  // Original implementation. Not suitable for FDN because of internal feedback.
-  processOriginal(input, rng) {
-    const pitchEnv = this.pitchEnvelope.process();
-    const pitchPow10 = this.ipow10(pitchEnv);
-    const pitchPow20 = pitchPow10 * pitchPow10;
-
-    const apTime = 2 * this.allpassTimeSample / ((1 + pitchPow10) * (2 + this.velocity));
-    let sig = this.allpass.processMod(input + this.fb, apTime, this.allpassGain);
-    sig = this.lp.process(sig);
-    sig *= (1 + pitchPow20);
-
-    const delayTime = this.delayTimeSample / ((1 + pitchPow20) * (1 + this.velocity));
-    this.fb = this.delay.processMod(sig, delayTime);
-    this.fb = this.hp.process(this.fb);
-    this.fb *= this.feedbackGain;
-    this.fb = hv_tanh(this.fb);
-
-    sig = hv_tanh(sig + 2 * input);
-    sig += this.noiseLevel * this.snareNoise.process(sig, rng);
-    return sig;
-  }
-
   // Without feedback. Use this for FDN.
   process(input, rng) {
-    const envShort = this.pitchEnvShort.process() * this.attackMod;
     const pitchEnv = this.pitchEnvelope.process();
-    const pitchPow10 = this.ipow10(pitchEnv);
+    const pitchPow10 = pitchEnv;
     const pitchPow20 = pitchPow10 * pitchPow10;
 
     const apTime = 2 * this.allpassTimeSample
       / ((1 + this.pitchMod * pitchPow10) * (2 + this.velocity));
-    const apMod
-      = 1 + this.allpassTimeEnv * (pitchPow10 * this.delayTimeMod - 1) + envShort;
+    const apMod = this.delayTimeMod * lerp(1, pitchPow10, this.allpassTimeEnv);
     let sig = this.allpass.processMod(
       input, apTime - Math.abs(this.fb) * apMod, this.allpassGain);
     sig = this.lp.process(sig);
@@ -307,11 +218,10 @@ class AllpassDelayCascade {
 
     const delayTime
       = this.delayTimeSample / ((1 + this.pitchMod * pitchPow20) * (1 + this.velocity));
-    const delayMod
-      = 1 + this.delayTimeEnv * (pitchPow10 * this.delayTimeMod - 1) + envShort;
+    const delayMod = this.delayTimeMod * lerp(1, pitchPow10, this.delayTimeEnv);
     sig = this.delay.processMod(sig, delayTime - Math.abs(sig) * delayMod);
     sig = this.hp.process(sig);
-    sig = hv_tanh(sig);
+    sig = Math.tanh(sig);
 
     sig += this.noiseLevel * this.snareNoise.process(sig, rng);
     this.fb = sig;
@@ -338,39 +248,16 @@ class ReverbDelay {
   }
 
   process(input) {
-    // input = Math.tanh(input);
+    input = Math.tanh(input);
     input = this.lowpass.process(input);
     input = this.highpass.process(input);
     return this.delay.process(input);
   }
 }
 
-class FDN2 {
-  constructor(delay1, delay2, rotationCycle, feedbackGain) {
-    this.delay1 = delay1;
-    this.delay2 = delay2;
-    this.fb1 = 0;
-    this.fb2 = 0;
-
-    this.cs = feedbackGain * Math.cos(2 * Math.PI * rotationCycle);
-    this.sn = feedbackGain * Math.sin(2 * Math.PI * rotationCycle);
-  }
-
-  process(input, rng) {
-    input *= 0.5;
-    const d1 = this.delay1.process(input + this.fb1, rng);
-    const d2 = this.delay2.process(input + this.fb2, rng);
-
-    this.fb1 = this.cs * d1 - this.sn * d2;
-    this.fb2 = this.sn * d1 + this.cs * d2;
-
-    return d1 + d2;
-  }
-}
-
 class FDN {
   // `delay` is Array.
-  constructor(delay, feedbackGain, seed) {
+  constructor(delay, inputGain, mixGain, feedbackGain, seed) {
     const create2dArray = (x, y) => {
       let a = new Array(x);
       for (let i = 0; i < a.length; ++i) a[i] = new Array(y).fill(0);
@@ -382,8 +269,21 @@ class FDN {
     this.buf = create2dArray(2, this.delay.length);
     this.bufIndex = 0;
     this.feedbackGain = feedbackGain;
+    this.inputGain = inputGain;
+    this.mixGain = mixGain;
 
-    randomSpecialOrthogonal(this.matrix, seed);
+    const normalDist = v => {
+      v = clamp(v, 0, 1 - Number.EPSILON);
+      return Math.sqrt(-2 * Math.log(1 - v)) * Math.cos(2 * Math.PI * v);
+    };
+
+    if (Array.isArray(seed)) {
+      constructSpecialOrthogonal(this.matrix, seed.map(v => normalDist(v)));
+    } else if (Number.isFinite(seed)) {
+      randomSpecialOrthogonal(this.matrix, seed);
+    } else {
+      console.warn(`Invalid FDN seed: ${seed}`);
+    }
   }
 
   process(input, rng) {
@@ -395,11 +295,42 @@ class FDN {
       for (let j = 0; j < front.length; ++j) front[i] += this.matrix[i][j] * back[j];
     }
 
+    let sum = 0;
     for (let i = 0; i < front.length; ++i) {
-      front[i] = this.delay[i].process(input + this.feedbackGain * front[i], rng);
+      front[i] = this.delay[i].process(
+        this.inputGain[i] * input + this.feedbackGain * front[i], rng);
+      sum += this.mixGain[i] * front[i];
     }
+    return sum;
+  }
 
-    return front.reduce((sum, val) => sum + val, 0);
+  getFront() { return this.buf[this.bufIndex]; }
+
+  preProcess() {
+    this.bufIndex ^= 1;
+    let front = this.buf[this.bufIndex];
+    let back = this.buf[this.bufIndex ^ 1];
+    front.fill(0);
+    for (let i = 0; i < front.length; ++i) {
+      for (let j = 0; j < front.length; ++j) front[i] += this.matrix[i][j] * back[j];
+    }
+  }
+
+  // Call this only after `preProcess`.
+  // More `a`, less coupling.
+  // - `g1 = a / sqrt(a * a + 1)`.
+  // - `g2 = 1 / sqrt(a * a + 1)`.
+  postProcess(input, g1, g2, coupling, rng) {
+    let front = this.buf[this.bufIndex];
+
+    let sum = 0;
+    for (let i = 0; i < front.length; ++i) {
+      const fb = g1 * front[i] + g2 * coupling[i];
+      front[i]
+        = this.delay[i].process(this.inputGain[i] * input + this.feedbackGain * fb, rng);
+      sum += this.mixGain[i] * front[i];
+    }
+    return sum;
   }
 }
 
@@ -414,8 +345,16 @@ class Bypass {
 
 function process(upRate, pv, dsp) {
   let pulse = dbToAmp(-24 * (1 - pv.velocity)) * dsp.impulse.process(dsp.rng);
-  let sig = dsp.snare.process(pulse, dsp.rng);
-  sig += pv.reverbMix * dsp.reverb.process(sig, dsp.rng);
+
+  dsp.snare.preProcess();
+  dsp.reverb.preProcess();
+
+  const g2 = 1 / Math.sqrt(pv.couplingGain * pv.couplingGain + 1);
+  const g1 = pv.couplingGain * g2;
+  const snFront = structuredClone(dsp.snare.getFront()); // TODO
+  let sig = dsp.snare.postProcess(pulse, g1, g2, dsp.reverb.getFront(), dsp.rng);
+  sig += dsp.reverb.postProcess(0, g1, -g2, snFront, dsp.rng);
+
   sig = dsp.limiter.process(sig);
   return sig;
 }
@@ -428,14 +367,14 @@ onmessage = async (event) => {
   const sampleRateScaler = menuitems.sampleRateScalerItems[pv.sampleRateScaler];
 
   const stereoSeed = pv.stereoSeed === 0 ? 0 : 65537;
-  const rng = new PcgRandom(BigInt(pv.seed + pv.channel * stereoSeed));
+  const rng = new PcgRandom(BigInt(pv.seed + 0 * pv.channel * stereoSeed));
 
   let dsp = {};
   dsp.rng = rng;
 
   const getImpulse = () => {
     const excitationType = menuitems.excitationTypeItems[pv.excitationType];
-    if (excitationType === "Original") {
+    if (excitationType === "Sine + LP Noise") {
       return new ImpulseOriginal(
         upRate,
         pv.frequencyHz / upRate,
@@ -474,42 +413,78 @@ onmessage = async (event) => {
     return delayType === "None" ? IntDelay : delayType === "Linear" ? Delay : CubicDelay;
   };
 
-  // Real timpani: [1.00, 1.504, 1.742, 2.00, 2.245, 2.494, 2.800, 2.852, 2.979, 3.462];
   const pitches = [
-    1.0000000000000,    1.3402965524420327, 1.6650969425972044, 1.9804083333912088,
+    1.000000000000,     1.3402965524420327, 1.6650969425972044, 1.9804083333912088,
     2.2891849959679758, 2.593129431504782,  2.893324828534451,  3.1905089688660495,
     3.485210133885118,  3.7778213670634533, 4.068644098913255,  4.357915263770598,
     4.645824938472086,  4.932528252461517,  5.218153685402315,  5.502809003876363,
     5.7865856073569075, 6.0695617737731915, 6.351805126135265,  6.633374536485119,
+    6.91432161601487,   7.194691895883976,  7.474525773493237,  7.753859278561035,
+    8.032724699098031,  8.311151097265078,  8.589164737815679,  8.866789446505656,
+    9.144046911919677,  9.420956941221863,  9.697537678112663,  9.973805789574751,
+    10.249776626680719, 10.525464363716539, 10.800882119076348, 11.076042060753268,
+    11.350955498749236, 11.625632966325023, 11.90008429168762,  12.17431866144975,
+    12.448344676982043, 12.722170404602968, 12.995803420407027, 13.269250850411956,
+    13.542519406606212, 13.815615419394776, 14.088544866871587, 14.361313401288188,
+    14.633926373038491, 14.90638885243742,  15.178705649535358, 15.450881332179648,
+    15.722920242508177, 15.994826512037466, 16.26660407548823,  16.538256683474607,
+    16.809787914168567, 17.081201184038456, 17.352499757749445, 17.623686757304167,
+    17.89476517049317,  18.165737858717637, 18.436607564240077, 18.707376916913077,
   ];
   const DelayType = getDelayType();
+
+  let fdnInputGain = structuredClone(pv.inputGain);
+  if (fdnInputGain.every(v => v === 0)) {
+    fdnInputGain.fill(1);
+  } else {
+    const scaler = pv.fdnSize / fdnInputGain.reduce((p, c) => p + c, 0);
+    fdnInputGain = fdnInputGain.map(v => v * scaler);
+  }
 
   let snareDelay = new Array(pv.fdnSize);
   const delayFreqHz = pv.frequencyHz * (1 - pv.allpassDelayRatio);
   const allpassFreqHz = pv.frequencyHz * pv.allpassDelayRatio;
   const delayTimeMod = pv.delayTimeMod * upFold * sampleRateScaler;
-  const pitchRand = () => { return exponentialMap(rng.number(), 1, syntonicCommaRatio); };
   for (let idx = 0; idx < snareDelay.length; ++idx) {
     snareDelay[idx] = new AllpassDelayCascade(
       upRate,
-      pv.lowpassHz * pitchRand(),
-      pv.highpassHz * pitchRand(),
-      allpassFreqHz * pitches[idx] * pitchRand(),
+      pv.lowpassHz * pitches[idx],
+      pv.highpassHz,
+      allpassFreqHz * pitches[idx],
       pv.allpassGain,
-      delayFreqHz * pitches[idx] * pitchRand(),
+      delayFreqHz * pitches[idx],
       pv.feedback,
-      pv.noiseLevel,
-      pv.attackMod,
+      pv.noiseLevel * Math.sqrt(sampleRateScaler),
       pv.envelopeDecaySecond,
       pv.pitchMod,
-      delayTimeMod,
+      delayTimeMod / pitches[idx],
       pv.delayTimeEnv,
       pv.allpassTimeEnv,
       pv.velocity,
       DelayType,
     );
   }
-  dsp.snare = new FDN(snareDelay, pv.feedback, pv.seed + 257);
+  const snareMixGain = pitches.map(v => 1 /* or, `1 / v` */);
+
+  let fdnSeed = new Array(triangularNumber(pv.fdnSize)).fill(0); // TODO: more tuning
+  let offset = 0;
+  let table = new Array(pv.fdnSize).fill(0).map((v, i, arr) => {
+    // return lerp(i, arr.length - i, 0.5);
+
+    const phase = i / arr.length;
+    const offset = pv.matrixCharacterB;
+    const freq = pv.matrixCharacterA * pv.fdnSize * 10;
+    return Math.sin(freq * Math.PI * (phase + offset));
+  });
+  for (let i = 0; i < pv.fdnSize; ++i) {
+    for (let j = 0; j < pv.fdnSize - i; ++j) {
+      fdnSeed[offset + j] = table[j];
+    }
+    offset += pv.fdnSize - i;
+  }
+  console.log(fdnSeed);
+
+  dsp.snare = new FDN(snareDelay, fdnInputGain, snareMixGain, pv.feedback, fdnSeed);
 
   let reverbDelay = new Array(pv.fdnSize);
   const fdnBaseTime = pv.reverbTimeMultiplier * upRate / delayFreqHz;
@@ -523,7 +498,15 @@ onmessage = async (event) => {
       fdnBaseTime * pitches[idx] * fdnRandomFunc(),
     );
   }
-  dsp.reverb = new FDN(reverbDelay, pv.reverbFeedback, pv.seed + 2);
+  const reverbMixGain = new Array(pv.fdnSize).fill(1);
+  dsp.reverb = new FDN(
+    reverbDelay,
+    fdnInputGain,
+    reverbMixGain,
+    pv.reverbFeedback,
+    // pv.seed + 257,
+    fdnSeed,
+  );
 
   if (pv.limiterType === 1) {
     dsp.limiter = new Limiter(

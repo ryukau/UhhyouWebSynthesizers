@@ -5,81 +5,18 @@
   },
   "sections": [
     {
-      "title": {"ja": "インパルス応答", "en": "Impulse Response"},
-      "summary": {
-        "ja": "IRコンボルバに読み込んで使うインパルス応答を合成します。" ,
-        "en": "These are intended to be used with external IR convolver."
-      },
-      "list": [
-        {
-          "href": "./ParallelComb/synth.html",
-          "name": "ParallelComb",
-          "tag": {"ja": "シンバル", "en": "Cymbal"},
-          "description": {
-            "ja": "ペンで机を叩いた音をシンバルのように変えるインパルス応答。 <a href=\"https://www.youtube.com/watch?v=QYUbXN5f4yA\">henry bracey による説明</a>に基づく。",
-            "en": "Impulse response to add cymbal texture for pen taps. Based on <a href=\"https://www.youtube.com/watch?v=QYUbXN5f4yA\">a description by henry bracey</a>."
-          }
-        },
-        {
-          "href": "./FV1Reverb/synth.html",
-          "name": "FV1Reverb",
-          "tag": {"ja": "リバーブ", "en": "Reverb"},
-          "description": {
-            "ja": "Spin Semiconductor の <a href=\"http://www.spinsemi.com/knowledge_base/effects.html\">FV-1</a> に基づくループ構造のリバーブ。",
-            "en": "Reverb using the loop structure of Spin Semiconductor <a href=\"http://www.spinsemi.com/knowledge_base/effects.html\">FV-1</a>."
-          }
-        },
-        {
-          "href": "./MaybeCabinetIR/synth.html",
-          "name": "MaybeCabinetIR",
-          "tag": {"ja": "FIR フィルタ", "en": "FIR filter"},
-          "description": {
-            "ja": "ギターキャビネットに似せたインパルス応答。",
-            "en": "Fake guitar cabinet impulse responses."
-          }
-        },
-        {
-          "href": "./L4Reverb/synth.html",
-          "name": "L4Reverb",
-          "tag": {"ja": "リバーブ", "en": "Reverb"},
-          "description": {
-            "ja": "格子構造のオールパスフィルタを 4 つ入れ子にしたリバーブ。",
-            "en": "Reverb using 4 times nested lattice allpass filter."
-          }
-        },
-        {
-          "href": "./FDNReverb/synth.html",
-          "name": "FDNReverb",
-          "tag": {"ja": "リバーブ", "en": "Reverb"},
-          "description": {
-            "ja": "Feedback delay network (FDN) を1つ使ったリバーブ。",
-            "en": "Reverb using a feedback delay network."
-          }
-        },
-        {
-          "href": "./oldsynth/Pulseverb/index.html",
-          "name": "Pulseverb",
-          "tag": {"ja": "リバーブ", "en": "Reverb"},
-          "description": {
-            "ja": "インパルスを適当にモジュレーションしたリバーブ。"         ,
-            "en": "Reverb using modulated band-limited impulse train (BLIT)."
-          }
-        },
-        {
-          "href": "./oldsynth/Freeverb/index.html",
-          "name": "Freeverb",
-          "tag": {"ja": "リバーブ", "en": "Reverb"},
-          "description": {
-            "ja": "Freeverbアルゴリズムによるリバーブ。",
-            "en": "Reverb using Freeverb algorithm."
-          }
-        }
-      ]
-    },
-    {
       "title": {"ja": "シンセサイザ", "en": "Synthesizer"},
       "summary": {"ja": "", "en": ""},
       "list": [
+        {
+          "href": "./CoupledSnare/synth.html",
+          "name": "CoupledSnare",
+          "tag": {"ja": "スネア", "en": "Snare"},
+          "description": {
+            "ja": "RoughlySnare の改変版。"            ,
+            "en": "A modified version of RoughlySnare."
+          }
+        },
         {
           "href": "./RoughlySnare/synth.html",
           "name": "RoughlySnare",
@@ -327,6 +264,78 @@
           "description": {
             "ja": "2 つの Karplus-Strong を適当にぶつけて音を合成。",
             "en": "Crude collision of 2 Karplus-Strong string."
+          }
+        }
+      ]
+    },
+    {
+      "title": {"ja": "インパルス応答", "en": "Impulse Response"},
+      "summary": {
+        "ja": "IRコンボルバに読み込んで使うインパルス応答を合成します。" ,
+        "en": "These are intended to be used with external IR convolver."
+      },
+      "list": [
+        {
+          "href": "./ParallelComb/synth.html",
+          "name": "ParallelComb",
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
+          "description": {
+            "ja": "ペンで机を叩いた音をシンバルのように変えるインパルス応答。 <a href=\"https://www.youtube.com/watch?v=QYUbXN5f4yA\">henry bracey による説明</a>に基づく。",
+            "en": "Impulse response to add cymbal texture for pen taps. Based on <a href=\"https://www.youtube.com/watch?v=QYUbXN5f4yA\">a description by henry bracey</a>."
+          }
+        },
+        {
+          "href": "./FV1Reverb/synth.html",
+          "name": "FV1Reverb",
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
+          "description": {
+            "ja": "Spin Semiconductor の <a href=\"http://www.spinsemi.com/knowledge_base/effects.html\">FV-1</a> に基づくループ構造のリバーブ。",
+            "en": "Reverb using the loop structure of Spin Semiconductor <a href=\"http://www.spinsemi.com/knowledge_base/effects.html\">FV-1</a>."
+          }
+        },
+        {
+          "href": "./MaybeCabinetIR/synth.html",
+          "name": "MaybeCabinetIR",
+          "tag": {"ja": "FIR フィルタ", "en": "FIR filter"},
+          "description": {
+            "ja": "ギターキャビネットに似せたインパルス応答。",
+            "en": "Fake guitar cabinet impulse responses."
+          }
+        },
+        {
+          "href": "./L4Reverb/synth.html",
+          "name": "L4Reverb",
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
+          "description": {
+            "ja": "格子構造のオールパスフィルタを 4 つ入れ子にしたリバーブ。",
+            "en": "Reverb using 4 times nested lattice allpass filter."
+          }
+        },
+        {
+          "href": "./FDNReverb/synth.html",
+          "name": "FDNReverb",
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
+          "description": {
+            "ja": "Feedback delay network (FDN) を1つ使ったリバーブ。",
+            "en": "Reverb using a feedback delay network."
+          }
+        },
+        {
+          "href": "./oldsynth/Pulseverb/index.html",
+          "name": "Pulseverb",
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
+          "description": {
+            "ja": "インパルスを適当にモジュレーションしたリバーブ。"         ,
+            "en": "Reverb using modulated band-limited impulse train (BLIT)."
+          }
+        },
+        {
+          "href": "./oldsynth/Freeverb/index.html",
+          "name": "Freeverb",
+          "tag": {"ja": "リバーブ", "en": "Reverb"},
+          "description": {
+            "ja": "Freeverbアルゴリズムによるリバーブ。",
+            "en": "Reverb using Freeverb algorithm."
           }
         }
       ]

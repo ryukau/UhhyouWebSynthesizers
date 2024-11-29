@@ -185,7 +185,7 @@ export function constructSpecialOrthogonal(matrix, seedArray) {
   let x = new Array(matrix.length);
   let D = new Array(matrix.length);
   let offset = 0;
-  for (let n = 0; n < matrix.length; ++n) {
+  for (let n = 0; n < matrix.length - 1; ++n) {
     const xRange = matrix.length - n;
     for (let i = 0; i < xRange; ++i) x[i] = seedArray[offset + i];
     offset += xRange;

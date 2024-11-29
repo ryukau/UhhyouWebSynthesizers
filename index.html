@@ -151,7 +151,7 @@
         <option value="en">English</option>
         <option value="ja">日本語</option>
       </select>
-      <span id="lastModified">Last Modified: 2024-10-15</span>
+      <span id="lastModified">Last Modified: 2024-11-29</span>
     </p>
   </header>
 
@@ -162,47 +162,13 @@
   <div id="main">
     <div class="languageBlock" lang="en">
       <p><ruby>Uhhyou <rp>(</rp><rt>うっひょう</rt><rp>)</rp></ruby> Web Synthesizers is a collection of musical synthesizers to render WAVE files.</p><h2>Basic Usage</h2><ul><li>Press <span class="bold">Random</span> button to change parameters.</li><li>Press <span class="bold">Play</span> button to audition.</li><li>Press <span class="bold">Save</span> button to download WAVE.</li><li>Select menu on the left of <span class="bold">Random</span> button to change randomization recipe.</li></ul><p>Instruction to use without the internet is available on the <a href="https://github.com/ryukau/UhhyouWebSynthesizers">source code</a> page.</p>
-      <h2>Impulse Response</h2>
-      <p>These are intended to be used with external IR convolver.</p>
-      <dl>
-        <div class="synthList">
-          <dt><a href="./ParallelComb/synth.html">ParallelComb</a></dt>
-          <dd class="tag"><span class="bold">Cymbal</span></dd>
-          <dd class="description" tabindex="0">Impulse response to add cymbal texture for pen taps. Based on <a href="https://www.youtube.com/watch?v=QYUbXN5f4yA">a description by henry bracey</a>. </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./FV1Reverb/synth.html">FV1Reverb</a></dt>
-          <dd class="tag"><span class="bold">Reverb</span></dd>
-          <dd class="description" tabindex="0">Reverb using the loop structure of Spin Semiconductor <a href="http://www.spinsemi.com/knowledge_base/effects.html">FV-1</a>. </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./MaybeCabinetIR/synth.html">MaybeCabinetIR</a></dt>
-          <dd class="tag"><span class="bold">FIR filter</span></dd>
-          <dd class="description" tabindex="0">Fake guitar cabinet impulse responses. </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./L4Reverb/synth.html">L4Reverb</a></dt>
-          <dd class="tag"><span class="bold">Reverb</span></dd>
-          <dd class="description" tabindex="0">Reverb using 4 times nested lattice allpass filter. </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./FDNReverb/synth.html">FDNReverb</a></dt>
-          <dd class="tag"><span class="bold">Reverb</span></dd>
-          <dd class="description" tabindex="0">Reverb using a feedback delay network. </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./oldsynth/Pulseverb/index.html">Pulseverb</a></dt>
-          <dd class="tag"><span class="bold">Reverb</span></dd>
-          <dd class="description" tabindex="0">Reverb using modulated band-limited impulse train (BLIT). </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./oldsynth/Freeverb/index.html">Freeverb</a></dt>
-          <dd class="tag"><span class="bold">Reverb</span></dd>
-          <dd class="description" tabindex="0">Reverb using Freeverb algorithm. </dd>
-        </div>
-      </dl>
       <h2>Synthesizer</h2>
       <dl>
+        <div class="synthList">
+          <dt><a href="./CoupledSnare/synth.html">CoupledSnare</a></dt>
+          <dd class="tag"><span class="bold">Snare</span></dd>
+          <dd class="description" tabindex="0">A modified version of RoughlySnare. </dd>
+        </div>
         <div class="synthList">
           <dt><a href="./RoughlySnare/synth.html">RoughlySnare</a></dt>
           <dd class="tag"><span class="bold">Snare</span></dd>
@@ -344,6 +310,45 @@
           <dd class="description" tabindex="0">Crude collision of 2 Karplus-Strong string. </dd>
         </div>
       </dl>
+      <h2>Impulse Response</h2>
+      <p>These are intended to be used with external IR convolver.</p>
+      <dl>
+        <div class="synthList">
+          <dt><a href="./ParallelComb/synth.html">ParallelComb</a></dt>
+          <dd class="tag"><span class="bold">Cymbal</span></dd>
+          <dd class="description" tabindex="0">Impulse response to add cymbal texture for pen taps. Based on <a href="https://www.youtube.com/watch?v=QYUbXN5f4yA">a description by henry bracey</a>. </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./FV1Reverb/synth.html">FV1Reverb</a></dt>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description" tabindex="0">Reverb using the loop structure of Spin Semiconductor <a href="http://www.spinsemi.com/knowledge_base/effects.html">FV-1</a>. </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./MaybeCabinetIR/synth.html">MaybeCabinetIR</a></dt>
+          <dd class="tag"><span class="bold">FIR filter</span></dd>
+          <dd class="description" tabindex="0">Fake guitar cabinet impulse responses. </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./L4Reverb/synth.html">L4Reverb</a></dt>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description" tabindex="0">Reverb using 4 times nested lattice allpass filter. </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./FDNReverb/synth.html">FDNReverb</a></dt>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description" tabindex="0">Reverb using a feedback delay network. </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./oldsynth/Pulseverb/index.html">Pulseverb</a></dt>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description" tabindex="0">Reverb using modulated band-limited impulse train (BLIT). </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./oldsynth/Freeverb/index.html">Freeverb</a></dt>
+          <dd class="tag"><span class="bold">Reverb</span></dd>
+          <dd class="description" tabindex="0">Reverb using Freeverb algorithm. </dd>
+        </div>
+      </dl>
       <h2>Old Synthesizer</h2>
       <p>Synthesizers using old style code. (<a href="https://github.com/ryukau/UhhyouWebSynthesizers/blob/main/docs/code_walkthrough.md#old-synth">Details</a>)</p>
       <dl>
@@ -453,47 +458,13 @@
     </div>
     <div class="languageBlock" lang="ja">
       <p><ruby>Uhhyou Web Synthesizers</ruby> はブラウザ上で WAVE ファイルをレンダリングするシンセサイザです。</p><h2>使い方</h2><ul><li><span class="bold">Random</span> ボタンでパラメータ変更。</li><li><span class="bold">Play</span> ボタンで試聴。</li><li><span class="bold">Save</span> ボタンで WAVE ファイルをダウンロード。</li><li><span class="bold">Random</span> ボタンの左のメニューからランダマイズのレシピを選択。</li></ul><p>インターネット接続なしでの利用方法を<a href="https://github.com/ryukau/UhhyouWebSynthesizers">ソースコード</a>のページに掲載中。</p>
-      <h2>インパルス応答</h2>
-      <p>IRコンボルバに読み込んで使うインパルス応答を合成します。</p>
-      <dl>
-        <div class="synthList">
-          <dt><a href="./ParallelComb/synth.html">ParallelComb</a></dt>
-          <dd class="tag"><span class="bold">シンバル</span></dd>
-          <dd class="description" tabindex="0">ペンで机を叩いた音をシンバルのように変えるインパルス応答。 <a href="https://www.youtube.com/watch?v=QYUbXN5f4yA">henry bracey による説明</a>に基づく。 </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./FV1Reverb/synth.html">FV1Reverb</a></dt>
-          <dd class="tag"><span class="bold">リバーブ</span></dd>
-          <dd class="description" tabindex="0">Spin Semiconductor の <a href="http://www.spinsemi.com/knowledge_base/effects.html">FV-1</a> に基づくループ構造のリバーブ。 </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./MaybeCabinetIR/synth.html">MaybeCabinetIR</a></dt>
-          <dd class="tag"><span class="bold">FIR フィルタ</span></dd>
-          <dd class="description" tabindex="0">ギターキャビネットに似せたインパルス応答。 </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./L4Reverb/synth.html">L4Reverb</a></dt>
-          <dd class="tag"><span class="bold">リバーブ</span></dd>
-          <dd class="description" tabindex="0">格子構造のオールパスフィルタを 4 つ入れ子にしたリバーブ。 </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./FDNReverb/synth.html">FDNReverb</a></dt>
-          <dd class="tag"><span class="bold">リバーブ</span></dd>
-          <dd class="description" tabindex="0">Feedback delay network (FDN) を1つ使ったリバーブ。 </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./oldsynth/Pulseverb/index.html">Pulseverb</a></dt>
-          <dd class="tag"><span class="bold">リバーブ</span></dd>
-          <dd class="description" tabindex="0">インパルスを適当にモジュレーションしたリバーブ。 </dd>
-        </div>
-        <div class="synthList">
-          <dt><a href="./oldsynth/Freeverb/index.html">Freeverb</a></dt>
-          <dd class="tag"><span class="bold">リバーブ</span></dd>
-          <dd class="description" tabindex="0">Freeverbアルゴリズムによるリバーブ。 </dd>
-        </div>
-      </dl>
       <h2>シンセサイザ</h2>
       <dl>
+        <div class="synthList">
+          <dt><a href="./CoupledSnare/synth.html">CoupledSnare</a></dt>
+          <dd class="tag"><span class="bold">スネア</span></dd>
+          <dd class="description" tabindex="0">RoughlySnare の改変版。 </dd>
+        </div>
         <div class="synthList">
           <dt><a href="./RoughlySnare/synth.html">RoughlySnare</a></dt>
           <dd class="tag"><span class="bold">スネア</span></dd>
@@ -633,6 +604,45 @@
           <dt><a href="./KSCymbal/synth.html">KSCymbal</a></dt>
           <dd class="tag"><span class="bold">シンバル</span></dd>
           <dd class="description" tabindex="0">2 つの Karplus-Strong を適当にぶつけて音を合成。 </dd>
+        </div>
+      </dl>
+      <h2>インパルス応答</h2>
+      <p>IRコンボルバに読み込んで使うインパルス応答を合成します。</p>
+      <dl>
+        <div class="synthList">
+          <dt><a href="./ParallelComb/synth.html">ParallelComb</a></dt>
+          <dd class="tag"><span class="bold">シンバル</span></dd>
+          <dd class="description" tabindex="0">ペンで机を叩いた音をシンバルのように変えるインパルス応答。 <a href="https://www.youtube.com/watch?v=QYUbXN5f4yA">henry bracey による説明</a>に基づく。 </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./FV1Reverb/synth.html">FV1Reverb</a></dt>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description" tabindex="0">Spin Semiconductor の <a href="http://www.spinsemi.com/knowledge_base/effects.html">FV-1</a> に基づくループ構造のリバーブ。 </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./MaybeCabinetIR/synth.html">MaybeCabinetIR</a></dt>
+          <dd class="tag"><span class="bold">FIR フィルタ</span></dd>
+          <dd class="description" tabindex="0">ギターキャビネットに似せたインパルス応答。 </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./L4Reverb/synth.html">L4Reverb</a></dt>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description" tabindex="0">格子構造のオールパスフィルタを 4 つ入れ子にしたリバーブ。 </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./FDNReverb/synth.html">FDNReverb</a></dt>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description" tabindex="0">Feedback delay network (FDN) を1つ使ったリバーブ。 </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./oldsynth/Pulseverb/index.html">Pulseverb</a></dt>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description" tabindex="0">インパルスを適当にモジュレーションしたリバーブ。 </dd>
+        </div>
+        <div class="synthList">
+          <dt><a href="./oldsynth/Freeverb/index.html">Freeverb</a></dt>
+          <dd class="tag"><span class="bold">リバーブ</span></dd>
+          <dd class="description" tabindex="0">Freeverbアルゴリズムによるリバーブ。 </dd>
         </div>
       </dl>
       <h2>古いシンセサイザ</h2>
