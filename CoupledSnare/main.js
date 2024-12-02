@@ -32,7 +32,6 @@ const localRecipeBook = {
     feedback: () => {},
 
     membranePitchType: (prm) => { prm.normalized = Math.random(); },
-    membranePitchIndex: () => {},
     lowpassHz: () => {},
     highpassHz: () => {},
     noiseLevel: () => {},
