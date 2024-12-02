@@ -381,11 +381,8 @@ onmessage = async (event) => {
   const upRate = upFold * pv.sampleRate;
   const sampleRateScaler = menuitems.sampleRateScalerItems[pv.sampleRateScaler];
 
-  const stereoSeed = pv.stereoSeed === 0 ? 0 : 65537;
-  const rng = new PcgRandom(BigInt(pv.seed + 0 * pv.channel * stereoSeed));
-
   let dsp = {};
-  dsp.rng = rng;
+  dsp.rng = new PcgRandom(BigInt(pv.seed));
 
   const getImpulse = () => {
     const excitationType = menuitems.excitationTypeItems[pv.excitationType];
@@ -510,7 +507,7 @@ onmessage = async (event) => {
   let reverbDelay = new Array(pv.fdnSize);
   const fdnBaseTime = pv.reverbTimeMultiplier * upRate / delayFreqHz;
   const fdnRandomFunc = () => exponentialMap(
-    rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
+    dsp.rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
   for (let idx = 0; idx < reverbDelay.length; ++idx) {
     reverbDelay[idx] = new ReverbDelay(
       upRate / delayFreqHz * 4 * pitches[idx],
