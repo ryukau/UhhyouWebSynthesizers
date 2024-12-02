@@ -7,6 +7,7 @@ import * as delay from "../common/dsp/delay.js";
 import {ExpPolyEnvelope} from "../common/dsp/envelope.js";
 import {randomSpecialOrthogonal} from "../common/dsp/fdn.js";
 import {Limiter} from "../common/dsp/limiter.js"
+import {membranePitchTable} from "../common/dsp/membranepitch.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {
@@ -26,7 +27,6 @@ import {
 } from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
-import {membranePitchTable} from "./membranepitch.js";
 import * as menuitems from "./menuitems.js";
 
 class SinOsc {
@@ -189,7 +189,8 @@ class FDN {
 }
 
 class ReverbDelay {
-  constructor(maxDelayTimeInSamples, lowpassCutoff, highpassCutoff, delayTimeSample) {
+  constructor(
+    maxDelayTimeInSamples, lowpassCutoff, highpassCutoff, delayTimeSample, delayTimeMod) {
     this.lowpass = new DoubleEMAFilter();
     this.lowpass.setCutoff(lowpassCutoff);
 
@@ -198,12 +199,16 @@ class ReverbDelay {
 
     this.delay = new delay.CubicDelay(maxDelayTimeInSamples);
     this.delay.setTime(delayTimeSample);
+
+    this.delayTime = delayTimeSample;
+    this.timeMod = delayTimeMod;
   }
 
   process(input) {
     input = this.lowpass.process(input);
     input = this.highpass.process(input);
-    return this.delay.process(input);
+    // return this.delay.process(input);
+    return this.delay.processMod(input, this.delayTime - Math.abs(input) * this.timeMod);
   }
 }
 
@@ -258,6 +263,7 @@ onmessage = async (event) => {
 
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
   const upRate = upFold * pv.sampleRate;
+  const sampleRateScaler = menuitems.sampleRateScalerItems[pv.sampleRateScaler];
   const soundLength = Math.floor(pv.sampleRate * pv.renderDuration);
 
   const stereoSeed = pv.stereoSeed === 0 ? 0 : 65537;
@@ -316,16 +322,13 @@ onmessage = async (event) => {
 
   let reverbDelay = new Array(16);
 
-  const getPitchDebug = () => {
+  const getPitch = () => {
     let key = menuitems.reverbPitchTypeItems[pv.reverbPitchType];
-    console.log(key);
     let src = structuredClone(membranePitchTable[key][pv.reverbPitchIndex]);
     src.shift();
     return src.map(v => v / src[0]);
   };
-  const pitches = getPitchDebug();
-  console.log(pitches);
-
+  const pitches = getPitch();
   const fdnBaseTime = upRate / pv.reverbTimeFrequencyHz;
   const fdnRandomFunc = () => exponentialMap(
     rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
@@ -336,6 +339,7 @@ onmessage = async (event) => {
       Math.min(pv.reverbLowpassHz / upRate, 0.5),
       20 / upRate,
       delayTime,
+      pv.reverbTimeMod * upFold * sampleRateScaler,
     );
   }
   dsp.reverb = new FDN(reverbDelay, pv.reverbFeedback, pv.seed + 2);

@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 6;
+const version = 7;
 
 const localRecipeBook = {
   "Default": {
@@ -24,6 +24,51 @@ const localRecipeBook = {
     limiterType: () => {},
     limiterThreshold: () => {},
     limiterSmoothingSeconds: () => {},
+
+    fdnSize: () => {},
+    frequencyHz: (prm) => {},
+    allpassDelayRatio: () => {},
+    allpassGain: () => {},
+    feedback: () => {},
+
+    membranePitchType: (prm) => { prm.normalized = Math.random(); },
+    membranePitchIndex: () => {},
+    lowpassHz: () => {},
+    highpassHz: () => {},
+    noiseLevel: () => {},
+    noiseReleaseHz: () => {},
+
+    velocity: () => {},
+    couplingGain: () => {},
+
+    envelopeDecaySecond: () => {},
+    pitchMod: () => {},
+    delayTimeMod: () => {},
+    delayTimeEnv: () => {},
+    allpassTimeEnv: () => {},
+
+    reverbLowpassHz: () => {},
+    reverbTimeMultiplier: () => {},
+    reverbTimeMod: () => {},
+  },
+  "All": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+
+    limiterType: () => {},
+    limiterThreshold: () => {},
+    limiterSmoothingSeconds: () => {},
+
+    fdnSize: () => {},
+
+    membranePitchType: (prm) => { prm.normalized = Math.random(); },
+
+    reverbTimeMultiplier: () => {},
   },
 };
 
@@ -78,16 +123,19 @@ const scales = {
 
   fdnSize: new parameter.IntScale(1, 16),
   delayInterpType: new parameter.MenuItemScale(menuitems.delayInterpTypeItems),
-  frequencyHz: new parameter.DecibelScale(util.ampToDB(10), util.ampToDB(1000), false),
+  frequencyHz: new parameter.DecibelScale(util.ampToDB(10), util.ampToDB(10000), false),
   allpassGain: new parameter.LinearScale(-1, 1),
   allpassDelayRatio: new parameter.LinearScale(0.001, 0.999),
   feedback: new parameter.LinearScale(-1, 1),
   matrixCharacter: new parameter.LinearScale(0, 1),
   inputGain: new parameter.LinearScale(0, 1),
 
+  membranePitchType: new parameter.MenuItemScale(menuitems.membranePitchTypeItems),
+  membranePitchIndex: new parameter.IntScale(0, 15),
   lowpassHz: new parameter.DecibelScale(20, 100, false),
   highpassHz: new parameter.DecibelScale(0, 80, false),
   noiseLevel: new parameter.DecibelScale(-60, 20, true),
+  noiseReleaseHz: new parameter.DecibelScale(0, 40, false),
 
   velocity: new parameter.LinearScale(0, 2),
   seed: new parameter.IntScale(0, 2 ** 32),
@@ -135,9 +183,12 @@ const param = {
   inputGain: createArrayParameters(
     new Array(scales.fdnSize.max).fill(1), scales.inputGain, scales.fdnSize.max),
 
+  membranePitchType: new parameter.Parameter(1, scales.membranePitchType, true),
+  membranePitchIndex: new parameter.Parameter(0, scales.membranePitchIndex, true),
   lowpassHz: new parameter.Parameter(2400, scales.lowpassHz, true),
   highpassHz: new parameter.Parameter(20, scales.highpassHz, true),
   noiseLevel: new parameter.Parameter(1.3, scales.noiseLevel, true),
+  noiseReleaseHz: new parameter.Parameter(20, scales.noiseReleaseHz, true),
 
   velocity: new parameter.Parameter(0.5, scales.velocity, true),
   seed: new parameter.Parameter(0, scales.seed, true),
@@ -153,6 +204,7 @@ const param = {
   reverbLowpassHz:
     new parameter.Parameter(scales.reverbLowpassHz.maxDsp, scales.reverbLowpassHz, true),
   reverbFeedback: new parameter.Parameter(0.8, scales.reverbFeedback, true),
+  reverbTimeMod: new parameter.Parameter(0, scales.delayTimeMod, true),
 };
 
 const recipeBook
@@ -272,12 +324,18 @@ const ui = {
     detailSnareDelay, "Matrix Input Gain", uiSize.barboxWidth, uiSize.barboxHeight,
     param.inputGain, render),
 
+  membranePitchType: new widget.ComboBoxLine(
+    detailSnareTone, "Pitch Type", param.membranePitchType, render),
+  membranePitchIndex: new widget.NumberInput(
+    detailSnareTone, "Pitch Index", param.membranePitchIndex, render),
   lowpassHz:
     new widget.NumberInput(detailSnareTone, "Lowpass [Hz]", param.lowpassHz, render),
   highpassHz:
     new widget.NumberInput(detailSnareTone, "Highpass [Hz]", param.highpassHz, render),
   noiseLevel:
     new widget.NumberInput(detailSnareTone, "Noise Level", param.noiseLevel, render),
+  noiseReleaseHz: new widget.NumberInput(
+    detailSnareTone, "Noise Release [Hz]", param.noiseReleaseHz, render),
 
   velocity: new widget.NumberInput(detailSnareMisc, "Velocity", param.velocity, render),
   seed: new widget.NumberInput(detailSnareMisc, "Seed", param.seed, render),
@@ -301,6 +359,8 @@ const ui = {
     detailBodyResonance, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
   reverbFeedback:
     new widget.NumberInput(detailBodyResonance, "Feedback", param.reverbFeedback, render),
+  reverbTimeMod: new widget.NumberInput(
+    detailBodyResonance, "Delay Mod. [sample]", param.reverbTimeMod, render),
 };
 
 onFdnSizeChanged(param.fdnSize.dsp);

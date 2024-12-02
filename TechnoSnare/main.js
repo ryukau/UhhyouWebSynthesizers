@@ -27,8 +27,8 @@ const localRecipeBook = {
     limiterThreshold: () => {},
     bodyHighpassHz: () => {},
     noiseCombRandom: () => {},
-    reverbMix: () => {},
     reverbPitchType: (prm) => { prm.normalized = Math.random(); },
+    reverbTimeMod: () => {},
   },
   "Snare1": {
     renderDuration: () => {},
@@ -69,6 +69,7 @@ const localRecipeBook = {
     hightoneGain: (prm) => { prm.dsp = util.dbToAmp(-40); },
     reverbMix: () => {},
     reverbPitchType: (prm) => { prm.normalized = Math.random(); },
+    reverbTimeMod: () => {},
   },
   "Snare2": {
     renderDuration: () => {},
@@ -110,6 +111,7 @@ const localRecipeBook = {
     hightoneGain: (prm) => { prm.dsp = util.dbToAmp(-40); },
     reverbMix: () => {},
     reverbPitchType: (prm) => { prm.normalized = Math.random(); },
+    reverbTimeMod: () => {},
   },
   "Full": {
     renderDuration: () => {},
@@ -153,6 +155,7 @@ const localRecipeBook = {
     hightoneOvertoneRatio: () => {},
     reverbMix: () => {},
     reverbPitchType: (prm) => { prm.normalized = Math.random(); },
+    reverbTimeMod: () => {},
   },
   "Noise": {
     renderDuration: () => {},
@@ -188,6 +191,7 @@ const localRecipeBook = {
     hightoneOvertoneRatio: () => {},
     reverbMix: () => {},
     reverbPitchType: (prm) => { prm.normalized = Math.random(); },
+    reverbTimeMod: () => {},
   },
 };
 
@@ -247,6 +251,7 @@ const scales = {
   reverbFeedback: new parameter.NegativeDecibelScale(-40, 0, 1, true),
   reverbPitchType: new parameter.MenuItemScale(menuitems.reverbPitchTypeItems),
   reverbPitchIndex: new parameter.IntScale(0, 15),
+  reverbTimeMod: new parameter.DecibelScale(-20, 100, true),
 };
 
 const param = {
@@ -304,6 +309,7 @@ const param = {
   reverbFeedback: new parameter.Parameter(0.8, scales.reverbFeedback, true),
   reverbPitchType: new parameter.Parameter(1, scales.reverbPitchType, true),
   reverbPitchIndex: new parameter.Parameter(1, scales.reverbPitchIndex, true),
+  reverbTimeMod: new parameter.Parameter(0.5, scales.reverbTimeMod, true),
 };
 
 const recipeBook
@@ -371,8 +377,8 @@ const detailRender = widget.details(divLeft, "Render");
 const detailMisc = widget.details(divLeft, "Misc.");
 const detailLimiter = widget.details(divRightA, "Limiter");
 const detailBody = widget.details(divRightA, "Body");
+const detailHightone = widget.details(divRightA, "Hightone");
 const detailNoise = widget.details(divRightB, "Noise");
-const detailHightone = widget.details(divRightB, "Hightone");
 const detailReverb = widget.details(divRightB, "Reverb");
 
 const ui = {
@@ -428,6 +434,15 @@ const ui = {
   bodyModSaturationGain: new widget.NumberInput(
     detailBody, "Mod. Sat Gain [dB]", param.bodyModSaturationGain, render),
 
+  hightoneGain:
+    new widget.NumberInput(detailHightone, "Gain [dB]", param.hightoneGain, render),
+  hightoneStartHz: new widget.NumberInput(
+    detailHightone, "Start Freq. [Hz]", param.hightoneStartHz, render),
+  hightoneEndHz:
+    new widget.NumberInput(detailHightone, "End Freq. [Hz]", param.hightoneEndHz, render),
+  hightoneOvertoneRatio: new widget.NumberInput(
+    detailHightone, "Overtone Ratio", param.hightoneOvertoneRatio, render),
+
   noiseAttackSeconds:
     new widget.NumberInput(detailNoise, "Attack [s]", param.noiseAttackSeconds, render),
   noiseEnvelopeCurve:
@@ -447,15 +462,6 @@ const ui = {
   noiseCombHighpassHz: new widget.NumberInput(
     detailNoise, "Comb HP [Hz]", param.noiseCombHighpassHz, render),
 
-  hightoneGain:
-    new widget.NumberInput(detailHightone, "Gain [dB]", param.hightoneGain, render),
-  hightoneStartHz: new widget.NumberInput(
-    detailHightone, "Start Freq. [Hz]", param.hightoneStartHz, render),
-  hightoneEndHz:
-    new widget.NumberInput(detailHightone, "End Freq. [Hz]", param.hightoneEndHz, render),
-  hightoneOvertoneRatio: new widget.NumberInput(
-    detailHightone, "Overtone Ratio", param.hightoneOvertoneRatio, render),
-
   reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
   reverbTimeFrequencyHz: new widget.NumberInput(
     detailReverb, "Frequency [Hz]", param.reverbTimeFrequencyHz, render),
@@ -467,6 +473,8 @@ const ui = {
     new widget.ComboBoxLine(detailReverb, "Pitch Type", param.reverbPitchType, render),
   reverbPitchIndex:
     new widget.NumberInput(detailReverb, "Pitch Index", param.reverbPitchIndex, render),
+  reverbTimeMod:
+    new widget.NumberInput(detailReverb, "Time Mod.", param.reverbTimeMod, render),
 };
 
 render();

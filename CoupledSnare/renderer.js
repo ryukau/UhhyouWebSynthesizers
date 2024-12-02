@@ -4,8 +4,9 @@
 import {CubicDelay, Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
 import {constructSpecialOrthogonal, randomSpecialOrthogonal} from "../common/dsp/fdn.js";
 import {Limiter} from "../common/dsp/limiter.js";
+import {membranePitchTable} from "../common/dsp/membranepitch.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
-import {HP1, LP1} from "../common/dsp/onepole.js";
+import {LP1} from "../common/dsp/onepole.js";
 import {DoubleEMAFilter, EMAFilter, EMAHighpass} from "../common/dsp/smoother.js";
 import {SVFBP, SVFHP, SVFLP} from "../common/dsp/svf.js";
 import {
@@ -33,11 +34,7 @@ class ImpulseSine {
     this.pm = sineModLevel;
     this.freq = sineFreqNormalized;
 
-    // TODO: decide which decay envelope to use.
-    this.noiseRamp = 1 / Math.max(1, noiseTransientSample);
     this.noiseSustainSample = Math.floor(sampleRate * sineFreqNormalized);
-    this.noiseGate = 0;
-    this.noiseLowpass = new SVFLP(sineFreqNormalized, 10);
 
     this.expDecay = Math.pow(sineModDecay, 1 / this.noiseSustainSample);
     this.expGain = 1;
@@ -53,8 +50,6 @@ class ImpulseSine {
     if (this.phase < 1) {
       const triangle = 1 - Math.abs(1 - 2 * this.phase);
       const wPhase = Math.min(this.windowPhaseGain * triangle, 1);
-      const window = Math.sin(0.5 * Math.PI * wPhase);
-
       const phi = 2 * Math.PI * this.phase;
       sin = Math.sin(phi);
       sin = Math.sin(sin + this.expGain * this.pm * phi);
@@ -62,7 +57,7 @@ class ImpulseSine {
       this.phase += this.freq;
     }
 
-    return sin; // + noise;
+    return sin;
   }
 }
 
@@ -148,15 +143,30 @@ class ExpDecay {
 }
 
 class NoiseGenerator {
-  constructor(sampleRateHz) {
+  constructor(sampleRateHz, rmsLowpassHz) {
     this.rmsMeter = new EMAFilter();
-    this.rmsMeter.setCutoff(20 / sampleRateHz);
+    this.rmsMeter.setCutoff(rmsLowpassHz / sampleRateHz);
     this.noiseBp = new SVFBP(3000 / sampleRateHz, Math.SQRT2 - 1);
+  }
+
+  ipow50(v) {
+    v *= v;                   // v^2
+    v = v * v * v * v * v;    // v^10
+    return v * v * v * v * v; // v^50
+  }
+
+  ipow64(v) {
+    v *= v;       // v^2
+    v *= v;       // v^4
+    v *= v;       // v^8
+    v *= v;       // v^16
+    v *= v;       // v^32
+    return v * v; // v^64
   }
 
   process(input, rng) {
     const envelope = 10 * Math.sqrt(this.rmsMeter.process(input * input));
-    const noise = this.noiseBp.process(rng.number() ** 50);
+    const noise = this.noiseBp.process(this.ipow50(rng.number()));
     return envelope * noise;
   }
 }
@@ -171,6 +181,7 @@ class AllpassDelayCascade {
     delayFrequencyHz,
     feedbackGain,
     noiseLevel,
+    noiseReleaseHz,
     envelopeDecaySecond,
     pitchMod,
     delayTimeMod,
@@ -179,7 +190,7 @@ class AllpassDelayCascade {
     velocity,
     DelayType,
   ) {
-    this.snareNoise = new NoiseGenerator(sampleRate);
+    this.snareNoise = new NoiseGenerator(sampleRate, noiseReleaseHz);
 
     // Original algorithm was using `LinearDecay` instead of `ExpDecay`.
     this.pitchEnvelope = new ExpDecay(Math.floor(sampleRate * envelopeDecaySecond));
@@ -235,6 +246,7 @@ class ReverbDelay {
     lowpassCutoff,
     highpassCutoff,
     delayTimeSample,
+    delayTimeMod,
     DelayType = CubicDelay,
   ) {
     this.lowpass = new DoubleEMAFilter();
@@ -245,13 +257,16 @@ class ReverbDelay {
 
     this.delay = new DelayType(maxDelayTimeInSamples);
     this.delay.setTime(delayTimeSample);
+
+    this.delayTime = delayTimeSample;
+    this.timeMod = delayTimeMod;
   }
 
   process(input) {
     input = Math.tanh(input);
     input = this.lowpass.process(input);
     input = this.highpass.process(input);
-    return this.delay.process(input);
+    return this.delay.processMod(input, this.delayTime - Math.abs(input) * this.timeMod);
   }
 }
 
@@ -413,24 +428,33 @@ onmessage = async (event) => {
     return delayType === "None" ? IntDelay : delayType === "Linear" ? Delay : CubicDelay;
   };
 
-  const pitches = [
-    1.000000000000,     1.3402965524420327, 1.6650969425972044, 1.9804083333912088,
-    2.2891849959679758, 2.593129431504782,  2.893324828534451,  3.1905089688660495,
-    3.485210133885118,  3.7778213670634533, 4.068644098913255,  4.357915263770598,
-    4.645824938472086,  4.932528252461517,  5.218153685402315,  5.502809003876363,
-    5.7865856073569075, 6.0695617737731915, 6.351805126135265,  6.633374536485119,
-    6.91432161601487,   7.194691895883976,  7.474525773493237,  7.753859278561035,
-    8.032724699098031,  8.311151097265078,  8.589164737815679,  8.866789446505656,
-    9.144046911919677,  9.420956941221863,  9.697537678112663,  9.973805789574751,
-    10.249776626680719, 10.525464363716539, 10.800882119076348, 11.076042060753268,
-    11.350955498749236, 11.625632966325023, 11.90008429168762,  12.17431866144975,
-    12.448344676982043, 12.722170404602968, 12.995803420407027, 13.269250850411956,
-    13.542519406606212, 13.815615419394776, 14.088544866871587, 14.361313401288188,
-    14.633926373038491, 14.90638885243742,  15.178705649535358, 15.450881332179648,
-    15.722920242508177, 15.994826512037466, 16.26660407548823,  16.538256683474607,
-    16.809787914168567, 17.081201184038456, 17.352499757749445, 17.623686757304167,
-    17.89476517049317,  18.165737858717637, 18.436607564240077, 18.707376916913077,
-  ];
+  // // This one matches to `membranePitchTable["jn_zeros_tr"][0]`.
+  // const pitches = [
+  //   1.000000000000,     1.3402965524420327, 1.6650969425972044, 1.9804083333912088,
+  //   2.2891849959679758, 2.593129431504782,  2.893324828534451,  3.1905089688660495,
+  //   3.485210133885118,  3.7778213670634533, 4.068644098913255,  4.357915263770598,
+  //   4.645824938472086,  4.932528252461517,  5.218153685402315,  5.502809003876363,
+  //   5.7865856073569075, 6.0695617737731915, 6.351805126135265,  6.633374536485119,
+  //   6.91432161601487,   7.194691895883976,  7.474525773493237,  7.753859278561035,
+  //   8.032724699098031,  8.311151097265078,  8.589164737815679,  8.866789446505656,
+  //   9.144046911919677,  9.420956941221863,  9.697537678112663,  9.973805789574751,
+  //   10.249776626680719, 10.525464363716539, 10.800882119076348, 11.076042060753268,
+  //   11.350955498749236, 11.625632966325023, 11.90008429168762,  12.17431866144975,
+  //   12.448344676982043, 12.722170404602968, 12.995803420407027, 13.269250850411956,
+  //   13.542519406606212, 13.815615419394776, 14.088544866871587, 14.361313401288188,
+  //   14.633926373038491, 14.90638885243742,  15.178705649535358, 15.450881332179648,
+  //   15.722920242508177, 15.994826512037466, 16.26660407548823,  16.538256683474607,
+  //   16.809787914168567, 17.081201184038456, 17.352499757749445, 17.623686757304167,
+  //   17.89476517049317,  18.165737858717637, 18.436607564240077, 18.707376916913077,
+  // ];
+  const getPitch = () => {
+    let key = menuitems.membranePitchTypeItems[pv.membranePitchType];
+    let src = structuredClone(membranePitchTable[key][pv.membranePitchIndex]);
+    src.shift();
+    return src.map(v => v / src[0]);
+  };
+  const pitches = getPitch();
+
   const DelayType = getDelayType();
 
   let fdnInputGain = structuredClone(pv.inputGain);
@@ -455,6 +479,7 @@ onmessage = async (event) => {
       delayFreqHz * pitches[idx],
       pv.feedback,
       pv.noiseLevel * Math.sqrt(sampleRateScaler),
+      pv.noiseReleaseHz,
       pv.envelopeDecaySecond,
       pv.pitchMod,
       delayTimeMod / pitches[idx],
@@ -469,8 +494,6 @@ onmessage = async (event) => {
   let fdnSeed = new Array(triangularNumber(pv.fdnSize)).fill(0); // TODO: more tuning
   let offset = 0;
   let table = new Array(pv.fdnSize).fill(0).map((v, i, arr) => {
-    // return lerp(i, arr.length - i, 0.5);
-
     const phase = i / arr.length;
     const offset = pv.matrixCharacterB;
     const freq = pv.matrixCharacterA * pv.fdnSize * 10;
@@ -482,8 +505,6 @@ onmessage = async (event) => {
     }
     offset += pv.fdnSize - i;
   }
-  console.log(fdnSeed);
-
   dsp.snare = new FDN(snareDelay, fdnInputGain, snareMixGain, pv.feedback, fdnSeed);
 
   let reverbDelay = new Array(pv.fdnSize);
@@ -492,10 +513,11 @@ onmessage = async (event) => {
     rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
   for (let idx = 0; idx < reverbDelay.length; ++idx) {
     reverbDelay[idx] = new ReverbDelay(
-      upRate / delayFreqHz * 4,
+      upRate / delayFreqHz * 4 * pitches[idx],
       Math.min(pv.reverbLowpassHz / upRate, 0.5),
       20 / upRate,
       fdnBaseTime * pitches[idx] * fdnRandomFunc(),
+      pv.reverbTimeMod * upFold * sampleRateScaler,
     );
   }
   const reverbMixGain = new Array(pv.fdnSize).fill(1);
