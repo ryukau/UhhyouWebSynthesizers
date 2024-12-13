@@ -243,10 +243,10 @@ class AllpassDelayCascade {
 class ReverbDelay {
   constructor(
     maxDelayTimeInSamples,
-    lowpassCutoff,
-    highpassCutoff,
     delayTimeSample,
     delayTimeMod,
+    lowpassCutoff,
+    highpassCutoff,
     DelayType = CubicDelay,
   ) {
     this.lowpass = new DoubleEMAFilter();
@@ -509,12 +509,13 @@ onmessage = async (event) => {
   const fdnRandomFunc = () => exponentialMap(
     dsp.rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
   for (let idx = 0; idx < reverbDelay.length; ++idx) {
+    const delaySamples = fdnBaseTime * pitches[idx] * fdnRandomFunc();
     reverbDelay[idx] = new ReverbDelay(
-      upRate / delayFreqHz * 4 * pitches[idx],
+      delaySamples,
+      delaySamples,
+      pv.reverbTimeMod * upFold * sampleRateScaler,
       Math.min(pv.reverbLowpassHz / upRate, 0.5),
       20 / upRate,
-      fdnBaseTime * pitches[idx] * fdnRandomFunc(),
-      pv.reverbTimeMod * upFold * sampleRateScaler,
     );
   }
   const reverbMixGain = new Array(pv.fdnSize).fill(1);

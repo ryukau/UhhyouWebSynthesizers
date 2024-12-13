@@ -267,6 +267,11 @@ const playControl = widget.playControl(
   (ev) => { recipeImportDialog.open(); },
 );
 
+const detailTips = widget.details(divLeft, "Tips");
+const paragraphTip1 = widget.paragraph(detailTips, undefined, undefined);
+paragraphTip1.textContent
+  = "Try setting `Limiter -> Type` to Tanh, then change `Misc. -> Velocity`."
+
 const detailRender = widget.details(divLeft, "Render");
 const detailLimiter = widget.details(divLeft, "Limiter");
 const detailSnareExcitation = widget.details(divRightA, "Excitation");
