@@ -18,12 +18,12 @@ def printSingleArrayCircular(size=16):
     plt.show()
 
 
-def printCircular(size=64, offset=1, normalize=True):
+def printCircular(size=65, offset=0, normalize=False):
     functions = [
         special.jn_zeros,
-        # special.jnp_zeros,
-        # special.yn_zeros,
-        # special.ynp_zeros,
+        special.jnp_zeros,
+        special.yn_zeros,
+        special.ynp_zeros,
     ]
 
     data = {}
@@ -66,5 +66,5 @@ def printSpherical(size=16):
 
 if __name__ == "__main__":
     # printSingleArrayCircular()
-    printCircular()
+    printCircular(65, 0, False)
     # printSpherical()

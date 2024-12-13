@@ -74,18 +74,34 @@ export class SVF {
 
 export class SVFLP extends SVF {
   process(v0) { return this.lp(v0); }
+  processMod(v0, cutoffNormalized, Q) {
+    this.setCutoff(cutoffNormalized, Q);
+    return this.process(v0);
+  }
 }
 
 export class SVFHP extends SVF {
   process(v0) { return this.hp(v0); }
+  processMod(v0, cutoffNormalized, Q) {
+    this.setCutoff(cutoffNormalized, Q);
+    return this.process(v0);
+  }
 }
 
 export class SVFBP extends SVF {
   process(v0) { return this.bp(v0); }
+  processMod(v0, cutoffNormalized, Q) {
+    this.setCutoff(cutoffNormalized, Q);
+    return this.process(v0);
+  }
 }
 
 export class SVFNotch extends SVF {
   process(v0) { return this.notch(v0); }
+  processMod(v0, cutoffNormalized, Q) {
+    this.setCutoff(cutoffNormalized, Q);
+    return this.process(v0);
+  }
 }
 
 export class SVFBell {
