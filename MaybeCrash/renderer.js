@@ -14,7 +14,7 @@ import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 import {membranePitchTable} from "./membranepitch.js";
 import * as menuitems from "./menuitems.js";
 
-class NoiseGenerator {
+class NoiseGeneratorLow {
   constructor(
     gain,
     decaySamples,
@@ -42,6 +42,23 @@ class NoiseGenerator {
   }
 }
 
+class NoiseGeneratorHigh {
+  constructor(sampleRate, decaySecond, highpassHz) {
+    this.decay = Math.pow(1e-3, 1 / (sampleRate * decaySecond));
+    this.gain = 1 / this.decay;
+
+    this.flt = [];
+    for (let i = 0; i < 1; ++i) this.flt.push(new SVFHP(highpassHz / sampleRate, 0.5));
+  }
+
+  process(rng) {
+    this.gain *= this.decay;
+    let sig = this.gain * (2 * rng.number() - 1);
+    for (let x of this.flt) sig = x.process(sig);
+    return sig;
+  }
+}
+
 class FilteredDelay {
   constructor(
     maxDelayTimeInSamples,
@@ -51,7 +68,9 @@ class FilteredDelay {
     lowpassMod,
     highpassCutoff,
     DelayType = CubicDelay,
+    clipping = true,
   ) {
+    this.clipping = clipping;
     this.lowpass = new SVFLP(lowpassCutoff, Math.SQRT1_2);
     this.lpCut = lowpassCutoff;
     this.lpMod = lowpassMod;
@@ -65,7 +84,7 @@ class FilteredDelay {
   }
 
   process(input, rms) {
-    input = Math.tanh(input);
+    if (this.clipping) input = Math.tanh(input);
     input
       = this.lowpass.processMod(input, this.lpCut * (1 + this.lpMod * rms), Math.SQRT1_2);
     input = this.highpass.process(input);
@@ -137,11 +156,13 @@ function process(upRate, pv, dsp) {
   let sig = dsp.impulse;
   dsp.impulse = 0;
 
-  const rms = dsp.rmsMeter.process(dsp.lastOutput * dsp.lastOutput);
+  const quad = dsp.meter.process(dsp.lastOutput * dsp.lastOutput);
 
-  if (pv.noiseOn !== 0) sig = dsp.noise.process(dsp.rng, rms);
+  if (pv.noiseLowOn !== 0) sig = dsp.noiseL.process(dsp.rng, quad);
+  if (pv.noiseHighOn !== 0) sig += dsp.noiseHGain * dsp.noiseH.process(dsp.rng, quad);
+
   if (pv.extraFdnOn !== 0) sig = pv.excitationGain * dsp.extraFdn.process(sig, 0);
-  if (pv.cymbalFdnOn !== 0) sig = dsp.cymbalFdn.process(sig, rms);
+  if (pv.cymbalFdnOn !== 0) sig = dsp.cymbalFdn.process(sig, quad);
 
   dsp.lastOutput = sig;
 
@@ -158,7 +179,7 @@ onmessage = async (event) => {
 
   let dsp = {};
 
-  const stereoSeed = 0; // TODO
+  const stereoSeed = 17; // TODO
   dsp.rng = new PcgRandom(BigInt(pv.seed + pv.channel * stereoSeed));
 
   dsp.impulse = pv.excitationGain;
@@ -166,16 +187,20 @@ onmessage = async (event) => {
   dsp.noiseHp = new SVFHP(pv.noiseHighpassHz / upRate, 4);
 
   dsp.lastOutput = 0;
-  dsp.rmsMeter = new EMAFilter();
-  dsp.rmsMeter.setCutoff(pv.envelopeFollowerHz / upRate);
+  dsp.meter = new EMAFilter();
+  dsp.meter.setCutoff(pv.envelopeFollowerHz / upRate);
 
-  dsp.noise = new NoiseGenerator(
+  dsp.noiseL = new NoiseGeneratorLow(
     pv.excitationGain,
-    pv.noiseDecaySeconds * upRate,
-    pv.noiseLowpassBaseHz / upRate,
-    pv.noiseLowpassModHz / upRate,
-    pv.noiseLowpassResonance,
+    pv.noiseLowDecaySeconds * upRate,
+    pv.noiseLowLowpassBaseHz / upRate,
+    pv.noiseLowLowpassModHz / upRate,
+    pv.noiseLowLowpassResonance,
   );
+
+  dsp.noiseHGain = pv.noiseHighMixRatio * pv.excitationGain;
+  dsp.noiseH
+    = new NoiseGeneratorHigh(upRate, pv.noiseHighDecaySeconds, pv.noiseHighHighpassHz);
 
   const getPitch = () => {
     let key = menuitems.membranePitchTypeItems[pv.cymbalMembranePitchType];
@@ -190,18 +215,20 @@ onmessage = async (event) => {
     : delayTypeKey === "Linear"             ? Delay
                                             : CubicDelay;
 
-  // Stick FDN.
+  // Extra FDN.
   const extraFdnDelay = new Array(pv.extraFdnSize);
   const extraFdnBaseTime = upRate / pv.extraFrequencyHz;
   for (let idx = 0; idx < extraFdnDelay.length; ++idx) {
+    const pt = pitches[idx];
     extraFdnDelay[idx] = new FilteredDelay(
-      extraFdnBaseTime / pitches[idx],
-      extraFdnBaseTime / pitches[idx],
+      extraFdnBaseTime / pt,
+      extraFdnBaseTime / pt,
+      pv.cymbalDelayTimeMod * upFold * sampleRateScaler / pt,
+      pv.extraLowpassHz * pt / upRate,
       0,
-      pv.extraLowpassHz * pitches[idx] / upRate,
-      0,
-      pv.extraHighpassHz / upRate,
+      pv.extraHighpassHz * lerp(1, pt, 1 - pv.cymbalHighpassFollowDelayTime) / upRate,
       DelayType,
+      false,
     );
   }
   dsp.extraFdn = new FDN(
