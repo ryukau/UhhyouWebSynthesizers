@@ -24,6 +24,7 @@ const localRecipeBook = {
     slopeStartHz: () => {},
 
     nLayer: () => {},
+    timeMultiplier: () => {},
     highpassCutoffMultiplier: () => {},
     lowpassCutoffMultiplier: () => {},
 
@@ -34,7 +35,6 @@ const localRecipeBook = {
     delayInterpType: (prm) => { prm.normalized = Math.random(); },
     delayNetworkType: (prm) => { prm.normalized = Math.random(); },
 
-    timeMultiplier: () => {},
     delayTimeModAmount: (prm) => { prm.normalized = Math.random(); },
     feedback: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), -1, 1); },
 
@@ -53,12 +53,14 @@ const localRecipeBook = {
     fadeIn: () => {},
     fadeOut: () => {},
     decayTo: () => {},
+    stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
     toneSlope: () => {},
     slopeStartHz: () => {},
 
     nLayer: () => {},
+    timeMultiplier: () => {},
     highpassCutoffMultiplier: () => {},
     lowpassCutoffMultiplier: () => {},
 
@@ -68,7 +70,6 @@ const localRecipeBook = {
     nDelay: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 1, 32); },
     delayNetworkType: (prm) => { prm.dsp = 0; },
 
-    timeMultiplier: () => {},
     delayTimeModAmount: (prm) => { prm.normalized = Math.random(); },
     feedback: (prm) => {
       const sign = Math.random() < 0.5 ? -1 : 1;
@@ -88,12 +89,14 @@ const localRecipeBook = {
     fadeIn: () => {},
     fadeOut: () => {},
     decayTo: () => {},
+    stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
     toneSlope: () => {},
     slopeStartHz: () => {},
 
     nLayer: () => {},
+    timeMultiplier: () => {},
     highpassCutoffMultiplier: () => {},
     lowpassCutoffMultiplier: () => {},
 
@@ -103,7 +106,6 @@ const localRecipeBook = {
     nDelay: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 1, 32); },
     delayNetworkType: (prm) => { prm.dsp = 1; },
 
-    timeMultiplier: () => {},
     delayTimeModAmount: (prm) => { prm.normalized = Math.random(); },
     feedback: (prm) => {
       if (Math.random() < 0.75) {
@@ -117,6 +119,46 @@ const localRecipeBook = {
     highpassHz: (prm) => {prm.dsp = util.exponentialMap(Math.random(), 1, 2000)},
     highpassQ: () => {},
     lowpassHz: () => {},
+    lowpassQ: () => {},
+
+    delayCascadingOrder: (prm) => { prm.normalized = Math.random(); },
+  },
+
+  "Layered": {
+    renderDuration: () => {},
+    fadeIn: () => {},
+    fadeOut: () => {},
+    decayTo: () => {},
+    stereoMerge: () => {},
+    overSample: () => {},
+    sampleRateScaler: () => {},
+    toneSlope: () => {},
+    slopeStartHz: () => {},
+
+    nLayer: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 4, 8); },
+    timeMultiplier: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1.2, 2); },
+    highpassCutoffMultiplier: () => {},
+    lowpassCutoffMultiplier: () => {},
+
+    noiseDecay: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.05, 0.3); },
+    noiseMix: () => {},
+
+    nDelay: (prm) => { prm.dsp = util.uniformIntMap(Math.random(), 4, 16); },
+    delayNetworkType: () => {},
+    delayTime: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.001, 0.01); },
+    timeRandomness: (prm) => { prm.dsp = 0; },
+    delayTimeModAmount: () => {},
+    feedback: (prm) => {
+      prm.dsp = 0.93; // util.uniformFloatMap(Math.random(), 0.9, 0.95);
+    },
+
+    highpassCutoffSlope:
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.5); },
+    highpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 30); },
+    highpassQ: () => {},
+    lowpassCutoffSlope:
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.3, 0.6); },
+    lowpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 8000, 1000000); },
     lowpassQ: () => {},
 
     delayCascadingOrder: (prm) => { prm.normalized = Math.random(); },
