@@ -359,14 +359,14 @@ class Bypass {
 }
 
 function process(upRate, pv, dsp) {
-  let pulse = dbToAmp(-24 * (1 - pv.velocity)) * dsp.impulse.process(dsp.rng);
+  let pulse = dsp.excitationGain * dsp.impulse.process(dsp.rng);
 
   dsp.snare.preProcess();
   dsp.reverb.preProcess();
 
   const g2 = 1 / Math.sqrt(pv.couplingGain * pv.couplingGain + 1);
   const g1 = pv.couplingGain * g2;
-  const snFront = structuredClone(dsp.snare.getFront()); // TODO
+  const snFront = dsp.snare.getFront().slice();
   let sig = dsp.snare.postProcess(pulse, g1, g2, dsp.reverb.getFront(), dsp.rng);
   sig += dsp.reverb.postProcess(0, g1, -g2, snFront, dsp.rng);
 
@@ -381,188 +381,191 @@ onmessage = async (event) => {
   const upRate = upFold * pv.sampleRate;
   const sampleRateScaler = menuitems.sampleRateScalerItems[pv.sampleRateScaler];
 
-  let dsp = {};
-  dsp.rng = new PcgRandom(BigInt(pv.seed));
-
-  const getImpulse = () => {
-    const excitationType = menuitems.excitationTypeItems[pv.excitationType];
-    if (excitationType === "Sine + LP Noise") {
-      return new ImpulseOriginal(
-        upRate,
-        pv.frequencyHz / upRate,
-        pv.excitationSineModLevel,
-        pv.excitationSineModDecay,
-        pv.excitationLowpass,
-        0.00025 * upRate,
-      );
-    }
-
-    if (excitationType === "Exp. Decay") {
-      return new ImpulseExpDecay(
-        upRate,
-        pv.frequencyHz / upRate,
-        pv.excitationSineModLevel,
-        pv.excitationSineModDecay,
-        pv.excitationLowpass,
-        0.00025 * upRate,
-      );
-    }
-
-    // excitationType === "Sine (1 Cycle)"
-    return new ImpulseSine(
-      upRate,
-      pv.frequencyHz / upRate,
-      pv.excitationSineModLevel,
-      pv.excitationSineModDecay,
-      pv.excitationLowpass,
-      0.00025 * upRate,
-    );
-  };
-  dsp.impulse = getImpulse();
-
-  const getDelayType = () => {
-    const delayType = menuitems.delayInterpTypeItems[pv.delayInterpType];
-    return delayType === "None" ? IntDelay : delayType === "Linear" ? Delay : CubicDelay;
-  };
-
-  // // This one matches to `membranePitchTable["jn_zeros_tr"][0]`.
-  // const pitches = [
-  //   1.000000000000,     1.3402965524420327, 1.6650969425972044, 1.9804083333912088,
-  //   2.2891849959679758, 2.593129431504782,  2.893324828534451,  3.1905089688660495,
-  //   3.485210133885118,  3.7778213670634533, 4.068644098913255,  4.357915263770598,
-  //   4.645824938472086,  4.932528252461517,  5.218153685402315,  5.502809003876363,
-  //   5.7865856073569075, 6.0695617737731915, 6.351805126135265,  6.633374536485119,
-  //   6.91432161601487,   7.194691895883976,  7.474525773493237,  7.753859278561035,
-  //   8.032724699098031,  8.311151097265078,  8.589164737815679,  8.866789446505656,
-  //   9.144046911919677,  9.420956941221863,  9.697537678112663,  9.973805789574751,
-  //   10.249776626680719, 10.525464363716539, 10.800882119076348, 11.076042060753268,
-  //   11.350955498749236, 11.625632966325023, 11.90008429168762,  12.17431866144975,
-  //   12.448344676982043, 12.722170404602968, 12.995803420407027, 13.269250850411956,
-  //   13.542519406606212, 13.815615419394776, 14.088544866871587, 14.361313401288188,
-  //   14.633926373038491, 14.90638885243742,  15.178705649535358, 15.450881332179648,
-  //   15.722920242508177, 15.994826512037466, 16.26660407548823,  16.538256683474607,
-  //   16.809787914168567, 17.081201184038456, 17.352499757749445, 17.623686757304167,
-  //   17.89476517049317,  18.165737858717637, 18.436607564240077, 18.707376916913077,
-  // ];
-  const getPitch = () => {
-    let key = menuitems.membranePitchTypeItems[pv.membranePitchType];
-    let src = structuredClone(membranePitchTable[key][pv.membranePitchIndex]);
-    src.shift();
-    return src.map(v => v / src[0]);
-  };
-  const pitches = getPitch();
-
-  const DelayType = getDelayType();
-
-  let fdnInputGain = structuredClone(pv.inputGain);
-  if (fdnInputGain.every(v => v === 0)) {
-    fdnInputGain.fill(1);
-  } else {
-    const scaler = pv.fdnSize / fdnInputGain.reduce((p, c) => p + c, 0);
-    fdnInputGain = fdnInputGain.map(v => v * scaler);
-  }
-
-  let snareDelay = new Array(pv.fdnSize);
-  const delayFreqHz = pv.frequencyHz * (1 - pv.allpassDelayRatio);
-  const allpassFreqHz = pv.frequencyHz * pv.allpassDelayRatio;
-  const delayTimeMod = pv.delayTimeMod * upFold * sampleRateScaler;
-  for (let idx = 0; idx < snareDelay.length; ++idx) {
-    snareDelay[idx] = new AllpassDelayCascade(
-      upRate,
-      pv.lowpassHz * pitches[idx],
-      pv.highpassHz,
-      allpassFreqHz * pitches[idx],
-      pv.allpassGain,
-      delayFreqHz * pitches[idx],
-      pv.feedback,
-      pv.noiseLevel * Math.sqrt(sampleRateScaler),
-      pv.noiseReleaseHz,
-      pv.envelopeDecaySecond,
-      pv.pitchMod,
-      delayTimeMod / pitches[idx],
-      pv.delayTimeEnv,
-      pv.allpassTimeEnv,
-      pv.velocity,
-      DelayType,
-    );
-  }
-  const snareMixGain = pitches.map(v => 1 /* or, `1 / v` */);
-
-  let fdnSeed = new Array(triangularNumber(pv.fdnSize)).fill(0); // TODO: more tuning
-  let offset = 0;
-  let table = new Array(pv.fdnSize).fill(0).map((v, i, arr) => {
-    const phase = i / arr.length;
-    const offset = pv.matrixCharacterB;
-    const freq = pv.matrixCharacterA * pv.fdnSize * 10;
-    return Math.sin(freq * Math.PI * (phase + offset));
-  });
-  for (let i = 0; i < pv.fdnSize; ++i) {
-    for (let j = 0; j < pv.fdnSize - i; ++j) {
-      fdnSeed[offset + j] = table[j];
-    }
-    offset += pv.fdnSize - i;
-  }
-  dsp.snare = new FDN(snareDelay, fdnInputGain, snareMixGain, pv.feedback, fdnSeed);
-
-  let reverbDelay = new Array(pv.fdnSize);
-  const fdnBaseTime = pv.reverbTimeMultiplier * upRate / delayFreqHz;
-  const fdnRandomFunc = () => exponentialMap(
-    dsp.rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
-  for (let idx = 0; idx < reverbDelay.length; ++idx) {
-    const delaySamples = fdnBaseTime * pitches[idx] * fdnRandomFunc();
-    reverbDelay[idx] = new ReverbDelay(
-      delaySamples,
-      delaySamples,
-      pv.reverbTimeMod * upFold * sampleRateScaler,
-      Math.min(pv.reverbLowpassHz / upRate, 0.5),
-      20 / upRate,
-    );
-  }
-  const reverbMixGain = new Array(pv.fdnSize).fill(1);
-  dsp.reverb = new FDN(
-    reverbDelay,
-    fdnInputGain,
-    reverbMixGain,
-    pv.reverbFeedback,
-    // pv.seed + 257,
-    fdnSeed,
-  );
-
-  if (pv.limiterType === 1) {
-    dsp.limiter = new Limiter(
-      pv.limiterSmoothingSeconds * upRate, 0.001 * upRate, 0, pv.limiterThreshold);
-
-    // Discard latency part.
-    for (let i = 0; i < dsp.limiter.latency; ++i) process(upRate, pv, dsp);
-  } else if (pv.limiterType === 2) {
-    dsp.limiter = new Tanh(pv.limiterThreshold);
-  } else {
-    dsp.limiter = new Bypass();
-  }
-
-  // Discard silence of delay at start.
+  const regionSamples = Math.floor(upRate * pv.renderDuration);
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
-  let counter = 0;
-  let sig = 0;
-  do {
-    sig = process(upRate, pv, dsp);
-    if (++counter >= sound.length) { // Avoid infinite loop on silent signal.
-      postMessage({sound: sound, status: "Output is completely silent."});
-      return;
+
+  slicerLoop: for (let region = 0; region < pv.slicerRegions; ++region) {
+    let dsp = {};
+    dsp.rng = new PcgRandom(BigInt(pv.seed + pv.slicerRandomize * region));
+
+    const regionRatio = pv.slicerRegions <= 1 ? 0 : region / (pv.slicerRegions - 1);
+    const offsetGain = pv.slicerRegions <= 1 ? 0 : -20;
+    const regionGain = (pv.slicerExcitationGainRange - offsetGain) * regionRatio;
+    dsp.excitationGain = dbToAmp(offsetGain - 24 * (1 - pv.velocity) + regionGain);
+
+    const getImpulse = () => {
+      const excitationType = menuitems.excitationTypeItems[pv.excitationType];
+      if (excitationType === "Sine + LP Noise") {
+        return new ImpulseOriginal(
+          upRate,
+          pv.frequencyHz / upRate,
+          pv.excitationSineModLevel,
+          pv.excitationSineModDecay,
+          pv.excitationLowpass,
+          0.00025 * upRate,
+        );
+      }
+
+      if (excitationType === "Exp. Decay") {
+        return new ImpulseExpDecay(
+          upRate,
+          pv.frequencyHz / upRate,
+          pv.excitationSineModLevel,
+          pv.excitationSineModDecay,
+          pv.excitationLowpass,
+          0.00025 * upRate,
+        );
+      }
+
+      // excitationType === "Sine (1 Cycle)"
+      return new ImpulseSine(
+        upRate,
+        pv.frequencyHz / upRate,
+        pv.excitationSineModLevel,
+        pv.excitationSineModDecay,
+        pv.excitationLowpass,
+        0.00025 * upRate,
+      );
+    };
+    dsp.impulse = getImpulse();
+
+    const getDelayType = () => {
+      const delayType = menuitems.delayInterpTypeItems[pv.delayInterpType];
+      return delayType === "None" ? IntDelay
+        : delayType === "Linear"  ? Delay
+                                  : CubicDelay;
+    };
+
+    const getPitch = () => {
+      let key = menuitems.membranePitchTypeItems[pv.membranePitchType];
+      let src = structuredClone(membranePitchTable[key][pv.membranePitchIndex]);
+      src.shift();
+      return src.map(v => v / src[0]);
+    };
+    const pitches = getPitch();
+
+    const DelayType = getDelayType();
+
+    let fdnInputGain = structuredClone(pv.inputGain);
+    if (fdnInputGain.every(v => v === 0)) {
+      fdnInputGain.fill(1);
+    } else {
+      const scaler = pv.fdnSize / fdnInputGain.reduce((p, c) => p + c, 0);
+      fdnInputGain = fdnInputGain.map(v => v * scaler);
     }
-  } while (sig === 0);
 
-  // Process.
-  sound[0] = sig;
-  for (let i = 1; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
-  sound = downSampleIIR(sound, upFold);
+    let snareDelay = new Array(pv.fdnSize);
+    const delayFreqHz = pv.frequencyHz * (1 - pv.allpassDelayRatio);
+    const allpassFreqHz = pv.frequencyHz * pv.allpassDelayRatio;
+    const delayTimeMod = pv.delayTimeMod * upFold * sampleRateScaler;
+    const highpassScaler = Math.exp(Math.log(2) * 2 * regionRatio);
+    const noiseLevelScaler = pv.slicerRegions <= 1
+      ? 1
+      : dbToAmp(
+        regionRatio * pv.slicerExcitationGainRange - pv.slicerExcitationGainRange);
+    for (let idx = 0; idx < snareDelay.length; ++idx) {
+      snareDelay[idx] = new AllpassDelayCascade(
+        upRate,
+        pv.lowpassHz * pitches[idx],
+        pv.highpassHz * highpassScaler,
+        allpassFreqHz * pitches[idx],
+        pv.allpassGain,
+        delayFreqHz * pitches[idx],
+        pv.feedback,
+        pv.noiseLevel * Math.sqrt(sampleRateScaler) * noiseLevelScaler,
+        pv.noiseReleaseHz,
+        pv.envelopeDecaySecond,
+        pv.pitchMod,
+        delayTimeMod / pitches[idx],
+        pv.delayTimeEnv,
+        pv.allpassTimeEnv,
+        pv.velocity,
+        DelayType,
+      );
+    }
+    const snareMixGain = pitches.map(v => 1 /* or, `1 / v` */);
 
-  // Post effect.
-  let gainEnv = 1;
-  let decay = Math.pow(pv.decayTo, 1.0 / sound.length);
-  for (let i = 0; i < sound.length; ++i) {
-    sound[i] *= gainEnv;
-    gainEnv *= decay;
+    let fdnSeed = new Array(triangularNumber(pv.fdnSize)).fill(0); // TODO: more tuning
+    let offset = 0;
+    let table = new Array(pv.fdnSize).fill(0).map((v, i, arr) => {
+      const phase = i / arr.length;
+      const offset = pv.matrixCharacterB;
+      const freq = pv.matrixCharacterA * pv.fdnSize * 10;
+      return Math.sin(freq * Math.PI * (phase + offset));
+    });
+    for (let i = 0; i < pv.fdnSize; ++i) {
+      for (let j = 0; j < pv.fdnSize - i; ++j) {
+        fdnSeed[offset + j] = table[j];
+      }
+      offset += pv.fdnSize - i;
+    }
+    dsp.snare = new FDN(snareDelay, fdnInputGain, snareMixGain, pv.feedback, fdnSeed);
+
+    let reverbDelay = new Array(pv.fdnSize);
+    const fdnBaseTime = pv.reverbTimeMultiplier * upRate / delayFreqHz;
+    const fdnRandomFunc = () => exponentialMap(
+      dsp.rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
+    for (let idx = 0; idx < reverbDelay.length; ++idx) {
+      const delaySamples = fdnBaseTime * pitches[idx] * fdnRandomFunc();
+      reverbDelay[idx] = new ReverbDelay(
+        delaySamples,
+        delaySamples,
+        pv.reverbTimeMod * upFold * sampleRateScaler,
+        Math.min(pv.reverbLowpassHz / upRate, 0.5),
+        20 / upRate,
+      );
+    }
+    const reverbMixGain = new Array(pv.fdnSize).fill(1);
+    dsp.reverb = new FDN(
+      reverbDelay,
+      fdnInputGain,
+      reverbMixGain,
+      pv.reverbFeedback,
+      // pv.seed + 257,
+      fdnSeed,
+    );
+
+    if (pv.limiterType === 1) {
+      dsp.limiter = new Limiter(
+        pv.limiterSmoothingSeconds * upRate, 0.001 * upRate, 0, pv.limiterThreshold);
+
+      // Discard latency part.
+      for (let i = 0; i < dsp.limiter.latency; ++i) process(upRate, pv, dsp);
+    } else if (pv.limiterType === 2) {
+      dsp.limiter = new Tanh(pv.limiterThreshold);
+    } else {
+      dsp.limiter = new Bypass();
+    }
+
+    // Discard silence of delay at start.
+    let counter = 0;
+    let sig = 0;
+    do {
+      sig = process(upRate, pv, dsp);
+      if (++counter >= sound.length) continue slicerLoop;
+    } while (sig === 0);
+
+    // Process.
+    const begin = region * regionSamples;
+    const end = begin + regionSamples;
+    sound[begin] = sig;
+    for (let i = begin + 1; i < end; ++i) sound[i] = process(upRate, pv, dsp);
+    sound = downSampleIIR(sound, upFold);
+
+    // Post effect.
+    let gainEnv = 1;
+    let decay = Math.pow(pv.decayTo, 1.0 / sound.length);
+    for (let i = 0; i < sound.length; ++i) {
+      sound[i] *= gainEnv;
+      gainEnv *= decay;
+    }
+
+    if (pv.fadeOut >= Number.EPSILON) {
+      let fadeOutLength = Math.min(Math.floor(pv.fadeOut * upRate), regionSamples);
+      for (let i = 0; i < fadeOutLength; ++i) {
+        sound[end - fadeOutLength + i] *= Math.cos(0.5 * Math.PI * i / fadeOutLength);
+      }
+    }
   }
 
   postMessage({sound: sound});

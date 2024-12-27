@@ -8,7 +8,7 @@ import {downSampleIIR} from "../common/dsp/multirate.js";
 import {ResonantLowpass1A1} from "../common/dsp/resonantfilter.js"
 import {EMAFilter} from "../common/dsp/smoother.js";
 import {SVFHP, SVFLP} from "../common/dsp/svf.js";
-import {lerp} from "../common/util.js";
+import {dbToAmp, lerp} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import {membranePitchTable} from "./membranepitch.js";
@@ -158,10 +158,11 @@ function process(upRate, pv, dsp) {
 
   const quad = dsp.meter.process(dsp.lastOutput * dsp.lastOutput);
 
-  if (pv.noiseLowOn !== 0) sig = dsp.noiseL.process(dsp.rng, quad);
-  if (pv.noiseHighOn !== 0) sig += dsp.noiseHGain * dsp.noiseH.process(dsp.rng, quad);
+  if (pv.noiseLowOn !== 0) sig = dsp.noiseL.process(dsp.noiseRng, quad);
+  if (pv.noiseHighOn !== 0)
+    sig += dsp.noiseHGain * dsp.noiseH.process(dsp.noiseRng, quad);
 
-  if (pv.extraFdnOn !== 0) sig = pv.excitationGain * dsp.extraFdn.process(sig, 0);
+  if (pv.extraFdnOn !== 0) sig = dsp.excitationGain * dsp.extraFdn.process(sig, 0);
   if (pv.cymbalFdnOn !== 0) sig = dsp.cymbalFdn.process(sig, quad);
 
   dsp.lastOutput = sig;
@@ -177,126 +178,140 @@ onmessage = async (event) => {
   const upRate = upFold * pv.sampleRate;
   const sampleRateScaler = menuitems.sampleRateScalerItems[pv.sampleRateScaler];
 
+  const regionSamples = Math.floor(upRate * pv.renderDuration);
+  let sound = new Array(regionSamples * pv.slicerRegions).fill(0);
+
   let dsp = {};
 
-  const stereoSeed = 17; // TODO
-  dsp.rng = new PcgRandom(BigInt(pv.seed + pv.channel * stereoSeed));
+  const stereoSeed = 17;
+  dsp.noiseRng = new PcgRandom(BigInt(pv.seed + pv.channel * stereoSeed * 3));
 
-  dsp.impulse = pv.excitationGain;
-  dsp.impulseDecay = Math.pow(1e-3, 1 / (upRate * 0.01));
-  dsp.noiseHp = new SVFHP(pv.noiseHighpassHz / upRate, 4);
+  slicerLoop: for (let region = 0; region < pv.slicerRegions; ++region) {
+    dsp.rng = new PcgRandom(BigInt(pv.seed + pv.channel * stereoSeed));
 
-  dsp.lastOutput = 0;
-  dsp.meter = new EMAFilter();
-  dsp.meter.setCutoff(pv.envelopeFollowerHz / upRate);
+    const regionRatio = pv.slicerRegions <= 1 ? 0 : 1 - region / (pv.slicerRegions - 1);
+    dsp.excitationGain
+      = pv.excitationGain * dbToAmp(-regionRatio * pv.slicerExcitationGainRange);
 
-  dsp.noiseL = new NoiseGeneratorLow(
-    pv.excitationGain,
-    pv.noiseLowDecaySeconds * upRate,
-    pv.noiseLowLowpassBaseHz / upRate,
-    pv.noiseLowLowpassModHz / upRate,
-    pv.noiseLowLowpassResonance,
-  );
+    dsp.impulse = dsp.excitationGain;
 
-  dsp.noiseHGain = pv.noiseHighMixRatio * pv.excitationGain;
-  dsp.noiseH
-    = new NoiseGeneratorHigh(upRate, pv.noiseHighDecaySeconds, pv.noiseHighHighpassHz);
+    dsp.lastOutput = 0;
+    dsp.meter = new EMAFilter();
+    dsp.meter.setCutoff(pv.envelopeFollowerHz / upRate);
 
-  const getPitch = () => {
-    let key = menuitems.membranePitchTypeItems[pv.cymbalMembranePitchType];
-    let src = structuredClone(membranePitchTable[key][pv.cymbalMembranePitchIndex]);
-    src.shift();
-    return src.map(v => v / src[0]);
-  };
-  const pitches = getPitch();
-
-  const delayTypeKey = menuitems.delayInterpTypeItems[pv.cymbalDelayInterpType];
-  const DelayType = delayTypeKey === "None" ? IntDelay
-    : delayTypeKey === "Linear"             ? Delay
-                                            : CubicDelay;
-
-  // Extra FDN.
-  const extraFdnDelay = new Array(pv.extraFdnSize);
-  const extraFdnBaseTime = upRate / pv.extraFrequencyHz;
-  for (let idx = 0; idx < extraFdnDelay.length; ++idx) {
-    const pt = pitches[idx];
-    extraFdnDelay[idx] = new FilteredDelay(
-      extraFdnBaseTime / pt,
-      extraFdnBaseTime / pt,
-      pv.cymbalDelayTimeMod * upFold * sampleRateScaler / pt,
-      pv.extraLowpassHz * pt / upRate,
-      0,
-      pv.extraHighpassHz * lerp(1, pt, 1 - pv.cymbalHighpassFollowDelayTime) / upRate,
-      DelayType,
-      false,
+    dsp.noiseL = new NoiseGeneratorLow(
+      dsp.excitationGain,
+      pv.noiseLowDecaySeconds * upRate,
+      pv.noiseLowLowpassBaseHz / upRate,
+      pv.noiseLowLowpassModHz / upRate,
+      pv.noiseLowLowpassResonance,
     );
-  }
-  dsp.extraFdn = new FDN(
-    extraFdnDelay,
-    new Array(pv.extraFdnSize).fill(1),
-    new Array(pv.extraFdnSize).fill(1),
-    pv.extraFeedback,
-    pv.seed + 513,
-  );
 
-  // Cymbal FDN.
-  const cymbalFdnDelay = new Array(pv.cymbalFdnSize);
-  const cymbalFdnBaseTime = upRate / pv.cymbalFrequencyHz;
-  for (let idx = 0; idx < cymbalFdnDelay.length; ++idx) {
-    const pt = pitches[idx];
-    cymbalFdnDelay[idx] = new FilteredDelay(
-      cymbalFdnBaseTime / pt,
-      cymbalFdnBaseTime / pt,
-      pv.cymbalDelayTimeMod * upFold * sampleRateScaler / pt,
-      pv.cymbalLowpassHz * lerp(1, pt, 0.5) / upRate,
-      pv.cymbalEnvelopeFollowerToLowpass,
-      pv.cymbalHighpassHz * lerp(1, pt, pv.cymbalHighpassFollowDelayTime) / upRate,
-      DelayType,
-    );
-  }
-  dsp.cymbalFdn = new FDN(
-    cymbalFdnDelay,
-    pv.cymbalFdnInputGain,
-    new Array(pv.cymbalFdnSize).fill(1),
-    pv.cymbalFeedback,
-    pv.seed,
-  );
+    dsp.noiseHGain = pv.noiseHighMixRatio * dsp.excitationGain;
+    dsp.noiseH
+      = new NoiseGeneratorHigh(upRate, pv.noiseHighDecaySeconds, pv.noiseHighHighpassHz);
 
-  if (pv.limiterType === 1) {
-    dsp.limiter = new Limiter(
-      pv.limiterSmoothingSeconds * upRate, 0.001 * upRate, 0, pv.limiterThreshold);
+    const getPitch = () => {
+      let key = menuitems.membranePitchTypeItems[pv.cymbalMembranePitchType];
+      let src = structuredClone(membranePitchTable[key][pv.cymbalMembranePitchIndex]);
+      src.shift();
+      return src.map(v => v / src[0]);
+    };
+    const pitches = getPitch();
 
-    // Discard latency part.
-    for (let i = 0; i < dsp.limiter.latency; ++i) process(upRate, pv, dsp);
-  } else if (pv.limiterType === 2) {
-    dsp.limiter = new Tanh(pv.limiterThreshold);
-  } else {
-    dsp.limiter = new Bypass();
-  }
+    const delayTypeKey = menuitems.delayInterpTypeItems[pv.cymbalDelayInterpType];
+    const DelayType = delayTypeKey === "None" ? IntDelay
+      : delayTypeKey === "Linear"             ? Delay
+                                              : CubicDelay;
 
-  // Discard silence of delay at start.
-  let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
-  let counter = 0;
-  let sig = 0;
-  do {
-    sig = process(upRate, pv, dsp);
-    if (++counter >= sound.length) { // Avoid infinite loop on silent signal.
-      postMessage({sound: sound, status: "Output is completely silent."});
-      return;
+    // Extra FDN.
+    const extraFdnDelay = new Array(pv.extraFdnSize);
+    const extraFdnBaseTime = upRate / pv.extraFrequencyHz;
+    for (let idx = 0; idx < extraFdnDelay.length; ++idx) {
+      const pt = pitches[idx];
+      extraFdnDelay[idx] = new FilteredDelay(
+        extraFdnBaseTime / pt,
+        extraFdnBaseTime / pt,
+        pv.cymbalDelayTimeMod * upFold * sampleRateScaler / pt,
+        pv.extraLowpassHz * pt / upRate,
+        0,
+        pv.extraHighpassHz * lerp(1, pt, 1 - pv.cymbalHighpassFollowDelayTime) / upRate,
+        DelayType,
+        false,
+      );
     }
-  } while (sig === 0);
+    dsp.extraFdn = new FDN(
+      extraFdnDelay,
+      new Array(pv.extraFdnSize).fill(1),
+      new Array(pv.extraFdnSize).fill(1),
+      pv.extraFeedback,
+      pv.seed + 513,
+    );
 
-  // Process.
-  sound[0] = sig;
-  for (let i = 1; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
-  sound = downSampleIIR(sound, upFold);
+    // Cymbal FDN.
+    const cymbalFdnDelay = new Array(pv.cymbalFdnSize);
+    const cymbalFdnBaseTime = upRate / pv.cymbalFrequencyHz;
+    for (let idx = 0; idx < cymbalFdnDelay.length; ++idx) {
+      const pt = pitches[idx];
+      cymbalFdnDelay[idx] = new FilteredDelay(
+        cymbalFdnBaseTime / pt,
+        cymbalFdnBaseTime / pt,
+        pv.cymbalDelayTimeMod * upFold * sampleRateScaler / pt,
+        pv.cymbalLowpassHz * lerp(1, pt, 0.5) / upRate,
+        pv.cymbalEnvelopeFollowerToLowpass,
+        pv.cymbalHighpassHz * lerp(1, pt, pv.cymbalHighpassFollowDelayTime) / upRate,
+        DelayType,
+      );
+    }
+    dsp.cymbalFdn = new FDN(
+      cymbalFdnDelay,
+      pv.cymbalFdnInputGain,
+      new Array(pv.cymbalFdnSize).fill(1),
+      pv.cymbalFeedback,
+      pv.seed,
+    );
 
-  // Post effect.
-  let gainEnv = 1;
-  let decay = Math.pow(pv.decayTo, 1.0 / sound.length);
-  for (let i = 0; i < sound.length; ++i) {
-    sound[i] *= gainEnv;
-    gainEnv *= decay;
+    if (pv.limiterType === 1) {
+      dsp.limiter = new Limiter(
+        pv.limiterSmoothingSeconds * upRate, 0.001 * upRate, 0, pv.limiterThreshold);
+
+      // Discard latency part.
+      for (let i = 0; i < dsp.limiter.latency; ++i) process(upRate, pv, dsp);
+    } else if (pv.limiterType === 2) {
+      dsp.limiter = new Tanh(pv.limiterThreshold);
+    } else {
+      dsp.limiter = new Bypass();
+    }
+
+    // Discard silence of delay at start.
+    let counter = 0;
+    let sig = 0;
+    do {
+      sig = process(upRate, pv, dsp);
+      if (++counter >= sound.length) continue slicerLoop;
+    } while (sig === 0);
+
+    // Process.
+    const begin = region * regionSamples;
+    const end = begin + regionSamples;
+    sound[begin] = sig;
+    for (let i = begin + 1; i < end; ++i) sound[i] = process(upRate, pv, dsp);
+    sound = downSampleIIR(sound, upFold);
+
+    // Post effect.
+    let gainEnv = 1;
+    let decay = Math.pow(pv.decayTo, 1.0 / sound.length);
+    for (let i = begin; i < end; ++i) {
+      sound[i] *= gainEnv;
+      gainEnv *= decay;
+    }
+
+    if (pv.fadeOut >= Number.EPSILON) {
+      let fadeOutLength = Math.min(Math.floor(pv.fadeOut * upRate), regionSamples);
+      for (let i = 0; i < fadeOutLength; ++i) {
+        sound[end - fadeOutLength + i] *= Math.cos(0.5 * Math.PI * i / fadeOutLength);
+      }
+    }
   }
 
   postMessage({sound: sound});

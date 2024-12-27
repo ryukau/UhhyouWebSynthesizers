@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 7;
+const version = 8;
 
 const localRecipeBook = {
   "Default": {
@@ -20,6 +20,9 @@ const localRecipeBook = {
     stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
+
+    slicerRegions: () => {},
+    slicerExcitationGainRange: () => {},
 
     limiterType: () => {},
     limiterThreshold: () => {},
@@ -50,6 +53,7 @@ const localRecipeBook = {
     reverbTimeMultiplier: () => {},
     reverbTimeMod: () => {},
   },
+
   "All": {
     renderDuration: () => {},
     fadeIn: () => {},
@@ -58,6 +62,9 @@ const localRecipeBook = {
     stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
+
+    slicerRegions: () => {},
+    slicerExcitationGainRange: () => {},
 
     limiterType: () => {},
     limiterThreshold: () => {},
@@ -110,6 +117,9 @@ const scales = {
   dcHighpassHz: new parameter.DecibelScale(-20, 40, true),
   toneSlope: new parameter.DecibelScale(-12, 0, false),
 
+  slicerRegions: new parameter.IntScale(1, 128),
+  slicerExcitationGainRange: new parameter.DecibelScale(0, 60, false),
+
   compressorInputGain: new parameter.DecibelScale(-20, 60, false),
   limiterType: new parameter.MenuItemScale(menuitems.limiterTypeItems),
   limiterThreshold: new parameter.DecibelScale(-60, 40, false),
@@ -159,6 +169,11 @@ const param = {
   stereoMerge: new parameter.Parameter(0.75, scales.stereoMerge),
   overSample: new parameter.Parameter(0, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
+
+  slicerRegions: new parameter.Parameter(1, scales.slicerRegions),
+  slicerRandomize: new parameter.Parameter(0, scales.boolean),
+  slicerExcitationGainRange:
+    new parameter.Parameter(util.dbToAmp(20), scales.slicerExcitationGainRange),
 
   limiterType: new parameter.Parameter(0, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
@@ -273,6 +288,7 @@ paragraphTip1.textContent
   = "Try setting `Limiter -> Type` to Tanh, then change `Misc. -> Velocity`."
 
 const detailRender = widget.details(divLeft, "Render");
+const detailSlicer = widget.details(divLeft, "Slicer");
 const detailLimiter = widget.details(divLeft, "Limiter");
 const detailSnareExcitation = widget.details(divRightA, "Excitation");
 const detailSnareDelay = widget.details(divRightA, "Delay");
@@ -293,6 +309,13 @@ const ui = {
     new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
   sampleRateScaler: new widget.ComboBoxLine(
     detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+
+  slicerRegions:
+    new widget.NumberInput(detailSlicer, "nRegion", param.slicerRegions, render),
+  slicerRandomize: new widget.ToggleButtonLine(
+    detailSlicer, ["Fuzziness", "Fuzziness"], param.slicerRandomize, render),
+  slicerExcitationGainRange: new widget.NumberInput(
+    detailSlicer, "Excitation Range [dB]", param.slicerExcitationGainRange, render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
   limiterThreshold: new widget.NumberInput(
