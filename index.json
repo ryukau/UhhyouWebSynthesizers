@@ -9,12 +9,21 @@
       "summary": {"ja": "", "en": ""},
       "list": [
         {
+          "href": "./MaybeCrash/synth.html",
+          "name": "MaybeCrash",
+          "tag": {"ja": "シンバル", "en": "Cymbal"},
+          "description": {
+            "ja": "FDN を使ったクラッシュシンバル。"   ,
+            "en": "Crash cymbal synthesizer using FDN."
+          }
+        },
+        {
           "href": "./CoupledSnare/synth.html",
           "name": "CoupledSnare",
           "tag": {"ja": "スネア", "en": "Snare"},
           "description": {
-            "ja": "RoughlySnare の改変版。"            ,
-            "en": "A modified version of RoughlySnare."
+            "ja": "RoughlySnare の改変版。"          ,
+            "en": "Modified version of RoughlySnare."
           }
         },
         {
@@ -31,8 +40,8 @@
           "name": "CollidingComb",
           "tag": {"ja": "ドラム", "en": "Drum"},
           "description": {
-            "ja": "GenericDrum の軽量版。"               ,
-            "en": "A lightweight version of GenericDrum."
+            "ja": "GenericDrum の軽量版。"             ,
+            "en": "Lightweight version of GenericDrum."
           }
         },
         {
@@ -49,8 +58,8 @@
           "name": "IntegerChord",
           "tag": {"ja": "コード", "en": "Chord"},
           "description": {
-            "ja": "波形の周期が整数サンプルとなるスケールを使用。"         ,
-            "en": "The period of waveforms are aligned to integer samples."
+            "ja": "波形の周期が整数サンプルとなるスケールを使用。"     ,
+            "en": "Period of waveforms are aligned to integer samples."
           }
         },
         {
@@ -122,7 +131,7 @@
           "tag": {"ja": "アルペジオ", "en": "Arpeggio"},
           "description": {
             "ja": "波形の周期が整数サンプルとなるスケールを使用。スライサに読み込んで使用。",
-            "en": "The period of waveforms are aligned to integer samples. Intended to be used with a slicer."
+            "en": "Period of waveforms are aligned to integer samples. Intended to be used with a slicer."
           }
         },
         {
@@ -155,7 +164,7 @@
           "tag": {"ja": "声", "en": "Voice"},
           "description": {
             "ja": "Pink Trombone の移植。習作。",
-            "en": "A port of Pink Trombone. This one is made to understand the internals."
+            "en": "Port of Pink Trombone. This one is made to understand the internals."
           }
         },
         {
@@ -190,8 +199,8 @@
           "name": "WireWallCollision",
           "tag": {"ja": "シミュレーション", "en": "Simulation"},
           "description": {
-            "ja": "1 つの弦が固い壁に衝突。"         ,
-            "en": "A wire colliding into rigid wall."
+            "ja": "1 つの弦が固い壁に衝突。"              ,
+            "en": "Single wire colliding into rigid wall."
           }
         },
         {
@@ -440,7 +449,7 @@
           "tag": {"ja": "金属音", "en": "Metal"},
           "description": {
             "ja": "Karplus-Strong アルゴリズムの一種を使用。",
-            "en": "A variation of Karplus-Strong algorithm."
+            "en": "Variation of Karplus-Strong algorithm."
           }
         },
         {
