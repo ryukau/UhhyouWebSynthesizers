@@ -81,6 +81,7 @@ const scales = {
 
 const param = {
   renderSamples: new parameter.Parameter(2048, scales.renderSamples),
+  loopPoint: new parameter.Parameter(1, scales.boolScale),
 
   automationScaling: new parameter.Parameter(2, scales.automationScaling),
   nWaveform: new parameter.Parameter(1, scales.nWaveform),
@@ -172,7 +173,7 @@ const playControl = widget.playControl(
   divLeft,
   (ev) => { audio.play(); },
   (ev) => { audio.stop(); },
-  (ev) => { audio.save(true); },
+  (ev) => { audio.save(param.loopPoint.dsp === 1); },
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);
@@ -212,6 +213,8 @@ const detailAutomation = widget.details(divRightB, "Automation");
 const ui = {
   renderSamples: new widget.NumberInput(
     detailRender, "Duration [sample]", param.renderSamples, render),
+  loopPoint: new widget.CheckBoxLine(
+    detailMultiTable, "Loop Point", ["☉ Off", "☀︎ On"], param.loopPoint, render),
 
   nWaveform:
     new widget.NumberInput(detailMultiTable, "nWaveform", param.nWaveform, render),
