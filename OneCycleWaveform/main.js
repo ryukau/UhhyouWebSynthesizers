@@ -214,7 +214,7 @@ const ui = {
   renderSamples: new widget.NumberInput(
     detailRender, "Duration [sample]", param.renderSamples, render),
   loopPoint: new widget.CheckBoxLine(
-    detailMultiTable, "Loop Point", ["☉ Off", "☀︎ On"], param.loopPoint, render),
+    detailRender, "Loop Point", ["☉ Off", "☀︎ On"], param.loopPoint, render),
 
   nWaveform:
     new widget.NumberInput(detailMultiTable, "nWaveform", param.nWaveform, render),
