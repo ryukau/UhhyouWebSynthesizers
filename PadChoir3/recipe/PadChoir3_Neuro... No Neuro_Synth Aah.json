@@ -1,0 +1,113 @@
+{
+  "meta": {"author": "Neuro... No Neuro", "recipeName": "Synth Aah", "version": 0},
+  "parameters": {
+    "renderDuration": {
+      "info"  : {"min": 0.01, "max": 100                   },
+      "random": {"min": 2.00, "max":   2, "type": "display"}
+    },
+    "fade": {
+      "info"  : {"min": 0, "max": 100                   },
+      "random": {"min": 0, "max":   0, "type": "display"}
+    },
+    "sampleRateScaler": {
+      "info"  : {"min": 0, "max": 5                   },
+      "random": {"min": 2, "max": 2, "type": "display"}
+    },
+    "seed": {
+      "info"  : {"min": 0               , "max": 9007199254740992                   },
+      "random": {"min": 6789990433616394, "max": 6789990433616394, "type": "display"}
+    },
+    "baseFrequencyHz": {
+      "info"  : {"min": 8.175798915643707, "max": 21096.16364242367                   },
+      "random": {"min": 220              , "max": 220              , "type": "display"}
+    },
+    "bandWidthOctave": {
+      "info"  : {"min": 0.01, "max": 0.25                   },
+      "random": {"min": 0.05, "max": 0.05, "type": "display"}
+    },
+    "phaseRandomAmount": {
+      "info"  : {"min": 0, "max": 1                   },
+      "random": {"min": 1, "max": 1, "type": "display"}
+    },
+    "highpassHz": {
+      "info"  : {"min": 8.175798915643707, "max": 21096.16364242367                   },
+      "random": {"min": 20220            , "max": 20220            , "type": "display"}
+    },
+    "highpassPower": {
+      "info"  : {"min": 0.0, "max": 7.999999999999999                   },
+      "random": {"min": 0.1, "max": 0.1              , "type": "display"}
+    },
+    "lowpassHz": {
+      "info"  : {"min": 8.175798915643707, "max": 21096.16364242367                   },
+      "random": {"min": 2800             , "max": 2800             , "type": "display"}
+    },
+    "lowpassPower": {
+      "info"  : {"min": 0.00, "max": 7.999999999999999                   },
+      "random": {"min": 0.15, "max": 0.15             , "type": "display"}
+    },
+    "highShelfHz": {
+      "info"  : {"min": 999.9999999999997, "max": 767999.9999999998                   },
+      "random": {"min": 1650             , "max": 1650             , "type": "display"}
+    },
+    "highShelfGain": {
+      "info"  : {"min": -60, "max":   0                   },
+      "random": {"min": -25, "max": -25, "type": "display"}
+    },
+    "nChord": {
+      "info"  : {"min": 0, "max": 8                   },
+      "random": {"min": 0, "max": 0, "type": "display"}
+    },
+    "chordPitch1": {
+      "info"  : {"min": 1, "max": 3                   },
+      "random": {"min": 1, "max": 1, "type": "display"}
+    },
+    "chordPitch2": {
+      "info"  : {"min": 1, "max": 3                   },
+      "random": {"min": 1, "max": 1, "type": "display"}
+    },
+    "chordPitch3": {
+      "info"  : {"min": 1, "max": 3                   },
+      "random": {"min": 1, "max": 1, "type": "display"}
+    },
+    "pitchRandomOctave": {
+      "info"  : {"min": 0, "max": 10                   },
+      "random": {"min": 0, "max":  0, "type": "display"}
+    },
+    "formantX": {
+      "info"  : {"min": 0, "max": 1                   },
+      "random": {"min": 0, "max": 0, "type": "display"}
+    },
+    "formantY": {
+      "info": {"min": 0, "max": 1},
+      "random": {"min": 0.8878063625759549, "max": 0.8878063625759549, "type": "display"}
+    },
+    "formantGainType": {
+      "info"  : {"min": 0, "max": 2                   },
+      "random": {"min": 0, "max": 0, "type": "display"}
+    },
+    "vocalType": {
+      "info"  : {"min": 0, "max": 4                   },
+      "random": {"min": 2, "max": 2, "type": "display"}
+    },
+    "formantTracking": {
+      "info"  : {"min": 0.00, "max": 1.00                   },
+      "random": {"min": 0.15, "max": 0.15, "type": "display"}
+    },
+    "formantTrackingSlope": {
+      "info"  : {"min": 0.00, "max": 1.00                   },
+      "random": {"min": 0.65, "max": 0.65, "type": "display"}
+    },
+    "formantPower": {
+      "info"  : {"min": 0.00, "max": 4.00                   },
+      "random": {"min": 1.75, "max": 1.75, "type": "display"}
+    },
+    "formantRandom": {
+      "info"  : {"min": 0.00, "max": 1.00                   },
+      "random": {"min": 0.25, "max": 0.25, "type": "display"}
+    },
+    "vocalRandom": {
+      "info"  : {"min": 0.0, "max": 1.0                   },
+      "random": {"min": 0.2, "max": 0.2, "type": "display"}
+    }
+  }
+}
