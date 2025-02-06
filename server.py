@@ -1,7 +1,6 @@
 import http.server
 import socketserver
 import webbrowser
-from http.server import HTTPServer, BaseHTTPRequestHandler
 
 port = 9540
 
