@@ -12,6 +12,10 @@ import * as menuitems from "./menuitems.js";
 
 const version = 0;
 
+const localRecipeJsonPath = [
+  "recipe/PadChoir3_Neuro... No Neuro_Synth Aah.json",
+];
+
 const localRecipeBook = {
   "Default": {
     renderDuration: () => {},
@@ -133,8 +137,8 @@ const param = {
   vocalRandom: new parameter.Parameter(0, scales.defaultScale),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(
+  localRecipeBook, await parameter.loadJson(param, localRecipeJsonPath));
 
 // Add controls.
 const audio = new wave.Audio(
