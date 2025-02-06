@@ -1,5 +1,5 @@
 # Port of `LambertW`
-Below is link to the original repository.
+Below is the link to the original repository.
 
 - [GitHub - DarkoVeberic/LambertW: C++ implementation of the Lambert W(x) function](https://github.com/DarkoVeberic/LambertW)
 

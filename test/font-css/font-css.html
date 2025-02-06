@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset=utf-8>
+  <title>Font Test</title>
+  <link rel="stylesheet" href="../style/font.css">
+  <style>
+    body {
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    window.onload = () => {
+      let body = document.body;
+
+      const families = ["Sofia-Sans", "Inconsolata"];
+      const styles = ["normal", "italic", "oblique"];
+      const weights = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+      for (let family of families) {
+        let header = document.createElement("h1");
+        header.innerText = family;
+        header.style.fontFamily = family;
+        body.appendChild(header);
+
+        for (let weight of weights) {
+          let paragraph = document.createElement("p");
+          body.appendChild(paragraph);
+
+          for (let style of styles) {
+            let span = document.createElement("span");
+            span.innerText = `The quick brown fox jumps over the lazy dog.  `;
+            span.style.fontFamily = family;
+            span.style.fontWeight = weight;
+            span.style.fontStyle = style;
+            paragraph.appendChild(span);
+          }
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>

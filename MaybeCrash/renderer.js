@@ -59,6 +59,25 @@ class NoiseGeneratorHigh {
   }
 }
 
+// Antiderivative antialiasing of tanh. Based on Bilbao et. al.
+class AdaaSaturator1 {
+  constructor() {
+    this.x1 = 0;
+    this.s1 = 0;
+    this.eps = 1 / 2 ** 24;
+  }
+
+  process(input) {
+    const d0 = input - this.x1;
+    const s0 = Math.log(Math.cosh(Math.max(-100, Math.min(input, 100))));
+    const output = Math.abs(d0) < this.eps ? Math.tanh(0.5 * (input + this.x1))
+                                           : (s0 - this.s1) / d0;
+    this.s1 = s0;
+    this.x1 = input;
+    return output;
+  }
+}
+
 class FilteredDelay {
   constructor(
     maxDelayTimeInSamples,
@@ -68,9 +87,8 @@ class FilteredDelay {
     lowpassMod,
     highpassCutoff,
     DelayType = CubicDelay,
-    clipping = true,
+    saturatorAntialiasing = 2,
   ) {
-    this.clipping = clipping;
     this.lowpass = new SVFLP(lowpassCutoff, Math.SQRT1_2);
     this.lpCut = lowpassCutoff;
     this.lpMod = lowpassMod;
@@ -81,10 +99,15 @@ class FilteredDelay {
 
     this.delayTime = delayTimeSample;
     this.timeMod = delayTimeMod;
+
+    // Refer to `cymbalSaturatorItems` in `menuitems.js`.
+    this.saturator = saturatorAntialiasing == 0 ? new Bypass()
+      : saturatorAntialiasing == 1              ? new Tanh(1)
+                                                : new AdaaSaturator1();
   }
 
   process(input, rms) {
-    if (this.clipping) input = Math.tanh(input);
+    input = this.saturator.process(input);
     input
       = this.lowpass.processMod(input, this.lpCut * (1 + this.lpMod * rms), Math.SQRT1_2);
     input = this.highpass.process(input);
@@ -237,7 +260,7 @@ onmessage = async (event) => {
         0,
         pv.extraHighpassHz * lerp(1, pt, 1 - pv.cymbalHighpassFollowDelayTime) / upRate,
         DelayType,
-        false,
+        0,
       );
     }
     dsp.extraFdn = new FDN(
@@ -261,6 +284,7 @@ onmessage = async (event) => {
         pv.cymbalEnvelopeFollowerToLowpass,
         pv.cymbalHighpassHz * lerp(1, pt, pv.cymbalHighpassFollowDelayTime) / upRate,
         DelayType,
+        pv.cymbalSaturator,
       );
     }
     dsp.cymbalFdn = new FDN(

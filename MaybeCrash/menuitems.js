@@ -34,3 +34,9 @@ export const membranePitchTypeItems = [
   "ynp_zeros",
   "ynp_zeros_tr",
 ];
+
+export const cymbalSaturatorItems = [
+  "Bypass",
+  "Tanh",
+  "Tanh AA 1",
+];

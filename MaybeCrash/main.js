@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "Default": {
@@ -117,6 +117,7 @@ const scales = {
   highpassFollowDelayTime: new parameter.LinearScale(0, 1),
   delayTimeMod: new parameter.DecibelScale(-20, 120, true),
   envelopeFollowerToLowpass: new parameter.DecibelScale(-20, 100, true),
+  cymbalSaturator: new parameter.MenuItemScale(menuitems.cymbalSaturatorItems),
 };
 
 const param = {
@@ -178,6 +179,7 @@ const param = {
   cymbalDelayTimeMod: new parameter.Parameter(0, scales.delayTimeMod, true),
   cymbalEnvelopeFollowerToLowpass:
     new parameter.Parameter(0, scales.envelopeFollowerToLowpass, true),
+  cymbalSaturator: new parameter.Parameter(2, scales.cymbalSaturator, true),
 };
 
 const recipeBook
@@ -340,6 +342,8 @@ const ui = {
     detailFdn, "Delay Mod. [sample]", param.cymbalDelayTimeMod, render),
   cymbalEnvelopeFollowerToLowpass: new widget.NumberInput(
     detailFdn, "Env. To LP Mod.", param.cymbalEnvelopeFollowerToLowpass, render),
+  cymbalSaturator:
+    new widget.ComboBoxLine(detailFdn, "Saturator Type", param.cymbalSaturator, render),
 };
 
 onFdnSizeChanged(param.cymbalFdnSize.dsp);
