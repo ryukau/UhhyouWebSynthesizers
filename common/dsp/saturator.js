@@ -48,8 +48,9 @@ export class SaturatorAdaa1 {
   process(input) {
     const d0 = input - this.x1;
     const s0 = this.f1(input);
-    const output
-      = Math.abs(d0) < this.eps ? this.f0(0.5 * (input + this.x1)) : (s0 - this.s1) / d0;
+    const output = (x1 == 0 && s1 == 0) || (Math.abs(d0) < this.eps)
+      ? this.f0(0.5 * (input + this.x1))
+      : (s0 - this.s1) / d0;
     this.s1 = s0;
     this.x1 = input;
     return output;
@@ -76,14 +77,16 @@ export class SaturatorAdaa2 {
 
     const d1 = input - this.x2;
     let output;
-    if (Math.abs(d1) < this.eps) {
+    if (x1 == 0 && x2 == 0) {
+      output = this.f0((x0 + 2 * x1 + x2) / 4);
+    } else if (Math.abs(d1) < this.eps) {
       const x_bar = 0.5 * (input + this.x2);
       const delta = x_bar - this.x1;
       output = delta < this.eps
-        ? this.f0(0.5 * (x_bar - input))
+        ? this.f0((x_bar + x1) / 2)
         : (2 / delta) * (this.f1(x_bar) + (f2_x1 - this.f2(x_bar)) / delta);
     } else {
-      output = 2 * (s0 - this.s1) / (input - this.x2);
+      output = 2 * (s0 - this.s1) / d1;
     }
     this.s1 = s0;
     this.x2 = this.x1;
@@ -101,17 +104,20 @@ function hardclipJ2(x) {
   return Math.abs(x) < 1 ? x * x * x / 6 : Math.sign(x) * (x * x / 2 + 1 / 6) - (x / 2);
 }
 
-function halfrectJ0(x) { return Math.max(0, x); }
+function halfrectJ0(x) { return x < 0 ? 0 : x; }
 function halfrectJ1(x) { return x < 0 ? 0 : x * x / 2; }
 function halfrectJ2(x) { return x < 0 ? 0 : x * x * x / 6; }
 
 function powerJ0(x, β = 2) { return Math.sign(x) * Math.pow(Math.abs(x), β); }
 function powerJ1(x, β = 2) {
-  return β == -1 ? Math.log(Math.abs(x)) : Math.pow(Math.abs(x), β + 1) / (β + 1);
+  const b1 = β + 1;
+  return β == -1 ? Math.log(Math.abs(x)) : Math.pow(Math.abs(x), b1) / b1;
 }
 function powerJ2(x, β = 2) {
+  const b1 = β + 1;
+  const b2 = β + 2;
   return β == -1 ? x * (Math.log(Math.abs(x)) - 1)
-                 : Math.sign(x) * Math.pow(Math.abs(x), β + 2) / (β * (β + 3) + 2);
+                 : Math.sign(x) * Math.pow(Math.abs(x), b2) / (b1 * b2);
 }
 
 // `h` is threshold of clipping.
@@ -127,7 +133,6 @@ function softclip2J0(x, h = 1, ratio = 0.5) {
   const C1 = a2 - z;
   return Math.sign(x) * (h + C1 * C1 / (a1 - h) / 4);
 }
-
 function softclip2J1(x, h = 1, ratio = 0.5) {
   const z = Math.abs(x);
 
@@ -135,28 +140,27 @@ function softclip2J1(x, h = 1, ratio = 0.5) {
   if (z <= a1) return z * z / 2;
 
   const a2 = 2 * h - a1;
-  const C0 = a1 - a2
+  const C0 = a1 - a2;
   if (z >= a2) return a1 * (a1 / 2 - h) + h * z + C0 * C0 * C0 / (h - a1) / 12;
 
   const C1 = z - a2;
   return a1 * (a1 / 2 - h) + h * z + (C0 * C0 * C0 - C1 * C1 * C1) / (h - a1) / 12;
 }
-
 function softclip2J2(x, h = 1, ratio = 0.5) {
   const z = Math.abs(x);
 
   const a1 = h * ratio;
   if (z <= a1) return x * x * x / 6;
 
-  const a2 = 2 * h - a1
-  const C0 = a1 - a2
-  const C1 = z - a1
+  const a2 = 2 * h - a1;
+  const C0 = a1 - a2;
+  const C1 = z - a1;
   if (z >= a2)
-  return Math.sign(x)
-    * (a1 * a1 * (3 * z - 2 * a1) / 6 + C1 * C1 * h / 2
-       + (C0 * C0 * C0 * (4 * z - 3 * a1 - a2)) / (h - a1) / 48);
+    return Math.sign(x)
+      * (a1 * a1 * (3 * z - 2 * a1) / 6 + C1 * C1 * h / 2
+         + (C0 * C0 * C0 * (4 * z - 3 * a1 - a2)) / (h - a1) / 48);
 
-  const C2 = z + a1
+  const C2 = z + a1;
   return Math.sign(x)
     * (a1 * a1 * (3 * z - 2 * a1) / 6
        + C1 * C1 * (h / 2 - (C2 * C2 + 2 * C0 * C0 - 4 * a2 * (C0 + z)) / (h - a1) / 48));
@@ -190,7 +194,7 @@ function softclipNJ1(x0, C = 1, R = 0.5, beta = 2, S = 0.1) {
                    + (z - xc) * (A * (xc - xs) ** beta + C - S * xs));
 }
 function softclipNJ2(x0, C = 1, R = 0.5, beta = 2, S = 0.1) {
-  z = Math.abs(x0);
+  const z = Math.abs(x0);
 
   const rc = C * R;
   if (z <= rc) return x0 * x0 * x0 / 6;
@@ -209,11 +213,12 @@ function softclipNJ2(x0, C = 1, R = 0.5, beta = 2, S = 0.1) {
   }
 
   const Q2 = xc - xs;
+  const Q2_pow_beta = Q2 ** beta;
   return Math.sign(x0)
     * (A * Q0 ** b2 * (1 - 1 / b2) / b1 + C * Q0 * Q0 / 2
        + S * (z * z * z - xc * xc * xc) / 6 + rc * rc * (xc / 2 - rc / 3)
        + (z - xc)
-         * (A * (Q0 ** b1 / b1 - xc * Q2 ** beta) - C * rc + S * xc * (xs - xc / 2) + rc * rc / 2 + (z + xc) / 2 * (A * Q2 ** beta + C - S * xs)));
+         * (A * (Q0 ** b1 / b1 - xc * Q2_pow_beta) - C * rc + S * xc * (xs - xc / 2) + rc * rc / 2 + (z + xc) / 2 * (A * Q2_pow_beta + C - S * xs)));
 }
 
 function tanhJ0(x) { return Math.tanh(x); }
@@ -250,25 +255,25 @@ function swishJ1(x, β = 2) {
   return (x * β * Math.log1p(exb) + spence(exb) - 1.6449340668482264) / (β * β);
 }
 function swishJ2(x, β = 2) {
-  const exb = Math.exp(x * β);
-  return (2 * Li3(-exb) - x * β * Li2(-exb)) / (β * β * β);
+  const exb = -Math.exp(x * β);
+  return (2 * Li3(exb) - x * β * Li2(exb)) / (β * β * β);
 }
 
-function igamu(a, x) { return gamma(a) * igamc(a, x); }
 function exppolyJ0(x, β = 2) {
   const z = Math.abs(x);
   return Math.sign(x) * z ** β * Math.exp(-z);
 }
 function exppolyJ1(x, β = 2) {
   const b1 = β + 1;
-  const C0 = igamu(b1, 0);
-  return C0 - igamu(b1, Math.abs(x));
+  return gamma(b1) * (igamc(b1, 0) - igamc(b1, Math.abs(x)));
 }
 function exppolyJ2(x, β = 2) {
   const z = Math.abs(x);
-  const C0 = igamu(β + 1, 0);
-  const C1 = igamu(β + 2, 0);
-  return Math.sign(x) * (igamu(β + 2, z) - z * igamu(β + 1, z) + C0 * z - C1);
+  const b1 = β + 1;
+  const b2 = β + 2;
+  return Math.sign(x)
+    * (gamma(b2) * (igamc(b2, z) - igamc(b2, 0))
+       + z * gamma(b1) * (igamc(b1, 0) - igamc(b1, z)));
 }
 
 function cosdecayJ0(x) {
