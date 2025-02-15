@@ -25,6 +25,7 @@ export const adaaFunction = {
   "swish": [swishJ0, swishJ1, swishJ2],
   "exppoly": [exppolyJ0, exppolyJ1, exppolyJ2],
   "cosdecay": [cosdecayJ0, cosdecayJ1, cosdecayJ2],
+  "log1p": [log1pJ0, log1pJ1, log1pJ2],
 };
 
 function bindAdaa(adaaType, extraParams) {
@@ -290,4 +291,15 @@ function cosdecayJ2(x) {
   const z = Math.abs(x);
   const [_, ci] = sici(z);
   return Math.sign(x) * (Math.sin(z) + z * (Math.log(z) - ci - 1));
+}
+
+function log1pJ0(x) { return Math.sign(x) * Math.log1p(Math.abs(x)); }
+function log1pJ1(x) {
+  const z = Math.abs(x);
+  return (z + 1) * Math.log1p(z) - z;
+}
+function log1pJ2(x) {
+  const z = Math.abs(x);
+  const z1 = z + 1;
+  return Math.sign(x) * (2 * z1 * z1 * Math.log1p(z) - (3 * z + 2) * z) / 4;
 }
