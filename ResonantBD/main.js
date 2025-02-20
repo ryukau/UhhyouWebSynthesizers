@@ -1,6 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import * as saturator from "../common/dsp/saturator.js"
 import {palette, uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
@@ -32,6 +33,8 @@ const localRecipeBook = {
     filter2Cut: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 120); },
     eqGain: () => {},
     eqFeedback: () => {},
+    distortionSwitch: () => {},
+    distortionType: (prm) => { prm.normalized = Math.random(); },
   },
 };
 
@@ -50,6 +53,7 @@ function render() {
 }
 
 const scales = {
+  boolean: new parameter.IntScale(0, 1),
   defaultScale: new parameter.LinearScale(0, 1),
 
   renderDuration: new parameter.DecibelScale(-40, 40, false),
@@ -78,6 +82,9 @@ const scales = {
   eqCut: new parameter.DecibelScale(20, 80, false),
   eqGain: new parameter.DecibelScale(0, 40, false),
   eqFeedback: new parameter.DecibelScale(0, 60, true),
+
+  distortionType: new parameter.MenuItemScale(saturator.adaaTypes),
+  distortionGain: new parameter.DecibelScale(0, 60, false),
 };
 
 const param = {
@@ -116,6 +123,10 @@ const param = {
   eqQ: new parameter.Parameter(10, scales.filterQ, true),
   eqGain: new parameter.Parameter(util.dbToAmp(10), scales.eqGain),
   eqFeedback: new parameter.Parameter(0, scales.eqFeedback, true),
+
+  distortionSwitch: new parameter.Parameter(0, scales.boolean),
+  distortionType: new parameter.Parameter(0, scales.distortionType, true),
+  distortionGain: new parameter.Parameter(1, scales.distortionGain, false),
 };
 
 const recipeBook
@@ -135,7 +146,8 @@ const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
 
 const divLeft = widget.div(divMain, undefined, "controlBlock");
-const divRight = widget.div(divMain, undefined, "controlBlock");
+const divRightA = widget.div(divMain, undefined, "controlBlock");
+const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
@@ -180,9 +192,10 @@ const playControl = widget.playControl(
 
 const detailRender = widget.details(divLeft, "Render");
 const detailLimiter = widget.details(divLeft, "Limiter");
-const detailOsc = widget.details(divRight, "Oscillator");
-const detailFilter = widget.details(divRight, "Filter");
-const detailEq = widget.details(divRight, "Equalizer");
+const detailOsc = widget.details(divRightA, "Oscillator");
+const detailFilter = widget.details(divRightA, "Filter");
+const detailEq = widget.details(divRightA, "Equalizer");
+const detailDistortion = widget.details(divRightB, "Distortion");
 
 const ui = {
   renderDuration:
@@ -240,7 +253,18 @@ const ui = {
   eqQ: new widget.NumberInput(detailEq, "Q", param.eqQ, render),
   eqGain: new widget.NumberInput(detailEq, "Gain [dB]", param.eqGain, render),
   eqFeedback: new widget.NumberInput(detailEq, "Feedback", param.eqFeedback, render),
+
+  distortionTip: widget.paragraph(detailDistortion, "distortionTip", undefined),
+  distortionSwitch: new widget.ToggleButtonLine(
+    detailDistortion, ["Use Distortion", "Use Distortion"], param.distortionSwitch,
+    render),
+  distortionType:
+    new widget.ComboBoxLine(detailDistortion, "Type", param.distortionType, render),
+  distortionGain:
+    new widget.NumberInput(detailDistortion, "Gain [dB]", param.distortionGain, render),
 };
+
+ui.distortionTip.textContent = "Tip: Reduce gain if signal is blank.";
 
 render();
 window.addEventListener("load", (ev) => { widget.refresh(ui); });

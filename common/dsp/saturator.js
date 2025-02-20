@@ -28,11 +28,15 @@ export const adaaFunction = {
   "log1p": [log1pJ0, log1pJ1, log1pJ2],
 };
 
+export const adaaTypes = Object.keys(adaaFunction);
+
 function bindAdaa(adaaType, extraParams) {
   if (!adaaFunction.hasOwnProperty(adaaType)) {
     console.warn(`${adaaType} doesn't exist in adaaFunction.`);
   }
-  return adaaFunction[adaaType].map(fn => { return x => fn(x, ...extraParams); });
+  return extraParams === undefined
+    ? adaaFunction[adaaType].map(fn => { return x => fn(x); })
+    : adaaFunction[adaaType].map(fn => { return x => fn(x, ...extraParams); });
 }
 
 // Antiderivative antialiasing of tanh. Based on Bilbao et. al.
@@ -43,13 +47,12 @@ export class SaturatorAdaa1 {
     this.f1 = funcs[1];
     this.x1 = 0;
     this.s1 = 0;
-    this.eps = 1 / 2 ** 23;
   }
 
   process(input) {
     const d0 = input - this.x1;
     const s0 = this.f1(input);
-    const output = (x1 == 0 && s1 == 0) || (Math.abs(d0) < this.eps)
+    const output = (this.x1 == 0 && this.s1 == 0) || (Math.abs(d0) < Number.EPSILON)
       ? this.f0(0.5 * (input + this.x1))
       : (s0 - this.s1) / d0;
     this.s1 = s0;
@@ -67,31 +70,33 @@ export class SaturatorAdaa2 {
     this.x1 = 0;
     this.x2 = 0;
     this.s1 = 0;
-    this.eps = 1 / 2 ** 23;
   }
 
   process(input) {
-    const f2_x1 = this.f2(x1);
-    const d0 = input - this.x1;
-    const s0 = Math.abs(d0) < this.eps ? this.f1(0.5 * (input + this.x1))
-                                       : (this.f2(input) - f2_x1) / d0;
+    const x0 = input;
 
-    const d1 = input - this.x2;
+    const f2_x1 = this.f2(this.x1);
+    const s0 = Math.abs(x0 - this.x1) < Number.EPSILON
+      ? this.f1((x0 + this.x1) / 2)
+      : (this.f2(x0) - f2_x1) / (x0 - this.x1);
+
     let output;
-    if (x1 == 0 && x2 == 0) {
-      output = this.f0((x0 + 2 * x1 + x2) / 4);
-    } else if (Math.abs(d1) < this.eps) {
-      const x_bar = 0.5 * (input + this.x2);
+    if (this.x1 == 0 && this.x2 == 0) {
+      output = this.f0((x0 + 2 * this.x1 + this.x2) / 4);
+    } else if (Math.abs(x0 - this.x2) < Number.EPSILON) {
+      const x_bar = (x0 + this.x2) / 2;
       const delta = x_bar - this.x1;
-      output = delta < this.eps
-        ? this.f0((x_bar + x1) / 2)
+      output = Math.abs(delta) < Number.EPSILON
+        ? this.f0((x_bar + this.x1) / 2)
         : (2 / delta) * (this.f1(x_bar) + (f2_x1 - this.f2(x_bar)) / delta);
     } else {
-      output = 2 * (s0 - this.s1) / d1;
+      output = 2 * (s0 - this.s1) / (x0 - this.x2);
     }
+
     this.s1 = s0;
     this.x2 = this.x1;
-    this.x1 = input;
+    this.x1 = x0;
+
     return output;
   }
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {downSampleIIR} from "../common/dsp/multirate.js";
+import * as saturator from "../common/dsp/saturator.js"
 import {SVF, SVFBell, SVFHighShelf} from "../common/dsp/svf.js";
 import * as util from "../common/util.js";
 import BasicLimiter from "../common/wasm/basiclimiter.js";
@@ -90,6 +91,8 @@ function process(upRate, pv, dsp) {
   sig = dsp.limiter.applyGain(
     sig, peakAmp, util.lerp(linear, saturated, pv.limiterSaturationMix));
 
+  if (pv.distortionSwitch) sig = dsp.distortion.process(pv.distortionGain * sig);
+
   return sig;
 }
 
@@ -119,6 +122,8 @@ onmessage = async (event) => {
     eqFeedback: 0,
 
     limiter: new basiclimiter.Limiter(),
+
+    distortion: new saturator.SaturatorAdaa1(saturator.adaaTypes[pv.distortionType]),
   };
 
   // Modulator.
