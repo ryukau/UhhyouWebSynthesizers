@@ -1249,9 +1249,9 @@ input -+-> (LP3) -> (HP) -+-> output
        +-> (EMA lowpass) -+
 ```
 
-Varication A may be unstable.
+Variation A may be unstable.
 
-Varication C and D changes the sound depending on sampling rate.
+Variation C and D changes the sound depending on sampling rate.
 
 Reference:
 https://ryukau.github.io/filter_notes/3pole_lowpass/3pole_lowpass.html

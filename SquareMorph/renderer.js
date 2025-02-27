@@ -111,8 +111,6 @@ function renderWavetable(
   }
   sum /= table.length;
   for (let i = 0; i < table.length; ++i) table[i] -= sum;
-  // return fwht(table, true);
-  // return haarTransformForward(table, true);
   return dsp.transformForward(table);
 }
 
@@ -186,7 +184,6 @@ onmessage = async (event) => {
     }
 
     dsp.buffer = dsp.source.slice(0);
-    // dsp.buffer = fwht(dsp.buffer);
     dsp.buffer = dsp.transformBackward(dsp.buffer);
 
     const jdx = samplesPerCycle * cycle;
