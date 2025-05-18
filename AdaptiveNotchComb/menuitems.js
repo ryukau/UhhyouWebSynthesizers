@@ -13,5 +13,4 @@ export const noiseDistributionItems = [
   "Random Walk",
 ];
 
-export const notchInvertItems = ["Invert Off", "Invert On"];
 export const adaptiveNotchTypeItems = ["AM", "CPZ"];

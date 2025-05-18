@@ -22,6 +22,7 @@ const localRecipeBook = {
     sampleRateScaler: () => {},
     dcHighpassHz: () => {},
     toneSlope: () => {},
+    crossFade: () => {},
     adaptiveNotchType: (prm) => { prm.normalized = Math.random(); },
     combCascadeGain: () => {},
     notchInvert: (prm) => { prm.normalized = Math.random(); },
@@ -67,7 +68,6 @@ const scales = {
   notchCount: new parameter.IntScale(1, 32),
   notchNarrowness: new parameter.NegativeDecibelScale(-60, 0, 1, true),
   notchStepSizeScale: new parameter.DecibelScale(-20, 20, false),
-  notchInvert: new parameter.MenuItemScale(menuitems.notchInvertItems),
 };
 
 const param = {
@@ -79,6 +79,7 @@ const param = {
   overSample: new parameter.Parameter(1, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
+  crossFade: new parameter.Parameter(0, scales.boolean),
 
   seed: new parameter.Parameter(0, scales.seed, true),
   noiseDistribution: new parameter.Parameter(0, scales.noiseDistribution),
@@ -96,7 +97,7 @@ const param = {
   notchCount: new parameter.Parameter(32, scales.notchCount, true),
   notchNarrowness: new parameter.Parameter(0.99, scales.notchNarrowness, true),
   notchStepSizeScale: new parameter.Parameter(1, scales.notchStepSizeScale, true),
-  notchInvert: new parameter.Parameter(0, scales.notchInvert, true),
+  notchInvert: new parameter.Parameter(0, scales.boolean, true),
 };
 
 const recipeBook
@@ -141,7 +142,7 @@ const playControl = widget.playControl(
   divLeft,
   (ev) => { audio.play(getSampleRateScaler()); },
   (ev) => { audio.stop(); },
-  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => { audio.save(param.crossFade.dsp !== 0, [], getSampleRateScaler()); },
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);
@@ -186,6 +187,8 @@ const ui = {
     detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   toneSlope:
     new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  crossFade: new widget.ToggleButtonLine(
+    detailRender, ["Cross-fade", "Cross-fade"], param.crossFade, render),
 
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   noiseDistribution: new widget.ComboBoxLine(
@@ -215,7 +218,7 @@ const ui = {
   notchStepSizeScale: new widget.NumberInput(
     detailNotch, "Step Size Scale", param.notchStepSizeScale, render),
   notchInvert: new widget.ToggleButtonLine(
-    detailNotch, menuitems.notchInvertItems, param.notchInvert, render),
+    detailNotch, ["Invert", "Invert"], param.notchInvert, render),
 };
 
 render();
