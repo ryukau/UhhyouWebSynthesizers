@@ -34,12 +34,23 @@ function getSampleRateScaler() {
 }
 
 function render() {
+  const fadeIn = param.fadeIn.dsp;
+  const fadeOut = param.fadeOut.dsp;
+  if (param.crossFade.dsp !== 0) {
+    param.fadeIn.dsp = 0;
+    param.fadeOut.dsp = 0;
+  }
+
   audio.render(
     parameter.toMessage(param, {
       sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
     }),
     "perChannel",
     playControl.togglebuttonQuickSave.state === 1,
+    (data) => {
+      param.fadeIn.dsp = fadeIn;
+      param.fadeOut.dsp = fadeOut;
+    },
   );
 }
 

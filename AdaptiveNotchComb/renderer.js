@@ -137,21 +137,21 @@ onmessage = async (event) => {
   for (let i = 0; i < combLatency; ++i) process(upRate, pv, dsp);
 
   // Process.
-  let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
+  let sound = new Array(Math.floor(upRate * pv.renderDuration) + 1).fill(0);
   for (let i = 0; i < sound.length; ++i) sound[i] = process(upRate, pv, dsp);
   sound = downSampleIIR(sound, upFold);
 
   // Cross-fade.
   if (pv.crossFade === 1 && sound.length >= 2) {
-    let src = Array.from(sound);
+    let src = structuredClone(sound);
     for (let i = 0; i < src.length; ++i) {
-      src[i] *= 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (sound.length - 1));
+      src[i] *= 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (src.length - 1));
     }
 
-    const mid = Math.floor(sound.length / 2);
-    for (let i = 0; i < sound.length; ++i) {
-      sound[i] = src[i] + src[(mid + i) % sound.length];
-    }
+    const mid = Math.floor(src.length / 2);
+    for (let i = 0; i < src.length; ++i) sound[i] = src[i];
+    for (let i = 0; i < mid; ++i) sound[i] += src[i + mid];
+    for (let i = mid; i < src.length; ++i) sound[i] += src[i - mid + 1];
   }
 
   // Post effect.
