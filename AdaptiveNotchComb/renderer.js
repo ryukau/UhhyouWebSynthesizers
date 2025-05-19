@@ -151,7 +151,7 @@ onmessage = async (event) => {
     const mid = Math.floor(src.length / 2);
     for (let i = 0; i < src.length; ++i) sound[i] = src[i];
     for (let i = 0; i < mid; ++i) sound[i] += src[i + mid];
-    for (let i = mid; i < src.length; ++i) sound[i] += src[i - mid + 1];
+    for (let i = mid; i < src.length; ++i) sound[i] += src[(i - mid + 1) % src.length];
   }
 
   // Post effect.
