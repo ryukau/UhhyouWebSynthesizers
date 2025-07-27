@@ -456,6 +456,14 @@ function random() {
     inputBaseFreq.random();
     inputBandWidth.random();
     inputSeed.random();
+  } else if (pullDownMenuRandomType.value === "PADsynth (Full)") {
+    inputBaseFreq.random();
+    inputBandWidth.random();
+    inputSeed.random();
+
+    var overtone = new Array(overtoneControl.overtone.length).fill(0);
+    for (var i = 0; i < overtone.length; ++i) overtone[i] = Math.random();
+    overtoneControl.setOvertone(overtone);
   } else if (pullDownMenuRandomType.value === "Seed") {
     inputSeed.random();
   } else {
@@ -534,6 +542,7 @@ pullDownMenuRandomType.add("i");
 pullDownMenuRandomType.add("i saw bp");
 pullDownMenuRandomType.add("oa");
 pullDownMenuRandomType.add("PADsynth");
+pullDownMenuRandomType.add("PADsynth (Full)");
 pullDownMenuRandomType.add("Additive Pad");
 pullDownMenuRandomType.add("Seed");
 pullDownMenuRandomType.add("All");
