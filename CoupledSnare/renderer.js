@@ -384,9 +384,10 @@ onmessage = async (event) => {
   const regionSamples = Math.floor(upRate * pv.renderDuration);
   let sound = new Array(Math.floor(upRate * pv.renderDuration)).fill(0);
 
+  const stereoSeed = 17 * pv.channel * pv.noiseStereo;
   slicerLoop: for (let region = 0; region < pv.slicerRegions; ++region) {
     let dsp = {};
-    dsp.rng = new PcgRandom(BigInt(pv.seed + pv.slicerRandomize * region));
+    dsp.rng = new PcgRandom(BigInt(pv.seed + pv.slicerRandomize * region + stereoSeed));
 
     const regionRatio = pv.slicerRegions <= 1 ? 0 : region / (pv.slicerRegions - 1);
     const offsetGain = pv.slicerRegions <= 1 ? 0 : -20;
@@ -462,7 +463,7 @@ onmessage = async (event) => {
     const noiseLevelScaler = pv.slicerRegions <= 1
       ? 1
       : dbToAmp(
-        regionRatio * pv.slicerExcitationGainRange - pv.slicerExcitationGainRange);
+          regionRatio * pv.slicerExcitationGainRange - pv.slicerExcitationGainRange);
     for (let idx = 0; idx < snareDelay.length; ++idx) {
       snareDelay[idx] = new AllpassDelayCascade(
         upRate,

@@ -166,7 +166,7 @@ const param = {
   fadeIn: new parameter.Parameter(0.0, scales.fade, true),
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
-  stereoMerge: new parameter.Parameter(0.75, scales.stereoMerge),
+  stereoMerge: new parameter.Parameter(0, scales.stereoMerge),
   overSample: new parameter.Parameter(0, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
 
@@ -203,6 +203,7 @@ const param = {
   highpassHz: new parameter.Parameter(20, scales.highpassHz, true),
   noiseLevel: new parameter.Parameter(1.3, scales.noiseLevel, true),
   noiseReleaseHz: new parameter.Parameter(20, scales.noiseReleaseHz, true),
+  noiseStereo: new parameter.Parameter(1, scales.boolean, true),
 
   velocity: new parameter.Parameter(0.5, scales.velocity, true),
   seed: new parameter.Parameter(0, scales.seed, true),
@@ -363,6 +364,8 @@ const ui = {
     new widget.NumberInput(detailSnareTone, "Noise Level", param.noiseLevel, render),
   noiseReleaseHz: new widget.NumberInput(
     detailSnareTone, "Noise Release [Hz]", param.noiseReleaseHz, render),
+  noiseStereo: new widget.ToggleButtonLine(
+    detailSnareTone, ["Stereo Noise", "Stereo Noise"], param.noiseStereo, render),
 
   velocity: new widget.NumberInput(detailSnareMisc, "Velocity", param.velocity, render),
   seed: new widget.NumberInput(detailSnareMisc, "Seed", param.seed, render),
