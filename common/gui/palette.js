@@ -37,7 +37,7 @@ export const palette = {
   background: rgbaStr("#ffffffff"),
   boxBackground: rgbaStr("#ffffffff"),
   unfocused: rgbaStr("#ddddddff"),
-  highlightMain: rgbStr(loadCSSVariable("--fill-color")),
+  highlightMain: rgbStr("#c0c0c0ff"),
   highlightAccent: rgbaStr("#13c136ff"),
   highlightButton: rgbaStr("#fcc04fff"),
   highlightWarning: rgbaStr("#fc8080ff"),

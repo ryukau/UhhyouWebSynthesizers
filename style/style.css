@@ -1,19 +1,55 @@
 @import url("font.css");
 
 :root {
+  /* Layout Variables */
   --control-width: 32em;
   --margin: 0.5em;
-  --highlight-color: #fbf1b4;
-  --fill-color: #c0c0c0;
   --font-size-body: 12px;
   --border-radius-mid: 4px;
   --border-radius-small: 1px;
   --input-line-label-width: 31.25%;
   --input-range-width: 60%;
+
+  /* Color Variables (Light Mode Default) */
+  --color-background: #ffffff;
+  --color-text-main: #000000;
+  --color-text-dim: #808080;
+  --color-highlight: #fbf1b4;
+  --color-fill: #c0c0c0;
+  --color-border-light: #e0e0e0;
+  --color-border-mid: #b0b0b0;
+  --color-border-dark: #888888;
+  --color-shadow-main: #000000;
+  --color-shadow-dim: #606060;
+  --color-input-background: #ffffff;
+  --color-track-background: #b0b0b0;
+  --color-track-active: #808080;
+  --color-thumb-background: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
-  html {
+  :root {
+    --color-background: #202020;
+    --color-text-main: #dfdfdf;
+    --color-text-dim: #7f7f7f;
+    --color-highlight: #232a58;
+    --color-fill: #4f4f4f;
+    --color-border-light: #373737;
+    --color-border-mid: #5b5b5b;
+    --color-border-dark: #797979;
+    --color-shadow-main: #dfdfdf;
+    --color-shadow-dim: #979797;
+    --color-input-background: #202020;
+    --color-track-background: #5b5b5b;
+    --color-track-active: #7f7f7f;
+    --color-thumb-background: #202020;
+  }
+
+  a {
+    filter: invert(0.8745);
+  }
+
+  canvas {
     filter: invert(0.8745);
   }
 }
@@ -28,31 +64,30 @@ body {
   font-size: var(--font-size-body);
   margin: auto;
   height: 100%;
+
+  background: var(--color-background);
+  color: var(--color-text-main);
 }
 
 a:hover {
   border-radius: var(--border-radius-mid);
-  box-shadow: 0 0 var(--margin) #000000;
+  box-shadow: 0 0 var(--margin) var(--color-shadow-main);
 }
 
 #main {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   margin: 0 auto;
-
-  writing-mode: vertical-lr;
-  text-orientation: mixed;
-  text-align: start;
+  max-width: 100%;
 }
 
 div.controlBlock {
-  writing-mode: horizontal-tb;
-  text-orientation: upright;
-  text-align: initial;
-
-  display: inline-block;
-  vertical-align: top;
+  display: block;
   width: 100%;
-  max-width: calc(var(--control-width) + var(--margin));
-  margin: 0 var(--margin) 0 var(--margin);
+  max-width: calc(var(--control-width) + 4px);
+  margin: var(--margin);
 }
 
 p#renderStatus {
@@ -119,19 +154,19 @@ details[open] summary {
 }
 
 details[open] summary:hover {
-  box-shadow: 1px 1px 2px #000000;
+  box-shadow: 1px 1px 2px var(--color-shadow-main);
 }
 
 summary {
   margin: 0;
-  box-shadow: inset 1px 1px 4px #000000;
+  box-shadow: inset 1px 1px 4px var(--color-shadow-main);
   --pad: calc(0.25em + var(--margin));
   padding: var(--pad) 0 var(--pad) 0.125em;
   font-weight: var(--font-weight-base);
 }
 
 summary:hover {
-  box-shadow: 1px 1px 4px #000000;
+  box-shadow: 1px 1px 4px var(--color-shadow-main);
   border-radius: var(--border-radius-small);
 }
 
@@ -151,25 +186,25 @@ label.tabRadioLabel {
   flex-grow: 1;
   height: calc(var(--font-size-body) + 2 * var(--margin));
   border-radius: var(--border-radius-mid);
-  border: outset 2px #e0e0e0;
+  border: outset 2px var(--color-border-light);
 }
 
 label.tabRadioLabelActive {
   border-radius: var(--border-radius-mid);
-  border: inset 2px #e0e0e0;
-  box-shadow: inset 1px 1px 2px #000000;
-  background-color: var(--highlight-color);
+  border: inset 2px var(--color-border-light);
+  box-shadow: inset 1px 1px 2px var(--color-shadow-main);
+  background: var(--color-highlight);
 }
 
 label.tabRadioLabelInactive {
   border-radius: var(--border-radius-mid);
-  border: outset 2px #e0e0e0;
-  background-color: white;
+  border: outset 2px var(--color-border-light);
+  background: var(--color-input-background);
 }
 
 label.tabRadioLabelInactive:hover {
-  border: outset 2px #e0e0e0;
-  box-shadow: 2px 2px 4px #000000;
+  border: outset 2px var(--color-border-light);
+  box-shadow: 2px 2px 4px var(--color-shadow-main);
 }
 
 div.tabViewButtonRegion>label>span {
@@ -193,13 +228,13 @@ canvas {
 div.canvasMargin {
   display: inline-block;
   margin: var(--margin);
-  border: solid 1px var(--fill-color);
+  border: solid 1px var(--color-fill);
   border-radius: var(--border-radius-small);
   padding: 0px;
 }
 
 div.canvasMargin:hover {
-  box-shadow: 0 0 var(--margin) #000000;
+  box-shadow: 0 0 var(--margin) var(--color-shadow-main);
 }
 
 /* Button. */
@@ -223,10 +258,11 @@ input[type="button"] {
   font-size: inherit;
   font-family: inherit;
   height: 2em;
+  color: var(--color-text-main);
 
   border-radius: var(--border-radius-mid);
-  border: solid 1px #888888;
-  background-color: white;
+  border: solid 1px var(--color-border-dark);
+  background: var(--color-input-background);
 }
 
 input[type="button"]:hover {
@@ -256,23 +292,23 @@ select:hover {
 
 /* ToggleButton */
 input[type="button"].toggleState0 {
-  border: outset 1px #e0e0e0;
-  box-shadow: 1px 1px 3px #808080;
+  border: outset 1px var(--color-border-light);
+  box-shadow: 1px 1px 3px var(--color-text-dim);
 }
 
 input[type="button"].toggleState0:hover {
-  box-shadow: 1px 1px 1px #000000;
+  box-shadow: 1px 1px 1px var(--color-shadow-main);
 }
 
 input[type="button"].toggleState1 {
   border-radius: var(--border-radius-mid);
-  border: inset 1px #888888;
-  background-color: var(--highlight-color);
+  border: inset 1px var(--color-border-dark);
+  background: var(--color-highlight);
 }
 
 input[type="button"].toggleState1:hover {
-  box-shadow: inset 1px 1px 2px #000000;
-  border: inset 1px var(--highlight-color);
+  box-shadow: inset 1px 1px 2px var(--color-shadow-main);
+  border: inset 1px var(--color-highlight);
 }
 
 input[type="button"].toggleButtonLine {
@@ -290,7 +326,7 @@ div.checkBoxLine {
 }
 
 div.checkBoxLine:hover {
-  box-shadow: 1px 1px 4px #000000;
+  box-shadow: 1px 1px 4px var(--color-shadow-main);
 }
 
 label.checkBoxLine {
@@ -318,7 +354,7 @@ div.inputLine {
 }
 
 div.inputLine:hover {
-  box-shadow: 1px 1px 4px #000000;
+  box-shadow: 1px 1px 4px var(--color-shadow-main);
 }
 
 div.inputLineContainer {
@@ -350,63 +386,63 @@ input[type="range"] {
 }
 
 input[type=range]::-moz-range-thumb {
-  box-shadow: 1px 1px #000000;
-  border: 2px ridge #000000;
+  box-shadow: 1px 1px var(--color-shadow-main);
+  border: 2px ridge var(--color-shadow-main);
   height: var(--font-size-body);
   width: var(--font-size-body);
   border-radius: 3px;
-  background: #ffffff;
+  background: var(--color-thumb-background);
   cursor: pointer;
 }
 
 input[type=range]::-moz-range-thumb:hover {
   box-shadow: none;
-  background: #e0e0e0;
+  background: var(--color-border-light);
 }
 
 input[type=range]::-moz-range-track {
   width: 100%;
   height: calc(0.1 * var(--font-size-body));
-  background: #b0b0b0;
-  border: 1px #e0e0e0 inset;
+  background: var(--color-track-background);
+  border: 1px var(--color-border-light) inset;
   cursor: pointer;
 }
 
 input[type=range]:hover::-moz-range-track {
-  border: 1px #808080 solid;
-  background: #808080;
+  border: 1px var(--color-track-active) solid;
+  background: var(--color-track-active);
 }
 
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   margin-top: calc(-0.5 * var(--font-size-body));
 
-  box-shadow: 1px 1px #606060;
-  border: 2px ridge #b0b0b0;
+  box-shadow: 1px 1px var(--color-shadow-dim);
+  border: 2px ridge var(--color-border-mid);
   height: var(--font-size-body);
   width: var(--font-size-body);
   border-radius: 3px;
-  background: #ffffff;
+  background: var(--color-thumb-background);
   cursor: pointer;
 }
 
 input[type=range]::-webkit-slider-thumb:hover {
   box-shadow: none;
-  background: #e0e0e0;
+  background: var(--color-border-light);
 }
 
 input[type=range]::-webkit-slider-runnable-track {
   -webkit-appearance: none;
   width: 100%;
   height: calc(0.1 * var(--font-size-body));
-  background: #b0b0b0;
-  border: 1px #e0e0e0 inset;
+  background: var(--color-track-background);
+  border: 1px var(--color-border-light) inset;
   cursor: pointer;
 }
 
 input[type=range]:hover::-webkit-slider-runnable-track {
-  border: 1px #808080 solid;
-  background: #808080;
+  border: 1px var(--color-track-active) solid;
+  background: var(--color-track-active);
 }
 
 /* NumberInput: <input type="number"> */
@@ -418,6 +454,10 @@ input[type="number"] {
   font-family: inherit;
   width: calc(100% - var(--input-range-width));
   margin: auto;
+
+  background: var(--color-input-background);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border-dark);
 }
 
 input[type="number"]:hover {
@@ -425,6 +465,12 @@ input[type="number"]:hover {
 }
 
 /* ComboBox */
+select {
+  background: var(--color-input-background);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border-dark);
+}
+
 select.inputLine {
   display: block;
   text-align: center;
@@ -439,7 +485,7 @@ div.barboxContainer {
 }
 
 div.barboxContainer:hover {
-  background: #fbf1b4;
+  background: var(--color-highlight);
 }
 
 label.barbox {
@@ -467,6 +513,9 @@ input.barbox {
 dialog.recipeExport {
   padding: calc(3 * var(--margin));
   font-size: 1rem;
+  background: var(--color-background);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border-mid);
 }
 
 dialog.recipeExport>h2 {
@@ -482,7 +531,7 @@ div.dialogTextInputLine {
 }
 
 div.dialogTextInputLine:hover {
-  box-shadow: 1px 1px 4px #000000;
+  box-shadow: 1px 1px 4px var(--color-shadow-main);
 }
 
 div.dialogTextInputLine>label {
@@ -494,6 +543,9 @@ div.dialogTextInputLine>input[type="text"] {
   box-sizing: border-box;
   padding: var(--margin);
   font-size: inherit;
+  background: var(--color-input-background);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border-dark);
 }
 
 div.dialogConfirmButtonLine {
@@ -521,6 +573,9 @@ dialog.recipeImport {
   width: 66%;
   padding: calc(3 * var(--margin));
   font-size: 1rem;
+  background: var(--color-background);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border-mid);
 }
 
 dialog.recipeImport>h2 {
@@ -542,29 +597,28 @@ div.RecipeImportInputContainer>input[type="file"] {
 }
 
 input[type="file"]:hover {
-  box-shadow: 2px 2px 8px #000000;
-  background-color: var(--highlight-color);
+  box-shadow: 2px 2px 8px var(--color-shadow-main);
+  background: var(--color-highlight);
 }
 
 div#RecipeImportDragAndDropArea {
   max-width: 100%;
   height: calc(var(--control-width) / 2);
   box-sizing: border-box;
-  border: inset 8px #000000;
+  border: inset 8px var(--color-shadow-main);
   transition: all 0.08s ease-out;
 
   display: flex;
   justify-content: center;
   align-items: center;
-
 }
 
 div#RecipeImportDragAndDropArea>span {
-  color: #808080;
+  color: var(--color-text-dim);
   font-size: 4rem;
 }
 
 div#RecipeImportDragAndDropArea:hover {
-  background-color: var(--highlight-color);
-  box-shadow: inset 8px 8px 16px #000000;
+  background: var(--color-highlight);
+  box-shadow: inset 8px 8px 16px var(--color-shadow-main);
 }

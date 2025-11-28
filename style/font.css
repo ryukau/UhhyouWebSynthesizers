@@ -1,43 +1,8 @@
 /* Sofia-Sans */
 @font-face {
   font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-Thin.woff2");
-  font-weight: 100;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-ExtraLight.woff2");
-  font-weight: 200;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-Light.woff2");
-  font-weight: 300;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
   src: url("font/Sofia-Sans/SofiaSans-Regular.woff2");
   font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-Medium.woff2");
-  font-weight: 500;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-SemiBold.woff2");
-  font-weight: 600;
   font-style: normal;
 }
 
@@ -48,98 +13,7 @@
   font-style: normal;
 }
 
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-ExtraBold.woff2");
-  font-weight: 800;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-Black.woff2");
-  font-weight: 900;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-ThinItalic.woff2");
-  font-weight: 100;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-ExtraLightItalic.woff2");
-  font-weight: 200;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-LightItalic.woff2");
-  font-weight: 300;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-Italic.woff2");
-  font-weight: 400;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-MediumItalic.woff2");
-  font-weight: 500;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-SemiBoldItalic.woff2");
-  font-weight: 600;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-BoldItalic.woff2");
-  font-weight: 700;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-ExtraBoldItalic.woff2");
-  font-weight: 800;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Sofia-Sans";
-  src: url("font/Sofia-Sans/SofiaSans-BlackItalic.woff2");
-  font-weight: 900;
-  font-style: italic;
-}
-
 /* Inconsolata */
-@font-face {
-  font-family: "Inconsolata";
-  src: url("font/Inconsolata/Inconsolata-ExtraLight.woff2");
-  font-weight: 200;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Inconsolata";
-  src: url("font/Inconsolata/Inconsolata-Light.woff2");
-  font-weight: 300;
-  font-style: normal;
-}
-
 @font-face {
   font-family: "Inconsolata";
   src: url("font/Inconsolata/Inconsolata-Regular.woff2");
@@ -149,36 +23,8 @@
 
 @font-face {
   font-family: "Inconsolata";
-  src: url("font/Inconsolata/Inconsolata-Medium.woff2");
-  font-weight: 500;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Inconsolata";
-  src: url("font/Inconsolata/Inconsolata-SemiBold.woff2");
-  font-weight: 600;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Inconsolata";
   src: url("font/Inconsolata/Inconsolata-Bold.woff2");
   font-weight: 700;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Inconsolata";
-  src: url("font/Inconsolata/Inconsolata-ExtraBold.woff2");
-  font-weight: 800;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Inconsolata";
-  src: url("font/Inconsolata/Inconsolata-Black.woff2");
-  font-weight: 900;
   font-style: normal;
 }
 
