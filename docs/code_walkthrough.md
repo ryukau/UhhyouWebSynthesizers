@@ -1,5 +1,5 @@
 # Code Walkthrough
-This document provides an overview of code structure, so to reduce the time to figure out where to read.
+This document provides an overview of code structure, to reduce the time to figure out where to read.
 
 For simple things, using search tools is probably faster than reading this text. [`rg`](https://github.com/BurntSushi/ripgrep), [`fd`](https://github.com/sharkdp/fd), and [`fzf`](https://github.com/junegunn/fzf) are example of search tools. I personally use [VS Code's built in search box](https://code.visualstudio.com/docs/editor/codebasics#_search-across-files).
 
@@ -106,7 +106,7 @@ This structure is used because of parameter lock functionality. At first, I cons
 }
 ```
 
-This is error prone because it's possible to forget the check when adding new randomizations It's better if it can be written like below:
+This is error prone because it's possible to forget the check when adding new randomizations. It's better if it can be written like below:
 
 ```javascript
 (prm) => {
@@ -141,14 +141,14 @@ if (Array.isArray(prm)) {
 }
 ```
 
-It's a bad hack because `lockRandomization` is leaking outside of `Parameter`. However, all the local JavaScript recipes have to be rewritten in order to fix the leak. I don't think it's worth the effor, so they are staying as is, for now.
+It's a bad hack because `lockRandomization` is leaking outside of `Parameter`. However, all the local JavaScript recipes have to be rewritten in order to fix the leak. I don't think it's worth the effort, so they are staying as is, for now.
 
 ### Old Synth
 Synthesizers in `oldsynth` are written in entirely different style. I've never thought I make this much synthesizers, so their structures are pretty dirty when it comes to code reusing. Duplications are everywhere, and they might subtly differ to each other.
 
 I'd recommend to avoid spending time in `oldsynth` directory unless you really want to modify one of them.
 
-GUI is mostly defined in `index.js`, and GUI widgets are likely comes from `canvas.js`. Some relatively newer synths have `renderer.js` and that contains DSP code. Older ones don't even have `renderer.js`, and DSP is clammed into `index.js`.
+GUI is mostly defined in `index.js`, and GUI widgets are likely come from `canvas.js`. Some relatively newer synths have `renderer.js` and that contains DSP code. Older ones don't even have `renderer.js`, and DSP is clammed into `index.js`.
 
 ### Concerns or Possible Changes
 There are some reserved parameter names as a result of dirty hack. See `Audio.render()` in `common/wave.js`.
@@ -158,7 +158,7 @@ It might be better to separate the code to read exported randomization recipes, 
 ## Aims
 UhhyouWebSynthesizers are mostly about experimentation. So the code aims to produce prototypes as fast as possible.
 
-I'm trying to maximize code reuse on GUI. This is because I know internals and don't need visualization.
+I'm trying to maximize code reuse on GUI. Visualization is omitted to speed up the DSP development.
 
 On DSP, duplication with subtle difference is allowed for fine tuning. For example, it's better to reimplement feedback comb if components on the feedback path interact with the feedback signal.
 
