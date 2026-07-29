@@ -57,8 +57,8 @@ const scales = {
 
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   attackSecond: new parameter.DecibelScale(-60, -20, true),
-  minFreq: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(20), util.freqToMidiPitch(16000), false),
+  minFreq:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(20), util.freqToMidiPitch(16000), false),
   numBin: new parameter.DecibelScale(20, 60, false),
   bandWidthOctave: new parameter.DecibelScale(-60, 0, false),
   gainSlope: new parameter.DecibelScale(-6, 6, false),
@@ -68,10 +68,10 @@ const scales = {
   nDelay: new parameter.IntScale(1, 32),
   delayTime: new parameter.DecibelScale(-60, util.ampToDB(0.2), true),
   feedback: new parameter.LinearScale(-1, 1),
-  highpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(1), util.freqToMidiPitch(48000), true),
-  lowpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
+  highpassHz:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(1), util.freqToMidiPitch(48000), true),
+  lowpassHz:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
   filterQ: new parameter.LinearScale(0.1, Math.SQRT1_2),
 };
 
@@ -95,8 +95,8 @@ const param = {
   gainSlope: new parameter.Parameter(1, scales.gainSlope, false),
   stereoRandom: new parameter.Parameter(0, scales.defaultScale),
 
-  combSection: new parameter.Parameter(
-    menuitems.combSectionItems.indexOf("Active"), scales.combSection),
+  combSection:
+    new parameter.Parameter(menuitems.combSectionItems.indexOf("Active"), scales.combSection),
   padMix: new parameter.Parameter(1, scales.padMix),
   nDelay: new parameter.Parameter(16, scales.nDelay),
   delayTime: new parameter.Parameter(0.03, scales.delayTime, true),
@@ -107,8 +107,8 @@ const param = {
   highpassQ: new parameter.Parameter(Math.SQRT1_2, scales.filterQ, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -138,11 +138,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -176,38 +182,30 @@ const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  outputDecayTo:
-    new widget.NumberInput(detailRender, "Decay To [dB]", param.outputDecayTo, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  outputDecayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.outputDecayTo, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
   nLayer: new widget.NumberInput(detailLayer, "nLayer", param.nLayer, render),
   interval: new widget.NumberInput(detailLayer, "Interval [s]", param.interval, render),
   jitter: new widget.NumberInput(detailLayer, "Jitter", param.jitter, render),
   seed: new widget.NumberInput(detailLayer, "Seed", param.seed, render),
 
-  padDecayTo:
-    new widget.NumberInput(detailPad, "Decay To [dB]", param.padDecayTo, render),
-  attackSecond:
-    new widget.NumberInput(detailPad, "Attack [s]", param.attackSecond, render),
-  minFreq:
-    new widget.NumberInput(detailPad, "Min. Frequency [Hz]", param.minFreq, render),
+  padDecayTo: new widget.NumberInput(detailPad, "Decay To [dB]", param.padDecayTo, render),
+  attackSecond: new widget.NumberInput(detailPad, "Attack [s]", param.attackSecond, render),
+  minFreq: new widget.NumberInput(detailPad, "Min. Frequency [Hz]", param.minFreq, render),
   numBin: new widget.NumberInput(detailPad, "nBin", param.numBin, render),
   bandWidthOctave:
     new widget.NumberInput(detailPad, "Band Width [oct]", param.bandWidthOctave, render),
-  gainSlope:
-    new widget.NumberInput(detailPad, "Gain Slope [dB/oct]", param.gainSlope, render),
-  stereoRandom:
-    new widget.NumberInput(detailPad, "Stereo Randomize", param.stereoRandom, render),
+  gainSlope: new widget.NumberInput(detailPad, "Gain Slope [dB/oct]", param.gainSlope, render),
+  stereoRandom: new widget.NumberInput(detailPad, "Stereo Randomize", param.stereoRandom, render),
 
-  combSection: new widget.ToggleButtonLine(
-    detailComb, menuitems.combSectionItems, param.combSection, render),
+  combSection:
+    new widget.ToggleButtonLine(detailComb, menuitems.combSectionItems, param.combSection, render),
   padMix: new widget.NumberInput(detailComb, "Input Mix [dB]", param.padMix, render),
   nDelay: new widget.NumberInput(detailComb, "nDelay", param.nDelay, render),
-  delayTime:
-    new widget.NumberInput(detailComb, "Delay Time [s]", param.delayTime, render),
+  delayTime: new widget.NumberInput(detailComb, "Delay Time [s]", param.delayTime, render),
   feedback: new widget.NumberInput(detailComb, "Feedback", param.feedback, render),
   lowpassHz: new widget.NumberInput(detailComb, "LP Cut [Hz]", param.lowpassHz, render),
   lowpassQ: new widget.NumberInput(detailComb, "LP Q", param.lowpassQ, render),

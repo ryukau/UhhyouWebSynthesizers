@@ -18,12 +18,8 @@ function randomIdentityAmount(prm) {
   prm.dsp = util.dbToAmp(util.uniformFloatMap(Math.random(), -20, 40));
 };
 function randomFrequency(prm) { prm.dsp = util.uniformFloatMap(Math.random(), 20, 90); };
-function randomFeedback(prm) {
-  prm.dsp = 1 - util.exponentialMap(Math.random(), 0.02, 0.15);
-};
-function randomHighpassCutoffHz(prm) {
-  prm.dsp = util.uniformFloatMap(Math.random(), 10, 100);
-};
+function randomFeedback(prm) { prm.dsp = 1 - util.exponentialMap(Math.random(), 0.02, 0.15); };
+function randomHighpassCutoffHz(prm) { prm.dsp = util.uniformFloatMap(Math.random(), 10, 100); };
 
 const localRecipeBook = {
   "Default": {
@@ -47,8 +43,7 @@ const localRecipeBook = {
     batterIdentityAmount: (prm) => randomIdentityAmount(prm),
     batterFrequency: (prm) => randomFrequency(prm),
     batterFeedback: (prm) => randomFeedback(prm),
-    batterLowpassCutoffHz:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
+    batterLowpassCutoffHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
     batterLowpassQ: () => {},
     batterHighpassQ: () => {},
     batterHighpassCutoffHz: (prm) => randomHighpassCutoffHz(prm),
@@ -59,8 +54,7 @@ const localRecipeBook = {
     snareIdentityAmount: (prm) => randomIdentityAmount(prm),
     snareFrequency: (prm) => randomFrequency(prm),
     snareFeedback: (prm) => randomFeedback(prm),
-    snareLowpassCutoffHz:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 16000); },
+    snareLowpassCutoffHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 16000); },
     snareLowpassQ: () => {},
     snareHighpassQ: () => {},
     snareHighpassCutoffHz: (prm) => randomHighpassCutoffHz(prm),
@@ -137,8 +131,8 @@ const scales = {
   delayInterp: new parameter.MenuItemScale(menuitems.delayInterpItems),
   identityAmount: new parameter.DecibelScale(-60, 60, false),
   frequency: new parameter.MidiPitchScale(0, 144, false),
-  filterCutoffBaseOctave: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
+  filterCutoffBaseOctave:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
   filterCutoffOffsetOctave: new parameter.LinearScale(-1, 1),
   filterQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
   filterGain: new parameter.DecibelScale(-24, 0, false),
@@ -179,10 +173,8 @@ const param = {
   batterFeedback: new parameter.Parameter(0.96, scales.fdnFeedback, true),
   batterTimeModulation: new parameter.Parameter(1, scales.fdnTimeModulation, true),
   batterTimeRateLimit: new parameter.Parameter(0.5, scales.fdnTimeRateLimit, true),
-  batterLowpassCutoffHz:
-    new parameter.Parameter(2000, scales.filterCutoffBaseOctave, true),
-  batterHighpassCutoffHz:
-    new parameter.Parameter(190, scales.filterCutoffBaseOctave, true),
+  batterLowpassCutoffHz: new parameter.Parameter(2000, scales.filterCutoffBaseOctave, true),
+  batterHighpassCutoffHz: new parameter.Parameter(190, scales.filterCutoffBaseOctave, true),
   batterLowpassQ: createArrayParameters(0.7, scales.filterQ),
   batterHighpassQ: createArrayParameters(0.7, scales.filterQ),
 
@@ -196,15 +188,14 @@ const param = {
   snareFeedback: new parameter.Parameter(0.96, scales.fdnFeedback, true),
   snareTimeModulation: new parameter.Parameter(1, scales.fdnTimeModulation, true),
   snareTimeRateLimit: new parameter.Parameter(0.5, scales.fdnTimeRateLimit, true),
-  snareLowpassCutoffHz:
-    new parameter.Parameter(10000, scales.filterCutoffBaseOctave, true),
+  snareLowpassCutoffHz: new parameter.Parameter(10000, scales.filterCutoffBaseOctave, true),
   snareHighpassCutoffHz: new parameter.Parameter(20, scales.filterCutoffBaseOctave, true),
   snareLowpassQ: createArrayParameters(0.7, scales.filterQ),
   snareHighpassQ: createArrayParameters(0.7, scales.filterQ),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
@@ -215,10 +206,8 @@ const divLeft = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
 ];
 
 const audio = new wave.Audio(
@@ -235,11 +224,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -281,95 +276,87 @@ const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  expDecayTo:
-    new widget.NumberInput(detailRender, "Decay To [dB]", param.expDecayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  expDecayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.expDecayTo, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
-  impactAmplitude:
-    new widget.NumberInput(detailImpact, "Amplitude", param.impactAmplitude, render),
+  impactAmplitude: new widget.NumberInput(detailImpact, "Amplitude", param.impactAmplitude, render),
   impactPulseDecayTime:
     new widget.NumberInput(detailImpact, "Decay [s]", param.impactPulseDecayTime, render),
-  impactPosition: new widget.NumberInput(
-    detailImpact, "Center-Rim Position", param.impactPosition, render),
+  impactPosition:
+    new widget.NumberInput(detailImpact, "Center-Rim Position", param.impactPosition, render),
 
-  pulseThreshold:
-    new widget.NumberInput(detailWire, "Threshold", param.pulseThreshold, render),
+  pulseThreshold: new widget.NumberInput(detailWire, "Threshold", param.pulseThreshold, render),
   pulseLoss: new widget.NumberInput(detailWire, "Loss", param.pulseLoss, render),
-  pulseDecayTime:
-    new widget.NumberInput(detailWire, "Decay [s]", param.pulseDecayTime, render),
+  pulseDecayTime: new widget.NumberInput(detailWire, "Decay [s]", param.pulseDecayTime, render),
 
   fdnMix: new widget.NumberInput(detailFDN, "Batter-Snare Mix", param.fdnMix, render),
   fdnCross: new widget.NumberInput(detailFDN, "Cross", param.fdnCross, render),
   crossDecayTime:
     new widget.NumberInput(detailFDN, "Cross Decay [s]", param.crossDecayTime, render),
-  crossSafetyReduction: new widget.NumberInput(
-    detailFDN, "Cross Safety Reduction", param.crossSafetyReduction, render),
+  crossSafetyReduction:
+    new widget.NumberInput(detailFDN, "Cross Safety Reduction", param.crossSafetyReduction, render),
 
   batterMatrixSize: new widget.NumberInput(
     detailBatter, "Matrix Size", param.batterMatrixSize, onBatterMatrixSizeChanged),
   batterMatrixType:
     new widget.ComboBoxLine(detailBatter, "Matrix Type", param.batterMatrixType, render),
-  batterDelayInterp: new widget.ComboBoxLine(
-    detailBatter, "Delay Interpolation", param.batterDelayInterp, render),
-  batterIdentityAmount: new widget.NumberInput(
-    detailBatter, "Identity Amount", param.batterIdentityAmount, render),
+  batterDelayInterp:
+    new widget.ComboBoxLine(detailBatter, "Delay Interpolation", param.batterDelayInterp, render),
+  batterIdentityAmount:
+    new widget.NumberInput(detailBatter, "Identity Amount", param.batterIdentityAmount, render),
   batterFrequency:
     new widget.NumberInput(detailBatter, "Frequency [Hz]", param.batterFrequency, render),
   batterShape: new widget.NumberInput(detailBatter, "Shape", param.batterShape, render),
   batterOvertoneRandomization: new widget.NumberInput(
     detailBatter, "Overtone Random", param.batterOvertoneRandomization, render),
-  batterFeedback:
-    new widget.NumberInput(detailBatter, "Feedback", param.batterFeedback, render),
-  batterTimeModulation: new widget.NumberInput(
-    detailBatter, "Time Modulation", param.batterTimeModulation, render),
-  batterTimeRateLimit: new widget.NumberInput(
-    detailBatter, "Time Rate Limit", param.batterTimeRateLimit, render),
+  batterFeedback: new widget.NumberInput(detailBatter, "Feedback", param.batterFeedback, render),
+  batterTimeModulation:
+    new widget.NumberInput(detailBatter, "Time Modulation", param.batterTimeModulation, render),
+  batterTimeRateLimit:
+    new widget.NumberInput(detailBatter, "Time Rate Limit", param.batterTimeRateLimit, render),
   batterLowpassCutoffHz: new widget.NumberInput(
     detailBatter, "Highshelf Cutoff [Hz]", param.batterLowpassCutoffHz, render),
   batterHighpassCutoffHz: new widget.NumberInput(
     detailBatter, "Highpass Cutoff [Hz]", param.batterHighpassCutoffHz, render),
   batterLowpassQ: new widget.BarBox(
-    detailBatter, "Highshelf Q", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.batterLowpassQ, render),
+    detailBatter, "Highshelf Q", uiSize.barboxWidth, uiSize.barboxHeight, param.batterLowpassQ,
+    render),
   batterHighpassQ: new widget.BarBox(
-    detailBatter, "Highpass Q", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.batterHighpassQ, render),
+    detailBatter, "Highpass Q", uiSize.barboxWidth, uiSize.barboxHeight, param.batterHighpassQ,
+    render),
 
   snareMatrixSize: new widget.NumberInput(
     detailSnare, "Matrix Size", param.snareMatrixSize, onSnareMatrixSizeChanged),
   snareMatrixType:
     new widget.ComboBoxLine(detailSnare, "Matrix Type", param.snareMatrixType, render),
-  snareDelayInterp: new widget.ComboBoxLine(
-    detailSnare, "Delay Interpolation", param.snareDelayInterp, render),
-  snareIdentityAmount: new widget.NumberInput(
-    detailSnare, "Identity Amount", param.snareIdentityAmount, render),
+  snareDelayInterp:
+    new widget.ComboBoxLine(detailSnare, "Delay Interpolation", param.snareDelayInterp, render),
+  snareIdentityAmount:
+    new widget.NumberInput(detailSnare, "Identity Amount", param.snareIdentityAmount, render),
   snareFrequency:
     new widget.NumberInput(detailSnare, "Frequency [Hz]", param.snareFrequency, render),
   snareShape: new widget.NumberInput(detailSnare, "Shape", param.snareShape, render),
   snareOvertoneRandomization: new widget.NumberInput(
     detailSnare, "Overtone Random", param.snareOvertoneRandomization, render),
-  snareFeedback:
-    new widget.NumberInput(detailSnare, "Feedback", param.snareFeedback, render),
-  snareTimeModulation: new widget.NumberInput(
-    detailSnare, "Time Modulation", param.snareTimeModulation, render),
-  snareTimeRateLimit: new widget.NumberInput(
-    detailSnare, "Time Rate Limit", param.snareTimeRateLimit, render),
+  snareFeedback: new widget.NumberInput(detailSnare, "Feedback", param.snareFeedback, render),
+  snareTimeModulation:
+    new widget.NumberInput(detailSnare, "Time Modulation", param.snareTimeModulation, render),
+  snareTimeRateLimit:
+    new widget.NumberInput(detailSnare, "Time Rate Limit", param.snareTimeRateLimit, render),
   snareLowpassCutoffHz: new widget.NumberInput(
     detailSnare, "Highshelf Cutoff [Hz]", param.snareLowpassCutoffHz, render),
   snareHighpassCutoffHz: new widget.NumberInput(
     detailSnare, "Highpass Cutoff [Hz]", param.snareHighpassCutoffHz, render),
   snareLowpassQ: new widget.BarBox(
-    detailSnare, "Highshelf Q", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.snareLowpassQ, render),
+    detailSnare, "Highshelf Q", uiSize.barboxWidth, uiSize.barboxHeight, param.snareLowpassQ,
+    render),
   snareHighpassQ: new widget.BarBox(
-    detailSnare, "Highpass Q", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.snareHighpassQ, render),
+    detailSnare, "Highpass Q", uiSize.barboxWidth, uiSize.barboxHeight, param.snareHighpassQ,
+    render),
 };
 
 onBatterMatrixSizeChanged(param.batterMatrixSize.defaultDsp);

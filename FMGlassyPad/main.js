@@ -47,9 +47,7 @@ const localRecipeBook = {
         chord.splice(removeIndex, 1);
       }
 
-      for (let idx = 0; idx < prm.length; ++idx) {
-        prm[idx].dsp = chord.includes(idx) ? 1 : 0;
-      }
+      for (let idx = 0; idx < prm.length; ++idx) { prm[idx].dsp = chord.includes(idx) ? 1 : 0; }
     },
     lfoFreqHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.01, 4); },
   },
@@ -103,8 +101,7 @@ const scales = {
   fmIndex: new parameter.DecibelScale(util.ampToDB(1 / 4), util.ampToDB(16), true),
 
   reverbMix: new parameter.DecibelScale(-60, 0, true),
-  reverbSeconds:
-    new parameter.DecibelScale(-60, util.ampToDB(maxReverbTimeSeconds), true),
+  reverbSeconds: new parameter.DecibelScale(-60, util.ampToDB(maxReverbTimeSeconds), true),
   reverbFeedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
   reverbHighpassHz: new parameter.DecibelScale(0, 60, true),
 
@@ -130,8 +127,7 @@ const param = {
   seed: new parameter.Parameter(0, scales.seed, true),
   gainAttackSeconds: new parameter.Parameter(0.002, scales.gainAttackSeconds, true),
 
-  frequencyHz:
-    new parameter.Parameter(util.midiPitchToFreq(72), scales.frequencyHz, true),
+  frequencyHz: new parameter.Parameter(util.midiPitchToFreq(72), scales.frequencyHz, true),
   centsRandomize: new parameter.Parameter(
     1200 * Math.log2(81 / 80), // Syntonic comma.
     scales.unisonPitchSpreadCents, true),
@@ -181,8 +177,8 @@ const param = {
     justIntonationTable.length, scales.boolean),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -213,11 +209,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -255,21 +257,17 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
 
   seed: new widget.NumberInput(detailMisc, "Seed", param.seed, render),
-  gainAttackSeconds: new widget.NumberInput(
-    detailMisc, "Gain Attack [s]", param.gainAttackSeconds, render),
+  gainAttackSeconds:
+    new widget.NumberInput(detailMisc, "Gain Attack [s]", param.gainAttackSeconds, render),
 
-  frequencyHz:
-    new widget.NumberInput(detailFM, "Frequency [Hz]", param.frequencyHz, render),
+  frequencyHz: new widget.NumberInput(detailFM, "Frequency [Hz]", param.frequencyHz, render),
   centsRandomize:
     new widget.NumberInput(detailFM, "Pitch Random [cent]", param.centsRandomize, render),
   octaveRandomize:
@@ -279,36 +277,29 @@ const ui = {
     detailFM, "Unison Pitch Spread [cent]", param.unisonPitchSpreadCents, render),
   chord1NoteCount:
     new widget.NumberInput(detailFM, "Chord 1 Note Count", param.chord1NoteCount, render),
-  chord1Ratio:
-    new widget.NumberInput(detailFM, "Chord 1 Pitch Ratio", param.chord1Ratio, render),
-  chord1OctaveWrap: new widget.NumberInput(
-    detailFM, "Chord 1 Pitch Wrap [oct]", param.chord1OctaveWrap, render),
+  chord1Ratio: new widget.NumberInput(detailFM, "Chord 1 Pitch Ratio", param.chord1Ratio, render),
+  chord1OctaveWrap:
+    new widget.NumberInput(detailFM, "Chord 1 Pitch Wrap [oct]", param.chord1OctaveWrap, render),
   modAttackSeconds:
     new widget.NumberInput(detailFM, "Mod Attack [s]", param.modAttackSeconds, render),
-  modDecaySeconds:
-    new widget.NumberInput(detailFM, "Mod Decay [s]", param.modDecaySeconds, render),
+  modDecaySeconds: new widget.NumberInput(detailFM, "Mod Decay [s]", param.modDecaySeconds, render),
   fmIndex: new widget.NumberInput(detailFM, "FM Index", param.fmIndex, render),
 
   reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
-  reverbSeconds:
-    new widget.NumberInput(detailReverb, "Max Delay [s]", param.reverbSeconds, render),
-  reverbFeedback:
-    new widget.NumberInput(detailReverb, "Feedback", param.reverbFeedback, render),
+  reverbSeconds: new widget.NumberInput(detailReverb, "Max Delay [s]", param.reverbSeconds, render),
+  reverbFeedback: new widget.NumberInput(detailReverb, "Feedback", param.reverbFeedback, render),
   reverbHighpassHz:
     new widget.NumberInput(detailReverb, "Highpass [Hz]", param.reverbHighpassHz, render),
 
-  flangerMix:
-    new widget.NumberInput(detailFlanger, "Mix [ratio]", param.flangerMix, render),
+  flangerMix: new widget.NumberInput(detailFlanger, "Mix [ratio]", param.flangerMix, render),
   nTap: new widget.NumberInput(detailFlanger, "nTap", param.nTap, render),
-  delayBaseHz:
-    new widget.NumberInput(detailFlanger, "Delay Base [Hz]", param.delayBaseHz, render),
+  delayBaseHz: new widget.NumberInput(detailFlanger, "Delay Base [Hz]", param.delayBaseHz, render),
   delayRandomRatio:
     new widget.NumberInput(detailFlanger, "Delay Random", param.delayRandomRatio, render),
-  lfoFreqHz:
-    new widget.NumberInput(detailFlanger, "LFO Frequency [Hz]", param.lfoFreqHz, render),
+  lfoFreqHz: new widget.NumberInput(detailFlanger, "LFO Frequency [Hz]", param.lfoFreqHz, render),
   lfoAmount: new widget.NumberInput(detailFlanger, "LFO Amount", param.lfoAmount, render),
-  lfoInitialPhase: new widget.NumberInput(
-    detailFlanger, "LFO Phase [rad/2π]", param.lfoInitialPhase, render),
+  lfoInitialPhase:
+    new widget.NumberInput(detailFlanger, "LFO Phase [rad/2π]", param.lfoInitialPhase, render),
 
   chord2Notes: new widget.MultiCheckBoxVertical(
     detailFMChord2, "Notes in Chord 2 (Just Intonation, Semitone)",

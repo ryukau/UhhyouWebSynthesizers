@@ -27,11 +27,9 @@ const localRecipeBook = {
     renderSamples: () => {},
     fadeIn: () => {},
     fadeOut: () => {},
-    sourceLowpassCutoffHz:
-      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 100, 12000); },
-    sourceLowpassQ: (prm) => {
-      prm.dsp = util.exponentialMap(Math.random(), Math.SQRT2 / 8, Math.SQRT2);
-    },
+    sourceLowpassCutoffHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 100, 12000); },
+    sourceLowpassQ:
+      (prm) => { prm.dsp = util.exponentialMap(Math.random(), Math.SQRT2 / 8, Math.SQRT2); },
     dcHighpass: (prm) => { randomEq(prm, 10, 120, 0.5, 10, 0, 0); },
     nyquistLowpass: (prm) => { randomEq(prm, 4000, 20000, 0.5, 4, 0, 0); },
     peak1: (prm) => { randomEq(prm, 80, 200, 0.5, 4, 10, 30); },
@@ -96,8 +94,8 @@ const param = {
   seed: new parameter.Parameter(0, scales.seed),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
@@ -109,19 +107,24 @@ const divRight = widget.div(divMain, undefined, "controlBlock");
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
   new widget.WaveView(
-    divLeft, 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, audio.wave.data[0],
-    false),
+    divLeft, 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, audio.wave.data[0], false),
 ];
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -151,23 +154,25 @@ const detailSource = widget.details(divLeft, "Source");
 const detailGainPeak = widget.details(divRight, "Gain Peak");
 
 const ui = {
-  renderSamples: new widget.NumberInput(
-    detailRender, "Duration [sample]", param.renderSamples, render),
+  renderSamples:
+    new widget.NumberInput(detailRender, "Duration [sample]", param.renderSamples, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [sample]", param.fadeIn, render),
-  fadeOut:
-    new widget.NumberInput(detailRender, "Fade-out [sample]", param.fadeOut, render),
+  fadeOut: new widget.NumberInput(detailRender, "Fade-out [sample]", param.fadeOut, render),
 
   seed: new widget.NumberInput(detailSource, "Seed", param.seed, render),
-  sourceLowpassCutoffHz: new widget.NumberInput(
-    detailSource, "LP Cutoff [Hz]", param.sourceLowpassCutoffHz, render),
-  sourceLowpassQ:
-    new widget.NumberInput(detailSource, "LP Q", param.sourceLowpassQ, render),
+  sourceLowpassCutoffHz:
+    new widget.NumberInput(detailSource, "LP Cutoff [Hz]", param.sourceLowpassCutoffHz, render),
+  sourceLowpassQ: new widget.NumberInput(detailSource, "LP Q", param.sourceLowpassQ, render),
 
   eq: new EqualizerXYPad(
     detailGainPeak, audio.audioContext.sampleRate, 4 * uiSize.waveViewWidth,
     4 * uiSize.waveViewHeight, "Peaking Filters", scales.cutoffHz, scales.Q, scales.gain,
     [
-      param.dcHighpass, param.nyquistLowpass, param.peak1, param.peak2, param.peak3,
+      param.dcHighpass,
+      param.nyquistLowpass,
+      param.peak1,
+      param.peak2,
+      param.peak3,
       // param.peak4, param.peak5,
     ],
     render),

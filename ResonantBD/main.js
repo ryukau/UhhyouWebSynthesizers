@@ -129,8 +129,8 @@ const param = {
   distortionGain: new parameter.Parameter(1, scales.distortionGain, false),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -161,11 +161,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -203,50 +209,42 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
-  limiterAttack:
-    new widget.NumberInput(detailLimiter, "Attack [s]", param.limiterAttack, render),
+  limiterAttack: new widget.NumberInput(detailLimiter, "Attack [s]", param.limiterAttack, render),
   limiterSustain:
     new widget.NumberInput(detailLimiter, "Sustain [s]", param.limiterSustain, render),
   limiterRelease:
     new widget.NumberInput(detailLimiter, "Release [s]", param.limiterRelease, render),
-  limiterInputGain: new widget.NumberInput(
-    detailLimiter, "Input Gain [dB]", param.limiterInputGain, render),
-  limiterSaturationMix: new widget.NumberInput(
-    detailLimiter, "Saturation Mix", param.limiterSaturationMix, render),
+  limiterInputGain:
+    new widget.NumberInput(detailLimiter, "Input Gain [dB]", param.limiterInputGain, render),
+  limiterSaturationMix:
+    new widget.NumberInput(detailLimiter, "Saturation Mix", param.limiterSaturationMix, render),
 
-  noiseStereo: new widget.ToggleButtonLine(
-    detailOsc, menuitems.noiseStereoItems, param.noiseStereo, render),
-  noiseDecay:
-    new widget.NumberInput(detailOsc, "Noise Decay [s]", param.noiseDecay, render),
-  clickDecay:
-    new widget.NumberInput(detailOsc, "Click Decay [s]", param.clickDecay, render),
+  noiseStereo:
+    new widget.ToggleButtonLine(detailOsc, menuitems.noiseStereoItems, param.noiseStereo, render),
+  noiseDecay: new widget.NumberInput(detailOsc, "Noise Decay [s]", param.noiseDecay, render),
+  clickDecay: new widget.NumberInput(detailOsc, "Click Decay [s]", param.clickDecay, render),
   clickPitchRatio:
     new widget.NumberInput(detailOsc, "Click Pitch Ratio", param.clickPitchRatio, render),
-  clickAmount:
-    new widget.NumberInput(detailOsc, "Click Amount", param.clickAmount, render),
+  clickAmount: new widget.NumberInput(detailOsc, "Click Amount", param.clickAmount, render),
 
-  filterExponent:
-    new widget.NumberInput(detailFilter, "Exponent", param.filterExponent, render),
+  filterExponent: new widget.NumberInput(detailFilter, "Exponent", param.filterExponent, render),
   filter1Q: new widget.NumberInput(detailFilter, "Q1", param.filter1Q, render),
   filter2Q: new widget.NumberInput(detailFilter, "Q2", param.filter2Q, render),
-  filter1Cut:
-    new widget.NumberInput(detailFilter, "Cutoff 1 [Hz]", param.filter1Cut, render),
-  filter2Cut:
-    new widget.NumberInput(detailFilter, "Cutoff 2 [Hz]", param.filter2Cut, render),
-  filter1PitchOct: new widget.NumberInput(
-    detailFilter, "Pitch Amount 1 [oct]", param.filter1PitchOct, render),
-  filter2PitchOct: new widget.NumberInput(
-    detailFilter, "Pitch Amount 2 [oct]", param.filter2PitchOct, render),
-  filter1DecaySeconds: new widget.NumberInput(
-    detailFilter, "Pitch Time 1 [s]", param.filter1DecaySeconds, render),
-  filter2DecaySeconds: new widget.NumberInput(
-    detailFilter, "Pitch Time 2 [s]", param.filter2DecaySeconds, render),
+  filter1Cut: new widget.NumberInput(detailFilter, "Cutoff 1 [Hz]", param.filter1Cut, render),
+  filter2Cut: new widget.NumberInput(detailFilter, "Cutoff 2 [Hz]", param.filter2Cut, render),
+  filter1PitchOct:
+    new widget.NumberInput(detailFilter, "Pitch Amount 1 [oct]", param.filter1PitchOct, render),
+  filter2PitchOct:
+    new widget.NumberInput(detailFilter, "Pitch Amount 2 [oct]", param.filter2PitchOct, render),
+  filter1DecaySeconds:
+    new widget.NumberInput(detailFilter, "Pitch Time 1 [s]", param.filter1DecaySeconds, render),
+  filter2DecaySeconds:
+    new widget.NumberInput(detailFilter, "Pitch Time 2 [s]", param.filter2DecaySeconds, render),
 
   eqType: new widget.ComboBoxLine(detailEq, "Type", param.eqType, render),
   eqCut: new widget.NumberInput(detailEq, "Cut [Hz]", param.eqCut, render),
@@ -256,10 +254,8 @@ const ui = {
 
   distortionTip: widget.paragraph(detailDistortion, "distortionTip", undefined),
   distortionSwitch: new widget.ToggleButtonLine(
-    detailDistortion, ["Use Distortion", "Use Distortion"], param.distortionSwitch,
-    render),
-  distortionType:
-    new widget.ComboBoxLine(detailDistortion, "Type", param.distortionType, render),
+    detailDistortion, ["Use Distortion", "Use Distortion"], param.distortionSwitch, render),
+  distortionType: new widget.ComboBoxLine(detailDistortion, "Type", param.distortionType, render),
   distortionGain:
     new widget.NumberInput(detailDistortion, "Gain [dB]", param.distortionGain, render),
 };

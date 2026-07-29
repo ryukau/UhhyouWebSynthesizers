@@ -92,8 +92,8 @@ const param = {
   stereoSwapWaveform: new parameter.Parameter(0, scales.boolean),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -123,11 +123,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -166,45 +172,36 @@ const ui = {
   samplesPerCycleLog2: new widget.NumberInput(
     detailRender, "Duration [2^n sample/cycle]", param.samplesPerCycleLog2, render),
   nCycle: new widget.NumberInput(detailRender, "nCycle", param.nCycle, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   normalizeSection: new widget.ToggleButtonLine(
     detailRender, ["Normalize - Off", "Normalize - On"], param.normalizeSection, render),
 
   firstWaveform:
     new widget.ComboBoxLine(detailFirstWaveform, "Waveform", param.firstWaveform, render),
-  firstPhaseOffset: new widget.NumberInput(
-    detailFirstWaveform, "Phase Offset", param.firstPhaseOffset, render),
-  firstOscMod:
-    new widget.NumberInput(detailFirstWaveform, "Modulation", param.firstOscMod, render),
-  firstFmIndex:
-    new widget.NumberInput(detailFirstWaveform, "FM Index", param.firstFmIndex, render),
+  firstPhaseOffset:
+    new widget.NumberInput(detailFirstWaveform, "Phase Offset", param.firstPhaseOffset, render),
+  firstOscMod: new widget.NumberInput(detailFirstWaveform, "Modulation", param.firstOscMod, render),
+  firstFmIndex: new widget.NumberInput(detailFirstWaveform, "FM Index", param.firstFmIndex, render),
 
-  lastWaveform:
-    new widget.ComboBoxLine(detailLastWaveform, "Waveform", param.lastWaveform, render),
-  lastPhaseOffset: new widget.NumberInput(
-    detailLastWaveform, "Phase Offset", param.lastPhaseOffset, render),
-  lastOscMod:
-    new widget.NumberInput(detailLastWaveform, "Modulation", param.lastOscMod, render),
-  lastFmIndex:
-    new widget.NumberInput(detailLastWaveform, "FM Index", param.lastFmIndex, render),
+  lastWaveform: new widget.ComboBoxLine(detailLastWaveform, "Waveform", param.lastWaveform, render),
+  lastPhaseOffset:
+    new widget.NumberInput(detailLastWaveform, "Phase Offset", param.lastPhaseOffset, render),
+  lastOscMod: new widget.NumberInput(detailLastWaveform, "Modulation", param.lastOscMod, render),
+  lastFmIndex: new widget.NumberInput(detailLastWaveform, "FM Index", param.lastFmIndex, render),
 
-  transformType:
-    new widget.ComboBoxLine(detailTransform, "Transform", param.transformType, render),
-  indexingType:
-    new widget.ComboBoxLine(detailTransform, "Indexing", param.indexingType, render),
+  transformType: new widget.ComboBoxLine(detailTransform, "Transform", param.transformType, render),
+  indexingType: new widget.ComboBoxLine(detailTransform, "Indexing", param.indexingType, render),
   seed: new widget.NumberInput(detailTransform, "Seed", param.seed, render),
-  morphingCurve: new widget.NumberInput(
-    detailTransform, "Morphing Curve", param.morphingCurve, render),
+  morphingCurve:
+    new widget.NumberInput(detailTransform, "Morphing Curve", param.morphingCurve, render),
 
   stereoReverseIndexing: new widget.ToggleButtonLine(
-    detailStereo, ["Reverse Indexing - Off", "Reverse Indexing - On"],
-    param.stereoReverseIndexing, render),
-  stereoSwapWaveform: new widget.ToggleButtonLine(
-    detailStereo, ["Swap Waveform - Off", "Swap Waveform - On"], param.stereoSwapWaveform,
+    detailStereo, ["Reverse Indexing - Off", "Reverse Indexing - On"], param.stereoReverseIndexing,
     render),
+  stereoSwapWaveform: new widget.ToggleButtonLine(
+    detailStereo, ["Swap Waveform - Off", "Swap Waveform - On"], param.stereoSwapWaveform, render),
 };
 
 render();

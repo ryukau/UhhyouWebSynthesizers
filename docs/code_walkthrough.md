@@ -33,7 +33,7 @@ A parameter has 3 different representations:
 - Display value.
 - Normalized value. Used in GUI, but only internally.
 
-Why not use raw value everywhere? That's because sometimes human perception differs from machine representation. [Sound pressure level](https://en.wikipedia.org/wiki/Sound_pressure#Sound_pressure_level) is an example of this problem, as decibel approximates human perception of loudness better than raw amplitude. So there must be a scaling mechanism to represent a same value in different ways.
+Why not use raw value everywhere? That's because sometimes a human perception differs from a machine representation. [Sound pressure level](https://en.wikipedia.org/wiki/Sound_pressure#Sound_pressure_level) is an example of this problem, as decibel approximates the human perception of loudness better than raw amplitude. So there must be a scaling mechanism to represent a same value in different ways.
 
 Raw value is used in DSP. They are refered as "DSP values" or `*.dsp` in code. For example, -20 dB becomes 0.1 on raw value.
 
@@ -132,17 +132,6 @@ where `prm` is an instance of `Parameter`, and `rnd` is an instance of `Randomiz
 
 `recursion` lambda in `FullRandomizer.randomize` method is calling `Parameter.randomize`. Recursion is there to handle multi-dimensional arrays.
 
-There's an issue that local recipe for array of parameters doesn't follow this style. `applyLocalRecipe` function in `common/parameter.js` has following part:
-
-```javascript
-if (Array.isArray(prm)) {
-  // This is a bad hack.
-  if (!prm[0].lockRandomization) recipe[key](prm);
-}
-```
-
-It's a bad hack because `lockRandomization` is leaking outside of `Parameter`. However, all the local JavaScript recipes have to be rewritten in order to fix the leak. I don't think it's worth the effort, so they are staying as is, for now.
-
 ### Old Synth
 Synthesizers in `oldsynth` are written in entirely different style. I've never thought I make this much synthesizers, so their structures are pretty dirty when it comes to code reusing. Duplications are everywhere, and they might subtly differ to each other.
 
@@ -153,13 +142,11 @@ GUI is mostly defined in `index.js`, and GUI widgets are likely come from `canva
 ### Concerns or Possible Changes
 There are some reserved parameter names as a result of dirty hack. See `Audio.render()` in `common/wave.js`.
 
-It might be better to separate the code to read exported randomization recipes, and the code to read local randomization recipes.
-
 ## Aims
-UhhyouWebSynthesizers are mostly about experimentation. So the code aims to produce prototypes as fast as possible.
+UhhyouWebSynthesizers is mostly about experimentation. So the code aims to produce prototypes as fast as possible.
 
-I'm trying to maximize code reuse on GUI. Visualization is omitted to speed up the DSP development.
+I'm trying to maximize the code reuse on GUI. Visualization is omitted to speed up the DSP development.
 
-On DSP, duplication with subtle difference is allowed for fine tuning. For example, it's better to reimplement feedback comb if components on the feedback path interact with the feedback signal.
+On DSP, duplication with subtle differences is allowed for fine tuning. For example, it's better to reimplement feedback comb if components on the feedback path interact with the feedback signal.
 
 Providing escape hatch is important. Most ideas aren't great. So it's better to write quick dirty code to check if it's worth pursuing before committing to write better structured code.

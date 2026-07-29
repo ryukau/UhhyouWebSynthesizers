@@ -34,21 +34,17 @@ const localRecipeBook = {
     renderDuration: () => {},
     fadeIn: () => {},
     fadeOut: () => {},
-    decayTo:
-      (prm) => { prm.dsp = util.exponentialMap(Math.random(), util.dbToAmp(-20), 1); },
+    decayTo: (prm) => { prm.dsp = util.exponentialMap(Math.random(), util.dbToAmp(-20), 1); },
     stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
     baseFreq: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 90); },
     pitchDropBezier: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1, 3); },
-    pitchDropBezierPower:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.9, 1.1); },
-    pitchDropSuperellipse:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 3.0, 10.0); },
+    pitchDropBezierPower: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.9, 1.1); },
+    pitchDropSuperellipse: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 3.0, 10.0); },
     pitchSuperellipseCurve: () => {},
-    pitchSuperellipseDuration: (prm) => {
-      prm.dsp = util.exponentialMap(Math.random(), 0.1, scales.decaySecond.maxDsp);
-    },
+    pitchSuperellipseDuration:
+      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.1, scales.decaySecond.maxDsp); },
     modCurve: () => {},
     overtoneRandomizeType: (prm) => { prm.normalized = 0; },
     limiterAttack: () => {},
@@ -57,8 +53,7 @@ const localRecipeBook = {
     reverbMix: (prm) => { prm.normalized = 0; },
   },
   "Micro BD": {
-    renderDuration:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.3); },
+    renderDuration: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.3); },
     fadeIn: () => {},
     fadeOut: () => {},
     decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -20, 0); },
@@ -81,8 +76,7 @@ const localRecipeBook = {
     reverbMix: (prm) => { prm.normalized = 0; },
   },
   "Short Bass": {
-    renderDuration:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.3); },
+    renderDuration: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.3); },
     fadeIn: () => {},
     fadeOut: () => {},
     decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 0); },
@@ -98,8 +92,7 @@ const localRecipeBook = {
     mod1Amount: (prm) => { prm.normalized = 0; },
   },
   "FM Bass": {
-    renderDuration:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.8); },
+    renderDuration: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.05, 0.8); },
     fadeIn: () => {},
     fadeOut: () => {},
     decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 0); },
@@ -112,11 +105,9 @@ const localRecipeBook = {
     baseFreq: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 90); },
     pitchDropBezier: (prm) => { prm.normalized = 0; },
     pitchDropSuperellipse: (prm) => { prm.normalized = 0; },
-    modDecayDuration:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.01, 10); },
-    mod2Amount: (prm) => {
-      prm.normalized = util.exponentialMap(Math.random(), Number.EPSILON, 0.2);
-    },
+    modDecayDuration: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.01, 10); },
+    mod2Amount:
+      (prm) => { prm.normalized = util.exponentialMap(Math.random(), Number.EPSILON, 0.2); },
   },
 };
 
@@ -175,8 +166,8 @@ const scales = {
   reverbMix: new parameter.DecibelScale(-60, 0, true),
   matrixSize: new parameter.IntScale(1, 64),
   reverbSecond: new parameter.DecibelScale(-60, -20, true),
-  reverbLowpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
+  reverbLowpassHz:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
   feedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
 };
 
@@ -256,11 +247,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -298,70 +295,59 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
   overtoneRandomizeType: new widget.CheckBoxLine(
-    detailOvertone, "Randomize Type", ["𐄢 Mono", "𐄣 Stereo"], param.overtoneRandomizeType,
-    render),
+    detailOvertone, "Randomize Type", ["𐄢 Mono", "𐄣 Stereo"], param.overtoneRandomizeType, render),
   nOvertone: new widget.NumberInput(detailOvertone, "nOvertone", param.nOvertone, render),
-  pitchRandomRange: new widget.NumberInput(
-    detailOvertone, "Pitch Random Range", param.pitchRandomRange, render),
-  overtoneAmp:
-    new widget.NumberInput(detailOvertone, "Amp Descend", param.overtoneAmp, render),
+  pitchRandomRange:
+    new widget.NumberInput(detailOvertone, "Pitch Random Range", param.pitchRandomRange, render),
+  overtoneAmp: new widget.NumberInput(detailOvertone, "Amp Descend", param.overtoneAmp, render),
 
   gainBezier: new widget.BezierEnvelopeView(
-    detailBody, palette.fontSize * 15, palette.fontSize * 8, param.gainBezier, "Gain",
-    render),
+    detailBody, palette.fontSize * 15, palette.fontSize * 8, param.gainBezier, "Gain", render),
   pitchBezier: new widget.BezierEnvelopeView(
-    detailBody, palette.fontSize * 15, palette.fontSize * 8, param.pitchBezier, "Pitch",
-    render),
-  baseFreq:
-    new widget.NumberInput(detailBody, "Base Frequency [Hz]", param.baseFreq, render),
-  pitchDropBezier: new widget.NumberInput(
-    detailBody, "Bezier Range [oct]", param.pitchDropBezier, render),
-  pitchDropBezierPower: new widget.NumberInput(
-    detailBody, "Bezier Power", param.pitchDropBezierPower, render),
-  pitchDropSuperellipse: new widget.NumberInput(
-    detailBody, "S.ellip Range [oct]", param.pitchDropSuperellipse, render),
-  pitchSuperellipseCurve: new widget.NumberInput(
-    detailBody, "S.ellip Curve", param.pitchSuperellipseCurve, render),
-  pitchSuperellipseDuration: new widget.NumberInput(
-    detailBody, "S.ellip Duration", param.pitchSuperellipseDuration, render),
+    detailBody, palette.fontSize * 15, palette.fontSize * 8, param.pitchBezier, "Pitch", render),
+  baseFreq: new widget.NumberInput(detailBody, "Base Frequency [Hz]", param.baseFreq, render),
+  pitchDropBezier:
+    new widget.NumberInput(detailBody, "Bezier Range [oct]", param.pitchDropBezier, render),
+  pitchDropBezierPower:
+    new widget.NumberInput(detailBody, "Bezier Power", param.pitchDropBezierPower, render),
+  pitchDropSuperellipse:
+    new widget.NumberInput(detailBody, "S.ellip Range [oct]", param.pitchDropSuperellipse, render),
+  pitchSuperellipseCurve:
+    new widget.NumberInput(detailBody, "S.ellip Curve", param.pitchSuperellipseCurve, render),
+  pitchSuperellipseDuration:
+    new widget.NumberInput(detailBody, "S.ellip Duration", param.pitchSuperellipseDuration, render),
 
   modDecayDuration:
     new widget.NumberInput(detailClick, "Duration [s]", param.modDecayDuration, render),
   modCurve: new widget.NumberInput(detailClick, "Curve", param.modCurve, render),
-  mod1PitchRatio: new widget.NumberInput(
-    detailClick, "Mod. 1 Pitch Ratio", param.mod1PitchRatio, render),
-  mod2PitchRatio: new widget.NumberInput(
-    detailClick, "Mod. 2 Pitch Ratio", param.mod2PitchRatio, render),
-  mod1Amount:
-    new widget.NumberInput(detailClick, "Mod. 1 Amount", param.mod1Amount, render),
-  mod2Amount:
-    new widget.NumberInput(detailClick, "Mod. 2 Amount", param.mod2Amount, render),
+  mod1PitchRatio:
+    new widget.NumberInput(detailClick, "Mod. 1 Pitch Ratio", param.mod1PitchRatio, render),
+  mod2PitchRatio:
+    new widget.NumberInput(detailClick, "Mod. 2 Pitch Ratio", param.mod2PitchRatio, render),
+  mod1Amount: new widget.NumberInput(detailClick, "Mod. 1 Amount", param.mod1Amount, render),
+  mod2Amount: new widget.NumberInput(detailClick, "Mod. 2 Amount", param.mod2Amount, render),
 
-  limiterAttack:
-    new widget.NumberInput(detailLimiter, "Attack [s]", param.limiterAttack, render),
+  limiterAttack: new widget.NumberInput(detailLimiter, "Attack [s]", param.limiterAttack, render),
   limiterSustain:
     new widget.NumberInput(detailLimiter, "Sustain [s]", param.limiterSustain, render),
   limiterRelease:
     new widget.NumberInput(detailLimiter, "Release [s]", param.limiterRelease, render),
-  limiterInputGain: new widget.NumberInput(
-    detailLimiter, "Input Gain [dB]", param.limiterInputGain, render),
+  limiterInputGain:
+    new widget.NumberInput(detailLimiter, "Input Gain [dB]", param.limiterInputGain, render),
 
   reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
-  matrixSize:
-    new widget.NumberInput(detailReverb, "Matrix Size", param.matrixSize, render),
+  matrixSize: new widget.NumberInput(detailReverb, "Matrix Size", param.matrixSize, render),
   reverbBaseSecond:
     new widget.NumberInput(detailReverb, "Time Base [s]", param.reverbBaseSecond, render),
-  reverbLowpassHz: new widget.NumberInput(
-    detailReverb, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
+  reverbLowpassHz:
+    new widget.NumberInput(detailReverb, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
   feedback: new widget.NumberInput(detailReverb, "Feedback", param.feedback, render),
 };
 

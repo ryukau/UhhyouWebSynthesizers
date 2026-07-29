@@ -37,8 +37,7 @@ const localRecipeBook = {
     delayInterpType: (prm) => { prm.normalized = Math.random(); },
     // pitchType: (prm) => { prm.normalized = Math.random(); },
     delayTimeHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 20, 2000); },
-    delayTimeModAmount:
-      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.1, 10000); },
+    delayTimeModAmount: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.1, 10000); },
     bandpassCutRatio: (prm) => {prm.dsp = util.uniformFloatMap(Math.random(), -3, 6)},
     // bandpassQ: (prm) => { prm.normalized = 0.75 * Math.random(); },
   },
@@ -115,8 +114,7 @@ const param = {
   compressorInputGain: new parameter.Parameter(1, scales.compressorInputGain, false),
   limiterType: new parameter.Parameter(0, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
-  limiterSmoothingSeconds:
-    new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
+  limiterSmoothingSeconds: new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
 
   seed: new parameter.Parameter(0, scales.seed, true),
   oscGain: new parameter.Parameter(1, scales.oscGain, false),
@@ -145,8 +143,8 @@ const param = {
   collisionDistance: new parameter.Parameter(0.1, scales.collisionDistance, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -177,11 +175,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -219,70 +223,59 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
 
   useCompressor: new widget.ToggleButtonLine(
-    detailCompressor, ["Compressor - Off", "Compressor - On"], param.useCompressor,
-    render),
-  compressorInputGain: new widget.NumberInput(
-    detailCompressor, "Input Gain [dB]", param.compressorInputGain, render),
+    detailCompressor, ["Compressor - Off", "Compressor - On"], param.useCompressor, render),
+  compressorInputGain:
+    new widget.NumberInput(detailCompressor, "Input Gain [dB]", param.compressorInputGain, render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterSmoothingSeconds: new widget.NumberInput(
-    detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterSmoothingSeconds:
+    new widget.NumberInput(detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
 
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   oscGain: new widget.NumberInput(detailOsc, "Gain [dB]", param.oscGain, render),
-  oscDecaySeconds:
-    new widget.NumberInput(detailOsc, "Decay [s]", param.oscDecaySeconds, render),
-  noiseToneMix:
-    new widget.NumberInput(detailOsc, "Noise/Tone Mix", param.noiseToneMix, render),
-  toneSineCount:
-    new widget.NumberInput(detailOsc, "Tone - nSine", param.toneSineCount, render),
-  toneFreqHz:
-    new widget.NumberInput(detailOsc, "Tone - Frequency [Hz]", param.toneFreqHz, render),
-  toneRangeOct: new widget.NumberInput(
-    detailOsc, "Tone - Random Range [oct]", param.toneRangeOct, render),
-  tonePhaseSpread: new widget.NumberInput(
-    detailOsc, "Tone - Phase Spread", param.tonePhaseSpread, render),
-  toneAttackScaler: new widget.NumberInput(
-    detailOsc, "Tone - Attack Scaler", param.toneAttackScaler, render),
-  toneSorting:
-    new widget.ComboBoxLine(detailOsc, "Tone - Sorting", param.toneSorting, render),
-  toneSaturation: new widget.NumberInput(
-    detailOsc, "Tone - Saturation [dB]", param.toneSaturation, render),
+  oscDecaySeconds: new widget.NumberInput(detailOsc, "Decay [s]", param.oscDecaySeconds, render),
+  noiseToneMix: new widget.NumberInput(detailOsc, "Noise/Tone Mix", param.noiseToneMix, render),
+  toneSineCount: new widget.NumberInput(detailOsc, "Tone - nSine", param.toneSineCount, render),
+  toneFreqHz: new widget.NumberInput(detailOsc, "Tone - Frequency [Hz]", param.toneFreqHz, render),
+  toneRangeOct:
+    new widget.NumberInput(detailOsc, "Tone - Random Range [oct]", param.toneRangeOct, render),
+  tonePhaseSpread:
+    new widget.NumberInput(detailOsc, "Tone - Phase Spread", param.tonePhaseSpread, render),
+  toneAttackScaler:
+    new widget.NumberInput(detailOsc, "Tone - Attack Scaler", param.toneAttackScaler, render),
+  toneSorting: new widget.ComboBoxLine(detailOsc, "Tone - Sorting", param.toneSorting, render),
+  toneSaturation:
+    new widget.NumberInput(detailOsc, "Tone - Saturation [dB]", param.toneSaturation, render),
 
-  delayTimeSpread: new widget.NumberInput(
-    detailPitch, "Delay Time Spread", param.delayTimeSpread, render),
+  delayTimeSpread:
+    new widget.NumberInput(detailPitch, "Delay Time Spread", param.delayTimeSpread, render),
   delayTimeRandomCent: new widget.NumberInput(
     detailPitch, "Delay Time Random [cent]", param.delayTimeRandomCent, render),
 
   nComb: new widget.NumberInput(detailComb, "nComb", param.nComb, render),
-  delayInterpType: new widget.ComboBoxLine(
-    detailComb, "Delay Interpolation", param.delayInterpType, render),
+  delayInterpType:
+    new widget.ComboBoxLine(detailComb, "Delay Interpolation", param.delayInterpType, render),
   pitchType: new widget.ComboBoxLine(detailComb, "Pitch Type", param.pitchType, render),
-  delayTimeHz:
-    new widget.NumberInput(detailComb, "Delay [Hz]", param.delayTimeHz, render),
+  delayTimeHz: new widget.NumberInput(detailComb, "Delay [Hz]", param.delayTimeHz, render),
   delayTimeModAmount: new widget.NumberInput(
     detailComb, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
   bandpassCutRatio:
     new widget.NumberInput(detailComb, "BP Cut [oct]", param.bandpassCutRatio, render),
   bandpassQ: new widget.NumberInput(detailComb, "BP Q", param.bandpassQ, render),
-  feedbackGain:
-    new widget.NumberInput(detailComb, "Feedback [dB]", param.feedbackGain, render),
-  collisionDistance: new widget.NumberInput(
-    detailComb, "Collision Distance", param.collisionDistance, render),
+  feedbackGain: new widget.NumberInput(detailComb, "Feedback [dB]", param.feedbackGain, render),
+  collisionDistance:
+    new widget.NumberInput(detailComb, "Collision Distance", param.collisionDistance, render),
 };
 
 render();

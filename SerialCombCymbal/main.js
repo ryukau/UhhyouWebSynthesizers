@@ -152,12 +152,10 @@ const localRecipeBook = {
       prm.dsp = 0.93; // util.uniformFloatMap(Math.random(), 0.9, 0.95);
     },
 
-    highpassCutoffSlope:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.5); },
+    highpassCutoffSlope: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 0.5); },
     highpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 30); },
     highpassQ: () => {},
-    lowpassCutoffSlope:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.3, 0.6); },
+    lowpassCutoffSlope: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.3, 0.6); },
     lowpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 8000, 1000000); },
     lowpassQ: () => {},
 
@@ -237,8 +235,8 @@ const param = {
 
   nDelay: new parameter.Parameter(8, scales.nDelay),
   delayInterpType: new parameter.Parameter(2, scales.delayInterpType),
-  delayNetworkType: new parameter.Parameter(
-    menuitems.delayNetworkType.indexOf("Allpass"), scales.delayNetworkType),
+  delayNetworkType:
+    new parameter.Parameter(menuitems.delayNetworkType.indexOf("Allpass"), scales.delayNetworkType),
 
   seed: new parameter.Parameter(0, scales.seed),
   timeDistribution: new parameter.Parameter(
@@ -260,8 +258,8 @@ const param = {
   lowpassCascadingOrder: new parameter.Parameter(1, scales.delayCascadingOrder),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -281,21 +279,25 @@ const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
 ];
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -334,60 +336,52 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   slopeStartHz:
     new widget.NumberInput(detailRender, "Slope Start [Hz]", param.slopeStartHz, render),
 
   nLayer: new widget.NumberInput(detailLayer, "nLayer", param.nLayer, render),
-  timeMultiplier:
-    new widget.NumberInput(detailLayer, "Time", param.timeMultiplier, render),
-  highpassCutoffMultiplier: new widget.NumberInput(
-    detailLayer, "Highpass Cutoff", param.highpassCutoffMultiplier, render),
-  lowpassCutoffMultiplier: new widget.NumberInput(
-    detailLayer, "Lowpass Cutoff", param.lowpassCutoffMultiplier, render),
+  timeMultiplier: new widget.NumberInput(detailLayer, "Time", param.timeMultiplier, render),
+  highpassCutoffMultiplier:
+    new widget.NumberInput(detailLayer, "Highpass Cutoff", param.highpassCutoffMultiplier, render),
+  lowpassCutoffMultiplier:
+    new widget.NumberInput(detailLayer, "Lowpass Cutoff", param.lowpassCutoffMultiplier, render),
 
-  noiseDecay:
-    new widget.NumberInput(detailExciter, "Noise Decay [s]", param.noiseDecay, render),
-  noiseMix:
-    new widget.NumberInput(detailExciter, "Noise Mix [dB]", param.noiseMix, render),
+  noiseDecay: new widget.NumberInput(detailExciter, "Noise Decay [s]", param.noiseDecay, render),
+  noiseMix: new widget.NumberInput(detailExciter, "Noise Mix [dB]", param.noiseMix, render),
 
   nDelay: new widget.NumberInput(detailDelayNetwork, "nDelay", param.nDelay, render),
   delayInterpType: new widget.ComboBoxLine(
     detailDelayNetwork, "Delay Interpolation", param.delayInterpType, render),
-  delayNetworkType: new widget.ComboBoxLine(
-    detailDelayNetwork, "Delay Type", param.delayNetworkType, render),
+  delayNetworkType:
+    new widget.ComboBoxLine(detailDelayNetwork, "Delay Type", param.delayNetworkType, render),
 
   seed: new widget.NumberInput(detailDelayPitch, "Seed", param.seed, render),
-  timeDistribution: new widget.ComboBoxLine(
-    detailDelayPitch, "Time Distribution", param.timeDistribution, render),
-  delayTime:
-    new widget.NumberInput(detailDelayPitch, "Delay Time [s]", param.delayTime, render),
-  timeRandomness: new widget.NumberInput(
-    detailDelayPitch, "Time Randomness", param.timeRandomness, render),
+  timeDistribution:
+    new widget.ComboBoxLine(detailDelayPitch, "Time Distribution", param.timeDistribution, render),
+  delayTime: new widget.NumberInput(detailDelayPitch, "Delay Time [s]", param.delayTime, render),
+  timeRandomness:
+    new widget.NumberInput(detailDelayPitch, "Time Randomness", param.timeRandomness, render),
   delayTimeModAmount: new widget.NumberInput(
     detailDelayPitch, "Delay Moddulation [sample]", param.delayTimeModAmount, render),
   feedback: new widget.NumberInput(detailDelayPitch, "Feedback", param.feedback, render),
 
-  highpassCutoffSlope: new widget.NumberInput(
-    detailFilter, "Highpass Slope", param.highpassCutoffSlope, render),
-  highpassHz: new widget.NumberInput(
-    detailFilter, "Highpass Cutoff [Hz]", param.highpassHz, render),
+  highpassCutoffSlope:
+    new widget.NumberInput(detailFilter, "Highpass Slope", param.highpassCutoffSlope, render),
+  highpassHz:
+    new widget.NumberInput(detailFilter, "Highpass Cutoff [Hz]", param.highpassHz, render),
   highpassQ: new widget.NumberInput(detailFilter, "Highpass Q", param.highpassQ, render),
-  lowpassCutoffSlope: new widget.NumberInput(
-    detailFilter, "Lowpass Slope", param.lowpassCutoffSlope, render),
-  lowpassHz:
-    new widget.NumberInput(detailFilter, "Lowpass Cutoff [Hz]", param.lowpassHz, render),
+  lowpassCutoffSlope:
+    new widget.NumberInput(detailFilter, "Lowpass Slope", param.lowpassCutoffSlope, render),
+  lowpassHz: new widget.NumberInput(detailFilter, "Lowpass Cutoff [Hz]", param.lowpassHz, render),
   lowpassQ: new widget.NumberInput(detailFilter, "Lowpass Q", param.lowpassQ, render),
 
-  delayCascadingOrder: new widget.ComboBoxLine(
-    detailDelayCascadingOrder, "Delay", param.delayCascadingOrder, render),
+  delayCascadingOrder:
+    new widget.ComboBoxLine(detailDelayCascadingOrder, "Delay", param.delayCascadingOrder, render),
   highpassCascadingOrder: new widget.ComboBoxLine(
     detailDelayCascadingOrder, "Highpass", param.highpassCascadingOrder, render),
   lowpassCascadingOrder: new widget.ComboBoxLine(

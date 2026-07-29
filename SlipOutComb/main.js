@@ -20,7 +20,6 @@ const localRecipeBook = {
     stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
-    dcHighpassHz: () => {},
     toneSlope: () => {},
     // safeFeedback: () => {},
 
@@ -83,8 +82,7 @@ const scales = {
 
   delayTimeHz: new parameter.DecibelScale(util.ampToDB(20), util.ampToDB(10000), false),
   delayTimeModSeconds: new parameter.DecibelScale(-80, 20, true),
-  delayTimeModAmount:
-    new parameter.BipolarExponentialScale(util.syntonicCommaCents / 1200, 8),
+  delayTimeModAmount: new parameter.BipolarExponentialScale(util.syntonicCommaCents / 1200, 8),
   bandpassCutHz: new parameter.DecibelScale(0, 100, false),
   bandpassQ: new parameter.DecibelScale(-40, 40, false),
   bandpassCutModRiseCents: new parameter.BipolarExponentialScale(0.01, 1200),
@@ -106,8 +104,7 @@ const param = {
 
   limiterType: new parameter.Parameter(1, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
-  limiterSmoothingSeconds:
-    new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
+  limiterSmoothingSeconds: new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
 
   seed: new parameter.Parameter(0, scales.seed, true),
   noiseDecaySeconds: new parameter.Parameter(0.5, scales.noiseDecaySeconds, true),
@@ -115,11 +112,9 @@ const param = {
   matrixSize: new parameter.Parameter(3, scales.matrixSize, true),
   crossFeedbackGain: new parameter.Parameter(1, scales.crossFeedbackGain, false),
   crossFeedbackLossThreshold: new parameter.Parameter(1, scales.lossThreshold, false),
-  crossFeedbackDecaySeconds:
-    new parameter.Parameter(1, scales.feedbackDecaySeconds, true),
+  crossFeedbackDecaySeconds: new parameter.Parameter(1, scales.feedbackDecaySeconds, true),
   crossFeedbackRatio: createArrayParameters(
-    new Array(scales.matrixSize.max).fill(0), scales.crossFeedbackRatio,
-    scales.matrixSize.max),
+    new Array(scales.matrixSize.max).fill(0), scales.crossFeedbackRatio, scales.matrixSize.max),
 
   delayTimeSpread: new parameter.Parameter(1, scales.pitchSpread, true),
   delayTimeRandomCent:
@@ -134,18 +129,16 @@ const param = {
   bandpassCutHz: new parameter.Parameter(100, scales.bandpassCutHz, true),
   bandpassCutSlewRate: new parameter.Parameter(100, scales.bandpassCutHz, true),
   bandpassQ: new parameter.Parameter(Math.SQRT1_2, scales.bandpassQ, true),
-  bandpassCutModRiseCents:
-    new parameter.Parameter(1, scales.bandpassCutModRiseCents, true),
-  bandpassCutModFallCents:
-    new parameter.Parameter(1, scales.bandpassCutModFallCents, true),
+  bandpassCutModRiseCents: new parameter.Parameter(1, scales.bandpassCutModRiseCents, true),
+  bandpassCutModFallCents: new parameter.Parameter(1, scales.bandpassCutModFallCents, true),
   bandpassLossThreshold: new parameter.Parameter(1, scales.lossThreshold, false),
   feedbackGain: new parameter.Parameter(1, scales.feedbackGain, false),
   feedbackLossThreshold: new parameter.Parameter(1, scales.lossThreshold, false),
   feedbackDecaySeconds: new parameter.Parameter(1, scales.feedbackDecaySeconds, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -176,11 +169,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -223,43 +222,38 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   safeFeedback: new widget.ToggleButtonLine(
-    detailRender, ["Safe Feedback - Off", "Safe Feedback - On"], param.safeFeedback,
-    render),
+    detailRender, ["Safe Feedback - Off", "Safe Feedback - On"], param.safeFeedback, render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterSmoothingSeconds: new widget.NumberInput(
-    detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterSmoothingSeconds:
+    new widget.NumberInput(detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
 
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   noiseDecaySeconds:
     new widget.NumberInput(detailOsc, "Noise Decay [s]", param.noiseDecaySeconds, render),
 
-  matrixSize: new widget.NumberInput(
-    detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
-  crossFeedbackGain: new widget.NumberInput(
-    detailFDN, "Cross Feedback Gain [dB]", param.crossFeedbackGain, render),
+  matrixSize:
+    new widget.NumberInput(detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
+  crossFeedbackGain:
+    new widget.NumberInput(detailFDN, "Cross Feedback Gain [dB]", param.crossFeedbackGain, render),
   crossFeedbackLossThreshold: new widget.NumberInput(
-    detailFDN, "Cross Feedback Loss Threshold [dB]", param.crossFeedbackLossThreshold,
-    render),
+    detailFDN, "Cross Feedback Loss Threshold [dB]", param.crossFeedbackLossThreshold, render),
   crossFeedbackDecaySeconds: new widget.NumberInput(
     detailFDN, "Cross Feedback Decay [s]", param.crossFeedbackDecaySeconds, render),
   crossFeedbackRatio: new widget.BarBox(
     detailFDN, "Cross Feedback Ratio", uiSize.barboxWidth, uiSize.barboxHeight,
     param.crossFeedbackRatio, render),
 
-  delayTimeSpread: new widget.NumberInput(
-    detailPitch, "Delay Time Spread", param.delayTimeSpread, render),
+  delayTimeSpread:
+    new widget.NumberInput(detailPitch, "Delay Time Spread", param.delayTimeSpread, render),
   delayTimeRandomCent: new widget.NumberInput(
     detailPitch, "Delay Time Random [cent]", param.delayTimeRandomCent, render),
   bandpassCutSpread:
@@ -267,16 +261,14 @@ const ui = {
   bandpassCutRandomCent: new widget.NumberInput(
     detailPitch, "BP Cut Random [cent]", param.bandpassCutRandomCent, render),
 
-  delayTimeHz:
-    new widget.NumberInput(detailComb, "Delay [Hz]", param.delayTimeHz, render),
+  delayTimeHz: new widget.NumberInput(detailComb, "Delay [Hz]", param.delayTimeHz, render),
   delayTimeModSeconds: new widget.NumberInput(
     detailComb, "Delay Moddulation Smoothing [s]", param.delayTimeModSeconds, render),
   delayTimeModAmount: new widget.NumberInput(
     detailComb, "Delay Moddulation Amount [oct]", param.delayTimeModAmount, render),
-  bandpassCutHz:
-    new widget.NumberInput(detailComb, "BP Cut [Hz]", param.bandpassCutHz, render),
-  bandpassCutSlewRate: new widget.NumberInput(
-    detailComb, "BP Cut Slew Rate [Hz]", param.bandpassCutSlewRate, render),
+  bandpassCutHz: new widget.NumberInput(detailComb, "BP Cut [Hz]", param.bandpassCutHz, render),
+  bandpassCutSlewRate:
+    new widget.NumberInput(detailComb, "BP Cut Slew Rate [Hz]", param.bandpassCutSlewRate, render),
   bandpassQ: new widget.NumberInput(detailComb, "BP Q", param.bandpassQ, render),
   bandpassCutModRiseCents: new widget.NumberInput(
     detailComb, "BP Cut Modulation Rise [cent]", param.bandpassCutModRiseCents, render),
@@ -288,8 +280,8 @@ const ui = {
     new widget.NumberInput(detailComb, "Feedback Gain [dB]", param.feedbackGain, render),
   feedbackLossThreshold: new widget.NumberInput(
     detailComb, "Feedback Loss Threshold [dB]", param.feedbackLossThreshold, render),
-  feedbackDecaySeconds: new widget.NumberInput(
-    detailComb, "Feedback Decay [s]", param.feedbackDecaySeconds, render),
+  feedbackDecaySeconds:
+    new widget.NumberInput(detailComb, "Feedback Decay [s]", param.feedbackDecaySeconds, render),
 };
 
 ui.crossFeedbackRatio.sliderZero = 0.5;

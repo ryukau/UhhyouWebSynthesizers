@@ -19,8 +19,7 @@ const localRecipeBook = {
     overSample: () => {},
     sampleRateScaler: () => {},
     latticeSize: () => {},
-    delayTime:
-      (prm) => { prm.forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; }); },
+    delayTime: (prm) => { prm.forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; }); },
   },
 };
 
@@ -89,8 +88,8 @@ const param = {
   l4Feed: createArrayParameters(0, 4, scales.feed),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -121,11 +120,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -161,46 +166,34 @@ const ui = {
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
-  latticeSize:
-    new widget.NumberInput(detailReverb, "Lattice Size", param.latticeSize, render),
+  latticeSize: new widget.NumberInput(detailReverb, "Lattice Size", param.latticeSize, render),
   seed: new widget.NumberInput(detailReverb, "Seed", param.seed, render),
 
-  delayRandom:
-    new widget.NumberInput(detailOffset, "Delay Time [s]", param.delayRandom, render),
+  delayRandom: new widget.NumberInput(detailOffset, "Delay Time [s]", param.delayRandom, render),
   innerFeedRandom:
     new widget.NumberInput(detailOffset, "Inner Feed", param.innerFeedRandom, render),
-  l1FeedRandom:
-    new widget.NumberInput(detailOffset, "L1 Feed", param.l1FeedRandom, render),
-  l2FeedRandom:
-    new widget.NumberInput(detailOffset, "L2 Feed", param.l2FeedRandom, render),
-  l3FeedRandom:
-    new widget.NumberInput(detailOffset, "L3 Feed", param.l3FeedRandom, render),
-  l4FeedRandom:
-    new widget.NumberInput(detailOffset, "L4 Feed", param.l4FeedRandom, render),
+  l1FeedRandom: new widget.NumberInput(detailOffset, "L1 Feed", param.l1FeedRandom, render),
+  l2FeedRandom: new widget.NumberInput(detailOffset, "L2 Feed", param.l2FeedRandom, render),
+  l3FeedRandom: new widget.NumberInput(detailOffset, "L3 Feed", param.l3FeedRandom, render),
+  l4FeedRandom: new widget.NumberInput(detailOffset, "L4 Feed", param.l4FeedRandom, render),
 
   delayTime: new widget.BarBox(
-    detailBaseA, "Delay Time [s]", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.delayTime, render),
+    detailBaseA, "Delay Time [s]", uiSize.barboxWidth, uiSize.barboxHeight, param.delayTime,
+    render),
   innerFeed: new widget.BarBox(
-    detailBaseA, "Inner Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.innerFeed,
-    render),
+    detailBaseA, "Inner Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.innerFeed, render),
   l1Feed: new widget.BarBox(
-    detailBaseA, "L1 Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.l1Feed,
-    render),
+    detailBaseA, "L1 Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.l1Feed, render),
   l2Feed: new widget.BarBox(
-    detailBaseB, "L2 Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.l2Feed,
-    render),
+    detailBaseB, "L2 Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.l2Feed, render),
   l3Feed: new widget.BarBox(
-    detailBaseB, "L3 Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.l3Feed,
-    render),
+    detailBaseB, "L3 Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.l3Feed, render),
   l4Feed: new widget.BarBox(
-    detailBaseB, "L4 Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.l4Feed,
-    render),
+    detailBaseB, "L4 Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.l4Feed, render),
 };
 
 ui.innerFeed.sliderZero = 0.5;

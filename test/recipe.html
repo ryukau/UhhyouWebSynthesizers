@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Recipe Automated Test Runner</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+    }
+
+    .summary {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th,
+    td {
+      border: 1px solid #444;
+      padding: 6px 10px;
+      text-align: left;
+    }
+
+    th {
+      color: #1e93d1;
+    }
+
+    .pass {
+      color: #6a9955;
+      font-weight: bold;
+    }
+
+    .fail {
+      color: #af1212;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Recipe Randomization Test Runner</h1>
+  <div id="summary"
+       class="summary">Running tests...</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Synth Module</th>
+        <th>Recipe Name</th>
+        <th>Status</th>
+        <th>Error / Details</th>
+      </tr>
+    </thead>
+    <tbody id="results"></tbody>
+  </table>
+
+  <script type="module">
+    const synthModules = [
+      "../AdaptiveNotchComb/main.js",
+      "../ClangCymbal/main.js",
+      "../ClangSnare/main.js",
+      "../CollidingComb/main.js",
+      "../CoupledSnare/main.js",
+      "../FDNReverb/main.js",
+      "../FMGlassyPad/main.js",
+      "../FV1Reverb/main.js",
+      "../GenericDrum/main.js",
+      "../GlitchSprinkler/main.js",
+      "../GrowlSynth/main.js",
+      "../HooverSynth/main.js",
+      "../IntegerArpeggio/main.js",
+      "../IntegerChord/main.js",
+      "../KSCymbal/main.js",
+      "../L4Reverb/main.js",
+      "../MaybeCabinetIR/main.js",
+      "../MaybeCrash/main.js",
+      "../MaybeSnare/main.js",
+      "../MetalSqueak/main.js",
+      "../OneCycleWaveform/main.js",
+      "../PadChoir3/main.js",
+      "../PadCymbal2/main.js",
+      "../ParallelComb/main.js",
+      "../ResonantBD/main.js",
+      "../ResonantDrop/main.js",
+      "../RoughlySnare/main.js",
+      "../SalmonTube/main.js",
+      "../SerialCombCymbal/main.js",
+      "../SingenBD3/main.js",
+      "../SlipOutComb/main.js",
+      "../SquareMorph/main.js",
+      "../TechnoSnare/main.js",
+      "../WireWallCollision/main.js",
+      "../WireWireCollision/main.js"
+    ];
+
+    const resultsTable = document.getElementById("results");
+    const summaryDiv = document.getElementById("summary");
+
+    let totalTests = 0;
+    let failedTests = 0;
+
+    let currentParam = null;
+    let currentRecipeBook = null;
+
+    // Attach hook to capture param and recipeBook when each main.js calls loadJson
+    window.__onLoadJson = (param, recipeBook) => {
+      currentParam = param;
+      currentRecipeBook = recipeBook;
+    };
+
+    function logResult(moduleName, recipeName, success, errorMsg = "") {
+      totalTests++;
+      if (!success) failedTests++;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${moduleName}</td>
+        <td>${recipeName}</td>
+        <td class="${success ? 'pass' : 'fail'}">${success ? 'PASS' : 'FAIL'}</td>
+        <td style="color: ${success ? '#888' : '#f44747'}">${errorMsg || 'OK'}</td>
+      `;
+      resultsTable.appendChild(tr);
+    }
+
+    async function runTests() {
+      for (const modulePath of synthModules) {
+        currentParam = null;
+        currentRecipeBook = null;
+
+        try {
+          await import(modulePath);
+
+          if (currentParam && currentRecipeBook) {
+            for (const [recipeName, recipeObj] of currentRecipeBook.entries()) {
+              try {
+                // Test executing the recipe against param
+                recipeObj.randomize(currentParam);
+                logResult(modulePath, recipeName, true);
+              } catch (err) {
+                logResult(modulePath, recipeName, false, err.stack || err.message);
+              }
+            }
+          } else {
+            logResult(modulePath, "N/A", false, "Failed to capture param/recipeBook");
+          }
+        } catch (err) {
+          logResult(modulePath, "Module Load", false, err.stack || err.message);
+        }
+      }
+
+      summaryDiv.textContent = `Completed ${totalTests} recipe tests. Passed: ${totalTests - failedTests}, Failed: ${failedTests}.`;
+      summaryDiv.style.color = failedTests > 0 ? "#f44747" : "#6a9955";
+    }
+
+    runTests();
+  </script>
+</body>
+
+</html>

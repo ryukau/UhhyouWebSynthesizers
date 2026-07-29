@@ -59,8 +59,7 @@ const scales = {
   stack: new parameter.IntScale(2, 64),
   maxFrequency: new parameter.DecibelScale(20, 60, false),
   pickCombFB: new parameter.NegativeDecibelScale(-60, 0, 1, true),
-  pickCombTime:
-    new parameter.DecibelScale(util.ampToDB(2 ** -2), util.ampToDB(2 ** 6), false),
+  pickCombTime: new parameter.DecibelScale(util.ampToDB(2 ** -2), util.ampToDB(2 ** 6), false),
   distance: new parameter.DecibelScale(util.ampToDB(0.004), util.ampToDB(0.2), true),
 };
 
@@ -78,8 +77,8 @@ const param = {
   distance: new parameter.Parameter(0.02, scales.distance, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
@@ -90,10 +89,8 @@ const divLeft = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
 ];
 
 const audio = new wave.Audio(
@@ -110,11 +107,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -144,21 +147,16 @@ const detailRender = widget.details(divLeft, "Render");
 const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
-  fadeOutRatio:
-    new widget.NumberInput(detailRender, "Fade-out Ratio", param.fadeOutRatio, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  fadeOutRatio: new widget.NumberInput(detailRender, "Fade-out Ratio", param.fadeOutRatio, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
   stack: new widget.NumberInput(detailRender, "Stack", param.stack, render),
-  maxFrequency:
-    new widget.NumberInput(detailRender, "Max Frequency", param.maxFrequency, render),
-  pickCombFB:
-    new widget.NumberInput(detailRender, "PickCombFB", param.pickCombFB, render),
-  pickCombTime:
-    new widget.NumberInput(detailRender, "PickCombTime", param.pickCombTime, render),
+  maxFrequency: new widget.NumberInput(detailRender, "Max Frequency", param.maxFrequency, render),
+  pickCombFB: new widget.NumberInput(detailRender, "PickCombFB", param.pickCombFB, render),
+  pickCombTime: new widget.NumberInput(detailRender, "PickCombTime", param.pickCombTime, render),
   distance: new widget.NumberInput(detailRender, "Distance", param.distance, render),
 };
 

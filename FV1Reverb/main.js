@@ -20,8 +20,7 @@ const localRecipeBook = {
     delayInterpolation: () => {},
     nSection: () => {},
     nAllpass: () => {},
-    delayTime:
-      (prm) => { prm.forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; }); },
+    delayTime: (prm) => { prm.forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; }); },
   },
 };
 
@@ -91,14 +90,14 @@ const param = {
   randomDelayTime: new parameter.Parameter(0.01, scales.randomizeAmount),
   randomFeed: new parameter.Parameter(0.01, scales.randomizeAmount),
 
-  delayTime: createArrayParameters(
-    0.01, scales.delayTime, scales.nSection.max * scales.nAllpass.max),
+  delayTime:
+    createArrayParameters(0.01, scales.delayTime, scales.nSection.max * scales.nAllpass.max),
   feed: createArrayParameters(0, scales.feed, scales.nSection.max * scales.nAllpass.max),
   sumGain: createArrayParameters(1, scales.feed, scales.nSection.max),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -128,11 +127,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -171,35 +176,30 @@ const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
-  delayInterpolation: new widget.ComboBoxLine(
-    detailReverb, "Delay Interpolation", param.delayInterpolation, render),
-  nSection: new widget.NumberInput(
-    detailReverb, "nSection", param.nSection, onDelayNumberChanged),
-  nAllpass: new widget.NumberInput(
-    detailReverb, "nAllpass/Section", param.nAllpass, onDelayNumberChanged),
+  delayInterpolation:
+    new widget.ComboBoxLine(detailReverb, "Delay Interpolation", param.delayInterpolation, render),
+  nSection: new widget.NumberInput(detailReverb, "nSection", param.nSection, onDelayNumberChanged),
+  nAllpass:
+    new widget.NumberInput(detailReverb, "nAllpass/Section", param.nAllpass, onDelayNumberChanged),
   timeMultiplier:
     new widget.NumberInput(detailReverb, "Time Multiplier", param.timeMultiplier, render),
   feedback: new widget.NumberInput(detailReverb, "Feedback", param.feedback, render),
 
   seed: new widget.NumberInput(detailStereo, "Seed", param.seed, render),
-  randomDelayTime: new widget.NumberInput(
-    detailStereo, "Random Delay Time", param.randomDelayTime, render),
-  randomFeed:
-    new widget.NumberInput(detailStereo, "Random Feed", param.randomFeed, render),
+  randomDelayTime:
+    new widget.NumberInput(detailStereo, "Random Delay Time", param.randomDelayTime, render),
+  randomFeed: new widget.NumberInput(detailStereo, "Random Feed", param.randomFeed, render),
 
   delayTime: new widget.BarBox(
-    detailLoop, "Delay Time [s]", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.delayTime, render),
+    detailLoop, "Delay Time [s]", uiSize.barboxWidth, uiSize.barboxHeight, param.delayTime, render),
   feed: new widget.BarBox(
     detailLoop, "Feed", uiSize.barboxWidth, uiSize.barboxHeight, param.feed, render),
   sumGain: new widget.BarBox(
-    detailLoop, "Summing Gain", uiSize.barboxWidth, uiSize.barboxHeight, param.sumGain,
-    render),
+    detailLoop, "Summing Gain", uiSize.barboxWidth, uiSize.barboxHeight, param.sumGain, render),
 };
 
 ui.feed.sliderZero = 0.5;

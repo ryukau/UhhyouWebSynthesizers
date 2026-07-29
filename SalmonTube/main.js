@@ -123,8 +123,8 @@ const param = {
   randomTongue1W: new parameter.Parameter(0.05, scales.defaultScale, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
@@ -136,10 +136,8 @@ const divRight = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
 ];
 
 const audio = new wave.Audio(
@@ -156,11 +154,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -195,20 +199,17 @@ const ui = {
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  expDecayTo:
-    new widget.NumberInput(detailRender, "Decay To [dB]", param.expDecayTo, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  expDecayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.expDecayTo, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
-  frequency:
-    new widget.NumberInput(detailGlottis, "Frequency [Hz]", param.frequency, render),
+  frequency: new widget.NumberInput(detailGlottis, "Frequency [Hz]", param.frequency, render),
   sigma2: new widget.NumberInput(detailGlottis, "Pulse Width", param.sigma2, render),
   noiseMix: new widget.NumberInput(detailGlottis, "Noise Mix", param.noiseMix, render),
-  vibratoAmount: new widget.NumberInput(
-    detailGlottis, "Vibrato Amount [cent]", param.vibratoAmount, render),
-  vibratoPeriod: new widget.NumberInput(
-    detailGlottis, "Vibrato Period [s]", param.vibratoPeriod, render),
+  vibratoAmount:
+    new widget.NumberInput(detailGlottis, "Vibrato Amount [cent]", param.vibratoAmount, render),
+  vibratoPeriod:
+    new widget.NumberInput(detailGlottis, "Vibrato Period [s]", param.vibratoPeriod, render),
 
   // noseDiameter: new widget.BarBox(
   //   detailVocalTract, "Nose Diameter", uiSize.barboxWidth, uiSize.barboxHeight,
@@ -220,29 +221,23 @@ const ui = {
     detailVocalTract, "Diameter Multiplier", param.tubeDiameterMultiplier, render),
   tongue: new TongueXYPad(
     detailVocalTract, uiSize.barboxWidth, uiSize.barboxHeight, "Tongue", param.tongue0X,
-    param.tongue0Y, param.tongue0W, param.tongue1X, param.tongue1Y, param.tongue1W,
-    render),
-  tongue0W: new widget.NumberInput(
-    detailVocalTract, "Tongue 0 Width", param.tongue0W, updateTongueWidth),
-  tongue1W: new widget.NumberInput(
-    detailVocalTract, "Tongue 1 Width", param.tongue1W, updateTongueWidth),
+    param.tongue0Y, param.tongue0W, param.tongue1X, param.tongue1Y, param.tongue1W, render),
+  tongue0W:
+    new widget.NumberInput(detailVocalTract, "Tongue 0 Width", param.tongue0W, updateTongueWidth),
+  tongue1W:
+    new widget.NumberInput(detailVocalTract, "Tongue 1 Width", param.tongue1W, updateTongueWidth),
   tubeMod: new widget.NumberInput(detailVocalTract, "Modulation", param.tubeMod, render),
 
   nVoice: new widget.NumberInput(detailChorus, "nVoice", param.nVoice, render),
-  randomDetune:
-    new widget.NumberInput(detailChorus, "Detune [cent]", param.randomDetune, render),
+  randomDetune: new widget.NumberInput(detailChorus, "Detune [cent]", param.randomDetune, render),
   randomPulseWidth:
     new widget.NumberInput(detailChorus, "Pulse Width", param.randomPulseWidth, render),
-  randomTongue0X:
-    new widget.NumberInput(detailChorus, "Tongue 0 X", param.randomTongue0X, render),
-  randomTongue0Y:
-    new widget.NumberInput(detailChorus, "Tongue 0 Y", param.randomTongue0Y, render),
+  randomTongue0X: new widget.NumberInput(detailChorus, "Tongue 0 X", param.randomTongue0X, render),
+  randomTongue0Y: new widget.NumberInput(detailChorus, "Tongue 0 Y", param.randomTongue0Y, render),
   randomTongue0W:
     new widget.NumberInput(detailChorus, "Tongue 0 Width", param.randomTongue0W, render),
-  randomTongue1X:
-    new widget.NumberInput(detailChorus, "Tongue 1 X", param.randomTongue1X, render),
-  randomTongue1Y:
-    new widget.NumberInput(detailChorus, "Tongue 1 Y", param.randomTongue1Y, render),
+  randomTongue1X: new widget.NumberInput(detailChorus, "Tongue 1 X", param.randomTongue1X, render),
+  randomTongue1Y: new widget.NumberInput(detailChorus, "Tongue 1 Y", param.randomTongue1Y, render),
   randomTongue1W:
     new widget.NumberInput(detailChorus, "Tongue 1 Width", param.randomTongue1W, render),
 };

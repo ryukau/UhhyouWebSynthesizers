@@ -156,8 +156,8 @@ const scales = {
   delayTimeEnv: new parameter.LinearScale(0, 1),
 
   reverbTimeMultiplier: new parameter.DecibelScale(-20, 20, false),
-  reverbLowpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
+  reverbLowpassHz:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
   reverbFeedback: new parameter.NegativeDecibelScale(-40, 0, 1, true),
 };
 
@@ -177,14 +177,12 @@ const param = {
 
   limiterType: new parameter.Parameter(0, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
-  limiterSmoothingSeconds:
-    new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
+  limiterSmoothingSeconds: new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
 
   excitationType: new parameter.Parameter(0, scales.excitationType, true),
   excitationLowpass: new parameter.Parameter(0.5, scales.excitationLowpass, true),
   excitationSineModLevel: new parameter.Parameter(0, scales.excitationSineModLevel, true),
-  excitationSineModDecay:
-    new parameter.Parameter(0.5, scales.excitationSineModDecay, true),
+  excitationSineModDecay: new parameter.Parameter(0.5, scales.excitationSineModDecay, true),
 
   fdnSize: new parameter.Parameter(16, scales.fdnSize, true),
   delayInterpType: new parameter.Parameter(2, scales.delayInterpType),
@@ -222,8 +220,8 @@ const param = {
   reverbTimeMod: new parameter.Parameter(0, scales.delayTimeMod, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -254,11 +252,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -304,82 +308,73 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
-  slicerRegions:
-    new widget.NumberInput(detailSlicer, "nRegion", param.slicerRegions, render),
+  slicerRegions: new widget.NumberInput(detailSlicer, "nRegion", param.slicerRegions, render),
   slicerRandomize: new widget.ToggleButtonLine(
     detailSlicer, ["Fuzziness", "Fuzziness"], param.slicerRandomize, render),
   slicerExcitationGainRange: new widget.NumberInput(
     detailSlicer, "Excitation Range [dB]", param.slicerExcitationGainRange, render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterSmoothingSeconds: new widget.NumberInput(
-    detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterSmoothingSeconds:
+    new widget.NumberInput(detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
 
   excitationType:
     new widget.ComboBoxLine(detailSnareExcitation, "Type", param.excitationType, render),
-  excitationLowpass: new widget.NumberInput(
-    detailSnareExcitation, "Lowpass", param.excitationLowpass, render),
+  excitationLowpass:
+    new widget.NumberInput(detailSnareExcitation, "Lowpass", param.excitationLowpass, render),
   excitationSineModLevel: new widget.NumberInput(
     detailSnareExcitation, "Mod. Level", param.excitationSineModLevel, render),
   excitationSineModDecay: new widget.NumberInput(
     detailSnareExcitation, "Mod. Decay", param.excitationSineModDecay, render),
 
-  fdnSize:
-    new widget.NumberInput(detailSnareDelay, "FDN Size", param.fdnSize, onFdnSizeChanged),
-  delayInterpType: new widget.ComboBoxLine(
-    detailSnareDelay, "Delay Interpolation", param.delayInterpType, render),
+  fdnSize: new widget.NumberInput(detailSnareDelay, "FDN Size", param.fdnSize, onFdnSizeChanged),
+  delayInterpType:
+    new widget.ComboBoxLine(detailSnareDelay, "Delay Interpolation", param.delayInterpType, render),
   frequencyHz:
     new widget.NumberInput(detailSnareDelay, "Frequency [Hz]", param.frequencyHz, render),
   allpassDelayRatio: new widget.NumberInput(
     detailSnareDelay, "Allpass:Delay Ratio", param.allpassDelayRatio, render),
-  allpassGain:
-    new widget.NumberInput(detailSnareDelay, "Allpass Gain", param.allpassGain, render),
+  allpassGain: new widget.NumberInput(detailSnareDelay, "Allpass Gain", param.allpassGain, render),
   feedback: new widget.NumberInput(detailSnareDelay, "Feedback", param.feedback, render),
   matrixCharacterA:
     new widget.NumberInput(detailSnareDelay, "Matrix α", param.matrixCharacterA, render),
   matrixCharacterB:
     new widget.NumberInput(detailSnareDelay, "Matrix β", param.matrixCharacterB, render),
   inputGain: new widget.BarBox(
-    detailSnareDelay, "Matrix Input Gain", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.inputGain, render),
+    detailSnareDelay, "Matrix Input Gain", uiSize.barboxWidth, uiSize.barboxHeight, param.inputGain,
+    render),
 
-  membranePitchType: new widget.ComboBoxLine(
-    detailSnareTone, "Pitch Type", param.membranePitchType, render),
-  membranePitchIndex: new widget.NumberInput(
-    detailSnareTone, "Pitch Index", param.membranePitchIndex, render),
-  lowpassHz:
-    new widget.NumberInput(detailSnareTone, "Lowpass [Hz]", param.lowpassHz, render),
-  highpassHz:
-    new widget.NumberInput(detailSnareTone, "Highpass [Hz]", param.highpassHz, render),
-  noiseLevel:
-    new widget.NumberInput(detailSnareTone, "Noise Level", param.noiseLevel, render),
-  noiseReleaseHz: new widget.NumberInput(
-    detailSnareTone, "Noise Release [Hz]", param.noiseReleaseHz, render),
+  membranePitchType:
+    new widget.ComboBoxLine(detailSnareTone, "Pitch Type", param.membranePitchType, render),
+  membranePitchIndex:
+    new widget.NumberInput(detailSnareTone, "Pitch Index", param.membranePitchIndex, render),
+  lowpassHz: new widget.NumberInput(detailSnareTone, "Lowpass [Hz]", param.lowpassHz, render),
+  highpassHz: new widget.NumberInput(detailSnareTone, "Highpass [Hz]", param.highpassHz, render),
+  noiseLevel: new widget.NumberInput(detailSnareTone, "Noise Level", param.noiseLevel, render),
+  noiseReleaseHz:
+    new widget.NumberInput(detailSnareTone, "Noise Release [Hz]", param.noiseReleaseHz, render),
   noiseStereo: new widget.ToggleButtonLine(
     detailSnareTone, ["Stereo Noise", "Stereo Noise"], param.noiseStereo, render),
 
   velocity: new widget.NumberInput(detailSnareMisc, "Velocity", param.velocity, render),
   seed: new widget.NumberInput(detailSnareMisc, "Seed", param.seed, render),
-  couplingGain: new widget.NumberInput(
-    detailSnareMisc, "Coupling Gain [dB]", param.couplingGain, render),
+  couplingGain:
+    new widget.NumberInput(detailSnareMisc, "Coupling Gain [dB]", param.couplingGain, render),
 
   envelopeDecaySecond: new widget.NumberInput(
     detailSnareModulation, "Env. Decay [s]", param.envelopeDecaySecond, render),
-  pitchMod: new widget.NumberInput(
-    detailSnareModulation, "Env. -> Pitch", param.pitchMod, render),
+  pitchMod: new widget.NumberInput(detailSnareModulation, "Env. -> Pitch", param.pitchMod, render),
   delayTimeMod: new widget.NumberInput(
     detailSnareModulation, "Delay Mod. [sample]", param.delayTimeMod, render),
-  delayTimeEnv: new widget.NumberInput(
-    detailSnareModulation, "Env. -> Delay Mod.", param.delayTimeEnv, render),
+  delayTimeEnv:
+    new widget.NumberInput(detailSnareModulation, "Env. -> Delay Mod.", param.delayTimeEnv, render),
   allpassTimeEnv: new widget.NumberInput(
     detailSnareModulation, "Env. -> Allpass Mod.", param.allpassTimeEnv, render),
 
@@ -389,8 +384,8 @@ const ui = {
     detailBodyResonance, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
   reverbFeedback:
     new widget.NumberInput(detailBodyResonance, "Feedback", param.reverbFeedback, render),
-  reverbTimeMod: new widget.NumberInput(
-    detailBodyResonance, "Delay Mod. [sample]", param.reverbTimeMod, render),
+  reverbTimeMod:
+    new widget.NumberInput(detailBodyResonance, "Delay Mod. [sample]", param.reverbTimeMod, render),
 };
 
 onFdnSizeChanged(param.fdnSize.dsp);

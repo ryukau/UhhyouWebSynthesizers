@@ -178,6 +178,8 @@ export class WaveView {
   }
 
   drawWave(y0) {
+    if (this.#length === 0 || this.canvas.width === 0) return;
+
     this.context.strokeStyle = palette.waveform;
     this.context.fillStyle = palette.waveform;
     this.context.lineCap = "round";
@@ -231,6 +233,8 @@ export class WaveView {
       maxArray[x] = [x, this.#setY(max)];
     }
     const path = minArray.concat(maxArray.reverse());
+
+    if (path.length === 0) return;
 
     this.context.lineWidth = 0.5;
     this.context.setLineDash([]);

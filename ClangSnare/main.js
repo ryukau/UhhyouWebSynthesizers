@@ -61,15 +61,11 @@ const localRecipeBook = {
     identityAmount:
       (prm) => { prm.dsp = util.dbToAmp(util.uniformFloatMap(Math.random(), -20, 40)); },
     frequency: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 20, 400); },
-    lowpassCutoffBatterHz:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
-    lowpassCutoffSnareHz:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
+    lowpassCutoffBatterHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
+    lowpassCutoffSnareHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 500, 4000); },
     lowpassQ: () => {},
-    highpassCutoffBatterHz:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 100); },
-    highpassCutoffSnareHz:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 100); },
+    highpassCutoffBatterHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 100); },
+    highpassCutoffSnareHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 100); },
     highpassQ: (prm) => {
       const end = param.matrixSize.dsp;
       const start = Math.max(0, end - 4);
@@ -140,8 +136,8 @@ const scales = {
   delayInterp: new parameter.MenuItemScale(menuitems.delayInterpItems),
   identityAmount: new parameter.DecibelScale(-60, 60, false),
   frequency: new parameter.MidiPitchScale(0, 144, false),
-  filterCutoffBaseOctave: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
+  filterCutoffBaseOctave:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(10), util.freqToMidiPitch(48000), false),
   filterCutoffOffsetOctave: new parameter.LinearScale(-1, 1),
   filterQ: new parameter.LinearScale(0.01, Math.SQRT1_2),
   filterGain: new parameter.DecibelScale(-24, 0, false),
@@ -193,24 +189,20 @@ const param = {
   fdnTimeRateLimit: new parameter.Parameter(0.5, scales.fdnTimeRateLimit, true),
   fdnFeedback: new parameter.Parameter(0.98, scales.fdnFeedback, true),
 
-  lowpassCutoffBatterHz:
-    new parameter.Parameter(2000, scales.filterCutoffBaseOctave, true),
-  lowpassCutoffSnareHz:
-    new parameter.Parameter(1700, scales.filterCutoffBaseOctave, true),
+  lowpassCutoffBatterHz: new parameter.Parameter(2000, scales.filterCutoffBaseOctave, true),
+  lowpassCutoffSnareHz: new parameter.Parameter(1700, scales.filterCutoffBaseOctave, true),
   lowpassCutoffOffsetOctave: createArrayParameters(0, scales.filterCutoffOffsetOctave),
   lowpassQ: createArrayParameters(scales.filterQ.maxDsp, scales.filterQ),
   lowpassGain: createArrayParameters(0.5, scales.filterGain),
 
-  highpassCutoffBatterHz:
-    new parameter.Parameter(60, scales.filterCutoffBaseOctave, true),
-  highpassCutoffSnareHz:
-    new parameter.Parameter(140, scales.filterCutoffBaseOctave, true),
+  highpassCutoffBatterHz: new parameter.Parameter(60, scales.filterCutoffBaseOctave, true),
+  highpassCutoffSnareHz: new parameter.Parameter(140, scales.filterCutoffBaseOctave, true),
   highpassCutoffOffsetOctave: createArrayParameters(0, scales.filterCutoffOffsetOctave),
   highpassQ: createArrayParameters(scales.filterQ.maxDsp, scales.filterQ),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
@@ -221,10 +213,8 @@ const divLeft = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
-  new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, undefined, false),
 ];
 
 const audio = new wave.Audio(
@@ -241,11 +231,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -293,18 +289,14 @@ const ui = {
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  expDecayTo:
-    new widget.NumberInput(detailRender, "Decay To [dB]", param.expDecayTo, render),
+  expDecayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.expDecayTo, render),
   clickEnvelopeSecond:
     new widget.NumberInput(detailRender, "Click [s]", param.clickEnvelopeSecond, render),
-  clickAmp:
-    new widget.NumberInput(detailRender, "Click Amplitude", param.clickAmp, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  clickAmp: new widget.NumberInput(detailRender, "Click Amplitude", param.clickAmp, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
   oscAttack: new widget.NumberInput(detailOsc, "Attack [s]", param.oscAttack, render),
@@ -315,68 +307,60 @@ const ui = {
   combCount: new widget.NumberInput(detailComb, "nComb", param.combCount, render),
   combSum: new widget.ComboBoxLine(detailComb, "Sum Point", param.combSum, render),
   combMix: new widget.NumberInput(detailComb, "Mix", param.combMix, render),
-  combFeedback:
-    new widget.NumberInput(detailComb, "Feedback", param.combFeedback, render),
-  combTimeBase:
-    new widget.NumberInput(detailComb, "Time Base [s]", param.combTimeBase, render),
+  combFeedback: new widget.NumberInput(detailComb, "Feedback", param.combFeedback, render),
+  combTimeBase: new widget.NumberInput(detailComb, "Time Base [s]", param.combTimeBase, render),
   combTimeRandom:
     new widget.NumberInput(detailComb, "Time Random [s]", param.combTimeRandom, render),
   combOvertoneStart:
     new widget.NumberInput(detailComb, "Overtone Start", param.combOvertoneStart, render),
   combTimeUniformOvertoneRatio: new widget.NumberInput(
     detailComb, "Uniform or Overtone", param.combTimeUniformOvertoneRatio, render),
-  combHighpassHz:
-    new widget.NumberInput(detailComb, "Highpass [Hz]", param.combHighpassHz, render),
-  combLowpassHz:
-    new widget.NumberInput(detailComb, "Lowpass [Hz]", param.combLowpassHz, render),
-  combLowpassQ:
-    new widget.NumberInput(detailComb, "Lowpass Q", param.combLowpassQ, render),
-  combLowpassGain: new widget.NumberInput(
-    detailComb, "Lowpass Gain [dB]", param.combLowpassGain, render),
-  combLowpassCutoffSlope: new widget.NumberInput(
-    detailComb, "Lowpass Cut Slope", param.combLowpassCutoffSlope, render),
+  combHighpassHz: new widget.NumberInput(detailComb, "Highpass [Hz]", param.combHighpassHz, render),
+  combLowpassHz: new widget.NumberInput(detailComb, "Lowpass [Hz]", param.combLowpassHz, render),
+  combLowpassQ: new widget.NumberInput(detailComb, "Lowpass Q", param.combLowpassQ, render),
+  combLowpassGain:
+    new widget.NumberInput(detailComb, "Lowpass Gain [dB]", param.combLowpassGain, render),
+  combLowpassCutoffSlope:
+    new widget.NumberInput(detailComb, "Lowpass Cut Slope", param.combLowpassCutoffSlope, render),
 
   fdnMix: new widget.NumberInput(detailFDN, "FDN Mix", param.fdnMix, render),
   fdnCross: new widget.NumberInput(detailFDN, "Cross", param.fdnCross, render),
-  matrixSize: new widget.NumberInput(
-    detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
+  matrixSize:
+    new widget.NumberInput(detailFDN, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
   matrixType: new widget.ComboBoxLine(detailFDN, "Matrix Type", param.matrixType, render),
-  delayInterp:
-    new widget.ComboBoxLine(detailFDN, "Delay Interpolation", param.delayInterp, render),
+  delayInterp: new widget.ComboBoxLine(detailFDN, "Delay Interpolation", param.delayInterp, render),
   identityAmount:
     new widget.NumberInput(detailFDN, "Identity Amount", param.identityAmount, render),
   frequency: new widget.NumberInput(detailFDN, "Frequency [Hz]", param.frequency, render),
-  overtoneRandomization: new widget.NumberInput(
-    detailFDN, "Overtone Random", param.overtoneRandomization, render),
+  overtoneRandomization:
+    new widget.NumberInput(detailFDN, "Overtone Random", param.overtoneRandomization, render),
   fdnTimeModulation:
     new widget.NumberInput(detailFDN, "Time Modulation", param.fdnTimeModulation, render),
   fdnTimeRateLimit:
     new widget.NumberInput(detailFDN, "Time Rate Limit", param.fdnTimeRateLimit, render),
   fdnFeedback: new widget.NumberInput(detailFDN, "Feedback", param.fdnFeedback, render),
 
-  lowpassCutoffBatterHz: new widget.NumberInput(
-    detailLP, "Cutoff Batter [Hz]", param.lowpassCutoffBatterHz, render),
-  lowpassCutoffSnareHz: new widget.NumberInput(
-    detailLP, "Cutoff Snare [Hz]", param.lowpassCutoffSnareHz, render),
+  lowpassCutoffBatterHz:
+    new widget.NumberInput(detailLP, "Cutoff Batter [Hz]", param.lowpassCutoffBatterHz, render),
+  lowpassCutoffSnareHz:
+    new widget.NumberInput(detailLP, "Cutoff Snare [Hz]", param.lowpassCutoffSnareHz, render),
   lowpassCutoffOffsetOctave: new widget.BarBox(
     detailLP, "Cutoff Offset [octave]", uiSize.barboxWidth, uiSize.barboxHeight,
     param.lowpassCutoffOffsetOctave, render),
   lowpassQ: new widget.BarBox(
-    detailLP, "Q Factor", uiSize.barboxWidth, uiSize.barboxHeight, param.lowpassQ,
-    render),
+    detailLP, "Q Factor", uiSize.barboxWidth, uiSize.barboxHeight, param.lowpassQ, render),
   lowpassGain: new widget.BarBox(
     detailLP, "Gain", uiSize.barboxWidth, uiSize.barboxHeight, param.lowpassGain, render),
 
-  highpassCutoffBatterHz: new widget.NumberInput(
-    detailHP, "Cutoff Batter [Hz]", param.highpassCutoffBatterHz, render),
-  highpassCutoffSnareHz: new widget.NumberInput(
-    detailHP, "Cutoff Snare [Hz]", param.highpassCutoffSnareHz, render),
+  highpassCutoffBatterHz:
+    new widget.NumberInput(detailHP, "Cutoff Batter [Hz]", param.highpassCutoffBatterHz, render),
+  highpassCutoffSnareHz:
+    new widget.NumberInput(detailHP, "Cutoff Snare [Hz]", param.highpassCutoffSnareHz, render),
   highpassCutoffOffsetOctave: new widget.BarBox(
     detailHP, "Cutoff Offset [octave]", uiSize.barboxWidth, uiSize.barboxHeight,
     param.highpassCutoffOffsetOctave, render),
   highpassQ: new widget.BarBox(
-    detailHP, "Q Factor", uiSize.barboxWidth, uiSize.barboxHeight, param.highpassQ,
-    render),
+    detailHP, "Q Factor", uiSize.barboxWidth, uiSize.barboxHeight, param.highpassQ, render),
 };
 
 param.highpassQ[0].dsp = 0.1;

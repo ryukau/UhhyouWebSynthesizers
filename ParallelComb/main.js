@@ -111,27 +111,26 @@ const param = {
   pitchType: new parameter.Parameter(1, scales.pitchType),
   filterType: new parameter.Parameter(0, scales.filterType),
   delayInterpType: new parameter.Parameter(0, scales.delayInterpType),
-  delayTimeBaseSecond:
-    new parameter.Parameter(30 / 44100, scales.delayTimeBaseSecond, true),
+  delayTimeBaseSecond: new parameter.Parameter(30 / 44100, scales.delayTimeBaseSecond, true),
   delayTimeModAmount: new parameter.Parameter(0, scales.delayTimeModAmount, true),
   feedbackBase: new parameter.Parameter(0.999, scales.feedbackBase, true),
   cascadeGain: new parameter.Parameter(0, scales.crossRatio, true),
   crossRatio: new parameter.Parameter(0, scales.crossRatio, true),
 
-  combGain: createArrayParameters(
-    new Array(scales.nComb.max).fill(1), scales.combGain, scales.nComb.max),
+  combGain:
+    createArrayParameters(new Array(scales.nComb.max).fill(1), scales.combGain, scales.nComb.max),
   feedbackRatio: createArrayParameters(
     new Array(scales.nComb.max).fill(1.0), scales.feedbackRatio, scales.nComb.max, true),
   bandpassQ: createArrayParameters(
     new Array(scales.nComb.max).fill(0.5), scales.bandpassQ, scales.nComb.max, true),
-  combPitch: createArrayParameters(
-    new Array(scales.nComb.max).fill(0), scales.combPitch, scales.nComb.max),
-  bandpassPitch: createArrayParameters(
-    new Array(scales.nComb.max).fill(0), scales.combPitch, scales.nComb.max),
+  combPitch:
+    createArrayParameters(new Array(scales.nComb.max).fill(0), scales.combPitch, scales.nComb.max),
+  bandpassPitch:
+    createArrayParameters(new Array(scales.nComb.max).fill(0), scales.combPitch, scales.nComb.max),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -162,11 +161,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -210,48 +215,39 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
 
   seed: new widget.NumberInput(detailStereo, "Seed", param.seed, render),
-  stereoPitchCent: new widget.NumberInput(
-    detailStereo, "Pitch Randomize [Cent]", param.stereoPitchCent, render),
+  stereoPitchCent:
+    new widget.NumberInput(detailStereo, "Pitch Randomize [Cent]", param.stereoPitchCent, render),
 
   nComb: new widget.NumberInput(detailCombA, "nComb", param.nComb, onCombCountChanged),
   pitchType: new widget.ComboBoxLine(detailCombA, "Pitch Type", param.pitchType, render),
-  filterType:
-    new widget.ComboBoxLine(detailCombA, "Filter Type", param.filterType, render),
-  delayInterpType: new widget.ComboBoxLine(
-    detailCombA, "Delay Interpolation", param.delayInterpType, render),
-  delayTimeBaseSecond: new widget.NumberInput(
-    detailCombA, "Delay Base [sample]", param.delayTimeBaseSecond, render),
+  filterType: new widget.ComboBoxLine(detailCombA, "Filter Type", param.filterType, render),
+  delayInterpType:
+    new widget.ComboBoxLine(detailCombA, "Delay Interpolation", param.delayInterpType, render),
+  delayTimeBaseSecond:
+    new widget.NumberInput(detailCombA, "Delay Base [sample]", param.delayTimeBaseSecond, render),
   delayTimeModAmount: new widget.NumberInput(
     detailCombA, "Delay Modulation [sample]", param.delayTimeModAmount, render),
-  feedbackBase:
-    new widget.NumberInput(detailCombA, "Feedback", param.feedbackBase, render),
-  cascadeGain:
-    new widget.NumberInput(detailCombA, "Cascade Gain", param.cascadeGain, render),
-  crossRatio:
-    new widget.NumberInput(detailCombA, "Cross Ratio", param.crossRatio, render),
+  feedbackBase: new widget.NumberInput(detailCombA, "Feedback", param.feedbackBase, render),
+  cascadeGain: new widget.NumberInput(detailCombA, "Cascade Gain", param.cascadeGain, render),
+  crossRatio: new widget.NumberInput(detailCombA, "Cross Ratio", param.crossRatio, render),
 
   combGain: new widget.BarBox(
-    detailCombA, "Gain [dB]", uiSize.barboxWidth, uiSize.barboxHeight, param.combGain,
-    render),
+    detailCombA, "Gain [dB]", uiSize.barboxWidth, uiSize.barboxHeight, param.combGain, render),
   feedbackRatio: new widget.BarBox(
-    detailCombA, "Feedback Ratio", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.feedbackRatio, render),
-  bandpassQ: new widget.BarBox(
-    detailCombB, "Bandpass Q", uiSize.barboxWidth, uiSize.barboxHeight, param.bandpassQ,
+    detailCombA, "Feedback Ratio", uiSize.barboxWidth, uiSize.barboxHeight, param.feedbackRatio,
     render),
+  bandpassQ: new widget.BarBox(
+    detailCombB, "Bandpass Q", uiSize.barboxWidth, uiSize.barboxHeight, param.bandpassQ, render),
   combPitch: new widget.BarBox(
-    detailCombB, "Comb Pitch [st.]", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.combPitch, render),
+    detailCombB, "Comb Pitch [st.]", uiSize.barboxWidth, uiSize.barboxHeight, param.combPitch,
+    render),
   bandpassPitch: new widget.BarBox(
     detailCombB, "Bandpass Pitch [st.]", uiSize.barboxWidth, uiSize.barboxHeight,
     param.bandpassPitch, render),

@@ -23,8 +23,7 @@ const localRecipeBook = {
     spectralSpread: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -20, 20); },
     highpass: () => {},
     lowpass: () => {},
-    notchRange:
-      (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -60, util.ampToDB(0.04)); },
+    notchRange: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -60, util.ampToDB(0.04)); },
   },
   "Full": {
     renderSamples: () => {},
@@ -132,8 +131,8 @@ const param = {
     menuitems.startFromDefaultItems.length, scales.boolScale),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
@@ -145,8 +144,7 @@ const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
-  new widget.WaveView(
-    divLeft, uiSize.controlWidth, 2 * uiSize.waveViewHeight, undefined, false),
+  new widget.WaveView(divLeft, uiSize.controlWidth, 2 * uiSize.waveViewHeight, undefined, false),
 ];
 
 const audio = new wave.Audio(
@@ -162,11 +160,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -211,13 +215,12 @@ const detailFilter = widget.details(divRightA, "Filter");
 const detailAutomation = widget.details(divRightB, "Automation");
 
 const ui = {
-  renderSamples: new widget.NumberInput(
-    detailRender, "Duration [sample]", param.renderSamples, render),
-  loopPoint: new widget.CheckBoxLine(
-    detailRender, "Loop Point", ["☉ Off", "☀︎ On"], param.loopPoint, render),
+  renderSamples:
+    new widget.NumberInput(detailRender, "Duration [sample]", param.renderSamples, render),
+  loopPoint:
+    new widget.CheckBoxLine(detailRender, "Loop Point", ["☉ Off", "☀︎ On"], param.loopPoint, render),
 
-  nWaveform:
-    new widget.NumberInput(detailMultiTable, "nWaveform", param.nWaveform, render),
+  nWaveform: new widget.NumberInput(detailMultiTable, "nWaveform", param.nWaveform, render),
   seed: new widget.NumberInput(detailMultiTable, "Seed", param.seed, render),
   randomAmount:
     new widget.NumberInput(detailMultiTable, "Random Amount", param.randomAmount, render),
@@ -227,31 +230,23 @@ const ui = {
   waveform: new widget.NumberInput(detailShape, "Sine-Saw-Pulse", param.waveform, render),
   powerOf: new widget.NumberInput(detailShape, "Power", param.powerOf, render),
   skew: new widget.NumberInput(detailShape, "Skew", param.skew, render),
-  sineShaper:
-    new widget.NumberInput(detailShape, "Sine Shaper", param.sineShaper, render),
+  sineShaper: new widget.NumberInput(detailShape, "Sine Shaper", param.sineShaper, render),
   sineRatio: new widget.NumberInput(detailShape, "Sine Ratio", param.sineRatio, render),
   hardSync: new widget.NumberInput(detailShape, "Hard Sync.", param.hardSync, render),
-  mirrorRange:
-    new widget.NumberInput(detailShape, "Mirror Range", param.mirrorRange, render),
-  mirrorRepeat:
-    new widget.NumberInput(detailShape, "Mirror/Repeat", param.mirrorRepeat, render),
+  mirrorRange: new widget.NumberInput(detailShape, "Mirror Range", param.mirrorRange, render),
+  mirrorRepeat: new widget.NumberInput(detailShape, "Mirror/Repeat", param.mirrorRepeat, render),
   flip: new widget.NumberInput(detailShape, "Flip", param.flip, render),
 
-  spectralSpread: new widget.NumberInput(
-    detailSpectral, "Spectral Spread", param.spectralSpread, render),
-  phaseSlope:
-    new widget.NumberInput(detailSpectral, "Phase Slope", param.phaseSlope, render),
+  spectralSpread:
+    new widget.NumberInput(detailSpectral, "Spectral Spread", param.spectralSpread, render),
+  phaseSlope: new widget.NumberInput(detailSpectral, "Phase Slope", param.phaseSlope, render),
 
   highpass: new widget.NumberInput(detailFilter, "Highpass", param.highpass, render),
   lowpass: new widget.NumberInput(detailFilter, "Lowpass", param.lowpass, render),
-  notchStart:
-    new widget.NumberInput(detailFilter, "Notch Start", param.notchStart, render),
-  notchRange:
-    new widget.NumberInput(detailFilter, "Notch Range", param.notchRange, render),
-  lowshelfEnd:
-    new widget.NumberInput(detailFilter, "Lowshelf End", param.lowshelfEnd, render),
-  lowshelfGain:
-    new widget.NumberInput(detailFilter, "Lowshelf Gain", param.lowshelfGain, render),
+  notchStart: new widget.NumberInput(detailFilter, "Notch Start", param.notchStart, render),
+  notchRange: new widget.NumberInput(detailFilter, "Notch Range", param.notchRange, render),
+  lowshelfEnd: new widget.NumberInput(detailFilter, "Lowshelf End", param.lowshelfEnd, render),
+  lowshelfGain: new widget.NumberInput(detailFilter, "Lowshelf Gain", param.lowshelfGain, render),
 
   automationScaling: new widget.ComboBoxLine(
     detailAutomation, "Automation Scaling", param.automationScaling, render),

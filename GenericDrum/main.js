@@ -37,8 +37,7 @@ const localRecipeBook = {
     matrixSize: () => {},
     crossFeedbackGain: () => {},
     pitchType: (prm) => { prm.normalized = Math.random(); },
-    delayTimeModAmount:
-      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.1, 10000); },
+    delayTimeModAmount: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 0.1, 10000); },
     secondaryQOffset: () => {},
   },
 };
@@ -63,8 +62,7 @@ function render() {
     "perChannel",
     playControl.togglebuttonQuickSave.state === 1,
     (data) => {
-      ui.wireStatus.textContent
-        = data.isWireEngaged ? "Wire collided." : "Wire didn't collide.";
+      ui.wireStatus.textContent = data.isWireEngaged ? "Wire collided." : "Wire didn't collide.";
       ui.secondaryStatus.textContent
         = data.isSecondaryEngaged ? "Membrane collided." : "Membrane didn't collide.";
     },
@@ -137,8 +135,7 @@ const param = {
   compressorInputGain: new parameter.Parameter(1, scales.compressorInputGain, false),
   limiterType: new parameter.Parameter(1, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
-  limiterSmoothingSeconds:
-    new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
+  limiterSmoothingSeconds: new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
 
   seed: new parameter.Parameter(406392312, scales.seed, true),
   noiseDecaySeconds: new parameter.Parameter(0.08, scales.noiseDecaySeconds, true),
@@ -153,11 +150,9 @@ const param = {
   wireCollisionTypeMix: new parameter.Parameter(0.5, scales.mix, true),
 
   matrixSize: new parameter.Parameter(5, scales.matrixSize, true),
-  crossFeedbackGain:
-    new parameter.Parameter(util.dbToAmp(-1), scales.crossFeedbackGain, false),
+  crossFeedbackGain: new parameter.Parameter(util.dbToAmp(-1), scales.crossFeedbackGain, false),
   crossFeedbackRatio: createArrayParameters(
-    new Array(scales.matrixSize.max).fill(1), scales.crossFeedbackRatio,
-    scales.matrixSize.max),
+    new Array(scales.matrixSize.max).fill(1), scales.crossFeedbackRatio, scales.matrixSize.max),
 
   delayTimeSpread: new parameter.Parameter(0.1, scales.pitchSpread, true),
   bandpassCutSpread: new parameter.Parameter(0.5, scales.pitchSpread, true),
@@ -211,11 +206,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -257,91 +258,80 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   preventBlowUp: new widget.CheckBoxLine(
     detailRender, "Prevent Blow Up", ["Off", "On"], param.preventBlowUp, render),
 
-  compressorType:
-    new widget.ComboBoxLine(detailCompressor, "Type", param.compressorType, render),
-  compressorInputGain: new widget.NumberInput(
-    detailCompressor, "Input Gain [dB]", param.compressorInputGain, render),
+  compressorType: new widget.ComboBoxLine(detailCompressor, "Type", param.compressorType, render),
+  compressorInputGain:
+    new widget.NumberInput(detailCompressor, "Input Gain [dB]", param.compressorInputGain, render),
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterSmoothingSeconds: new widget.NumberInput(
-    detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterSmoothingSeconds:
+    new widget.NumberInput(detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
 
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   noiseDecaySeconds:
     new widget.NumberInput(detailOsc, "Noise Decay [s]", param.noiseDecaySeconds, render),
   noiseLowpassHz:
     new widget.NumberInput(detailOsc, "Noise Lowpass [Hz]", param.noiseLowpassHz, render),
-  allpassMaxTimeHz:
-    new widget.NumberInput(detailOsc, "Echo [Hz]", param.allpassMaxTimeHz, render),
+  allpassMaxTimeHz: new widget.NumberInput(detailOsc, "Echo [Hz]", param.allpassMaxTimeHz, render),
 
-  impactWireMix:
-    new widget.NumberInput(detailWire, "Impact-Wire Mix", param.impactWireMix, render),
-  membraneWireMix: new widget.NumberInput(
-    detailWire, "Membrane-Wire Mix", param.membraneWireMix, render),
+  impactWireMix: new widget.NumberInput(detailWire, "Impact-Wire Mix", param.impactWireMix, render),
+  membraneWireMix:
+    new widget.NumberInput(detailWire, "Membrane-Wire Mix", param.membraneWireMix, render),
   wireFrequencyHz:
     new widget.NumberInput(detailWire, "Frequency [Hz]", param.wireFrequencyHz, render),
-  wireDecaySeconds:
-    new widget.NumberInput(detailWire, "Decay [s]", param.wireDecaySeconds, render),
+  wireDecaySeconds: new widget.NumberInput(detailWire, "Decay [s]", param.wireDecaySeconds, render),
   wireDistance:
     new widget.NumberInput(detailWire, "Collision Distance", param.wireDistance, render),
-  wireCollisionTypeMix: new widget.NumberInput(
-    detailWire, "Rattle-Squeak Mix", param.wireCollisionTypeMix, render),
+  wireCollisionTypeMix:
+    new widget.NumberInput(detailWire, "Rattle-Squeak Mix", param.wireCollisionTypeMix, render),
   wireStatus: widget.paragraph(detailWire, "wireStatus", undefined),
 
-  matrixSize:
-    new widget.NumberInput(detailFDN, "FDN Size", param.matrixSize, onMatrixSizeChanged),
-  crossFeedbackGain: new widget.NumberInput(
-    detailFDN, "Cross Feedback Gain [dB]", param.crossFeedbackGain, render),
+  matrixSize: new widget.NumberInput(detailFDN, "FDN Size", param.matrixSize, onMatrixSizeChanged),
+  crossFeedbackGain:
+    new widget.NumberInput(detailFDN, "Cross Feedback Gain [dB]", param.crossFeedbackGain, render),
   crossFeedbackRatio: new widget.BarBox(
     detailFDN, "Cross Feedback Ratio", uiSize.barboxWidth, uiSize.barboxHeight,
     param.crossFeedbackRatio, render),
 
-  delayTimeSpread: new widget.NumberInput(
-    detailPitchTexture, "Delay Time Spread", param.delayTimeSpread, render),
-  bandpassCutSpread: new widget.NumberInput(
-    detailPitchTexture, "BP Cut Spread", param.bandpassCutSpread, render),
+  delayTimeSpread:
+    new widget.NumberInput(detailPitchTexture, "Delay Time Spread", param.delayTimeSpread, render),
+  bandpassCutSpread:
+    new widget.NumberInput(detailPitchTexture, "BP Cut Spread", param.bandpassCutSpread, render),
   pitchRandomCent: new widget.NumberInput(
     detailPitchTexture, "Pitch Random [cent]", param.pitchRandomCent, render),
 
-  envelopeAttackSeconds: new widget.NumberInput(
-    detailPitchEnvelope, "Attack [s]", param.envelopeAttackSeconds, render),
-  envelopeDecaySeconds: new widget.NumberInput(
-    detailPitchEnvelope, "Decay [s]", param.envelopeDecaySeconds, render),
-  envelopeModAmount: new widget.NumberInput(
-    detailPitchEnvelope, "Amount [oct]", param.envelopeModAmount, render),
+  envelopeAttackSeconds:
+    new widget.NumberInput(detailPitchEnvelope, "Attack [s]", param.envelopeAttackSeconds, render),
+  envelopeDecaySeconds:
+    new widget.NumberInput(detailPitchEnvelope, "Decay [s]", param.envelopeDecaySeconds, render),
+  envelopeModAmount:
+    new widget.NumberInput(detailPitchEnvelope, "Amount [oct]", param.envelopeModAmount, render),
 
-  pitchType:
-    new widget.ComboBoxLine(detailPrimary, "Pitch Type", param.pitchType, render),
-  delayTimeHz:
-    new widget.NumberInput(detailPrimary, "Delay [Hz]", param.delayTimeHz, render),
+  pitchType: new widget.ComboBoxLine(detailPrimary, "Pitch Type", param.pitchType, render),
+  delayTimeHz: new widget.NumberInput(detailPrimary, "Delay [Hz]", param.delayTimeHz, render),
   delayTimeModAmount: new widget.NumberInput(
     detailPrimary, "Delay Modulation [sample]", param.delayTimeModAmount, render),
   bandpassCutRatio:
     new widget.NumberInput(detailPrimary, "BP Cut [oct]", param.bandpassCutRatio, render),
   bandpassQ: new widget.NumberInput(detailPrimary, "BP Q", param.bandpassQ, render),
 
-  secondaryFdnMix:
-    new widget.NumberInput(detailSecondary, "Mix", param.secondaryFdnMix, render),
+  secondaryFdnMix: new widget.NumberInput(detailSecondary, "Mix", param.secondaryFdnMix, render),
   secondaryPitchOffset: new widget.NumberInput(
     detailSecondary, "Pitch Offset [oct]", param.secondaryPitchOffset, render),
-  secondaryQOffset: new widget.NumberInput(
-    detailSecondary, "Q Offset [oct]", param.secondaryQOffset, render),
-  secondaryDistance: new widget.NumberInput(
-    detailSecondary, "Collision Distance", param.secondaryDistance, render),
+  secondaryQOffset:
+    new widget.NumberInput(detailSecondary, "Q Offset [oct]", param.secondaryQOffset, render),
+  secondaryDistance:
+    new widget.NumberInput(detailSecondary, "Collision Distance", param.secondaryDistance, render),
   secondaryStatus: widget.paragraph(detailSecondary, "secondaryStatus", undefined),
 };
 

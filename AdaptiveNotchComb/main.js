@@ -20,7 +20,6 @@ const localRecipeBook = {
     stereoMerge: () => {},
     overSample: () => {},
     sampleRateScaler: () => {},
-    dcHighpassHz: () => {},
     toneSlope: () => {},
     crossFade: () => {},
     adaptiveNotchType: (prm) => { prm.normalized = Math.random(); },
@@ -111,8 +110,8 @@ const param = {
   notchInvert: new parameter.Parameter(0, scales.boolean, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -142,11 +141,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -176,8 +181,7 @@ const paragraphNote1 = widget.paragraph(detailTips, undefined, undefined);
 paragraphNote1.textContent
   = "When the sound becomes inaudible, change `Oscillator -> BP Cut`, `Notch -> Narrowness`, or `Notch -> Step Size Scale`.";
 const paragraphNote2 = widget.paragraph(detailTips, undefined, undefined);
-paragraphNote2.textContent
-  = "To reduce clicks or spikes, lower `Comb -> Base Frequency`.";
+paragraphNote2.textContent = "To reduce clicks or spikes, lower `Comb -> Base Frequency`.";
 
 const detailRender = widget.details(divLeft, "Render");
 const detailOsc = widget.details(divRightA, "Oscillator");
@@ -190,46 +194,41 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   crossFade: new widget.ToggleButtonLine(
     detailRender, ["Cross-fade", "Cross-fade"], param.crossFade, render),
 
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
-  noiseDistribution: new widget.ComboBoxLine(
-    detailOsc, "Noise Distribution", param.noiseDistribution, render),
+  noiseDistribution:
+    new widget.ComboBoxLine(detailOsc, "Noise Distribution", param.noiseDistribution, render),
   bandpassCutoffHz:
     new widget.NumberInput(detailOsc, "BP Cut [Hz]", param.bandpassCutoffHz, render),
 
-  adaptiveNotchType: new widget.ComboBoxLine(
-    detailComb, "Adaptive Notch Type", param.adaptiveNotchType, render),
+  adaptiveNotchType:
+    new widget.ComboBoxLine(detailComb, "Adaptive Notch Type", param.adaptiveNotchType, render),
   combCount: new widget.NumberInput(detailComb, "Count", param.combCount, render),
   highpassCutoffHz:
     new widget.NumberInput(detailComb, "HP Cut [Hz]", param.highpassCutoffHz, render),
-  combBaseHz:
-    new widget.NumberInput(detailComb, "Base Frequency [Hz]", param.combBaseHz, render),
-  combRandomOctave: new widget.NumberInput(
-    detailComb, "Random Frequency [oct]", param.combRandomOctave, render),
-  combFrequencySpread: new widget.NumberInput(
-    detailComb, "Frequency Spread", param.combFrequencySpread, render),
+  combBaseHz: new widget.NumberInput(detailComb, "Base Frequency [Hz]", param.combBaseHz, render),
+  combRandomOctave:
+    new widget.NumberInput(detailComb, "Random Frequency [oct]", param.combRandomOctave, render),
+  combFrequencySpread:
+    new widget.NumberInput(detailComb, "Frequency Spread", param.combFrequencySpread, render),
   combNotchMix:
     new widget.NumberInput(detailComb, "Feedback Notch Mix", param.combNotchMix, render),
   combCascadeGain:
     new widget.NumberInput(detailComb, "Cascade Gain", param.combCascadeGain, render),
 
   notchCount: new widget.NumberInput(detailNotch, "Count", param.notchCount, render),
-  notchNarrowness:
-    new widget.NumberInput(detailNotch, "Narrowness", param.notchNarrowness, render),
-  notchStepSizeScale: new widget.NumberInput(
-    detailNotch, "Step Size Scale", param.notchStepSizeScale, render),
-  notchInvert: new widget.ToggleButtonLine(
-    detailNotch, ["Invert", "Invert"], param.notchInvert, render),
+  notchNarrowness: new widget.NumberInput(detailNotch, "Narrowness", param.notchNarrowness, render),
+  notchStepSizeScale:
+    new widget.NumberInput(detailNotch, "Step Size Scale", param.notchStepSizeScale, render),
+  notchInvert:
+    new widget.ToggleButtonLine(detailNotch, ["Invert", "Invert"], param.notchInvert, render),
 };
 
 render();

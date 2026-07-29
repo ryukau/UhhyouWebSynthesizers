@@ -73,8 +73,7 @@ const scales = {
 
   chorusDelayInterpType: new parameter.MenuItemScale(menuitems.delayInterpTypeItems),
   chorusAM: new parameter.DecibelScale(-30, 0, true),
-  chorusTimeSeconds:
-    new parameter.DecibelScale(util.ampToDB(1e-4), util.ampToDB(0.2), true),
+  chorusTimeSeconds: new parameter.DecibelScale(util.ampToDB(1e-4), util.ampToDB(0.2), true),
   chorusDelayCount: new parameter.IntScale(1, 8),
 
   compressorInputGain: new parameter.DecibelScale(-40, 40, false),
@@ -122,8 +121,8 @@ const param = {
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -154,11 +153,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -195,65 +200,54 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
 
   compressorEnable: new widget.ToggleButtonLine(
-    detailLimiter, ["Compressor - Off", "Compressor - On"], param.compressorEnable,
-    render),
+    detailLimiter, ["Compressor - Off", "Compressor - On"], param.compressorEnable, render),
   compressorInputGain: new widget.NumberInput(
     detailLimiter, "Compressor Input Gain [dB]", param.compressorInputGain, render),
   limiterEnable: new widget.ToggleButtonLine(
     detailLimiter, ["Limiter - Off", "Limiter - On"], param.limiterEnable, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Limiter Threshold [dB]", param.limiterThreshold, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Limiter Threshold [dB]", param.limiterThreshold, render),
 
   negativeEnvelope: new widget.ToggleButtonLine(
     detailEnvelope, ["Positive", "Negative"], param.negativeEnvelope, render),
-  attackTimeSeconds: new widget.NumberInput(
-    detailEnvelope, "Attack Time [s]", param.attackTimeSeconds, render),
-  attackLevel:
-    new widget.NumberInput(detailEnvelope, "Attack Level", param.attackLevel, render),
-  decayTimeSeconds: new widget.NumberInput(
-    detailEnvelope, "Decay Time [s]", param.decayTimeSeconds, render),
-  decayLevel:
-    new widget.NumberInput(detailEnvelope, "Decay Level", param.decayLevel, render),
-  pitchEnvOctave: new widget.NumberInput(
-    detailEnvelope, "Env -> Pitch [oct]", param.pitchEnvOctave, render),
+  attackTimeSeconds:
+    new widget.NumberInput(detailEnvelope, "Attack Time [s]", param.attackTimeSeconds, render),
+  attackLevel: new widget.NumberInput(detailEnvelope, "Attack Level", param.attackLevel, render),
+  decayTimeSeconds:
+    new widget.NumberInput(detailEnvelope, "Decay Time [s]", param.decayTimeSeconds, render),
+  decayLevel: new widget.NumberInput(detailEnvelope, "Decay Level", param.decayLevel, render),
+  pitchEnvOctave:
+    new widget.NumberInput(detailEnvelope, "Env -> Pitch [oct]", param.pitchEnvOctave, render),
   pwmLfoRateEnvOctave: new widget.NumberInput(
     detailEnvelope, "Env -> PWM Rate [oct]", param.pwmLfoRateEnvOctave, render),
 
-  noteNumber:
-    new widget.NumberInput(detailOscillator, "Note Number", param.noteNumber, render),
+  noteNumber: new widget.NumberInput(detailOscillator, "Note Number", param.noteNumber, render),
   pwmLfoRateHz:
     new widget.NumberInput(detailOscillator, "PWM Rate [Hz]", param.pwmLfoRateHz, render),
-  mainPwmAmount:
-    new widget.NumberInput(detailOscillator, "Main PWM", param.mainPwmAmount, render),
-  subPwmAmount:
-    new widget.NumberInput(detailOscillator, "Sub PWM", param.subPwmAmount, render),
-  subExtraMix:
-    new widget.NumberInput(detailOscillator, "Sub Extra", param.subExtraMix, render),
-  subOctave:
-    new widget.NumberInput(detailOscillator, "Sub Pitch [oct]", param.subOctave, render),
-  pwmSawOctave: new widget.NumberInput(
-    detailOscillator, "PWM Saw Pitch [oct]", param.pwmSawOctave, render),
+  mainPwmAmount: new widget.NumberInput(detailOscillator, "Main PWM", param.mainPwmAmount, render),
+  subPwmAmount: new widget.NumberInput(detailOscillator, "Sub PWM", param.subPwmAmount, render),
+  subExtraMix: new widget.NumberInput(detailOscillator, "Sub Extra", param.subExtraMix, render),
+  subOctave: new widget.NumberInput(detailOscillator, "Sub Pitch [oct]", param.subOctave, render),
+  pwmSawOctave:
+    new widget.NumberInput(detailOscillator, "PWM Saw Pitch [oct]", param.pwmSawOctave, render),
 
   chorusDelayInterpType: new widget.ComboBoxLine(
     detailChorus, "Delay Interpolation", param.chorusDelayInterpType, render),
   chorusMix: new widget.NumberInput(detailChorus, "Mix", param.chorusMix, render),
   chorusAM: new widget.NumberInput(detailChorus, "AM", param.chorusAM, render),
-  chorusTimeBaseSeconds: new widget.NumberInput(
-    detailChorus, "Base Time [s]", param.chorusTimeBaseSeconds, render),
-  chorusTimeModSeconds: new widget.NumberInput(
-    detailChorus, "Mod Time [s]", param.chorusTimeModSeconds, render),
+  chorusTimeBaseSeconds:
+    new widget.NumberInput(detailChorus, "Base Time [s]", param.chorusTimeBaseSeconds, render),
+  chorusTimeModSeconds:
+    new widget.NumberInput(detailChorus, "Mod Time [s]", param.chorusTimeModSeconds, render),
   chorusDelayCount:
     new widget.NumberInput(detailChorus, "Delay Count", param.chorusDelayCount, render),
   chorusLfoSpread:

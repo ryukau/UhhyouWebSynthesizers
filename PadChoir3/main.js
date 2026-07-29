@@ -88,10 +88,9 @@ const scales = {
 
   baseFrequencyHz: new parameter.MidiPitchScale(0, 136, false),
   bandWidthOctave: new parameter.DecibelScale(-40, util.ampToDB(0.25), false),
-  spectralFilterPower:
-    new parameter.DecibelScale(util.ampToDB(0.01), util.ampToDB(8), true),
-  highShelfHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(1000), util.freqToMidiPitch(768000), false),
+  spectralFilterPower: new parameter.DecibelScale(util.ampToDB(0.01), util.ampToDB(8), true),
+  highShelfHz:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(1000), util.freqToMidiPitch(768000), false),
   highShelfGain: new parameter.DecibelScale(-60, 0, true),
 
   nChord: new parameter.IntScale(0, 8),
@@ -116,8 +115,7 @@ const param = {
   highpassPower: new parameter.Parameter(1, scales.spectralFilterPower, true),
   lowpassHz: new parameter.Parameter(1000, scales.baseFrequencyHz, true),
   lowpassPower: new parameter.Parameter(1, scales.spectralFilterPower, true),
-  highShelfHz:
-    new parameter.Parameter(scales.highShelfHz.maxDsp, scales.highShelfHz, true),
+  highShelfHz: new parameter.Parameter(scales.highShelfHz.maxDsp, scales.highShelfHz, true),
   highShelfGain: new parameter.Parameter(1, scales.highShelfGain, false),
 
   nChord: new parameter.Parameter(4, scales.nChord, true),
@@ -168,11 +166,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -206,34 +210,30 @@ const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fade: new widget.NumberInput(detailRender, "Fade [s]", param.fade, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
-  baseFrequencyHz: new widget.NumberInput(
-    detailOsc, "Base Frequency [Hz]", param.baseFrequencyHz, render),
+  baseFrequencyHz:
+    new widget.NumberInput(detailOsc, "Base Frequency [Hz]", param.baseFrequencyHz, render),
   bandWidthOctave:
     new widget.NumberInput(detailOsc, "Band Width [oct]", param.bandWidthOctave, render),
   phaseRandomAmount:
     new widget.NumberInput(detailOsc, "Random Phase", param.phaseRandomAmount, render),
-  highpassHz:
-    new widget.NumberInput(detailOsc, "Highpass [Hz]", param.highpassHz, render),
-  highpassPower:
-    new widget.NumberInput(detailOsc, "Highpass Power", param.highpassPower, render),
+  highpassHz: new widget.NumberInput(detailOsc, "Highpass [Hz]", param.highpassHz, render),
+  highpassPower: new widget.NumberInput(detailOsc, "Highpass Power", param.highpassPower, render),
   lowpassHz: new widget.NumberInput(detailOsc, "Lowpass [Hz]", param.lowpassHz, render),
-  lowpassPower:
-    new widget.NumberInput(detailOsc, "Lowpass Power", param.lowpassPower, render),
-  highShelfHz:
-    new widget.NumberInput(detailOsc, "High Shelf Cut [Hz]", param.highShelfHz, render),
-  highShelfGain: new widget.NumberInput(
-    detailOsc, "High Shelf Gain [dB]", param.highShelfGain, render),
+  lowpassPower: new widget.NumberInput(detailOsc, "Lowpass Power", param.lowpassPower, render),
+  highShelfHz: new widget.NumberInput(detailOsc, "High Shelf Cut [Hz]", param.highShelfHz, render),
+  highShelfGain:
+    new widget.NumberInput(detailOsc, "High Shelf Gain [dB]", param.highShelfGain, render),
 
   nChord: new widget.NumberInput(detailChord, "nChord", param.nChord, render),
   chordPitch1: new widget.NumberInput(detailChord, "Pitch 1", param.chordPitch1, render),
   chordPitch2: new widget.NumberInput(detailChord, "Pitch 2", param.chordPitch2, render),
   chordPitch3: new widget.NumberInput(detailChord, "Pitch 3", param.chordPitch3, render),
-  pitchRandomOctave: new widget.NumberInput(
-    detailChord, "Random Pitch [oct]", param.pitchRandomOctave, render),
+  pitchRandomOctave:
+    new widget.NumberInput(detailChord, "Random Pitch [oct]", param.pitchRandomOctave, render),
 
   formant: new FormantXYPad(
     detailFormant, uiSize.waveViewWidth, uiSize.waveViewWidth, "Vowel", param.formantX,
@@ -241,16 +241,14 @@ const ui = {
   formantGainType:
     new widget.ComboBoxLine(detailFormant, "Gain Type", param.formantGainType, render),
   vocalType: new widget.NumberInput(detailFormant, "Vocal Type", param.vocalType, render),
-  formantTracking: new widget.NumberInput(
-    detailFormant, "Formant Tracking", param.formantTracking, render),
+  formantTracking:
+    new widget.NumberInput(detailFormant, "Formant Tracking", param.formantTracking, render),
   formantTrackingSlope: new widget.NumberInput(
     detailFormant, "Formant Tracking Slope", param.formantTrackingSlope, render),
-  formantPower:
-    new widget.NumberInput(detailFormant, "Formant Power", param.formantPower, render),
+  formantPower: new widget.NumberInput(detailFormant, "Formant Power", param.formantPower, render),
   formantRandom:
     new widget.NumberInput(detailFormant, "Random Formant", param.formantRandom, render),
-  vocalRandom:
-    new widget.NumberInput(detailFormant, "Random Vocal", param.vocalRandom, render),
+  vocalRandom: new widget.NumberInput(detailFormant, "Random Vocal", param.vocalRandom, render),
 };
 
 render();

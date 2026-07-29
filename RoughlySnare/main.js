@@ -32,8 +32,7 @@ const localRecipeBook = {
 
     reverbMix: () => {},
     reverbTimeMultiplier: (prm) => { prm.dsp = 2 * Math.pow(Math.random(), 1.1); },
-    reverbFeedback:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.7, 0.85); },
+    reverbFeedback: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.7, 0.85); },
   },
 };
 
@@ -104,8 +103,8 @@ const scales = {
 
   reverbMix: new parameter.DecibelScale(-60, 0, true),
   reverbTimeMultiplier: new parameter.DecibelScale(-20, 20, false),
-  reverbLowpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
+  reverbLowpassHz:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
   reverbFeedback: new parameter.NegativeDecibelScale(-40, 0, 1, true),
 };
 
@@ -120,8 +119,7 @@ const param = {
 
   limiterType: new parameter.Parameter(0, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
-  limiterSmoothingSeconds:
-    new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
+  limiterSmoothingSeconds: new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
 
   velocity: new parameter.Parameter(0.5, scales.velocity, true),
   seed: new parameter.Parameter(0, scales.seed, true),
@@ -129,8 +127,7 @@ const param = {
   excitationType: new parameter.Parameter(0, scales.excitationType, true),
   excitationLowpass: new parameter.Parameter(0.5, scales.excitationLowpass, true),
   excitationSineModLevel: new parameter.Parameter(0, scales.excitationSineModLevel, true),
-  excitationSineModDecay:
-    new parameter.Parameter(0.5, scales.excitationSineModDecay, true),
+  excitationSineModDecay: new parameter.Parameter(0.5, scales.excitationSineModDecay, true),
 
   fdnSize: new parameter.Parameter(6, scales.fdnSize, true),
   delayInterpType: new parameter.Parameter(2, scales.delayInterpType),
@@ -157,8 +154,8 @@ const param = {
   reverbFeedback: new parameter.Parameter(0.8, scales.reverbFeedback, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -189,11 +186,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -233,65 +236,55 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterSmoothingSeconds: new widget.NumberInput(
-    detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterSmoothingSeconds:
+    new widget.NumberInput(detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
 
   velocity: new widget.NumberInput(detailSnareMisc, "Velocity", param.velocity, render),
   seed: new widget.NumberInput(detailSnareMisc, "Seed", param.seed, render),
 
   excitationType:
     new widget.ComboBoxLine(detailSnareExcitation, "Type", param.excitationType, render),
-  excitationLowpass: new widget.NumberInput(
-    detailSnareExcitation, "Lowpass", param.excitationLowpass, render),
+  excitationLowpass:
+    new widget.NumberInput(detailSnareExcitation, "Lowpass", param.excitationLowpass, render),
   excitationSineModLevel: new widget.NumberInput(
     detailSnareExcitation, "Mod. Level", param.excitationSineModLevel, render),
   excitationSineModDecay: new widget.NumberInput(
     detailSnareExcitation, "Mod. Decay", param.excitationSineModDecay, render),
 
-  fdnSize:
-    new widget.NumberInput(detailSnareDelay, "FDN Size", param.fdnSize, onFdnSizeChanged),
-  delayInterpType: new widget.ComboBoxLine(
-    detailSnareDelay, "Delay Interpolation", param.delayInterpType, render),
+  fdnSize: new widget.NumberInput(detailSnareDelay, "FDN Size", param.fdnSize, onFdnSizeChanged),
+  delayInterpType:
+    new widget.ComboBoxLine(detailSnareDelay, "Delay Interpolation", param.delayInterpType, render),
   frequencyHz:
     new widget.NumberInput(detailSnareDelay, "Frequency [Hz]", param.frequencyHz, render),
   allpassDelayRatio: new widget.NumberInput(
     detailSnareDelay, "Allpass:Delay Ratio", param.allpassDelayRatio, render),
-  allpassGain:
-    new widget.NumberInput(detailSnareDelay, "Allpass Gain", param.allpassGain, render),
+  allpassGain: new widget.NumberInput(detailSnareDelay, "Allpass Gain", param.allpassGain, render),
   feedback: new widget.NumberInput(detailSnareDelay, "Feedback", param.feedback, render),
 
-  lowpassHz:
-    new widget.NumberInput(detailSnareTone, "Lowpass [Hz]", param.lowpassHz, render),
-  highpassHz:
-    new widget.NumberInput(detailSnareTone, "Highpass [Hz]", param.highpassHz, render),
-  noiseLevel:
-    new widget.NumberInput(detailSnareTone, "Noise Level", param.noiseLevel, render),
+  lowpassHz: new widget.NumberInput(detailSnareTone, "Lowpass [Hz]", param.lowpassHz, render),
+  highpassHz: new widget.NumberInput(detailSnareTone, "Highpass [Hz]", param.highpassHz, render),
+  noiseLevel: new widget.NumberInput(detailSnareTone, "Noise Level", param.noiseLevel, render),
 
-  attackMod:
-    new widget.NumberInput(detailSnareModulation, "Attack Mod.", param.attackMod, render),
+  attackMod: new widget.NumberInput(detailSnareModulation, "Attack Mod.", param.attackMod, render),
   envelopeDecaySecond: new widget.NumberInput(
     detailSnareModulation, "Env. Decay [s]", param.envelopeDecaySecond, render),
-  pitchMod: new widget.NumberInput(
-    detailSnareModulation, "Env. -> Pitch", param.pitchMod, render),
+  pitchMod: new widget.NumberInput(detailSnareModulation, "Env. -> Pitch", param.pitchMod, render),
   delayTimeMod: new widget.NumberInput(
     detailSnareModulation, "Delay Mod. [sample]", param.delayTimeMod, render),
-  delayTimeEnv: new widget.NumberInput(
-    detailSnareModulation, "Env. -> Delay Mod.", param.delayTimeEnv, render),
+  delayTimeEnv:
+    new widget.NumberInput(detailSnareModulation, "Env. -> Delay Mod.", param.delayTimeEnv, render),
   allpassTimeEnv: new widget.NumberInput(
     detailSnareModulation, "Env. -> Allpass Mod.", param.allpassTimeEnv, render),
 
-  reverbMix:
-    new widget.NumberInput(detailBodyResonance, "Mix [dB]", param.reverbMix, render),
+  reverbMix: new widget.NumberInput(detailBodyResonance, "Mix [dB]", param.reverbMix, render),
   reverbTimeMultiplier: new widget.NumberInput(
     detailBodyResonance, "Time Multiplier", param.reverbTimeMultiplier, render),
   reverbLowpassHz: new widget.NumberInput(

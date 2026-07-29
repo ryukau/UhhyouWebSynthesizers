@@ -90,8 +90,8 @@ const param = {
   pullUpRandomRange: new parameter.Parameter(0.5, scales.defaultScale),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -121,11 +121,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -161,35 +167,27 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
   limiterActive: new widget.ToggleButtonLine(
     detailLimiter, menuitems.limiterOnOffItems, param.limiterActive, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
 
   nNode: new widget.NumberInput(detailWave, "nNode", param.nNode, render),
-  lengthMeter:
-    new widget.NumberInput(detailWave, "Wire Length [m]", param.lengthMeter, render),
-  waveSpeed:
-    new widget.NumberInput(detailWave, "Wave Speed [m/s]", param.waveSpeed, render),
+  lengthMeter: new widget.NumberInput(detailWave, "Wire Length [m]", param.lengthMeter, render),
+  waveSpeed: new widget.NumberInput(detailWave, "Wave Speed [m/s]", param.waveSpeed, render),
   damping: new widget.NumberInput(detailWave, "Damping", param.damping, render),
-  wallDistance:
-    new widget.NumberInput(detailWave, "Distance [m]", param.wallDistance, render),
-  restitution:
-    new widget.NumberInput(detailWave, "Restitution", param.restitution, render),
-  pickUpPoint:
-    new widget.NumberInput(detailWave, "Pick-up Point", param.pickUpPoint, render),
-  pullUpPoint:
-    new widget.NumberInput(detailWave, "Pull-up Point", param.pullUpPoint, render),
-  pullUpDistance: new widget.NumberInput(
-    detailWave, "Pull-up Distance [m]", param.pullUpDistance, render),
-  pullUpWidth:
-    new widget.NumberInput(detailWave, "Pull-up Width", param.pullUpWidth, render),
+  wallDistance: new widget.NumberInput(detailWave, "Distance [m]", param.wallDistance, render),
+  restitution: new widget.NumberInput(detailWave, "Restitution", param.restitution, render),
+  pickUpPoint: new widget.NumberInput(detailWave, "Pick-up Point", param.pickUpPoint, render),
+  pullUpPoint: new widget.NumberInput(detailWave, "Pull-up Point", param.pullUpPoint, render),
+  pullUpDistance:
+    new widget.NumberInput(detailWave, "Pull-up Distance [m]", param.pullUpDistance, render),
+  pullUpWidth: new widget.NumberInput(detailWave, "Pull-up Width", param.pullUpWidth, render),
 
   nWire: new widget.NumberInput(detailMisc, "nWire", param.nWire, render),
   feedback: new widget.NumberInput(detailMisc, "Feedback", param.feedback, render),

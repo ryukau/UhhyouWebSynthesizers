@@ -66,8 +66,8 @@ const scales = {
 
   reverbMix: new parameter.DecibelScale(-60, 0, true),
   reverbSecond: new parameter.DecibelScale(-60, -20, true),
-  reverbLowpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
+  reverbLowpassHz:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
   reverbFeedback: new parameter.NegativeDecibelScale(-60, 0, 1, true),
 };
 
@@ -107,8 +107,8 @@ const param = {
   reverbFeedback: new parameter.Parameter(0.98, scales.reverbFeedback, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -138,11 +138,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -178,31 +184,27 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
 
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   baseHz: new widget.NumberInput(detailOsc, "Frequency [Hz]", param.baseHz, render),
-  oscDecaySeconds:
-    new widget.NumberInput(detailOsc, "Decay [s]", param.oscDecaySeconds, render),
+  oscDecaySeconds: new widget.NumberInput(detailOsc, "Decay [s]", param.oscDecaySeconds, render),
   oscTone: new widget.NumberInput(detailOsc, "Tone", param.oscTone, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
 
   resonatorNormalize: new widget.ToggleButtonLine(
     detailResonator, menuitems.resonatorNormalizeItems, param.resonatorNormalize, render),
   nResonator: new widget.NumberInput(detailResonator, "Count", param.nResonator, render),
-  timeSpreadSeconds: new widget.NumberInput(
-    detailResonator, "Time Spread [s]", param.timeSpreadSeconds, render),
-  resonatorBandWidth: new widget.NumberInput(
-    detailResonator, "Band Width", param.resonatorBandWidth, render),
+  timeSpreadSeconds:
+    new widget.NumberInput(detailResonator, "Time Spread [s]", param.timeSpreadSeconds, render),
+  resonatorBandWidth:
+    new widget.NumberInput(detailResonator, "Band Width", param.resonatorBandWidth, render),
   resonanceBaseHz: new widget.NumberInput(
     detailResonator, "Resonance Frequency [Hz]", param.resonanceBaseHz, render),
   resonanceRandom: new widget.NumberInput(
@@ -221,10 +223,9 @@ const ui = {
   reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
   reverbBaseSecond:
     new widget.NumberInput(detailReverb, "Time Base [s]", param.reverbBaseSecond, render),
-  reverbLowpassHz: new widget.NumberInput(
-    detailReverb, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
-  reverbFeedback:
-    new widget.NumberInput(detailReverb, "Feedback", param.reverbFeedback, render),
+  reverbLowpassHz:
+    new widget.NumberInput(detailReverb, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
+  reverbFeedback: new widget.NumberInput(detailReverb, "Feedback", param.reverbFeedback, render),
 };
 
 render();

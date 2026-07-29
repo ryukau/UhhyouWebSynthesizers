@@ -107,8 +107,8 @@ const param = {
   pullUpRandomRange: new parameter.Parameter(0.5, scales.defaultScale),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -138,11 +138,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -180,49 +186,42 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   seed: new widget.NumberInput(detailRender, "Seed", param.seed, render),
 
   limiterActive: new widget.ToggleButtonLine(
     detailLimiter, menuitems.limiterOnOffItems, param.limiterActive, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
 
-  waveSpeed0:
-    new widget.NumberInput(detailWave0, "Wave Speed [m/s]", param.waveSpeed0, render),
+  waveSpeed0: new widget.NumberInput(detailWave0, "Wave Speed [m/s]", param.waveSpeed0, render),
   damping0: new widget.NumberInput(detailWave0, "Damping", param.damping0, render),
-  restitution0:
-    new widget.NumberInput(detailWave0, "Restitution", param.restitution0, render),
+  restitution0: new widget.NumberInput(detailWave0, "Restitution", param.restitution0, render),
 
-  waveSpeed1:
-    new widget.NumberInput(detailWave1, "Wave Speed [m/s]", param.waveSpeed1, render),
+  waveSpeed1: new widget.NumberInput(detailWave1, "Wave Speed [m/s]", param.waveSpeed1, render),
   damping1: new widget.NumberInput(detailWave1, "Damping", param.damping1, render),
-  restitution1:
-    new widget.NumberInput(detailWave1, "Restitution", param.restitution1, render),
+  restitution1: new widget.NumberInput(detailWave1, "Restitution", param.restitution1, render),
 
   nSystem: new widget.NumberInput(detailShared, "nSystem", param.nSystem, render),
   nNode: new widget.NumberInput(detailShared, "nNode", param.nNode, render),
-  lengthMeter:
-    new widget.NumberInput(detailShared, "Wire Length [m]", param.lengthMeter, render),
-  wireDistance:
-    new widget.NumberInput(detailShared, "Distance [m]", param.wireDistance, render),
+  lengthMeter: new widget.NumberInput(detailShared, "Wire Length [m]", param.lengthMeter, render),
+  wireDistance: new widget.NumberInput(detailShared, "Distance [m]", param.wireDistance, render),
   wireMix: new widget.NumberInput(detailShared, "Mix", param.wireMix, render),
 
   pickUpPoint:
     new widget.NumberInput(detailInteraction, "Pick-up Point", param.pickUpPoint, render),
   pullUpPoint:
     new widget.NumberInput(detailInteraction, "Pull-up Point", param.pullUpPoint, render),
-  pullUpDistance: new widget.NumberInput(
-    detailInteraction, "Pull-up Distance [m]", param.pullUpDistance, render),
+  pullUpDistance:
+    new widget.NumberInput(detailInteraction, "Pull-up Distance [m]", param.pullUpDistance, render),
   pullUpWidth:
     new widget.NumberInput(detailInteraction, "Pull-up Width", param.pullUpWidth, render),
-  pickUpRandomRange: new widget.NumberInput(
-    detailInteraction, "Pick-up Random", param.pickUpRandomRange, render),
-  pullUpRandomRange: new widget.NumberInput(
-    detailInteraction, "Pull-up Random", param.pullUpRandomRange, render),
+  pickUpRandomRange:
+    new widget.NumberInput(detailInteraction, "Pick-up Random", param.pickUpRandomRange, render),
+  pullUpRandomRange:
+    new widget.NumberInput(detailInteraction, "Pull-up Random", param.pullUpRandomRange, render),
 };
 
 render();

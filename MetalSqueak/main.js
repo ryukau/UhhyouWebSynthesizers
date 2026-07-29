@@ -111,8 +111,8 @@ const param = {
   clipperScale: new parameter.Parameter(1, scales.clipperScale, false),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -143,11 +143,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -183,61 +189,49 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
 
   seed: new widget.NumberInput(detailRandom, "Seed", param.seed, render),
 
-  impulseGain:
-    new widget.NumberInput(detailSource, "Impulse [dB]", param.impulseGain, render),
-  noiseGain:
-    new widget.NumberInput(detailSource, "Noise Gain [dB]", param.noiseGain, render),
-  noiseDuration: new widget.NumberInput(
-    detailSource, "Noise Duration [s]", param.noiseDuration, render),
-  noiseDecaySeconds: new widget.NumberInput(
-    detailSource, "Noise Decay [s]", param.noiseDecaySeconds, render),
+  impulseGain: new widget.NumberInput(detailSource, "Impulse [dB]", param.impulseGain, render),
+  noiseGain: new widget.NumberInput(detailSource, "Noise Gain [dB]", param.noiseGain, render),
+  noiseDuration:
+    new widget.NumberInput(detailSource, "Noise Duration [s]", param.noiseDuration, render),
+  noiseDecaySeconds:
+    new widget.NumberInput(detailSource, "Noise Decay [s]", param.noiseDecaySeconds, render),
   noiseBand1Hz:
     new widget.NumberInput(detailSource, "Noise Band 1 [Hz]", param.noiseBand1Hz, render),
   noiseBand2Hz:
     new widget.NumberInput(detailSource, "Noise Band 2 [Hz]", param.noiseBand2Hz, render),
   impulseLowpassHz:
     new widget.NumberInput(detailSource, "Lowpass [Hz]", param.impulseLowpassHz, render),
-  impulseHighpassHz: new widget.NumberInput(
-    detailSource, "Highpass [Hz]", param.impulseHighpassHz, render),
+  impulseHighpassHz:
+    new widget.NumberInput(detailSource, "Highpass [Hz]", param.impulseHighpassHz, render),
 
   fdnCount: new widget.NumberInput(detailDelay, "Quantity", param.fdnCount, render),
-  minDelayHz:
-    new widget.NumberInput(detailDelay, "Min. Delay [Hz]", param.minDelayHz, render),
-  maxDelayHz:
-    new widget.NumberInput(detailDelay, "Max. Delay [Hz]", param.maxDelayHz, render),
+  minDelayHz: new widget.NumberInput(detailDelay, "Min. Delay [Hz]", param.minDelayHz, render),
+  maxDelayHz: new widget.NumberInput(detailDelay, "Max. Delay [Hz]", param.maxDelayHz, render),
   lowpassHz: new widget.NumberInput(detailDelay, "Lowpass [Hz]", param.lowpassHz, render),
   delayMod: new widget.NumberInput(detailDelay, "Delay Mod.", param.delayMod, render),
-  allpass1Cut:
-    new widget.NumberInput(detailDelay, "Allpass 1 Cutoff", param.allpass1Cut, render),
-  allpass2Cut:
-    new widget.NumberInput(detailDelay, "Allpass 2 Cutoff", param.allpass2Cut, render),
-  allpassMod:
-    new widget.NumberInput(detailDelay, "Allpass Mod.", param.allpassMod, render),
-  modDecaySeconds:
-    new widget.NumberInput(detailDelay, "Mod. Decay", param.modDecaySeconds, render),
-  feedbackDecaySeconds: new widget.NumberInput(
-    detailDelay, "Feedback Decay", param.feedbackDecaySeconds, render),
-  modReductionThreshold: new widget.NumberInput(
-    detailDelay, "Mod. Threshold", param.modReductionThreshold, render),
+  allpass1Cut: new widget.NumberInput(detailDelay, "Allpass 1 Cutoff", param.allpass1Cut, render),
+  allpass2Cut: new widget.NumberInput(detailDelay, "Allpass 2 Cutoff", param.allpass2Cut, render),
+  allpassMod: new widget.NumberInput(detailDelay, "Allpass Mod.", param.allpassMod, render),
+  modDecaySeconds: new widget.NumberInput(detailDelay, "Mod. Decay", param.modDecaySeconds, render),
+  feedbackDecaySeconds:
+    new widget.NumberInput(detailDelay, "Feedback Decay", param.feedbackDecaySeconds, render),
+  modReductionThreshold:
+    new widget.NumberInput(detailDelay, "Mod. Threshold", param.modReductionThreshold, render),
   modResumeRate:
     new widget.NumberInput(detailDelay, "Mod. Resume Rate", param.modResumeRate, render),
   enableClipper: new widget.ToggleButtonLine(
     detailDelay, menuitems.enableClipperItems, param.enableClipper, render),
-  clipperScale:
-    new widget.NumberInput(detailDelay, "Clip Scale [dB]", param.clipperScale, render),
+  clipperScale: new widget.NumberInput(detailDelay, "Clip Scale [dB]", param.clipperScale, render),
 };
 
 render();

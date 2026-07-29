@@ -159,8 +159,8 @@ const param = {
   delayTimeSlewRate: new parameter.Parameter(0.25, scales.delayTimeSlewRate, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -191,11 +191,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -230,72 +236,60 @@ const ui = {
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
 
   seed: new widget.NumberInput(detailRandom, "Seed", param.seed, render),
-  randomFrequencyHz: new widget.NumberInput(
-    detailRandom, "Frequency [oct]", param.randomFrequencyHz, render),
+  randomFrequencyHz:
+    new widget.NumberInput(detailRandom, "Frequency [oct]", param.randomFrequencyHz, render),
 
-  impulseGain:
-    new widget.NumberInput(detailSource, "Impulse [dB]", param.impulseGain, render),
-  impactEnvelopeAttack: new widget.NumberInput(
-    detailSource, "Attack [s]", param.impactEnvelopeAttack, render),
+  impulseGain: new widget.NumberInput(detailSource, "Impulse [dB]", param.impulseGain, render),
+  impactEnvelopeAttack:
+    new widget.NumberInput(detailSource, "Attack [s]", param.impactEnvelopeAttack, render),
   impactEnvelopeDecay:
     new widget.NumberInput(detailSource, "Decay [s]", param.impactEnvelopeDecay, render),
-  impactAmType:
-    new widget.ComboBoxLine(detailSource, "AM Type", param.impactAmType, render),
+  impactAmType: new widget.ComboBoxLine(detailSource, "AM Type", param.impactAmType, render),
   impactEnvelopeAM:
     new widget.NumberInput(detailSource, "AM Amount", param.impactEnvelopeAM, render),
   pulseType: new widget.NumberInput(detailSource, "Pulse Type", param.pulseType, render),
   pulseStartHz:
     new widget.NumberInput(detailSource, "Pulse Start [Hz]", param.pulseStartHz, render),
-  pulsePitchOct: new widget.NumberInput(
-    detailSource, "Pulse Pitch [oct]", param.pulsePitchOct, render),
+  pulsePitchOct:
+    new widget.NumberInput(detailSource, "Pulse Pitch [oct]", param.pulsePitchOct, render),
   pulseBendOct:
     new widget.NumberInput(detailSource, "Pulse Bend [oct]", param.pulseBendOct, render),
-  pulseFormantOctave: new widget.NumberInput(
-    detailSource, "Pulse Formant [oct]", param.pulseFormantOctave, render),
+  pulseFormantOctave:
+    new widget.NumberInput(detailSource, "Pulse Formant [oct]", param.pulseFormantOctave, render),
   pulseFormantQRatio:
     new widget.NumberInput(detailSource, "Pulse Q", param.pulseFormantQRatio, render),
-  grainOverlap:
-    new widget.NumberInput(detailSource, "Grain Overlap", param.grainOverlap, render),
-  freqModMix:
-    new widget.NumberInput(detailSource, "Freq. Mod. Mix", param.freqModMix, render),
-  noiseDecaySecond: new widget.NumberInput(
-    detailSource, "Noise Decay [s]", param.noiseDecaySecond, render),
-  noiseGain:
-    new widget.NumberInput(detailSource, "Noise Gain [dB]", param.noiseGain, render),
-  noiseFormantOctave: new widget.NumberInput(
-    detailSource, "Noise Formant [oct]", param.noiseFormantOctave, render),
+  grainOverlap: new widget.NumberInput(detailSource, "Grain Overlap", param.grainOverlap, render),
+  freqModMix: new widget.NumberInput(detailSource, "Freq. Mod. Mix", param.freqModMix, render),
+  noiseDecaySecond:
+    new widget.NumberInput(detailSource, "Noise Decay [s]", param.noiseDecaySecond, render),
+  noiseGain: new widget.NumberInput(detailSource, "Noise Gain [dB]", param.noiseGain, render),
+  noiseFormantOctave:
+    new widget.NumberInput(detailSource, "Noise Formant [oct]", param.noiseFormantOctave, render),
   noiseFormantQRatio:
     new widget.NumberInput(detailSource, "Noise Q", param.noiseFormantQRatio, render),
 
   delayCount: new widget.NumberInput(detailDelay, "Quantity", param.delayCount, render),
-  maxJitterSecond:
-    new widget.NumberInput(detailDelay, "Jitter [s]", param.maxJitterSecond, render),
-  frequencyHz:
-    new widget.NumberInput(detailDelay, "Frequency [Hz]", param.frequencyHz, render),
-  feedbackGain:
-    new widget.NumberInput(detailDelay, "Feedback Gain", param.feedbackGain, render),
-  feedbackMod:
-    new widget.NumberInput(detailDelay, "Feedback Mod.", param.feedbackMod, render),
+  maxJitterSecond: new widget.NumberInput(detailDelay, "Jitter [s]", param.maxJitterSecond, render),
+  frequencyHz: new widget.NumberInput(detailDelay, "Frequency [Hz]", param.frequencyHz, render),
+  feedbackGain: new widget.NumberInput(detailDelay, "Feedback Gain", param.feedbackGain, render),
+  feedbackMod: new widget.NumberInput(detailDelay, "Feedback Mod.", param.feedbackMod, render),
   lowpassHz: new widget.NumberInput(detailDelay, "LP Cut [Hz]", param.lowpassHz, render),
-  highpassHz:
-    new widget.NumberInput(detailDelay, "HP Cut [Hz]", param.highpassHz, render),
+  highpassHz: new widget.NumberInput(detailDelay, "HP Cut [Hz]", param.highpassHz, render),
   allpassCut: new widget.NumberInput(detailDelay, "AP Cut", param.allpassCut, render),
   allpassQ: new widget.NumberInput(detailDelay, "AP Q", param.allpassQ, render),
   allpassMod: new widget.NumberInput(detailDelay, "AP Mod", param.allpassMod, render),
-  energyLossThreshold: new widget.NumberInput(
-    detailDelay, "Loss Threshold", param.energyLossThreshold, render),
-  delayTimeMod:
-    new widget.NumberInput(detailDelay, "Delay Mod", param.delayTimeMod, render),
-  delayTimeSlewRate: new widget.NumberInput(
-    detailDelay, "Mod. Slew Rate", param.delayTimeSlewRate, render),
+  energyLossThreshold:
+    new widget.NumberInput(detailDelay, "Loss Threshold", param.energyLossThreshold, render),
+  delayTimeMod: new widget.NumberInput(detailDelay, "Delay Mod", param.delayTimeMod, render),
+  delayTimeSlewRate:
+    new widget.NumberInput(detailDelay, "Mod. Slew Rate", param.delayTimeSlewRate, render),
 };
 
 render();

@@ -104,41 +104,25 @@ Recipe data is written as `localRecipeBook` object that looks like following.
 
 ```javascript
 const localRecipeBook = {
-  "Default": {
-    renderDuration:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0.1, 0.8); },
-    fadeIn: () => {},
-    fadeOut: () => {},
-    decayTo: (prm) => { prm.ui = util.uniformFloatMap(Math.random(), -40, 0); },
-    overSample: () => {},
-    sampleRateScaler: () => {},
-    baseFreq: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 10, 90); },
+  "Default": (param) => {
+    param.renderDuration.resetToDefault();
+    param.matrixSize.resetToDefault();
+    param.fadeOut.resetToDefault();
+    param.lowpassCutoffHz.forEach(p => p.resetToDefault());
+    param.highpassCutoffHz.forEach(p => p.resetToDefault());
+
+    param.delayTime.forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; });
   },
 };
 ```
 
-Top level keys are recipe names. In above example, there is 1 recipe which name is `"Default"`.
+Top level keys are recipe names. In above example, there is 1 recipe which name is `"Default"`. It holds a lambda that takes the same `param` defined in the `main.js`.
 
-Second level keys are paremeter names. Parameter names are defined in `param` variable in `main.js`. To find it, search with `const param`.
-
-Second level values are random functions. In above example there are:
-
-- Empty functions that do nothing. `() => {}`
-- Functions that takes `prm` as an argument. `(prm) => { /* assignment to prm */ }`
-
-Empty functions are used to bypass the randimization. In other words, the value set by user won't be changed even when Random button is clicked.
-
-Functions that takes `prm` are used for randomization. `prm` may be a single value parameter or an array of parameters. For a single value parameter, `prm` is an instance of `Parameter` class defined in `common/parameter.js`. For an array of parameters, `prm` is an `Array` of `Parameter` instances. Note that the array might be nested to represent 2D or higher dimensional data.
-
-To see what's comming in as `prm`, `console.log` may be used:
+To see what's comming in as `param`, `console.log` may be used:
 
 ```javascript
-(prm) => { console.log(prm); },
+(param) => { console.log(param); },
 ```
-
-The output of `console.log` will show up in the developer console of your web browser as shown in the image below.
-
-![An image of a result of `console.log(prm)` showing up in developer console of Safari.`](img/randomization/console_log_of_prm.png)
 
 ### About `Parameter` Class
 `Parameter` class is defined in `common/parameter.js`. It has 4 inputs of a parameter value.
@@ -164,19 +148,21 @@ To get the value range of a parameter, following properties are available on `Pa
 | `ui`         | `scale.minUi`  | `scale.maxUi`  |
 | `normalized` | `0.0`          | `1.0`          |
 
-For example, `prm.scale.minDsp` returns the minimum DSP value of a parameter. The range of `normalized` value is always in `[0.0, 1.0]`.
+For example, `Parameter.scale.minDsp` returns the minimum DSP value of a parameter. The range of `normalized` value is always in `[0.0, 1.0]`.
 
 ### Example Random Function
-For most cases, I'd recommend to assign a random value to `prm.display` like below.
+In this section, `gain` is used as an example parameter name.
+
+For most cases, I'd recommend to assign a random value to `Parameter.display` like below.
 
 ```javascript
-(prm) => { prm.display = someRandomFunction(); },
+param.gain.display = someRandomFunction();
 ```
 
-Another easy one is `prm.normalized`, because the value range is fixed to `[0.0, 1.0]`.
+Another easy one is `Parameter.normalized`, because the value range is fixed to `[0.0, 1.0]`.
 
 ```javascript
-(prm) => { prm.normalized = Math.random(); /* Full range randomization. */ },
+param.gain.normalized = Math.random(); /* Almost full range randomization (never sets 1.0). */
 ```
 
-To use `prm.dsp` and `prm.ui`, it's probably better to read `param` in `<Synth>/main.js`, and `*Scale` classes in `common/parameter.js`.
+To use `Parameter.dsp` and `Parameter.ui`, it's probably better to read `param` in `<Synth>/main.js`, and `*Scale` classes in `common/parameter.js`.

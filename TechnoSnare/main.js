@@ -48,24 +48,19 @@ const localRecipeBook = {
     adaptiveFilterMix: () => {},
     limiterEnable: () => {},
     limiterThreshold: () => {},
-    bodyAttackSeconds:
-      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-5, 1e-3); },
+    bodyAttackSeconds: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-5, 1e-3); },
     bodyEnvelopeCurve: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 8, 50); },
     bodyNoise: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 1e-2, 3); },
     bodyPitchBaseHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 40); },
-    bodyPitchModHz:
-      (prm) => { prm.dsp = 100 * util.uniformFloatMap(Math.random(), 0, 1) ** 2; },
-    bodyLowpassHz: (prm) => {
-      prm.dsp = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp);
-    },
+    bodyPitchModHz: (prm) => { prm.dsp = 100 * util.uniformFloatMap(Math.random(), 0, 1) ** 2; },
+    bodyLowpassHz:
+      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp); },
     bodyHighpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 60, 120); },
-    bodyModOctave: (
-      prm) => { prm.dsp = util.uniformFloatMap(Math.random(), scales.octave.minDsp, 3); },
+    bodyModOctave:
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), scales.octave.minDsp, 3); },
     noiseAttackSeconds: () => {},
-    noiseEnvelopeCurve:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1, 20); },
-    noiseBandpassHz:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1000, 16000); },
+    noiseEnvelopeCurve: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1, 20); },
+    noiseBandpassHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1000, 16000); },
     hightoneGain: (prm) => { prm.dsp = util.dbToAmp(-40); },
     reverbMix: () => {},
     reverbPitchType: (prm) => { prm.normalized = Math.random(); },
@@ -98,16 +93,14 @@ const localRecipeBook = {
     bodyNoise: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 3, 6.2); },
     bodyPitchBaseHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 10, 40); },
     bodyPitchModHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 0, 10); },
-    bodyLowpassHz: (prm) => {
-      prm.dsp = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp);
-    },
+    bodyLowpassHz:
+      (prm) => { prm.dsp = util.exponentialMap(Math.random(), 200, scales.fullFreqHz.maxDsp); },
     bodyHighpassHz: (prm) => { prm.dsp = util.exponentialMap(Math.random(), 60, 120); },
-    bodyModOctave: (
-      prm) => { prm.dsp = util.uniformFloatMap(Math.random(), scales.octave.minDsp, 3); },
+    bodyModOctave:
+      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), scales.octave.minDsp, 3); },
     noiseAttackSeconds: () => {},
     noiseEnvelopeCurve: () => {},
-    noiseBandpassHz:
-      (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1000, 16000); },
+    noiseBandpassHz: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), 1000, 16000); },
     hightoneGain: (prm) => { prm.dsp = util.dbToAmp(-40); },
     reverbMix: () => {},
     reverbPitchType: (prm) => { prm.normalized = Math.random(); },
@@ -215,7 +208,6 @@ const scales = {
   renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
-  stereoMerge: new parameter.LinearScale(0, 1),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
   sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   dcHighpassHz: new parameter.DecibelScale(-20, 40, true),
@@ -246,8 +238,8 @@ const scales = {
 
   reverbMix: new parameter.DecibelScale(-60, 0, true),
   reverbTimeFrequencyHz: new parameter.DecibelScale(20, 80, false),
-  reverbLowpassHz: new parameter.MidiPitchScale(
-    util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
+  reverbLowpassHz:
+    new parameter.MidiPitchScale(util.freqToMidiPitch(100), util.freqToMidiPitch(48000), false),
   reverbFeedback: new parameter.NegativeDecibelScale(-40, 0, 1, true),
   reverbPitchType: new parameter.MenuItemScale(menuitems.reverbPitchTypeItems),
   reverbPitchIndex: new parameter.IntScale(0, 15),
@@ -275,8 +267,7 @@ const param = {
 
   bodyAttackSeconds: new parameter.Parameter(600 / 48000, scales.attackSeconds, true),
   bodyEnvelopeCurve: new parameter.Parameter(100, scales.envelopeCurve, true),
-  bodyPitchDecaySeconds:
-    new parameter.Parameter(3500 / 48000, scales.pitchDecaySeconds, true),
+  bodyPitchDecaySeconds: new parameter.Parameter(3500 / 48000, scales.pitchDecaySeconds, true),
   bodyAM: new parameter.Parameter(0.1, scales.amAmount, true),
   bodyOvertoneGain: new parameter.Parameter(0.25, scales.bodyOvertoneGain, true),
   bodyNoise: new parameter.Parameter(0.5, scales.noiseAmount, true),
@@ -312,8 +303,8 @@ const param = {
   reverbTimeMod: new parameter.Parameter(0.5, scales.reverbTimeMod, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -344,11 +335,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -387,36 +384,32 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
-  toneSlope:
-    new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
-  stereoSeed: new widget.ToggleButtonLine(
-    detailRender, menuitems.stereoSeedItems, param.stereoSeed, render),
+  toneSlope: new widget.NumberInput(detailRender, "Tone Slope [dB/oct]", param.toneSlope, render),
+  stereoSeed:
+    new widget.ToggleButtonLine(detailRender, menuitems.stereoSeedItems, param.stereoSeed, render),
 
   seed: new widget.NumberInput(detailMisc, "Seed", param.seed, render),
-  bodyNoiseMix:
-    new widget.NumberInput(detailMisc, "Body/Noise Mix", param.bodyNoiseMix, render),
-  adaptiveFilterMix: new widget.NumberInput(
-    detailMisc, "Adaptive Filter Mix", param.adaptiveFilterMix, render),
+  bodyNoiseMix: new widget.NumberInput(detailMisc, "Body/Noise Mix", param.bodyNoiseMix, render),
+  adaptiveFilterMix:
+    new widget.NumberInput(detailMisc, "Adaptive Filter Mix", param.adaptiveFilterMix, render),
 
-  limiterEnable: new widget.ToggleButtonLine(
-    detailLimiter, ["Off", "On"], param.limiterEnable, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterAttackSeconds: new widget.NumberInput(
-    detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
+  limiterEnable:
+    new widget.ToggleButtonLine(detailLimiter, ["Off", "On"], param.limiterEnable, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterAttackSeconds:
+    new widget.NumberInput(detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
 
   bodyAttackSeconds:
     new widget.NumberInput(detailBody, "Attack [s]", param.bodyAttackSeconds, render),
-  bodyEnvelopeCurve:
-    new widget.NumberInput(detailBody, "Curve", param.bodyEnvelopeCurve, render),
-  bodyPitchDecaySeconds: new widget.NumberInput(
-    detailBody, "Pitch Decay [s]", param.bodyPitchDecaySeconds, render),
+  bodyEnvelopeCurve: new widget.NumberInput(detailBody, "Curve", param.bodyEnvelopeCurve, render),
+  bodyPitchDecaySeconds:
+    new widget.NumberInput(detailBody, "Pitch Decay [s]", param.bodyPitchDecaySeconds, render),
   bodyAM: new widget.NumberInput(detailBody, "AM", param.bodyAM, render),
   bodyOvertoneGain:
     new widget.NumberInput(detailBody, "Overtone Gain", param.bodyOvertoneGain, render),
@@ -425,23 +418,20 @@ const ui = {
     new widget.NumberInput(detailBody, "Pitch Base [Hz]", param.bodyPitchBaseHz, render),
   bodyPitchModHz:
     new widget.NumberInput(detailBody, "Pitch Mod. [Hz]", param.bodyPitchModHz, render),
-  bodyLowpassHz:
-    new widget.NumberInput(detailBody, "Lowpass [Hz]", param.bodyLowpassHz, render),
-  bodyHighpassHz:
-    new widget.NumberInput(detailBody, "Highpass [Hz]", param.bodyHighpassHz, render),
+  bodyLowpassHz: new widget.NumberInput(detailBody, "Lowpass [Hz]", param.bodyLowpassHz, render),
+  bodyHighpassHz: new widget.NumberInput(detailBody, "Highpass [Hz]", param.bodyHighpassHz, render),
   bodyModOctave:
     new widget.NumberInput(detailBody, "Mod. Pitch [oct.]", param.bodyModOctave, render),
-  bodyModSaturationGain: new widget.NumberInput(
-    detailBody, "Mod. Sat Gain [dB]", param.bodyModSaturationGain, render),
+  bodyModSaturationGain:
+    new widget.NumberInput(detailBody, "Mod. Sat Gain [dB]", param.bodyModSaturationGain, render),
 
-  hightoneGain:
-    new widget.NumberInput(detailHightone, "Gain [dB]", param.hightoneGain, render),
-  hightoneStartHz: new widget.NumberInput(
-    detailHightone, "Start Freq. [Hz]", param.hightoneStartHz, render),
+  hightoneGain: new widget.NumberInput(detailHightone, "Gain [dB]", param.hightoneGain, render),
+  hightoneStartHz:
+    new widget.NumberInput(detailHightone, "Start Freq. [Hz]", param.hightoneStartHz, render),
   hightoneEndHz:
     new widget.NumberInput(detailHightone, "End Freq. [Hz]", param.hightoneEndHz, render),
-  hightoneOvertoneRatio: new widget.NumberInput(
-    detailHightone, "Overtone Ratio", param.hightoneOvertoneRatio, render),
+  hightoneOvertoneRatio:
+    new widget.NumberInput(detailHightone, "Overtone Ratio", param.hightoneOvertoneRatio, render),
 
   noiseAttackSeconds:
     new widget.NumberInput(detailNoise, "Attack [s]", param.noiseAttackSeconds, render),
@@ -449,32 +439,28 @@ const ui = {
     new widget.NumberInput(detailNoise, "Curve", param.noiseEnvelopeCurve, render),
   noiseBandpassHz:
     new widget.NumberInput(detailNoise, "Bandpass [Hz]", param.noiseBandpassHz, render),
-  noiseCombMix:
-    new widget.NumberInput(detailNoise, "Comb Mix", param.noiseCombMix, render),
+  noiseCombMix: new widget.NumberInput(detailNoise, "Comb Mix", param.noiseCombMix, render),
   noiseCombFeedback:
     new widget.NumberInput(detailNoise, "Comb Feedback", param.noiseCombFeedback, render),
-  noiseCombHz:
-    new widget.NumberInput(detailNoise, "Comb Freq. [Hz]", param.noiseCombHz, render),
-  noiseCombRandom: new widget.NumberInput(
-    detailNoise, "Comb Freq. Random", param.noiseCombRandom, render),
+  noiseCombHz: new widget.NumberInput(detailNoise, "Comb Freq. [Hz]", param.noiseCombHz, render),
+  noiseCombRandom:
+    new widget.NumberInput(detailNoise, "Comb Freq. Random", param.noiseCombRandom, render),
   noiseCombLowpassHz:
     new widget.NumberInput(detailNoise, "Comb LP [Hz]", param.noiseCombLowpassHz, render),
-  noiseCombHighpassHz: new widget.NumberInput(
-    detailNoise, "Comb HP [Hz]", param.noiseCombHighpassHz, render),
+  noiseCombHighpassHz:
+    new widget.NumberInput(detailNoise, "Comb HP [Hz]", param.noiseCombHighpassHz, render),
 
   reverbMix: new widget.NumberInput(detailReverb, "Mix [dB]", param.reverbMix, render),
-  reverbTimeFrequencyHz: new widget.NumberInput(
-    detailReverb, "Frequency [Hz]", param.reverbTimeFrequencyHz, render),
-  reverbLowpassHz: new widget.NumberInput(
-    detailReverb, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
-  reverbFeedback:
-    new widget.NumberInput(detailReverb, "Feedback", param.reverbFeedback, render),
+  reverbTimeFrequencyHz:
+    new widget.NumberInput(detailReverb, "Frequency [Hz]", param.reverbTimeFrequencyHz, render),
+  reverbLowpassHz:
+    new widget.NumberInput(detailReverb, "Lowpass Cutoff [Hz]", param.reverbLowpassHz, render),
+  reverbFeedback: new widget.NumberInput(detailReverb, "Feedback", param.reverbFeedback, render),
   reverbPitchType:
     new widget.ComboBoxLine(detailReverb, "Pitch Type", param.reverbPitchType, render),
   reverbPitchIndex:
     new widget.NumberInput(detailReverb, "Pitch Index", param.reverbPitchIndex, render),
-  reverbTimeMod:
-    new widget.NumberInput(detailReverb, "Time Mod.", param.reverbTimeMod, render),
+  reverbTimeMod: new widget.NumberInput(detailReverb, "Time Mod.", param.reverbTimeMod, render),
 };
 
 render();

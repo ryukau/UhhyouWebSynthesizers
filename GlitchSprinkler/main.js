@@ -98,8 +98,7 @@ const param = {
   fmIndex: new parameter.Parameter(0, scales.fmIndex, true),
 
   arpeggioDecayTo: new parameter.Parameter(1, scales.arpeggioDecayTo, false),
-  arpeggioDurationVariation:
-    new parameter.Parameter(1, scales.arpeggioDurationVariation, true),
+  arpeggioDurationVariation: new parameter.Parameter(1, scales.arpeggioDurationVariation, true),
   arpeggioRestChance: new parameter.Parameter(0, scales.arpeggioRestChance, false),
   equalTemperament: new parameter.Parameter(5, scales.equalTemperament, true),
   pitchScale: new parameter.Parameter(0, scales.pitchScale),
@@ -118,8 +117,8 @@ const param = {
   chordMaxOvertone: new parameter.Parameter(32, scales.chordMaxOvertone, false),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -150,11 +149,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -187,58 +192,51 @@ const detailProgression = widget.details(divRightB, "Progression");
 const detailChord = widget.details(divRightB, "Overtone Chord");
 
 const ui = {
-  renderDurationBeat: new widget.NumberInput(
-    detailRender, "Duration [beat]", param.renderDurationBeat, render),
-  tempoBpm:
-    new widget.NumberInput(detailRender, "Tempo [beat/min]", param.tempoBpm, render),
+  renderDurationBeat:
+    new widget.NumberInput(detailRender, "Duration [beat]", param.renderDurationBeat, render),
+  tempoBpm: new widget.NumberInput(detailRender, "Tempo [beat/min]", param.tempoBpm, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
   waveform: new widget.WaveformXYPad(
-    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13,
-    render),
+    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13, render),
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
-  frequencyHz:
-    new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
+  frequencyHz: new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
   oscOctave: new widget.NumberInput(detailOsc, "Octave", param.oscOctave, render),
   oscSync: new widget.NumberInput(detailOsc, "Sync.", param.oscSync, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
 
-  arpeggioDecayTo: new widget.NumberInput(
-    detailArpeggio, "Decay To [dB]", param.arpeggioDecayTo, render),
+  arpeggioDecayTo:
+    new widget.NumberInput(detailArpeggio, "Decay To [dB]", param.arpeggioDecayTo, render),
   arpeggioDurationVariation: new widget.NumberInput(
-    detailArpeggio, "Duration Variation [beat/4]", param.arpeggioDurationVariation,
-    render),
-  arpeggioRestChance: new widget.NumberInput(
-    detailArpeggio, "Rest Chance", param.arpeggioRestChance, render),
-  equalTemperament: new widget.NumberInput(
-    detailArpeggio, "Equal Temperament", param.equalTemperament, render),
+    detailArpeggio, "Duration Variation [beat/4]", param.arpeggioDurationVariation, render),
+  arpeggioRestChance:
+    new widget.NumberInput(detailArpeggio, "Rest Chance", param.arpeggioRestChance, render),
+  equalTemperament:
+    new widget.NumberInput(detailArpeggio, "Equal Temperament", param.equalTemperament, render),
   pitchScale: new widget.ComboBoxLine(detailArpeggio, "Scale", param.pitchScale, render),
-  pitchDriftCent: new widget.NumberInput(
-    detailArpeggio, "Pitch Drift [cent]", param.pitchDriftCent, render),
-  pitchVariation: new widget.NumberInput(
-    detailArpeggio, "Pitch Variation", param.pitchVariation, render),
-  pitchOctaveWrap: new widget.NumberInput(
-    detailArpeggio, "Pitch Wrap [oct]", param.pitchOctaveWrap, render),
+  pitchDriftCent:
+    new widget.NumberInput(detailArpeggio, "Pitch Drift [cent]", param.pitchDriftCent, render),
+  pitchVariation:
+    new widget.NumberInput(detailArpeggio, "Pitch Variation", param.pitchVariation, render),
+  pitchOctaveWrap:
+    new widget.NumberInput(detailArpeggio, "Pitch Wrap [oct]", param.pitchOctaveWrap, render),
 
   enableProgression: new widget.ToggleButtonLine(
-    detailProgression, ["Progression - Off", "Progression - On"], param.enableProgression,
-    render),
+    detailProgression, ["Progression - Off", "Progression - On"], param.enableProgression, render),
   resetArpeggio: new widget.ToggleButtonLine(
-    detailProgression, ["Reset Arpeggio - Off", "Reset Arpeggio - On"],
-    param.resetArpeggio, render),
+    detailProgression, ["Reset Arpeggio - Off", "Reset Arpeggio - On"], param.resetArpeggio,
+    render),
   progressionDuration: new widget.NumberInput(
     detailProgression, "Duration [beat/4]", param.progressionDuration, render),
   progressionScale:
     new widget.ComboBoxLine(detailProgression, "Scale", param.progressionScale, render),
 
-  chordNoteCount:
-    new widget.NumberInput(detailChord, "Note Count", param.chordNoteCount, render),
+  chordNoteCount: new widget.NumberInput(detailChord, "Note Count", param.chordNoteCount, render),
   chordChance: new widget.NumberInput(detailChord, "Chance", param.chordChance, render),
   chordMaxOvertone:
     new widget.NumberInput(detailChord, "Max Overtone", param.chordMaxOvertone, render),

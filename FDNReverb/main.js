@@ -20,8 +20,7 @@ const localRecipeBook = {
     sampleRateScaler: () => {},
     lowpassCutoffHz: () => {},
     highpassCutoffHz: () => {},
-    delayTime:
-      (prm) => { prm.forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; }); },
+    delayTime: (prm) => { prm.forEach(e => { e.dsp = 0.01 + 0.01 * Math.random() - 0.005; }); },
   },
 };
 
@@ -86,13 +85,12 @@ const param = {
   seed: new parameter.Parameter(0, scales.seed),
 
   delayTime: createArrayParameters(0.01, scales.delayTime),
-  lowpassCutoffHz:
-    createArrayParameters(scales.lowpassCutoffHz.maxDsp, scales.lowpassCutoffHz),
+  lowpassCutoffHz: createArrayParameters(scales.lowpassCutoffHz.maxDsp, scales.lowpassCutoffHz),
   highpassCutoffHz: createArrayParameters(5, scales.highpassCutoffHz),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -122,11 +120,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -159,13 +163,12 @@ const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
-  matrixSize: new widget.NumberInput(
-    detailFdn, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
+  matrixSize:
+    new widget.NumberInput(detailFdn, "Matrix Size", param.matrixSize, onMatrixSizeChanged),
   timeMultiplier:
     new widget.NumberInput(detailFdn, "Time Multiplier", param.timeMultiplier, render),
   timeRandomAmount:
@@ -175,8 +178,8 @@ const ui = {
   seed: new widget.NumberInput(detailFdn, "Seed", param.seed, render),
 
   delayTime: new widget.BarBox(
-    detailDelay, "Delay Time [s]", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.delayTime, render),
+    detailDelay, "Delay Time [s]", uiSize.barboxWidth, uiSize.barboxHeight, param.delayTime,
+    render),
   lowpassCutoffHz: new widget.BarBox(
     detailDelay, "Lowpass Cutoff [Hz]", uiSize.barboxWidth, uiSize.barboxHeight,
     param.lowpassCutoffHz, render),

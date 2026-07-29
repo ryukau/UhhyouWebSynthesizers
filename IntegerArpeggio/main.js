@@ -109,8 +109,7 @@ const scales = {
 };
 
 const param = {
-  durationSecondPerSection:
-    new parameter.Parameter(0.2, scales.durationSecondPerSection, true),
+  durationSecondPerSection: new parameter.Parameter(0.2, scales.durationSecondPerSection, true),
   octaveStart: new parameter.Parameter(-8, scales.octaveStart, true),
   octaveRange: new parameter.Parameter(4, scales.octaveRange, true),
   basePeriod: new parameter.Parameter(0, scales.basePeriod),
@@ -135,21 +134,18 @@ const param = {
   filterCascade: new parameter.Parameter(1, scales.filterCascade, true),
   filterResonance: new parameter.Parameter(0.7, scales.resonance, true),
   filterCutoffOctave: new parameter.Parameter(6, scales.filterOctave, true),
-  filterCutoffDecayTo:
-    new parameter.Parameter(util.dbToAmp(-6), scales.arpeggioDecayTo, false),
+  filterCutoffDecayTo: new parameter.Parameter(util.dbToAmp(-6), scales.arpeggioDecayTo, false),
   filterCutoffDecayCurve: new parameter.Parameter(0, scales.filterCutoffDecayCurve, true),
   filterCutoffKeyFollow: new parameter.Parameter(0.5, scales.keyFollow, true),
 
-  arpeggioDecayTo:
-    new parameter.Parameter(util.dbToAmp(-6), scales.arpeggioDecayTo, false),
+  arpeggioDecayTo: new parameter.Parameter(util.dbToAmp(-6), scales.arpeggioDecayTo, false),
   chordNotePerSection: new parameter.Parameter(2, scales.chordNotePerSection, true),
   chordMaxOctave: new parameter.Parameter(3, scales.chordMaxOctave),
   chordGainSlope: new parameter.Parameter(0.5, scales.chordGainSlope),
   chordPitchScale:
     new parameter.Parameter(menuitems.pitchScaleItems.indexOf("ET5"), scales.pitchScale),
   arpeggioScale: new parameter.Parameter(
-    menuitems.arpeggioScaleItems.indexOf("\"Notes in Scale\" List"),
-    scales.arpeggioScale),
+    menuitems.arpeggioScaleItems.indexOf("\"Notes in Scale\" List"), scales.arpeggioScale),
   arpeggioNotes: createArrayParameters(
     [
       1, // 0
@@ -182,8 +178,8 @@ const param = {
     justIntonationTable.length, scales.boolean),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -214,11 +210,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -270,19 +272,16 @@ const detailArpeggio = widget.details(divRightB, "Arpeggio");
 const ui = {
   durationSecondPerSection: new widget.NumberInput(
     detailRender, "Duration [s] / Section", param.durationSecondPerSection, render),
-  octaveStart:
-    new widget.NumberInput(detailRender, "Octave Start", param.octaveStart, render),
-  octaveRange:
-    new widget.NumberInput(detailRender, "Octave Range", param.octaveRange, render),
-  basePeriod: new widget.ComboBoxLine(
-    detailRender, "Base Period [sample]", param.basePeriod, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  octaveStart: new widget.NumberInput(detailRender, "Octave Start", param.octaveStart, render),
+  octaveRange: new widget.NumberInput(detailRender, "Octave Range", param.octaveRange, render),
+  basePeriod:
+    new widget.ComboBoxLine(detailRender, "Base Period [sample]", param.basePeriod, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   addSpace: new widget.ToggleButtonLine(
-    detailRender, ["Space Between Notes - Off", "Space Between Notes - On"],
-    param.addSpace, render),
+    detailRender, ["Space Between Notes - Off", "Space Between Notes - On"], param.addSpace,
+    render),
   removeDirectCurrent: new widget.ToggleButtonLine(
     detailRender, ["Remove Direct Current - Off", "Remove Direct Current - On"],
     param.removeDirectCurrent, render),
@@ -290,51 +289,47 @@ const ui = {
     detailRender, ["Normalize / Section - Off", "Normalize / Section - On"],
     param.normalizePerSection, render),
 
-  limiterEnable: new widget.ToggleButtonLine(
-    detailLimiter, ["Off", "On"], param.limiterEnable, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterAttackSeconds: new widget.NumberInput(
-    detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
+  limiterEnable:
+    new widget.ToggleButtonLine(detailLimiter, ["Off", "On"], param.limiterEnable, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterAttackSeconds:
+    new widget.NumberInput(detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
 
   waveform: new widget.WaveformXYPad(
-    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13,
-    render),
+    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13, render),
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   oscSync: new widget.NumberInput(detailOsc, "Sync.", param.oscSync, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
   fmDecay: new widget.NumberInput(detailOsc, "FM Decay To [dB]", param.fmDecay, render),
-  fmUpdateCycle:
-    new widget.NumberInput(detailOsc, "FM Update Cycle", param.fmUpdateCycle, render),
-  saturationGain: new widget.NumberInput(
-    detailOsc, "Saturation Gain [dB]", param.saturationGain, render),
+  fmUpdateCycle: new widget.NumberInput(detailOsc, "FM Update Cycle", param.fmUpdateCycle, render),
+  saturationGain:
+    new widget.NumberInput(detailOsc, "Saturation Gain [dB]", param.saturationGain, render),
 
   filterType: new widget.ComboBoxLine(detailFilter, "Type", param.filterType, render),
-  filterCascade:
-    new widget.NumberInput(detailFilter, "nCascade", param.filterCascade, render),
-  filterResonance:
-    new widget.NumberInput(detailFilter, "Resonance", param.filterResonance, render),
-  filterCutoffOctave: new widget.NumberInput(
-    detailFilter, "Cutoff [oct]", param.filterCutoffOctave, render),
-  filterCutoffDecayTo: new widget.NumberInput(
-    detailFilter, "Decay To [dB]", param.filterCutoffDecayTo, render),
-  filterCutoffDecayCurve: new widget.NumberInput(
-    detailFilter, "Decay Curve", param.filterCutoffDecayCurve, render),
-  filterCutoffKeyFollow: new widget.NumberInput(
-    detailFilter, "Key Follow", param.filterCutoffKeyFollow, render),
+  filterCascade: new widget.NumberInput(detailFilter, "nCascade", param.filterCascade, render),
+  filterResonance: new widget.NumberInput(detailFilter, "Resonance", param.filterResonance, render),
+  filterCutoffOctave:
+    new widget.NumberInput(detailFilter, "Cutoff [oct]", param.filterCutoffOctave, render),
+  filterCutoffDecayTo:
+    new widget.NumberInput(detailFilter, "Decay To [dB]", param.filterCutoffDecayTo, render),
+  filterCutoffDecayCurve:
+    new widget.NumberInput(detailFilter, "Decay Curve", param.filterCutoffDecayCurve, render),
+  filterCutoffKeyFollow:
+    new widget.NumberInput(detailFilter, "Key Follow", param.filterCutoffKeyFollow, render),
 
-  arpeggioDecayTo: new widget.NumberInput(
-    detailArpeggio, "Chord: Decay To [dB]", param.arpeggioDecayTo, render),
+  arpeggioDecayTo:
+    new widget.NumberInput(detailArpeggio, "Chord: Decay To [dB]", param.arpeggioDecayTo, render),
   chordNotePerSection: new widget.NumberInput(
     detailArpeggio, "Chord: Note / Section", param.chordNotePerSection, render),
-  chordMaxOctave: new widget.NumberInput(
-    detailArpeggio, "Chord: Max Octave", param.chordMaxOctave, render),
-  chordGainSlope: new widget.NumberInput(
-    detailArpeggio, "Chord: Gain [dB/oct]", param.chordGainSlope, render),
-  chordPitchScale: new widget.ComboBoxLine(
-    detailArpeggio, "Chord: Scale", param.chordPitchScale, render),
-  arpeggioScale: new widget.ComboBoxLine(
-    detailArpeggio, "Arpeggio: Scale", param.arpeggioScale, render),
+  chordMaxOctave:
+    new widget.NumberInput(detailArpeggio, "Chord: Max Octave", param.chordMaxOctave, render),
+  chordGainSlope:
+    new widget.NumberInput(detailArpeggio, "Chord: Gain [dB/oct]", param.chordGainSlope, render),
+  chordPitchScale:
+    new widget.ComboBoxLine(detailArpeggio, "Chord: Scale", param.chordPitchScale, render),
+  arpeggioScale:
+    new widget.ComboBoxLine(detailArpeggio, "Arpeggio: Scale", param.arpeggioScale, render),
   arpeggioNotes: new widget.MultiCheckBoxVertical(
     detailArpeggio, "Notes in Scale (Just Intonation, Semitone)",
     [

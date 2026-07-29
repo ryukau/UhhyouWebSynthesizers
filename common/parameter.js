@@ -416,8 +416,7 @@ function addRecipeRecursion(recipeName, key, parameter, randomInfo) {
 export function addRecipe(parameters, recipeBook, newRecipe) {
   const name = `${newRecipe.meta.author} - ${newRecipe.meta.recipeName}`;
   if (recipeBook.has(name)) {
-    console.warn(`Recipe name conflict on "${name}". Set unique author.`);
-    return;
+    console.warn(`Recipe "${name}" is overwritten. Set unique author and name.`);
   }
 
   let dest = new Map();
@@ -427,6 +426,15 @@ export function addRecipe(parameters, recipeBook, newRecipe) {
   recipeBook.set(name, new FullRandomizer(dest));
 
   return name;
+}
+
+function sortMapInPlace(map) {
+  const sortedEntries = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  map.clear();
+  for (const [key, value] of sortedEntries) {
+    map.set(key, value);
+  }
+  return map;
 }
 
 /**
@@ -447,7 +455,17 @@ randomizationRecipes = {
 };
 ```
 */
-export async function loadJson(parameters, recipeJsonPaths) {
+export async function loadJson(parameters, recipeBook, recipeJsonPaths) {
+  // Support both loadJson(param, recipeBook, paths) and loadJson(param, paths).
+  if (Array.isArray(recipeBook)) {
+    recipeJsonPaths = recipeBook;
+    recipeBook = new Map();
+  }
+
+  if (typeof window !== "undefined" && window.__onLoadJson) {
+    window.__onLoadJson(parameters, recipeBook);
+  }
+
   const fetchRecipe = async (recipeJsonPaths) => {
     let container = [];
     for (let idx = 0; idx < recipeJsonPaths.length; ++idx) {
@@ -460,13 +478,12 @@ export async function loadJson(parameters, recipeJsonPaths) {
   };
 
   let rawRecipes = await fetchRecipe(recipeJsonPaths);
-  let recipeBook = new Map();
   for (const src of rawRecipes) addRecipe(parameters, recipeBook, src);
 
-  return new Map([...recipeBook.entries()].sort()); // Sort by key.
+  return sortMapInPlace(recipeBook);
 }
 
-// `FullRandomizer` and `Randomizer` could be function, but written as a class for easier
+// `FullRandomizer` and `Randomizer` could be functions, but written as classes for easier
 // debugging.
 class FullRandomizer {
   constructor(recipe) { this.recipe = recipe; }
@@ -513,6 +530,12 @@ class Randomizer {
 }
 
 function applyLocalRecipe(parameter, recipe) {
+  if (typeof recipe === "function") {
+    recipe(parameter);
+    return;
+  }
+
+  // The rest of the code is kept for backward compatibility.
   for (const [key, prm] of Object.entries(parameter)) {
     if (recipe.hasOwnProperty(key)) {
       if (Array.isArray(prm)) {
@@ -531,10 +554,9 @@ function applyLocalRecipe(parameter, recipe) {
   };
 }
 
-export function addLocalRecipes(source, target) {
-  let tgt = new Map(target); // Don't mutate original.
-  for (const [key, recipe] of Object.entries(source)) {
-    tgt.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
+export function addLocalRecipes(localRecipeBook, recipeBook = new Map()) {
+  for (const [key, recipe] of Object.entries(localRecipeBook)) {
+    recipeBook.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
   }
-  return new Map([...tgt.entries()].sort()); // Sort by key.
+  return sortMapInPlace(recipeBook);
 }

@@ -135,20 +135,17 @@ const param = {
 
   limiterType: new parameter.Parameter(0, scales.limiterType, true),
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
-  limiterSmoothingSeconds:
-    new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
+  limiterSmoothingSeconds: new parameter.Parameter(0.02, scales.limiterSmoothingSeconds, true),
 
   seed: new parameter.Parameter(1819103606, scales.seed, true),
-  excitationGain:
-    new parameter.Parameter(util.dbToAmp(-11), scales.excitationGain, false),
+  excitationGain: new parameter.Parameter(util.dbToAmp(-11), scales.excitationGain, false),
   envelopeFollowerHz: new parameter.Parameter(2.3, scales.envelopeFollowerHz, true),
 
   noiseLowOn: new parameter.Parameter(1, scales.boolean, true),
   noiseLowDecaySeconds: new parameter.Parameter(1, scales.decaySeconds, true),
   noiseLowLowpassBaseHz: new parameter.Parameter(1200, scales.lowpassHz, true),
   noiseLowLowpassModHz: new parameter.Parameter(8000, scales.lowpassHz, true),
-  noiseLowLowpassResonance:
-    new parameter.Parameter(0.57, scales.noiseLowpassResonance, true),
+  noiseLowLowpassResonance: new parameter.Parameter(0.57, scales.noiseLowpassResonance, true),
 
   noiseHighOn: new parameter.Parameter(1, scales.boolean, true),
   noiseHighMixRatio: new parameter.Parameter(2, scales.mixRatio, true),
@@ -174,16 +171,15 @@ const param = {
     scales.fdnInputGain, scales.fdnSize.max),
   cymbalLowpassHz: new parameter.Parameter(19000, scales.lowpassHz, true),
   cymbalHighpassHz: new parameter.Parameter(240, scales.highpassHz, true),
-  cymbalHighpassFollowDelayTime:
-    new parameter.Parameter(0.3, scales.highpassFollowDelayTime, true),
+  cymbalHighpassFollowDelayTime: new parameter.Parameter(0.3, scales.highpassFollowDelayTime, true),
   cymbalDelayTimeMod: new parameter.Parameter(0, scales.delayTimeMod, true),
   cymbalEnvelopeFollowerToLowpass:
     new parameter.Parameter(0, scales.envelopeFollowerToLowpass, true),
   cymbalSaturator: new parameter.Parameter(2, scales.cymbalSaturator, true),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -214,11 +210,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -258,88 +260,76 @@ const ui = {
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
   decayTo: new widget.NumberInput(detailRender, "Decay To [dB]", param.decayTo, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
-  slicerRegions:
-    new widget.NumberInput(detailSlicer, "nRegion", param.slicerRegions, render),
+  slicerRegions: new widget.NumberInput(detailSlicer, "nRegion", param.slicerRegions, render),
   slicerExcitationGainRange: new widget.NumberInput(
     detailSlicer, "Excitation Range [dB]", param.slicerExcitationGainRange, render),
 
   limiterType: new widget.ComboBoxLine(detailLimiter, "Type", param.limiterType, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterSmoothingSeconds: new widget.NumberInput(
-    detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterSmoothingSeconds:
+    new widget.NumberInput(detailLimiter, "Smoothing [s]", param.limiterSmoothingSeconds, render),
 
   seed: new widget.NumberInput(detailMisc, "Seed", param.seed, render),
-  excitationGain:
-    new widget.NumberInput(detailMisc, "Gain [dB]", param.excitationGain, render),
-  envelopeFollowerHz: new widget.NumberInput(
-    detailMisc, "Env. Follower [Hz]", param.envelopeFollowerHz, render),
+  excitationGain: new widget.NumberInput(detailMisc, "Gain [dB]", param.excitationGain, render),
+  envelopeFollowerHz:
+    new widget.NumberInput(detailMisc, "Env. Follower [Hz]", param.envelopeFollowerHz, render),
 
-  noiseLowOn:
-    new widget.ToggleButtonLine(detailNoiseLow, ["Off", "On"], param.noiseLowOn, render),
-  noiseLowDecaySeconds: new widget.NumberInput(
-    detailNoiseLow, "Decay [s]", param.noiseLowDecaySeconds, render),
-  noiseLowLowpassBaseHz: new widget.NumberInput(
-    detailNoiseLow, "LP Base [Hz]", param.noiseLowLowpassBaseHz, render),
-  noiseLowLowpassModHz: new widget.NumberInput(
-    detailNoiseLow, "LP Mod. [Hz]", param.noiseLowLowpassModHz, render),
-  noiseLowLowpassResonance: new widget.NumberInput(
-    detailNoiseLow, "LP Resonance", param.noiseLowLowpassResonance, render),
+  noiseLowOn: new widget.ToggleButtonLine(detailNoiseLow, ["Off", "On"], param.noiseLowOn, render),
+  noiseLowDecaySeconds:
+    new widget.NumberInput(detailNoiseLow, "Decay [s]", param.noiseLowDecaySeconds, render),
+  noiseLowLowpassBaseHz:
+    new widget.NumberInput(detailNoiseLow, "LP Base [Hz]", param.noiseLowLowpassBaseHz, render),
+  noiseLowLowpassModHz:
+    new widget.NumberInput(detailNoiseLow, "LP Mod. [Hz]", param.noiseLowLowpassModHz, render),
+  noiseLowLowpassResonance:
+    new widget.NumberInput(detailNoiseLow, "LP Resonance", param.noiseLowLowpassResonance, render),
 
-  noiseHighOn: new widget.ToggleButtonLine(
-    detailNoiseHigh, ["Off", "On"], param.noiseHighOn, render),
-  noiseHighMixRatio: new widget.NumberInput(
-    detailNoiseHigh, "Mix Ratio [dB]", param.noiseHighMixRatio, render),
-  noiseHighDecaySeconds: new widget.NumberInput(
-    detailNoiseHigh, "Decay [s]", param.noiseHighDecaySeconds, render),
-  noiseHighHighpassHz: new widget.NumberInput(
-    detailNoiseHigh, "Highpass [Hz]", param.noiseHighHighpassHz, render),
+  noiseHighOn:
+    new widget.ToggleButtonLine(detailNoiseHigh, ["Off", "On"], param.noiseHighOn, render),
+  noiseHighMixRatio:
+    new widget.NumberInput(detailNoiseHigh, "Mix Ratio [dB]", param.noiseHighMixRatio, render),
+  noiseHighDecaySeconds:
+    new widget.NumberInput(detailNoiseHigh, "Decay [s]", param.noiseHighDecaySeconds, render),
+  noiseHighHighpassHz:
+    new widget.NumberInput(detailNoiseHigh, "Highpass [Hz]", param.noiseHighHighpassHz, render),
 
-  extraFdnOn:
-    new widget.ToggleButtonLine(detailExtra, ["Off", "On"], param.extraFdnOn, render),
-  extraFdnSize:
-    new widget.NumberInput(detailExtra, "FDN Size", param.extraFdnSize, render),
+  extraFdnOn: new widget.ToggleButtonLine(detailExtra, ["Off", "On"], param.extraFdnOn, render),
+  extraFdnSize: new widget.NumberInput(detailExtra, "FDN Size", param.extraFdnSize, render),
   extraFrequencyHz:
     new widget.NumberInput(detailExtra, "Frequency [Hz]", param.extraFrequencyHz, render),
-  extraFeedback:
-    new widget.NumberInput(detailExtra, "Feedback", param.extraFeedback, render),
-  extraLowpassHz:
-    new widget.NumberInput(detailExtra, "Lowpass [Hz]", param.extraLowpassHz, render),
+  extraFeedback: new widget.NumberInput(detailExtra, "Feedback", param.extraFeedback, render),
+  extraLowpassHz: new widget.NumberInput(detailExtra, "Lowpass [Hz]", param.extraLowpassHz, render),
   extraHighpassHz:
     new widget.NumberInput(detailExtra, "Highpass [Hz]", param.extraHighpassHz, render),
 
-  cymbalFdnOn:
-    new widget.ToggleButtonLine(detailFdn, ["Off", "On"], param.cymbalFdnOn, render),
+  cymbalFdnOn: new widget.ToggleButtonLine(detailFdn, ["Off", "On"], param.cymbalFdnOn, render),
   cymbalFdnSize:
     new widget.NumberInput(detailFdn, "FDN Size", param.cymbalFdnSize, onFdnSizeChanged),
-  cymbalMembranePitchType: new widget.ComboBoxLine(
-    detailFdn, "Pitch Type", param.cymbalMembranePitchType, render),
-  cymbalMembranePitchIndex: new widget.NumberInput(
-    detailFdn, "Pitch Index", param.cymbalMembranePitchIndex, render),
-  cymbalDelayInterpType: new widget.ComboBoxLine(
-    detailFdn, "Delay Interpolation", param.cymbalDelayInterpType, render),
+  cymbalMembranePitchType:
+    new widget.ComboBoxLine(detailFdn, "Pitch Type", param.cymbalMembranePitchType, render),
+  cymbalMembranePitchIndex:
+    new widget.NumberInput(detailFdn, "Pitch Index", param.cymbalMembranePitchIndex, render),
+  cymbalDelayInterpType:
+    new widget.ComboBoxLine(detailFdn, "Delay Interpolation", param.cymbalDelayInterpType, render),
   cymbalFrequencyHz:
     new widget.NumberInput(detailFdn, "Frequency [Hz]", param.cymbalFrequencyHz, render),
-  cymbalFeedback:
-    new widget.NumberInput(detailFdn, "Feedback", param.cymbalFeedback, render),
+  cymbalFeedback: new widget.NumberInput(detailFdn, "Feedback", param.cymbalFeedback, render),
   cymbalFdnInputGain: new widget.BarBox(
     detailFdn, "Matrix Input Gain", uiSize.barboxWidth, uiSize.barboxHeight,
     param.cymbalFdnInputGain, render),
-  cymbalLowpassHz:
-    new widget.NumberInput(detailFdn, "Lowpass [Hz]", param.cymbalLowpassHz, render),
+  cymbalLowpassHz: new widget.NumberInput(detailFdn, "Lowpass [Hz]", param.cymbalLowpassHz, render),
   cymbalHighpassHz:
     new widget.NumberInput(detailFdn, "Highpass [Hz]", param.cymbalHighpassHz, render),
   cymbalHighpassFollowDelayTime: new widget.NumberInput(
     detailFdn, "Highpass Character", param.cymbalHighpassFollowDelayTime, render),
-  cymbalDelayTimeMod: new widget.NumberInput(
-    detailFdn, "Delay Mod. [sample]", param.cymbalDelayTimeMod, render),
+  cymbalDelayTimeMod:
+    new widget.NumberInput(detailFdn, "Delay Mod. [sample]", param.cymbalDelayTimeMod, render),
   cymbalEnvelopeFollowerToLowpass: new widget.NumberInput(
     detailFdn, "Env. To LP Mod.", param.cymbalEnvelopeFollowerToLowpass, render),
   cymbalSaturator:

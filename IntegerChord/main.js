@@ -68,9 +68,7 @@ const localRecipeBook = {
         chord.splice(removeIndex, 1);
       }
 
-      for (let idx = 0; idx < prm.length; ++idx) {
-        prm[idx].dsp = chord.includes(idx) ? 1 : 0;
-      }
+      for (let idx = 0; idx < prm.length; ++idx) { prm[idx].dsp = chord.includes(idx) ? 1 : 0; }
     },
   },
 };
@@ -181,8 +179,7 @@ const param = {
   chordMaxOctave: new parameter.Parameter(3, scales.chordMaxOctave),
   chordPitchStackUp: new parameter.Parameter(0, scales.chordPitchStackUp),
   chordPhaseOffset: new parameter.Parameter(1, scales.phaseSpread),
-  chordRandomStartSeconds:
-    new parameter.Parameter(0, scales.chordRandomStartSeconds, true),
+  chordRandomStartSeconds: new parameter.Parameter(0, scales.chordRandomStartSeconds, true),
   chordGainSlope: new parameter.Parameter(1, scales.chordGainSlope),
   chordNotes: createArrayParameters(
     [
@@ -216,8 +213,8 @@ const param = {
     justIntonationTable.length, scales.boolean),
 };
 
-const recipeBook
-  = parameter.addLocalRecipes(localRecipeBook, await parameter.loadJson(param, []));
+const recipeBook = parameter.addLocalRecipes(localRecipeBook);
+await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
 const audio = new wave.Audio(
@@ -248,11 +245,17 @@ const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
 const recipeExportDialog = new widget.RecipeExportDialog(document.body, (ev) => {
-  parameter.downloadJson(
-    param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
+  parameter.downloadJson(param, version, recipeExportDialog.author, recipeExportDialog.recipeName);
 });
 const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, data) => {
-  widget.option(playControl.selectRandom, parameter.addRecipe(param, recipeBook, data));
+  const recipeName = parameter.addRecipe(param, recipeBook, data);
+  if (recipeName) {
+    widget.option(playControl.selectRandom, recipeName);
+    playControl.selectRandom.value = recipeName;
+    recipeBook.get(recipeName).randomize(param);
+    render();
+    widget.refresh(ui);
+  }
 });
 
 const playControl = widget.playControl(
@@ -290,26 +293,23 @@ const ui = {
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
   fadeIn: new widget.NumberInput(detailRender, "Fade-in [s]", param.fadeIn, render),
   fadeOut: new widget.NumberInput(detailRender, "Fade-out [s]", param.fadeOut, render),
-  noteDecayT60: new widget.NumberInput(
-    detailRender, "Time at -60 dB [s]", param.noteDecayT60, render),
-  stereoMerge:
-    new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
+  noteDecayT60:
+    new widget.NumberInput(detailRender, "Time at -60 dB [s]", param.noteDecayT60, render),
+  stereoMerge: new widget.NumberInput(detailRender, "Stereo Merge", param.stereoMerge, render),
   dcHighpassHz:
     new widget.NumberInput(detailRender, "DC Highpass [Hz]", param.dcHighpassHz, render),
-  overSample:
-    new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
-  sampleRateScaler: new widget.ComboBoxLine(
-    detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
+  overSample: new widget.ComboBoxLine(detailRender, "Over-sample", param.overSample, render),
+  sampleRateScaler:
+    new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
-  limiterEnable: new widget.ToggleButtonLine(
-    detailLimiter, ["Off", "On"], param.limiterEnable, render),
-  limiterThreshold: new widget.NumberInput(
-    detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
-  limiterAttackSeconds: new widget.NumberInput(
-    detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
+  limiterEnable:
+    new widget.ToggleButtonLine(detailLimiter, ["Off", "On"], param.limiterEnable, render),
+  limiterThreshold:
+    new widget.NumberInput(detailLimiter, "Threshold [dB]", param.limiterThreshold, render),
+  limiterAttackSeconds:
+    new widget.NumberInput(detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
 
-  nUnison:
-    new widget.NumberInput(detailUnison, "nUnison [voice/note]", param.nUnison, render),
+  nUnison: new widget.NumberInput(detailUnison, "nUnison [voice/note]", param.nUnison, render),
   unisonPhaseSpread:
     new widget.NumberInput(detailUnison, "Phase Spread", param.unisonPhaseSpread, render),
   unisonDetuneCent:
@@ -318,51 +318,46 @@ const ui = {
     new widget.ComboBoxLine(detailUnison, "Detune Type", param.unisonDetuneType, render),
 
   waveform: new widget.WaveformXYPad(
-    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 23,
-    render),
+    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 23, render),
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
-  frequencyHz:
-    new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
+  frequencyHz: new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
   oscOctave: new widget.NumberInput(detailOsc, "Octave", param.oscOctave, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),
-  saturationGain: new widget.NumberInput(
-    detailOsc, "Saturation Gain [dB]", param.saturationGain, render),
-  oscPolySineMix: new widget.NumberInput(
-    detailOsc, "Mix Poly Osc./Multi Sine", param.oscPolySineMix, render),
-  oscSineDecaySeconds: new widget.NumberInput(
-    detailOsc, "Multi Sine - Decay [s]", param.oscSineDecaySeconds, render),
-  oscSinePitch: new widget.NumberInput(
-    detailOsc, "Multi Sine - Pitch [st.]", param.oscSinePitch, render),
+  saturationGain:
+    new widget.NumberInput(detailOsc, "Saturation Gain [dB]", param.saturationGain, render),
+  oscPolySineMix:
+    new widget.NumberInput(detailOsc, "Mix Poly Osc./Multi Sine", param.oscPolySineMix, render),
+  oscSineDecaySeconds:
+    new widget.NumberInput(detailOsc, "Multi Sine - Decay [s]", param.oscSineDecaySeconds, render),
+  oscSinePitch:
+    new widget.NumberInput(detailOsc, "Multi Sine - Pitch [st.]", param.oscSinePitch, render),
   oscSinePitchMod: new widget.ToggleButtonLine(
-    detailOsc, ["Multi Sine Pitch - Align", "Multi Sine Pitch - Invert"],
-    param.oscSinePitchMod, render),
+    detailOsc, ["Multi Sine Pitch - Align", "Multi Sine Pitch - Invert"], param.oscSinePitchMod,
+    render),
 
   filterType: new widget.ComboBoxLine(detailFilter, "Type", param.filterType, render),
-  filterCascade:
-    new widget.NumberInput(detailFilter, "nCascade", param.filterCascade, render),
-  filterResonance:
-    new widget.NumberInput(detailFilter, "Resonance", param.filterResonance, render),
-  filterCutoffOctave: new widget.NumberInput(
-    detailFilter, "Cutoff [oct]", param.filterCutoffOctave, render),
-  filterCutoffDecayT60: new widget.NumberInput(
-    detailFilter, "Time at -60 dB [s]", param.filterCutoffDecayT60, render),
-  filterCutoffDecayCurve: new widget.NumberInput(
-    detailFilter, "Decay Curve", param.filterCutoffDecayCurve, render),
-  filterCutoffKeyFollow: new widget.NumberInput(
-    detailFilter, "Key Follow", param.filterCutoffKeyFollow, render),
+  filterCascade: new widget.NumberInput(detailFilter, "nCascade", param.filterCascade, render),
+  filterResonance: new widget.NumberInput(detailFilter, "Resonance", param.filterResonance, render),
+  filterCutoffOctave:
+    new widget.NumberInput(detailFilter, "Cutoff [oct]", param.filterCutoffOctave, render),
+  filterCutoffDecayT60:
+    new widget.NumberInput(detailFilter, "Time at -60 dB [s]", param.filterCutoffDecayT60, render),
+  filterCutoffDecayCurve:
+    new widget.NumberInput(detailFilter, "Decay Curve", param.filterCutoffDecayCurve, render),
+  filterCutoffKeyFollow:
+    new widget.NumberInput(detailFilter, "Key Follow", param.filterCutoffKeyFollow, render),
 
-  arpeggioDirection: new widget.ComboBoxLine(
-    detailChord, "Arpeggio Direction", param.arpeggioDirection, render),
-  chordMaxOctave:
-    new widget.NumberInput(detailChord, "Max Octave", param.chordMaxOctave, render),
+  arpeggioDirection:
+    new widget.ComboBoxLine(detailChord, "Arpeggio Direction", param.arpeggioDirection, render),
+  chordMaxOctave: new widget.NumberInput(detailChord, "Max Octave", param.chordMaxOctave, render),
   chordPitchStackUp:
     new widget.NumberInput(detailChord, "Stack Up", param.chordPitchStackUp, render),
   chordPhaseOffset:
     new widget.NumberInput(detailChord, "Phase Offset", param.chordPhaseOffset, render),
-  chordRandomStartSeconds: new widget.NumberInput(
-    detailChord, "Random Start [s]", param.chordRandomStartSeconds, render),
-  chordGainSlope: new widget.NumberInput(
-    detailChord, "Chord: Gain [dB/oct]", param.chordGainSlope, render),
+  chordRandomStartSeconds:
+    new widget.NumberInput(detailChord, "Random Start [s]", param.chordRandomStartSeconds, render),
+  chordGainSlope:
+    new widget.NumberInput(detailChord, "Chord: Gain [dB/oct]", param.chordGainSlope, render),
   chordNotes: new widget.MultiCheckBoxVertical(
     detailChord, "Notes in Scale (Just Intonation, Semitone)",
     [
