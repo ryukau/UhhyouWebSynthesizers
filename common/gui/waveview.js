@@ -174,7 +174,7 @@ export class WaveView {
     this.context.moveTo(0, y0);
     this.context.lineTo(this.canvas.width, y0);
     this.context.stroke();
-    this.context.setLineDash([0]);
+    this.context.setLineDash([]);
   }
 
   drawWave(y0) {
@@ -187,9 +187,7 @@ export class WaveView {
     this.context.translate(0, y0);
     this.context.scale(1, -1);
 
-    // There's a performance problem when drawing all the samples with `lineTo`.
-    // Therefore this branching was added.
-    if (this.#length >= this.canvas.width) {
+    if (this.#length >= 2 * this.canvas.width) {
       this.drawWaveWide();
     } else {
       this.drawWaveNarrow();
@@ -203,44 +201,46 @@ export class WaveView {
   }
 
   drawWaveWide() {
-    //
-    // Recipe:
-    // 1. Gather local minima and local maxima.
-    // 2. Concatenate minima and maxima.
-    // 3. Draw polygon from 2.
-    //
-    // This is faster than connecting all samples with `lineTo`.
-    //
+    const width = this.canvas.width;
+    const offset = this.#offset;
+    const step = this.#length / width;
 
-    const interval = Math.floor(this.#length / this.canvas.width);
-    let end = Math.floor(this.#offset);
-
-    let minArray = new Array(this.canvas.width);
-    let maxArray = new Array(this.canvas.width);
-
-    for (let x = 0; x < this.canvas.width; ++x) {
-      let min = Number.MAX_VALUE;
-      let max = -Number.MAX_VALUE;
-
-      let index = end;
-      end += interval;
-      while (index < end) {
-        min = Math.min(min, this.#data[index]);
-        max = Math.max(max, this.#data[index]);
-        ++index;
-      }
-      minArray[x] = [x, this.#setY(min)];
-      maxArray[x] = [x, this.#setY(max)];
-    }
-    const path = minArray.concat(maxArray.reverse());
-
-    if (path.length === 0) return;
+    const maxY = new Float32Array(width);
 
     this.context.lineWidth = 0.5;
     this.context.setLineDash([]);
     this.context.beginPath();
-    this.context.moveTo(path[0][0], path[0][1]);
-    for (let i = 1; i < path.length; ++i) this.context.lineTo(path[i][0], path[i][1]);
+
+    for (let x = 0; x < width; ++x) {
+      let indexStart = Math.floor(offset + x * step);
+      let indexEnd = Math.floor(offset + (x + 1) * step);
+
+      if (indexStart === indexEnd) { indexEnd = indexStart + 1; }
+      if (indexEnd > this.#data.length) { indexEnd = this.#data.length; }
+      if (indexStart >= this.#data.length) { indexStart = this.#data.length - 1; }
+
+      let min = Number.MAX_VALUE;
+      let max = -Number.MAX_VALUE;
+
+      for (let index = indexStart; index < indexEnd; ++index) {
+        const val = this.#data[index];
+        if (val < min) min = val;
+        if (val > max) max = val;
+      }
+
+      const minY = this.#setY(min);
+      maxY[x] = this.#setY(max);
+
+      if (x === 0) {
+        this.context.moveTo(x, minY);
+      } else {
+        this.context.lineTo(x, minY);
+      }
+    }
+
+    for (let x = width - 1; x >= 0; --x) { this.context.lineTo(x, maxY[x]); }
+
+    this.context.closePath();
     this.context.fill();
     this.context.stroke();
   }
@@ -248,15 +248,15 @@ export class WaveView {
   drawWaveNarrow() {
     if (this.#length <= 1) return;
 
+    const widthMinusOne = this.canvas.width - 1;
     const last = this.#length - 1;
 
-    // Lines.
     let px = new Array(this.#length);
     let py = new Array(this.#length);
     px[0] = 0;
     py[0] = this.#setY(this.#data[this.#offset]);
     for (let i = 1; i < this.#length; ++i) {
-      px[i] = i * this.canvas.width / (this.#length - 1);
+      px[i] = i * widthMinusOne / last;
       py[i] = this.#setY(this.#data[this.#offset + i]);
     }
 
@@ -264,13 +264,11 @@ export class WaveView {
     this.context.setLineDash([]);
     this.context.beginPath();
     this.context.moveTo(px[0], py[0]);
-    for (let i = 1; i < this.#length; ++i) this.context.lineTo(px[i], py[i]);
+    for (let i = 1; i < this.#length; ++i) { this.context.lineTo(px[i], py[i]); }
     this.context.stroke();
 
-    // Dots are only drawn if interval between samples is sufficently larger than dot
-    // radius. Otherwise, it looks cluttered.
     const dotRadius = 3;
-    const intervalX = this.canvas.width / (this.#length - 1);
+    const intervalX = widthMinusOne / last;
     if (intervalX > 3 * dotRadius) {
       for (let i = 0; i < this.#length; ++i) {
         this.context.beginPath();
