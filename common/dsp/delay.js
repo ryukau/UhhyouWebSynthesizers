@@ -3,21 +3,24 @@
 
 import {clamp, lagrange3Interp} from "../util.js";
 
+const alignLength = (n, k) => Math.ceil(n / k) * k;
+
 export class IntDelay {
   #wptr;
   #buf;
 
   constructor(maxDelayTimeInSamples) {
     this.#wptr = 0;
-    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples), 4));
+
+    const requiredSize = Math.max(Math.ceil(maxDelayTimeInSamples), 4);
+    this.#buf = new Float64Array(alignLength(requiredSize, 2));
+
     this.reset();
   }
 
   reset() { this.#buf.fill(0); }
 
-  setTime(timeInSample) {
-    this.timeInt = clamp(Math.floor(timeInSample), 0, this.#buf.length - 1);
-  }
+  setTime(timeInSample) { this.timeInt = clamp(Math.floor(timeInSample), 0, this.#buf.length - 1); }
 
   // Always call `setTime` before `process`.
   process(input) {
@@ -43,7 +46,10 @@ export class Delay {
 
   constructor(maxDelayTimeInSamples) {
     this.#wptr = 0;
-    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples) + 2, 4));
+
+    const requiredSize = Math.max(Math.ceil(maxDelayTimeInSamples) + 2, 4);
+    this.#buf = new Float64Array(alignLength(requiredSize, 2));
+
     this.reset();
   }
 
@@ -83,7 +89,10 @@ export class CubicDelay {
 
   constructor(maxDelayTimeInSamples) {
     this.#wptr = 0;
-    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples) + 4, 4));
+
+    const requiredSize = Math.max(Math.ceil(maxDelayTimeInSamples) + 4, 4);
+    this.#buf = new Float64Array(alignLength(requiredSize, 2));
+
     this.reset();
   }
 
@@ -112,8 +121,7 @@ export class CubicDelay {
 
     // Read from buffer.
     return lagrange3Interp(
-      this.#buf[rptr0], this.#buf[rptr1], this.#buf[rptr2], this.#buf[rptr3],
-      this.rFraction);
+      this.#buf[rptr0], this.#buf[rptr1], this.#buf[rptr2], this.#buf[rptr3], this.rFraction);
   }
 
   // Convenient method for audio-rate modulation.
@@ -131,11 +139,13 @@ export class MultiTapDelay {
 
   constructor(maxDelayTimeInSamples, nTap) {
     this.#wptr = 0;
-    this.#buf = new Array(Math.max(Math.ceil(maxDelayTimeInSamples) + 2, 4));
-    this.#timeInt = new Array(nTap).fill(0);
-    this.#rFraction = new Array(nTap).fill(0);
 
-    this.output = new Array(nTap).fill(0);
+    const requiredSize = Math.max(Math.ceil(maxDelayTimeInSamples) + 2, 4);
+    this.#buf = new Float64Array(alignLength(requiredSize, 2));
+
+    this.#timeInt = new Int32Array(nTap);
+    this.#rFraction = new Float64Array(nTap);
+    this.output = new Float64Array(nTap);
     this.reset();
   }
 
@@ -155,22 +165,19 @@ export class MultiTapDelay {
 
   // Always call `setTime` before `process`.
   process(input) {
-    // Write to buffer.
     this.#buf[this.#wptr] = input;
-    if (++this.#wptr >= this.#buf.length) this.#wptr = 0;
 
-    let sum = 0;
     for (let idx = 0; idx < this.#timeInt.length; ++idx) {
       let rptr0 = this.#wptr - this.#timeInt[idx];
       if (rptr0 < 0) rptr0 += this.#buf.length;
-
       let rptr1 = rptr0 - 1;
       if (rptr1 < 0) rptr1 += this.#buf.length;
 
-      // Read from buffer.
-      sum += this.#buf[rptr0]
-        + this.#rFraction[idx] * (this.#buf[rptr1] - this.#buf[rptr0]);
+      this.output[idx]
+        = this.#buf[rptr0] + this.#rFraction[idx] * (this.#buf[rptr1] - this.#buf[rptr0]);
     }
+
+    if (++this.#wptr >= this.#buf.length) this.#wptr = 0;
     return sum;
   }
 
@@ -239,21 +246,21 @@ export class NestedLongAllpass {
     nAllpass,
     factoryFunc = (maxSamples) => new LongAllpass(maxSamples),
   ) {
-    this.#in = new Array(nAllpass).fill(0);
-    this.#buffer = new Array(nAllpass).fill(0);
+    this.#in = new Float64Array(nAllpass);
+    this.#buffer = new Float64Array(nAllpass);
 
     this.allpass = new Array(nAllpass);
     for (let i = 0; i < nAllpass; ++i) {
       this.allpass[i] = factoryFunc(delayTimeInSamples, nAllpass);
     }
 
-    this.feed = new Array(nAllpass).fill(0); // in [-1, 1].
+    this.feed = new Float64Array(nAllpass).fill(0); // in [-1, 1].
   }
 
   reset() {
     this.#in.fill(0);
     this.#buffer.fill(0);
-    for (let ap of allpass) ap.reset();
+    for (let ap of this.allpass) ap.reset();
   }
 
   process(input) {

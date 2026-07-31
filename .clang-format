@@ -18,9 +18,9 @@ ConstructorInitializerIndentWidth: 2
 ContinuationIndentWidth: 2
 IndentCaseLabels: true
 IndentPPDirectives: BeforeHash
+InsertBraces: true
 KeepEmptyLines:
   AtStartOfBlock: false
 SpaceAfterTemplateKeyword: false
 SpacesInContainerLiterals: false
 UseTab: Never
- 

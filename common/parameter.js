@@ -53,12 +53,9 @@ export class Parameter {
   get dsp() { return this.#raw; }
   set dsp(x) { this.#raw = util.clamp(x, this.scale.minDsp, this.scale.maxDsp); }
 
-  get normalized() {
-    return (this.ui - this.scale.minUi) / (this.scale.maxUi - this.scale.minUi);
-  }
+  get normalized() { return (this.ui - this.scale.minUi) / (this.scale.maxUi - this.scale.minUi); }
   set normalized(x) {
-    this.ui
-      = this.scale.minUi + (this.scale.maxUi - this.scale.minUi) * util.clamp(x, 0, 1);
+    this.ui = this.scale.minUi + (this.scale.maxUi - this.scale.minUi) * util.clamp(x, 0, 1);
   }
 
   get display() { return this.displayDsp ? this.dsp : this.ui; }
@@ -144,8 +141,7 @@ export class DecibelScale {
     this.minAmp = minToZero ? 0 : util.dbToAmp(minDB);
     this.maxAmp = util.dbToAmp(maxDB);
 
-    console.assert(
-      this.maxDB > this.minDB, "maxDB must be greater than minDB.", new Error());
+    console.assert(this.maxDB > this.minDB, "maxDB must be greater than minDB.", new Error());
   }
 
   get minUi() { return this.minDB; }
@@ -186,30 +182,90 @@ export class NegativeDecibelScale {
   toUi(amplitude) { return 1 - this.scale.toUi(this.offset - amplitude); }
 }
 
+// DecibelScale with negative values when normalized value is below 0.5.
+//
+// - When the normalized value is 0.5, `toDsp()` outputs 0.
+// - The same decibel range is used for positive and negative values.
+//
+// Added to use for feedback or resonance. Increasing normalized value makes the
+// output approach `offset` (defaulting to 1).
+export class BipolarNegativeDecibelScale {
+  #center = 0.5;
+
+  constructor(minDB, maxDB, offset = 1) {
+    console.assert(Number.isFinite(minDB), new Error("minDB must be a finite number."));
+    console.assert(
+      Number.isFinite(maxDB) && maxDB > minDB, new Error("maxDB must be greater than minDB."));
+    console.assert(Number.isFinite(offset), new Error("offset must be a finite number."));
+
+    this.minDB = minDB;
+    this.maxDB = maxDB;
+    this.offset = offset;
+
+    this.minAmp = 10 ** (minDB / 20);
+    this.maxAmp = 10 ** (maxDB / 20);
+    this.diffDB = maxDB - minDB;
+  }
+
+  get minUi() { return 0; }
+  get maxUi() { return 1; }
+
+  get minDsp() { return -(this.offset - this.minAmp); }
+  get maxDsp() { return this.offset - this.minAmp; }
+
+  toDsp(normalized) {
+    if (normalized > this.#center) {
+      const ratio = (normalized - this.#center) / (1 - this.#center);
+      const dB = this.maxDB - ratio * this.diffDB;
+      return this.offset - (10 ** (dB / 20));
+    } else if (normalized < this.#center) {
+      const ratio = (this.#center - normalized) / this.#center;
+      const dB = this.maxDB - ratio * this.diffDB;
+      return -(this.offset - (10 ** (dB / 20)));
+    }
+    return 0;
+  }
+
+  toUi(amplitude) {
+    const absAmp = Math.abs(amplitude);
+    const minDspVal = this.offset - this.maxAmp;
+
+    if (absAmp <= minDspVal) { return this.#center; }
+
+    const maxDspVal = this.offset - this.minAmp;
+    const clampedDsp = Math.min(absAmp, maxDspVal);
+    const rawAmp = this.offset - clampedDsp;
+    const dB = 20 * Math.log10(rawAmp);
+    const ratio = (this.maxDB - dB) / this.diffDB;
+
+    return amplitude > 0 ? this.#center + (1 - this.#center) * ratio
+                         : this.#center - this.#center * ratio;
+  }
+}
+
 // Similar to DecibelScale, but can have negative values when normalized value is below
 // 0.5.
 //
-// - When normalized value is in 0.5, `toDsp()` outputs 0.
-// - Same range is used for positive and negative values.
+// - When the normalized value is 0.5, `toDsp()` outputs 0.
+// - The same range is used for positive and negative values.
 //
 // This scale is added for FM or PM amount.
-export class BipolarExponentialScale {
+export class SymmetricLogScale {
   #center = 0.5;
 
   constructor(positiveMinValue, positiveMaxValue) {
     console.assert(
-      Number.isFinite(positiveMinValue) && positiveMinValue > 0, new Error());
+      Number.isFinite(positiveMinValue) && positiveMinValue > 0,
+      new Error("positiveMinValue must be positive."));
     console.assert(
-      Number.isFinite(positiveMaxValue) && positiveMaxValue > 0, new Error());
+      Number.isFinite(positiveMaxValue) && positiveMaxValue > positiveMinValue,
+      new Error("positiveMaxValue must be greater than positiveMinValue."));
 
     this.minValue = positiveMinValue;
     this.maxValue = positiveMaxValue;
 
     this.minExp = Math.log(positiveMinValue);
     this.diffExp = Math.log(positiveMaxValue) - this.minExp;
-
-    this.upperRangeStart = this.#center * (1 + Number.EPSILON);
-    this.lowerRangeEnd = this.#center * (1 - Number.EPSILON);
   }
 
   get minUi() { return 0; }
@@ -219,25 +275,90 @@ export class BipolarExponentialScale {
   get maxDsp() { return this.maxValue; }
 
   toDsp(normalized) {
-    if (normalized >= this.upperRangeStart) {
-      const ratio = (normalized - this.upperRangeStart) / (1 - this.upperRangeStart);
+    if (normalized > this.#center) {
+      const ratio = (normalized - this.#center) / (1 - this.#center);
       return Math.exp(ratio * this.diffExp + this.minExp);
-    } else if (normalized <= this.lowerRangeEnd) {
-      const ratio = 1 - normalized / this.lowerRangeEnd;
+    } else if (normalized < this.#center) {
+      const ratio = (this.#center - normalized) / this.#center;
       return -Math.exp(ratio * this.diffExp + this.minExp);
     }
     return 0;
   }
 
   toUi(amplitude) {
-    if (amplitude > 0) {
-      const value = (Math.log(amplitude) - this.minExp) / this.diffExp;
-      return value * (1 - this.upperRangeStart) + this.upperRangeStart;
-    } else if (amplitude < 0) {
-      const value = (Math.log(-amplitude) - this.minExp) / this.diffExp;
-      return (1 - value) * this.lowerRangeEnd;
+    const absAmp = Math.abs(amplitude);
+
+    if (absAmp < this.minValue) { return this.#center; }
+
+    const clampedAmp = Math.min(absAmp, this.maxValue);
+    const value = (Math.log(clampedAmp) - this.minExp) / this.diffExp;
+
+    return amplitude > 0 ? this.#center + (1 - this.#center) * value
+                         : this.#center - this.#center * value;
+  }
+}
+
+// Similar to SymmetricLogScale, but increasing the normalized value makes
+// the output approach `offset` (defaulting to 1). Can have negative values
+// when normalized value is below 0.5.
+//
+// - When the normalized value is 0.5, `toDsp()` outputs 0.
+// - The same logarithmic range is used for positive and negative values.
+//
+// Added to use for feedback or resonance using explicit min/max positive values.
+export class NegativeSymmetricLogScale {
+  #center = 0.5;
+
+  constructor(positiveMinValue, positiveMaxValue, offset = 1) {
+    console.assert(
+      Number.isFinite(positiveMinValue) && positiveMinValue > 0,
+      new Error("positiveMinValue must be positive."));
+    console.assert(
+      Number.isFinite(positiveMaxValue) && positiveMaxValue > positiveMinValue,
+      new Error("positiveMaxValue must be greater than positiveMinValue."));
+    console.assert(Number.isFinite(offset), new Error("offset must be a finite number."));
+
+    this.minValue = positiveMinValue;
+    this.maxValue = positiveMaxValue;
+    this.offset = offset;
+
+    this.minExp = Math.log(positiveMinValue);
+    this.diffExp = Math.log(positiveMaxValue) - this.minExp;
+  }
+
+  get minUi() { return 0; }
+  get maxUi() { return 1; }
+
+  get minDsp() { return -(this.offset - this.minValue); }
+  get maxDsp() { return this.offset - this.minValue; }
+
+  toDsp(normalized) {
+    if (normalized > this.#center) {
+      const ratio = (normalized - this.#center) / (1 - this.#center);
+      const expVal = Math.exp((1 - ratio) * this.diffExp + this.minExp);
+      return this.offset - expVal;
+    } else if (normalized < this.#center) {
+      const ratio = (this.#center - normalized) / this.#center;
+      const expVal = Math.exp((1 - ratio) * this.diffExp + this.minExp);
+      return -(this.offset - expVal);
     }
-    return this.#center;
+    return 0;
+  }
+
+  toUi(amplitude) {
+    const absAmp = Math.abs(amplitude);
+    const minDspVal = this.offset - this.maxValue;
+
+    if (absAmp <= minDspVal) { return this.#center; }
+
+    const maxDspVal = this.offset - this.minValue;
+    const clampedDsp = Math.min(absAmp, maxDspVal);
+    const expVal = this.offset - clampedDsp;
+    const value = (Math.log(expVal) - this.minExp) / this.diffExp;
+    const ratio = 1 - value;
+
+    return amplitude > 0 ? this.#center + (1 - this.#center) * ratio
+                         : this.#center - this.#center * ratio;
   }
 }
 
@@ -316,9 +437,8 @@ export function dumpJsonObject(param, version, options) {
   // Handle options.
   const fullRange = options.fullRange === true;
   const author = options.author !== undefined ? `${options.author}` : "";
-  const recipeName = options.recipeName !== undefined
-    ? `${options.recipeName}`
-    : (fullRange === true ? "Full" : "Init");
+  const recipeName = options.recipeName !== undefined ? `${options.recipeName}`
+                                                      : (fullRange === true ? "Full" : "Init");
 
   // Prepare destination `data`.
   let data = {
@@ -366,9 +486,7 @@ function parameterToObject(prm, fullRange) {
 
   {
     let info = {};
-    if (typeof prm.comment === "string" && prm.comment.length > 0) {
-      info.comment = prm.comment;
-    }
+    if (typeof prm.comment === "string" && prm.comment.length > 0) { info.comment = prm.comment; }
     info.min = prm.minDisplay;
     info.max = prm.maxDisplay;
     obj.info = info;
@@ -393,21 +511,19 @@ function parameterToObject(prm, fullRange) {
 function addRecipeRecursion(recipeName, key, parameter, randomInfo) {
   if (Array.isArray(parameter) && !Array.isArray(randomInfo)) {
     console.warn(
-      `Recipe "${recipeName}" doesn't specify array for array parameter "${key}".`,
-      new Error());
+      `Recipe "${recipeName}" doesn't specify array for array parameter "${key}".`, new Error());
   } else if (!Array.isArray(parameter) && Array.isArray(randomInfo)) {
     console.warn(
-      `Recipe "${recipeName}" specifies array for non-array parameter "${key}".`,
-      new Error());
+      `Recipe "${recipeName}" specifies array for non-array parameter "${key}".`, new Error());
   }
 
   if (Array.isArray(parameter) && Array.isArray(randomInfo)) {
     if (parameter.length !== randomInfo.length) {
       console.warn(`Array length mismatch on "${key}".`);
     }
-    return parameter.map((item, idx) => {
-      return addRecipeRecursion(recipeName, `${key}_${idx}`, item, randomInfo[idx]);
-    });
+    return parameter.map(
+      (item,
+       idx) => { return addRecipeRecursion(recipeName, `${key}_${idx}`, item, randomInfo[idx]); });
   }
 
   return new Randomizer(key, parameter, randomInfo);
@@ -431,9 +547,7 @@ export function addRecipe(parameters, recipeBook, newRecipe) {
 function sortMapInPlace(map) {
   const sortedEntries = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   map.clear();
-  for (const [key, value] of sortedEntries) {
-    map.set(key, value);
-  }
+  for (const [key, value] of sortedEntries) { map.set(key, value); }
   return map;
 }
 

@@ -82,10 +82,10 @@ const scales = {
 
   delayTimeHz: new parameter.DecibelScale(util.ampToDB(20), util.ampToDB(10000), false),
   delayTimeModSeconds: new parameter.DecibelScale(-80, 20, true),
-  delayTimeModAmount: new parameter.BipolarExponentialScale(util.syntonicCommaCents / 1200, 8),
+  delayTimeModAmount: new parameter.SymmetricLogScale(util.syntonicCommaCents / 1200, 8),
   bandpassCutHz: new parameter.DecibelScale(0, 100, false),
   bandpassQ: new parameter.DecibelScale(-40, 40, false),
-  bandpassCutModRiseCents: new parameter.BipolarExponentialScale(0.01, 1200),
+  bandpassCutModRiseCents: new parameter.SymmetricLogScale(0.01, 1200),
   bandpassCutModFallCents: new parameter.DecibelScale(-40, util.ampToDB(1200), false),
   feedbackGain: new parameter.DecibelScale(0, 40, false),
   lossThreshold: new parameter.DecibelScale(-60, 40, false),

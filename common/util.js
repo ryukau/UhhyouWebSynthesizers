@@ -17,23 +17,251 @@ export function freqToMidiPitch(freq) { return 69 + 12 * Math.log2(freq / 440); 
 export const syntonicCommaRatio = 81 / 80;
 export const syntonicCommaCents = Math.log2(81 / 80) * 1200;
 
+const nextafter_buffer = new ArrayBuffer(8);
+const nextafter_f64 = new Float64Array(nextafter_buffer);
+const nextafter_u64 = new BigUint64Array(nextafter_buffer);
+
+/**
+ * Returns the next representable IEEE 754 64-bit float after `x` in the direction of `y`.
+ *
+ * @param {number} x - The starting value.
+ * @param {number} y - The direction value.
+ * @returns {number} The next floating-point value.
+ */
+export function nextafter(x, y) {
+  x = Number(x);
+  y = Number(y);
+
+  if (Number.isNaN(x) || Number.isNaN(y)) { return NaN; }
+
+  if (x === y) { return y; }
+
+  if (x === 0) { return y > 0 ? Number.MIN_VALUE : -Number.MIN_VALUE; }
+
+  nextafter_f64[0] = x;
+
+  if ((x > 0 && y > x) || (x < 0 && y < x)) {
+    nextafter_u64[0]++;
+  } else {
+    nextafter_u64[0]--;
+  }
+
+  return nextafter_f64[0];
+}
+
+function test_nextafter() {
+  // Step up from 1.0
+  console.log(nextafter(1.0, 2.0)); // => 1.0000000000000002
+
+  // Step down from 1.0
+  console.log(nextafter(1.0, 0.0)); // => 0.9999999999999999
+
+  // Zeros
+  console.log(nextafter(0.0, 1.0));  // =>  5e-324 (Number.MIN_VALUE)
+  console.log(nextafter(0.0, -1.0)); // => -5e-324 (-Number.MIN_VALUE)
+  console.log(nextafter(0.0, -0.0)); // => -0
+
+  // Infinities
+  console.log(nextafter(Number.MAX_VALUE, Infinity)); // => Infinity
+  console.log(nextafter(Infinity, 0));  // => 1.7976931348623157e+308 (Number.MAX_VALUE)
+  console.log(nextafter(-Infinity, 0)); // => -1.7976931348623157e+308 (-Number.MAX_VALUE)
+
+  // NaN
+  console.log(nextafter(NaN, 1.0)); // => NaN
+}
+
+/**
+ * Generates a uniformly distributed double-precision floating-point number in [low,
+ * high).
+ *
+ * @param {number} low - Lower bound (inclusive).
+ * @param {number} high - Upper bound (exclusive).
+ * @param {Function} [rng=Math.random] - Optional PRNG returning a double in [0, 1).
+ * @returns {number} Uniformly distributed float in [low, high).
+ */
+export function randomUniformFloat(low, high, rng = Math.random) {
+  if (typeof low !== 'number' || typeof high !== 'number') {
+    throw new TypeError('low and high must be numbers.');
+  }
+  if (Number.isNaN(low) || Number.isNaN(high)) { return NaN; }
+
+  if (low > high) { throw new RangeError('low must be less than or equal to high.'); }
+  if (!Number.isFinite(low) || !Number.isFinite(high)) {
+    throw new RangeError('low and high must be finite numbers.');
+  }
+
+  if (low === high) { return low; }
+
+  const range = high - low;
+  let val;
+
+  do {
+    const u = rng(); // u in [0, 1)
+    if (Number.isFinite(range)) {
+      val = low + u * range;
+    } else {
+      val = (1 - u) * low + u * high;
+    }
+  } while (val >= high); // Rejection sampling guarantees strict val < high
+
+  return val;
+}
+
+/**
+ * Generates a uniformly distributed safe integer in [low, high).
+ *
+ * @param {number} low - Lower bound (inclusive, safe integer).
+ * @param {number} high - Upper bound (exclusive, safe integer).
+ * @param {Function} [rng=Math.random] - Optional PRNG returning a double in [0, 1).
+ * @returns {number} Uniformly distributed integer in [low, high).
+ */
+export function randomUniformInt(low, high, rng = Math.random) {
+  if (typeof low !== 'number' || typeof high !== 'number') {
+    throw new TypeError('low and high must be numbers.');
+  }
+  if (Number.isNaN(low) || Number.isNaN(high)) {
+    throw new TypeError('low and high cannot be NaN.');
+  }
+  if (typeof rng !== 'function') { throw new TypeError('rng must be a function.'); }
+
+  if (!Number.isInteger(low) || !Number.isInteger(high)) {
+    throw new TypeError('low and high must be integers.');
+  }
+  if (!Number.isSafeInteger(low) || !Number.isSafeInteger(high)) {
+    throw new RangeError('low and high must be safe integers.');
+  }
+  if (low >= high) { throw new RangeError('low must be strictly less than high.'); }
+
+  // Handle Large Ranges (> 2^53 - 1) via Interval Splitting
+  // If (high - low) exceeds MAX_SAFE_INTEGER, float division/multiplication skips integers.
+  // Splitting mid = Math.floor(low / 2 + high / 2) is exact in f64.
+  const maxRange = Number.MAX_SAFE_INTEGER;
+  if (high - low > maxRange) {
+    const mid = Math.floor(low / 2 + high / 2);
+    const len1 = mid - low;
+    const len2 = high - mid;
+
+    const p1 = len1 / (len1 + len2);
+    const u = rng();
+    if (u < p1) {
+      return randomUniformInt(low, mid, rng);
+    } else {
+      return randomUniformInt(mid, high, rng);
+    }
+  }
+
+  // Standard Sampling (range <= 2^53 - 1)
+  const range = high - low;
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  while (attempts++ < maxAttempts) {
+    const u = rng();
+    if (typeof u !== 'number' || Number.isNaN(u) || u < 0 || u >= 1) { continue; }
+
+    const offset = Math.floor(u * range);
+    if (offset < range) { return low + offset; }
+  }
+
+  throw new Error('rng failed to provide a valid double in [0, 1) after maximum attempts.');
+}
+
+/**
+ * Generates a log-uniformly (reciprocal) distributed double-precision floating-point
+ * number in [low, high).
+ *
+ * @param {number} low - Lower bound (inclusive, strictly positive).
+ * @param {number} high - Upper bound (exclusive, strictly positive).
+ * @param {Function} [rng=Math.random] - Optional PRNG returning a double in [0, 1).
+ * @returns {number} Log-uniformly distributed float in [low, high).
+ */
+export function randomLoguniform(low, high, rng = Math.random) {
+  // 1. Parameter Validation
+  if (typeof low !== 'number' || typeof high !== 'number') {
+    throw new TypeError('low and high must be numbers.');
+  }
+  if (Number.isNaN(low) || Number.isNaN(high)) { return NaN; }
+  if (typeof rng !== 'function') { throw new TypeError('rng must be a function.'); }
+
+  if (!Number.isFinite(low) || !Number.isFinite(high)) {
+    throw new RangeError('low and high must be finite numbers.');
+  }
+  if (low <= 0 || high <= 0) {
+    throw new RangeError('low and high must be strictly positive numbers.');
+  }
+  if (low > high) { throw new RangeError('low must be less than or equal to high.'); }
+
+  if (low === high) { return low; }
+
+  // 2. Geometric Interval Splitting
+  // Threshold changed to Math.E (~2.718) to guarantee step sizes <= 1 ULP.
+  let currentLow = low;
+  let currentHigh = high;
+  let retries = 0;
+  const MAX_RETRIES = 1000;
+
+  while (currentHigh / currentLow > Math.E) {
+    const mid = Math.sqrt(currentLow) * Math.sqrt(currentHigh);
+    const u = rng();
+    if (typeof u !== 'number' || Number.isNaN(u) || u < 0 || u >= 1) {
+      if (++retries > MAX_RETRIES) throw new Error('PRNG failed to produce valid float in [0, 1).');
+      continue;
+    }
+    if (u < 0.5) {
+      currentHigh = mid;
+    } else {
+      currentLow = mid;
+    }
+  }
+
+  // 3. Base-Case Sampling with Rejection Guard
+  const ratio = currentHigh / currentLow;
+  let val;
+
+  retries = 0;
+  do {
+    const u = rng();
+    if (typeof u !== 'number' || Number.isNaN(u) || u < 0 || u >= 1) {
+      if (++retries > MAX_RETRIES) throw new Error('PRNG failed to produce valid float in [0, 1).');
+      continue;
+    }
+    val = currentLow * Math.pow(ratio, u);
+  } while (val >= currentHigh);
+
+  return val;
+}
+
+export function randomLoguniformInt(low, high, rng = Math.random) {
+  const val = randomLoguniform(Math.floor(low), Math.floor(high), rng);
+  const integerVal = Math.floor(val);
+  return Math.min(high, Math.max(low, integerVal));
+}
+
 // `v1` and `v2` are in [0, 1).
 export function normalDistributionMap(v1, v2, mu = 0, sigma = 1) {
-  return sigma * Math.sqrt(-2 * Math.log(1 - v1)) * Math.cos(2 * Math.PI * v2) + mu;
+  if (v1 === 0) return mu;
+  const logV = v1 <= 0.5 ? Math.log(v1) : Math.log1p(v1 - 1);
+  return sigma * Math.sqrt(-2 * logV) * Math.cos(2 * Math.PI * v2) + mu;
 }
 
 // `value` is in [0, 1).
-export function uniformFloatMap(value, low, high) { return low + value * (high - low); }
+export function uniformFloatMap(value, low, high) {
+  if (value === 0) return low;
+  return (1 - value) * low + value * high;
+}
 
 // `value` is in [0, 1).
 export function triangleDistributionMap(v1, v2, low, high) {
-  return low + 0.5 * (high - low) * (v1 + v2);
+  const u = 0.5 * (v1 + v2);
+  if (u === 0) return low;
+  return (1 - u) * low + u * high;
 }
 
 // `value` is in [0, 1).
 // `low` and `high` are integer. Output interval is [low, high]. `high` is inclusive.
 export function uniformIntMap(value, low, high) {
-  return Math.floor(low + value * (high + 1 - low));
+  if (value === 0) return low;
+  return low + Math.floor(value * (high - low + 1));
 }
 
 // `value` is in [0, 1).
@@ -63,9 +291,7 @@ export function superellipse(x, n) { return x < 0 ? 1 : (1 - x ** n) ** (1 / n);
 export function chebyshev1_2(x) { return 2 * x * x; }
 export function chebyshev1_3(x) { return 4 * x * x * x - 3 * x; }
 export function chebyshev1_4(x) { return 8 * x * x * x * x - 8 * x * x; }
-export function chebyshev1_5(x) {
-  return 16 * x * x * x * x * x - 20 * x * x * x + 5 * x;
-}
+export function chebyshev1_5(x) { return 16 * x * x * x * x * x - 20 * x * x * x + 5 * x; }
 
 export function triangularNumber(n) { return (n * n + n) / 2; }
 
