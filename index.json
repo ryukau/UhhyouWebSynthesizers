@@ -9,6 +9,12 @@
       "summary": {"ja": "", "en": ""},
       "list"   : [
         {
+          "href"       : "./FMTechnoBass2/synth.html",
+          "name"       : "FMTechnoBass2",
+          "tag"        : {"ja": "FM", "en": "FM"},
+          "description": {"ja": "FM シンセサイザ。", "en": "FM synthesizer."}
+        },
+        {
           "href"       : "./MaybeCrash/synth.html",
           "name"       : "MaybeCrash",
           "tag"        : {"ja": "シンバル", "en": "Cymbal"},
