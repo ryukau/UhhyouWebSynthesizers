@@ -474,12 +474,21 @@
       "summary": {"ja": "標準的でない調律の表。", "en": "Non standard tuning tables."},
       "list"   : [
         {
+          "href"       : "./tuning/IntegerSampleTempo/index.html",
+          "name"       : "IntegerSampleTempo",
+          "tag"        : {"ja": "", "en": ""},
+          "description": {
+            "ja": "1 拍あたりのサンプル数が整数サンプルとなる BPM の表。",
+            "en": "A table of BPMs where the number of samples per beat is an integer."
+          }
+        },
+        {
           "href"       : "./tuning/SmallAngleTuning/index.html",
           "name"       : "SmallAngleTuning",
           "tag"        : {"ja": "", "en": ""},
           "description": {
             "ja": "Magic circle オシレータの周波数を sin の small angle approximation で近似したときの調律。",
-            "en": "A Tuning that appears when using the small angle approximation of sine on a magic circle oscillator."
+            "en": "A tuning that appears when using the small angle approximation of sine on a magic circle oscillator."
           }
         },
         {
