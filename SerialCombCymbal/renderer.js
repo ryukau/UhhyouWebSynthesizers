@@ -13,7 +13,7 @@ import * as menuitems from "./menuitems.js";
 
 class EMADecayEnvelope {
   constructor(timeInSamples) {
-    this.kp = timeToOnePoleKp(timeInSamples);
+    this.alpha = timeToOnePoleKp(timeInSamples);
     this.reset();
   }
 
@@ -21,7 +21,7 @@ class EMADecayEnvelope {
 
   process() {
     const out = this.value;
-    this.value -= this.kp * this.value;
+    this.value -= this.alpha * this.value;
     return out;
   }
 }
@@ -106,8 +106,7 @@ onmessage = (event) => {
               console.warn("Index out of bounds for `util.circularModes`");
               return 0;
             }
-            return pv.delayTime * util.circularModes[index]
-              / util.circularModes[pv.nDelay - 1];
+            return pv.delayTime * util.circularModes[index] / util.circularModes[pv.nDelay - 1];
           }
       }
     };

@@ -19,7 +19,7 @@ template<typename Sample> inline Sample cutoffToP(Sample sampleRate, Sample cuto
 
 template<typename Sample> class DoubleEMAFilter {
 public:
-  Sample kp = Sample(1);
+  Sample alpha = Sample(1);
   Sample v1 = 0;
   Sample v2 = 0;
 
@@ -34,15 +34,14 @@ public:
   }
 
   void setCutoff(Sample sampleRate, Sample cutoffHz) {
-    kp = cutoffHz >= sampleRate / Sample(2)
-      ? Sample(1)
-      : Sample(cutoffToP<double>(sampleRate, cutoffHz));
+    alpha = cutoffHz >= sampleRate / Sample(2) ? Sample(1)
+                                               : Sample(cutoffToP<double>(sampleRate, cutoffHz));
   }
 
   Sample process(Sample input) {
     auto &&v0 = input;
-    v1 += kp * (v0 - v1);
-    v2 += kp * (v1 - v2);
+    v1 += alpha * (v0 - v1);
+    v2 += alpha * (v1 - v2);
     return v2;
   }
 };
@@ -66,16 +65,18 @@ public:
   void reset() { std::fill(buf.begin(), buf.end(), Sample(0)); }
 
   void setFrames(size_t delayFrames) {
-    if (delayFrames >= buf.size()) delayFrames = buf.size();
+    if (delayFrames >= buf.size()) { delayFrames = buf.size(); }
     rptr = wptr - delayFrames;
-    if (rptr >= buf.size()) rptr += buf.size(); // Unsigned overflow case.
+    if (rptr >= buf.size()) {
+      rptr += buf.size(); // Unsigned overflow case.
+    }
   }
 
   Sample process(Sample input) {
-    if (++wptr >= buf.size()) wptr -= buf.size();
+    if (++wptr >= buf.size()) { wptr -= buf.size(); }
     buf[wptr] = input;
 
-    if (++rptr >= buf.size()) rptr -= buf.size();
+    if (++rptr >= buf.size()) { rptr -= buf.size(); }
     return buf[rptr];
   }
 };
@@ -96,7 +97,9 @@ template<typename T> struct RingQueue {
 
   inline size_t size() {
     auto sz = wptr - rptr;
-    if (sz >= buf.size()) sz += buf.size(); // Unsigned overflow case.
+    if (sz >= buf.size()) {
+      sz += buf.size(); // Unsigned overflow case.
+    }
     return sz;
   }
 
@@ -106,12 +109,14 @@ template<typename T> struct RingQueue {
   T &back() { return buf[wptr]; }
 
   inline size_t increment(size_t idx) {
-    if (++idx >= buf.size()) idx -= buf.size();
+    if (++idx >= buf.size()) { idx -= buf.size(); }
     return idx;
   }
 
   inline size_t decrement(size_t idx) {
-    if (--idx >= buf.size()) idx += buf.size(); // Unsigned overflow case.
+    if (--idx >= buf.size()) {
+      idx += buf.size(); // Unsigned overflow case.
+    }
     return idx;
   }
 
@@ -159,11 +164,11 @@ template<typename Sample> struct PeakHold {
 
   Sample process(Sample x0) {
     while (!queue.empty()) {
-      if (queue.back() >= x0) break;
+      if (queue.back() >= x0) { break; }
       queue.pop_back();
     }
     queue.push_back(x0);
-    if (delay.process(x0) == queue.front()) queue.pop_front();
+    if (delay.process(x0) == queue.front()) { queue.pop_front(); }
     return queue.front();
   }
 };
@@ -197,7 +202,7 @@ will be rounded towards nearest even number. In this case, the answer on above c
 becomes 1100.
 */
 template<typename Sample> Sample add(Sample lhs, Sample rhs) {
-  if (lhs < rhs) std::swap(lhs, rhs);
+  if (lhs < rhs) { std::swap(lhs, rhs); }
   int expL;
   std::frexp(lhs, &expL);
   auto &&cut = std::ldexp(Sample(1), expL - std::numeric_limits<Sample>::digits);
@@ -319,8 +324,7 @@ public:
     auto prevSustain = sustainFrames;
     sustainFrames = size_t(sampleRate * sustainSeconds);
 
-    if (prevAttack != attackFrames || prevSustain != sustainFrames)
-      reset(thresholdAmplitude);
+    if (prevAttack != attackFrames || prevSustain != sustainFrames) { reset(thresholdAmplitude); }
 
     releaseFilter.setCutoff(sampleRate, Sample(1) / releaseSeconds);
 

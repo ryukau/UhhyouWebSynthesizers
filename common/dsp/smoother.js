@@ -1,37 +1,38 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-export function normalizedCutoffToOnePoleKp(cutoff) {
-  const y = 1 - Math.cos(2 * Math.PI * cutoff);
-  return Math.sqrt((y + 2) * y) - y;
+// `cutoffNormalized` in [0, 0.5].
+export function cutoffToEmaAlpha(cutoffNormalized) {
+  const sn = Math.sin(Math.PI * cutoffNormalized);
+  return 2 * sn / (Math.sqrt(sn * sn + 1) + sn);
 }
 
 export function cutoffToOnePoleKp(sampleRate, cutoffHz) {
-  return normalizedCutoffToOnePoleKp(cutoffHz / sampleRate);
+  return cutoffToEmaAlpha(cutoffHz / sampleRate);
 }
 
 export function timeToOnePoleKp(samples) {
   if (samples < Number.EPSILON) return 1;
-  return normalizedCutoffToOnePoleKp(1 / samples);
+  return cutoffToEmaAlpha(1 / samples);
 }
 
 export class EMAFilter {
   constructor() {
-    this.kp = 1;
+    this.alpha = 1;
     this.reset();
   }
 
   reset(value = 0) { this.value = value; }
 
   // `cutoff` is normalized frequency in [0.0, 0.5].
-  setCutoff(cutoff) { this.kp = normalizedCutoffToOnePoleKp(cutoff); }
-  setCutoffFromTime(samples) { this.kp = timeToOnePoleKp(samples); }
-  process(input) { return this.value += this.kp * (input - this.value); }
+  setCutoff(cutoff) { this.alpha = cutoffToEmaAlpha(cutoff); }
+  setCutoffFromTime(samples) { this.alpha = timeToOnePoleKp(samples); }
+  process(input) { return this.value += this.alpha * (input - this.value); }
 }
 
 export class DoubleEMAFilter {
   constructor() {
-    this.kp = 1;
+    this.alpha = 1;
     this.reset();
   }
 
@@ -41,29 +42,29 @@ export class DoubleEMAFilter {
   }
 
   // `cutoff` is normalized frequency in [0.0, 0.5].
-  setCutoff(cutoff) { this.kp = normalizedCutoffToOnePoleKp(cutoff); }
-  setCutoffFromTime(samples) { this.kp = timeToOnePoleKp(samples); }
+  setCutoff(cutoff) { this.alpha = cutoffToEmaAlpha(cutoff); }
+  setCutoffFromTime(samples) { this.alpha = timeToOnePoleKp(samples); }
 
   process(input) {
-    this.v1 += this.kp * (input - this.v1);
-    this.v2 += this.kp * (this.v1 - this.v2);
+    this.v1 += this.alpha * (input - this.v1);
+    this.v2 += this.alpha * (this.v1 - this.v2);
     return this.v2;
   }
 }
 
 export class EMAHighpass {
   constructor() {
-    this.kp = 1;
+    this.alpha = 1;
     this.reset();
   }
 
   reset(value = 0) { this.v1 = value; }
 
   // `cutoff` is normalized frequency in [0.0, 0.5].
-  setCutoff(cutoff) { this.kp = normalizedCutoffToOnePoleKp(cutoff); }
+  setCutoff(cutoff) { this.alpha = cutoffToEmaAlpha(cutoff); }
 
   process(input) {
-    this.v1 += this.kp * (input - this.v1);
+    this.v1 += this.alpha * (input - this.v1);
     return input - this.v1;
   }
 }

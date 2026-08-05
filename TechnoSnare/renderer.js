@@ -10,11 +10,7 @@ import {Limiter} from "../common/dsp/limiter.js"
 import {membranePitchTable} from "../common/dsp/membranepitch.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
-import {
-  DoubleEMAFilter,
-  EMAHighpass,
-  normalizedCutoffToOnePoleKp
-} from "../common/dsp/smoother.js";
+import {cutoffToEmaAlpha, DoubleEMAFilter, EMAHighpass} from "../common/dsp/smoother.js";
 import {SosFilterImmediate, sosMatchedBandpass} from "../common/dsp/sos.js";
 import {SVF} from "../common/dsp/svf.js";
 import {
@@ -42,8 +38,8 @@ class SinOsc {
 
   process(rng, phaseDelta) {
     this.env *= this.decay;
-    const mod = (0.7 + 0.3 * this.env)
-      * Math.exp(uniformFloatMap(rng.number(), -this.noise, this.noise));
+    const mod
+      = (0.7 + 0.3 * this.env) * Math.exp(uniformFloatMap(rng.number(), -this.noise, this.noise));
 
     this.phase += this.freqRatio * phaseDelta * mod;
     this.phase -= Math.floor(this.phase);
@@ -58,15 +54,14 @@ class LpComb {
     this.lp = 0;
     this.hp = 0;
 
-    this.setCutoff(
-      sampleRate / combHz, feedback, lowpassHz / sampleRate, highpassHz / sampleRate);
+    this.setCutoff(sampleRate / combHz, feedback, lowpassHz / sampleRate, highpassHz / sampleRate);
   }
 
   setCutoff(combSamples, feedback, lowpassCut, highpassCut) {
     this.delay.setTime(Math.floor(combSamples));
     this.feedback = feedback;
-    this.k_lp = normalizedCutoffToOnePoleKp(lowpassCut);
-    this.k_hp = normalizedCutoffToOnePoleKp(highpassCut);
+    this.k_lp = cutoffToEmaAlpha(lowpassCut);
+    this.k_hp = cutoffToEmaAlpha(highpassCut);
   }
 
   process(x0) {
@@ -98,8 +93,8 @@ class SealHighTone {
   }
 
   process(freqNormalized, rng) {
-    this.carrierPhase += freqNormalized
-      + uniformFloatMap(rng.number(), -this.noiseRange, this.noiseRange);
+    this.carrierPhase
+      += freqNormalized + uniformFloatMap(rng.number(), -this.noiseRange, this.noiseRange);
     this.carrierPhase -= Math.floor(this.carrierPhase);
     const car = Math.sin(2 * Math.PI * this.carrierPhase);
 
@@ -189,8 +184,7 @@ class FDN {
 }
 
 class ReverbDelay {
-  constructor(
-    maxDelayTimeInSamples, lowpassCutoff, highpassCutoff, delayTimeSample, delayTimeMod) {
+  constructor(maxDelayTimeInSamples, lowpassCutoff, highpassCutoff, delayTimeSample, delayTimeMod) {
     this.lowpass = new DoubleEMAFilter();
     this.lowpass.setCutoff(lowpassCutoff);
 
@@ -225,8 +219,7 @@ function process(upRate, pv, dsp) {
   syn *= 1 + pv.bodyAM * bodyEnv * (osc1 - 1);
 
   const bodyMod
-    = Math.tanh(
-        dsp.bodyAmOsc.process(dsp.rng, dsp.bodyBaseFreq / 3) * pv.bodyModSaturationGain)
+    = Math.tanh(dsp.bodyAmOsc.process(dsp.rng, dsp.bodyBaseFreq / 3) * pv.bodyModSaturationGain)
     / pv.bodyModSaturationGain;
   syn = dsp.bodySSBAM.upper(syn, 1 + pv.bodyAM * bodyEnv * (bodyMod - 1));
 
@@ -234,8 +227,7 @@ function process(upRate, pv, dsp) {
   syn = dsp.bodyLowpass.lp(syn);
 
   const noiseEnv = dsp.noiseEnvelope.process();
-  let noise
-    = noiseEnv * normalDistributionMap(dsp.rng.number(), dsp.rng.number(), 0, 1 / 3);
+  let noise = noiseEnv * normalDistributionMap(dsp.rng.number(), dsp.rng.number(), 0, 1 / 3);
   let sum = 0;
   for (let comb of dsp.noiseComb) sum += comb.process(noise);
   noise = noiseEnv * dsp.noiseBandpass.process(lerp(noise, sum, pv.noiseCombMix));
@@ -272,20 +264,18 @@ onmessage = async (event) => {
   let dsp = {};
   dsp.rng = rng;
 
-  dsp.bodyEnvelope
-    = new ExpPolyEnvelope(upRate, pv.bodyAttackSeconds, pv.bodyEnvelopeCurve);
+  dsp.bodyEnvelope = new ExpPolyEnvelope(upRate, pv.bodyAttackSeconds, pv.bodyEnvelopeCurve);
   dsp.bodyOsc = [];
   let bodyGain = [0, 1, 2].map(v => pv.bodyOvertoneGain ** v);
   let bodyGainSum = bodyGain.reduce((p, c) => p + c);
   for (let idx = 0; idx < 3; ++idx) {
     dsp.bodyOsc.push(new SinOsc(
-      bodyGain[idx] / bodyGainSum, pv.bodyPitchDecaySeconds * upRate, idx + 1,
-      pv.bodyNoise));
+      bodyGain[idx] / bodyGainSum, pv.bodyPitchDecaySeconds * upRate, idx + 1, pv.bodyNoise));
   }
   dsp.bodyEnvToPitch = pv.bodyPitchModHz / upRate;
   dsp.bodyBaseFreq = pv.bodyPitchBaseHz / upRate;
-  dsp.bodyAmOsc = new SinOsc(
-    1, 2 * pv.bodyPitchDecaySeconds * upRate, 2 ** pv.bodyModOctave, 1, rng.number());
+  dsp.bodyAmOsc
+    = new SinOsc(1, 2 * pv.bodyPitchDecaySeconds * upRate, 2 ** pv.bodyModOctave, 1, rng.number());
   dsp.bodySSBAM = new SingleSideBandAmplitudeModulator();
   dsp.bodyHighpass = [];
   for (let i = 0; i < 2; ++i) {
@@ -293,10 +283,9 @@ onmessage = async (event) => {
   }
   dsp.bodyLowpass = new SVF(pv.bodyLowpassHz / upRate, 0.5);
 
-  dsp.noiseEnvelope
-    = new ExpPolyEnvelope(upRate, pv.noiseAttackSeconds, pv.noiseEnvelopeCurve);
-  dsp.noiseBandpass = new SosFilterImmediate(sosMatchedBandpass(
-    clamp(pv.noiseBandpassHz / upRate, 10 / 48000, 0.49998), Math.SQRT1_2));
+  dsp.noiseEnvelope = new ExpPolyEnvelope(upRate, pv.noiseAttackSeconds, pv.noiseEnvelopeCurve);
+  dsp.noiseBandpass = new SosFilterImmediate(
+    sosMatchedBandpass(clamp(pv.noiseBandpassHz / upRate, 10 / 48000, 0.49998), Math.SQRT1_2));
 
   dsp.noiseComb = [];
   for (let idx = 0; idx < 4; ++idx) {
@@ -317,8 +306,8 @@ onmessage = async (event) => {
   dsp.slopeFilter = new SlopeFilter(Math.floor(Math.log2(24000 / 1000)));
   dsp.slopeFilter.setCutoff(upRate, 1000, pv.toneSlope, true);
   dsp.adaptiveFilter = new AdaptiveFilterLMS(256, 0.1);
-  dsp.limiter = new Limiter(
-    Math.floor(upRate * pv.limiterAttackSeconds), 0, 0, pv.limiterThreshold);
+  dsp.limiter
+    = new Limiter(Math.floor(upRate * pv.limiterAttackSeconds), 0, 0, pv.limiterThreshold);
 
   let reverbDelay = new Array(16);
 
@@ -330,8 +319,8 @@ onmessage = async (event) => {
   };
   const pitches = getPitch();
   const fdnBaseTime = upRate / pv.reverbTimeFrequencyHz;
-  const fdnRandomFunc = () => exponentialMap(
-    rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
+  const fdnRandomFunc
+    = () => exponentialMap(rng.number(), 1 / (syntonicCommaRatio * syntonicCommaRatio), 1);
   for (let idx = 0; idx < reverbDelay.length; ++idx) {
     const delayTime = fdnBaseTime * pitches[idx] * fdnRandomFunc();
     reverbDelay[idx] = new ReverbDelay(

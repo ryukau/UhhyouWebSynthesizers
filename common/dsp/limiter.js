@@ -7,10 +7,10 @@ class ReleaseFilter {
     this.v1 = 0;
     this.v2 = 0;
 
-    this.kp = 1;
+    this.alpha = 1;
     if (timeSamples > Number.EPSILON) { // Avoid 0 division.
       const y = 1 - Math.cos(2 * Math.PI / timeSamples);
-      this.kp = Math.sqrt((y + 2) * y) - y;
+      this.alpha = Math.sqrt((y + 2) * y) - y;
     }
   }
 
@@ -27,8 +27,8 @@ class ReleaseFilter {
   }
 
   process(input) {
-    this.v1 += this.kp * (input - this.v1);
-    this.v2 += this.kp * (this.v1 - this.v2);
+    this.v1 += this.alpha * (input - this.v1);
+    this.v2 += this.alpha * (this.v1 - this.v2);
     return this.v2;
   }
 }

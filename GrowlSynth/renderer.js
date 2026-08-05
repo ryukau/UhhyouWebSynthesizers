@@ -9,7 +9,7 @@ import * as delay from "../common/dsp/delay.js";
 import {DoubleEmaADEnvelope} from "../common/dsp/envelope.js"
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {HP1, LP1} from "../common/dsp/onepole.js"
-import {normalizedCutoffToOnePoleKp, RateLimiter} from "../common/dsp/smoother.js";
+import {cutoffToEmaAlpha, RateLimiter} from "../common/dsp/smoother.js";
 import {SVF, SVFBell, SVFHighShelf, SVFNotch} from "../common/dsp/svf.js";
 import {OverlapOscillator} from "../common/dsp/wavetable.js";
 import {dbToAmp, exponentialMap, lerp, uniformFloatMap} from "../common/util.js";
@@ -48,8 +48,8 @@ class LpComb {
   setCutoff(combSamples, feedback, lowpassCut, highpassCut) {
     this.delay.setTime(combSamples);
     this.feedback = feedback;
-    this.k_lp = normalizedCutoffToOnePoleKp(lowpassCut);
-    this.k_hp = normalizedCutoffToOnePoleKp(highpassCut);
+    this.k_lp = cutoffToEmaAlpha(lowpassCut);
+    this.k_hp = cutoffToEmaAlpha(highpassCut);
   }
 
   process(x0) {
@@ -75,9 +75,7 @@ class MaybeFormant {
       [1 / (500 * rnd()), 1, 2000 * rnd(), 3000 * rnd()],
     ];
     this.lpComb = [];
-    for (let prm of this.lpCombParameters) {
-      this.lpComb.push(new LpComb(sampleRate, ...prm));
-    }
+    for (let prm of this.lpCombParameters) { this.lpComb.push(new LpComb(sampleRate, ...prm)); }
 
     this.bellParameters = [
       [100 * rnd(), 2.0 * QRatio, dbToAmp(20)],
@@ -88,26 +86,20 @@ class MaybeFormant {
       [500 * rnd(), 0.25 * QRatio, dbToAmp(-20)],
     ];
     this.bell = [];
-    for (let prm of this.bellParameters) {
-      this.bell.push(new SVFBell(...prm));
-    }
+    for (let prm of this.bellParameters) { this.bell.push(new SVFBell(...prm)); }
 
     this.notchParameters = [
       [1500 * rnd(), 0.25 * QRatio],
       [4000 * rnd(), 1.0 * QRatio],
     ];
     this.notch = [];
-    for (let prm of this.notchParameters) {
-      this.notch.push(new SVFNotch(...prm));
-    }
+    for (let prm of this.notchParameters) { this.notch.push(new SVFNotch(...prm)); }
 
     this.highshelfParameters = [
       [16000 * cutScale, Math.SQRT1_2, dbToAmp(-20)],
     ];
     this.highshelf = [];
-    for (let prm of this.highshelfParameters) {
-      this.highshelf.push(new SVFHighShelf(...prm));
-    }
+    for (let prm of this.highshelfParameters) { this.highshelf.push(new SVFHighShelf(...prm)); }
   }
 
   process(x0, freqRatio) {
@@ -238,8 +230,7 @@ class ModComb {
     const maxCut = 0.48;
     for (let idx = 0; idx < this.allpass.length; ++idx) {
       const apMod = 2 ** (this.allpassMod * x0);
-      this.allpass[idx].setCutoff(
-        Math.min(this.allpassCut[idx] * apMod, maxCut), this.allpassQ);
+      this.allpass[idx].setCutoff(Math.min(this.allpassCut[idx] * apMod, maxCut), this.allpassQ);
       x0 = this.allpass[idx].ap(x0);
       if (Math.abs(x0) >= lossThreshold) this.allpassMod *= 0.99;
     }
@@ -290,8 +281,7 @@ function process(upRate, pv, dsp) {
 
 function generateTable(upRate, pv, rng) {
   let table = new Array(512).fill(0);
-  let formant
-    = new MaybeFormant(rng, upRate, pv.pulseFormantOctave, pv.pulseFormantQRatio);
+  let formant = new MaybeFormant(rng, upRate, pv.pulseFormantOctave, pv.pulseFormantQRatio);
 
   table[0] = formant.process(1, 1);
   for (let i = 0; i < table.length; ++i) table[i] = formant.process(0, 1);
@@ -339,16 +329,14 @@ onmessage = async (event) => {
     grainOverlap: 1 - pv.grainOverlap,
 
     noiseEnvelope: new NoiseEnvelope(upRate, pv.noiseDecaySecond),
-    noiseFormant:
-      new NoiseFormant(rng, upRate, pv.noiseFormantOctave, pv.noiseFormantQRatio),
+    noiseFormant: new NoiseFormant(rng, upRate, pv.noiseFormantOctave, pv.noiseFormantQRatio),
 
     dcHighpass: new SVF(pv.dcHighpassHz / upRate, Math.SQRT1_2),
 
     modComb: [],
   };
 
-  dsp.impactEnvelope.noteOn(
-    1, pv.impactEnvelopeAttack * upRate, pv.impactEnvelopeDecay * upRate);
+  dsp.impactEnvelope.noteOn(1, pv.impactEnvelopeAttack * upRate, pv.impactEnvelopeDecay * upRate);
 
   const freqRandLow = 2 ** -pv.randomFrequencyHz;
   const freqRandHigh = 2 ** pv.randomFrequencyHz;
