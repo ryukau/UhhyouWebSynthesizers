@@ -24,20 +24,18 @@ Reference:
 - https://ryukau.github.io/filter_notes/matched_iir_filter/matched_iir_filter.html
 */
 
+// Transposed direct form II.
 export class SosFilterImmediate {
-  #x1;
-  #x2;
-  #y1;
-  #y2;
+  #v1;
+  #v2;
 
+  //
+  // Format: coefficent = [[b0, b1, b2, a1, a2], ...].
+  //
+  // Transfer function of a second order section (sos):
+  // H(z) = (b0 + b1 * z^-1 + b2 * z^-2) / (1 + a1 * z^-1 + a2 * z^-2).
+  //
   constructor(coefficent) {
-    //
-    // Transfer function of one section is:
-    //
-    // H(z) = (b0 + b1 * z^-1 + b2 * z^-2) / (1 + a1 * z^-1 + a2 * z^-2).
-    //
-    // Also this.co = [[b0, b1, b2, a1, a2], ...].
-    //
     this.co = structuredClone(coefficent);
     if (typeof this.co[0] === "number") this.co = [this.co];
 
@@ -47,6 +45,49 @@ export class SosFilterImmediate {
 
     if (this.co[0].length != 5) {
       console.error("SosFilterImmediate coefficient is ill formatted.", this.co);
+    }
+
+    this.#v1 = new Array(this.co.length).fill(0);
+    this.#v2 = new Array(this.co.length).fill(0);
+  }
+
+  reset() {
+    this.#v1.fill(0);
+    this.#v2.fill(0);
+  }
+
+  process(input) {
+    for (let i = 0; i < this.co.length; ++i) {
+      const co = this.co[i];
+      const y0 = co[0] * input + this.#v1[i];
+
+      this.#v1[i] = co[1] * input - co[3] * y0 + this.#v2[i];
+      this.#v2[i] = co[2] * input - co[4] * y0;
+
+      input = y0;
+    }
+    return input;
+  }
+}
+
+// Direct form I.
+export class SosFilterImmediateDF1 {
+  #x1;
+  #x2;
+  #y1;
+  #y2;
+
+  // Refer to `SosFilterImmediate` for the format of `coefficent`.
+  constructor(coefficent) {
+    this.co = structuredClone(coefficent);
+    if (typeof this.co[0] === "number") this.co = [this.co];
+
+    for (let i = 0; i < this.co.length; ++i) { // `scipy.signal` sos format case.
+      if (this.co[i].length == 6) this.co[i].splice(3, 1);
+    }
+
+    if (this.co[0].length != 5) {
+      console.error("SosFilterImmediateDirectFormI coefficient is ill formatted.", this.co);
     }
 
     this.#x1 = new Array(this.co.length).fill(0);
@@ -235,8 +276,7 @@ function getMatchedFilterParams(cutoffNormalized, Q) {
 }
 
 export function sosMatchedLowpass(cutoffNormalized, Q) {
-  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2]
-    = getMatchedFilterParams(cutoffNormalized, Q);
+  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParams(cutoffNormalized, Q);
 
   const sqrt_B0 = 1 + a1 + a2;
   const B0 = A0;
@@ -251,8 +291,7 @@ export function sosMatchedLowpass(cutoffNormalized, Q) {
 }
 
 export function sosMatchedHighpass(cutoffNormalized, Q) {
-  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2]
-    = getMatchedFilterParams(cutoffNormalized, Q);
+  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParams(cutoffNormalized, Q);
 
   const b0 = Q * Math.sqrt(A0 * φ0 + A1 * φ1 + A2 * φ2) / (4 * φ1);
   const b1 = -2 * b0;
@@ -262,8 +301,7 @@ export function sosMatchedHighpass(cutoffNormalized, Q) {
 }
 
 export function sosMatchedBandpass(cutoffNormalized, Q) {
-  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2]
-    = getMatchedFilterParams(cutoffNormalized, Q);
+  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParams(cutoffNormalized, Q);
 
   const R1 = A0 * φ0 + A1 * φ1 + A2 * φ2;
   const R2 = -A0 + A1 + 4 * (φ0 - φ1) * A2;
@@ -279,8 +317,7 @@ export function sosMatchedBandpass(cutoffNormalized, Q) {
 }
 
 export function sosMatchedPeak(cutoffNormalized, Q, gainAmp) {
-  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2]
-    = getMatchedFilterParams(cutoffNormalized, Q);
+  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParams(cutoffNormalized, Q);
   const G = gainAmp;
 
   const R1 = G * G * (A0 * φ0 + A1 * φ1 + A2 * φ2);
