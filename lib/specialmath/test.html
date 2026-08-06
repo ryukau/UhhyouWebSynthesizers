@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>UhhyouSpecialMath Tests</title>
+  <style>
+    body {
+      font-family: monospace;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .summary {
+      font-weight: bold;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .summary.fail {
+      color: #d23030;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .fail-item {
+      color: #d23030;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>UhhyouSpecialMath Functionality Tests</h1>
+  <div id="summary"
+       class="summary">Running tests...</div>
+  <ul id="log"></ul>
+
+  <script type="module">
+    import UhhyouSpecialMath from "./specialmath.js";
+
+    let passed = 0;
+    let failed = 0;
+
+    const logList = document.getElementById("log");
+    const summaryDiv = document.getElementById("summary");
+
+    function logResult(success, message) {
+      if (success) {
+        passed++;
+        console.log(`[PASS] ${message}`);
+      } else {
+        failed++;
+        console.error(`[FAIL] ${message}`);
+      }
+
+      const li = document.createElement("li");
+      li.className = success ? "pass-item" : "fail-item";
+      li.textContent = `${success ? "✓ PASS" : "✗ FAIL"}: ${message}`;
+      logList.appendChild(li);
+    }
+
+    function assertCloseTo(actual, expected, tolerance = 1e-9, label = "") {
+      const diff = Math.abs(actual - expected);
+      const success = diff <= tolerance;
+      logResult(
+        success,
+        `${label} (Expected: ~${expected}, Actual: ${actual}, Diff: ${diff.toExponential(2)})`
+      );
+    }
+
+    function assertEqual(actual, expected, label = "") {
+      const success = actual === expected;
+      logResult(success, `${label} (Expected: ${expected}, Actual: ${actual})`);
+    }
+
+    async function main() {
+      try {
+        const usm = await UhhyouSpecialMath();
+
+        // 1. Boost Math Function Tests
+        logResult(typeof usm.boost_version() === "string", `boost_version: ${usm.boost_version()}`);
+        assertCloseTo(usm.gamma_p(2, 0.5), 0.09020401043104986, 1e-9, "gamma_p(2, 0.5)");
+        assertCloseTo(usm.gamma_q(2, 0.5), 0.9097959895689501, 1e-9, "gamma_q(2, 0.5)");
+        assertCloseTo(usm.tgamma_lower(2, 0.5), 0.09020401043104986, 1e-9, "tgamma_lower(2, 0.5)");
+        assertCloseTo(usm.tgamma(2, 0.5), 0.9097959895689501, 1e-9, "tgamma(2, 0.5)");
+
+        // 2. Fresnel Integrals: Boundary at x = 0
+        assertCloseTo(usm.fresnel_cos(0), 0.0, 1e-15, "fresnel_cos(0) === 0");
+        assertCloseTo(usm.fresnel_sin(0), 0.0, 1e-15, "fresnel_sin(0) === 0");
+
+        const zeroRes = usm.fresnel(0);
+        assertCloseTo(zeroRes.c, 0.0, 1e-15, "fresnel(0).c === 0");
+        assertCloseTo(zeroRes.s, 0.0, 1e-15, "fresnel(0).s === 0");
+
+        // 3. Fresnel Integrals: Known Value at x = 1.0
+        // Expected: C(1) ≈ 0.7798934003768228, S(1) ≈ 0.4382591473903547
+        assertCloseTo(usm.fresnel_cos(1.0), 0.7798934003768228, 1e-9, "fresnel_cos(1.0)");
+        assertCloseTo(usm.fresnel_sin(1.0), 0.4382591473903547, 1e-9, "fresnel_sin(1.0)");
+
+        // 4. Fresnel Integrals: Consistency Check
+        // Verify fresnel(x) matches fresnel_cos(x) and fresnel_sin(x)
+        const res = usm.fresnel(1.5);
+        assertEqual(res.c, usm.fresnel_cos(1.5), "fresnel(1.5).c matches fresnel_cos(1.5)");
+        assertEqual(res.s, usm.fresnel_sin(1.5), "fresnel(1.5).s matches fresnel_sin(1.5)");
+
+        // 5. Fresnel Integrals: Symmetry Property
+        // Odd functions: C(-x) = -C(x), S(-x) = -S(x)
+        const posVal = usm.fresnel(2.0);
+        const negVal = usm.fresnel(-2.0);
+        assertCloseTo(negVal.c, -posVal.c, 1e-12, "Odd symmetry: fresnel(-2.0).c === -fresnel(2.0).c");
+        assertCloseTo(negVal.s, -posVal.s, 1e-12, "Odd symmetry: fresnel(-2.0).s === -fresnel(2.0).s");
+
+        // 6. Fresnel Integrals: Large x Asymptote
+        // C(x) -> 0.5, S(x) -> 0.5 as x -> ∞
+        const largeVal = usm.fresnel(10.0);
+        assertCloseTo(largeVal.c, 0.499898694205515723, 1e-2, "Asymptote: fresnel(10.0).c");
+        assertCloseTo(largeVal.s, 0.468169978584882240, 1e-2, "Asymptote: fresnel(10.0).s");
+
+        // Update UI Summary
+        summaryDiv.className = failed === 0 ? "summary pass" : "summary fail";
+        summaryDiv.textContent = `Tests Completed: ${passed + failed} | Passed: ${passed} | Failed: ${failed}`;
+
+      } catch (err) {
+        console.error(err);
+        logResult(false, `Runtime Error: ${err.message}`);
+        summaryDiv.className = "summary fail";
+        summaryDiv.textContent = `Test suite stopped with error: ${err.message}`;
+      }
+    }
+
+    main();
+  </script>
+</body>
+
+</html>
