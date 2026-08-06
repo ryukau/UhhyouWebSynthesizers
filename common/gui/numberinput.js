@@ -47,7 +47,15 @@ export class NumberInput {
     this.number.className = "numberInputNumber";
     this.container.appendChild(this.number);
 
+    this.div.addEventListener("pointerdown", (event) => {
+      if (event.altKey) {
+        event.preventDefault();
+        this.reset();
+      }
+    }, false);
+
     this.label.addEventListener("pointerdown", (event) => {
+      if (event.altKey) return;
       this.param.lockRandomization = !this.param.lockRandomization;
       this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
     }, false);
@@ -58,6 +66,12 @@ export class NumberInput {
   refresh() {
     this.range.value = this.param.ui;
     this.number.value = this.param.display;
+  }
+
+  reset() {
+    this.param.resetToDefault();
+    this.refresh();
+    this.onInputFunc(this.param.display);
   }
 
   onInputRange(event) {
