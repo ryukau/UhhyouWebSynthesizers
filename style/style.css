@@ -207,13 +207,13 @@ label.tabRadioLabelInactive:hover {
   box-shadow: 2px 2px 4px var(--color-shadow-main);
 }
 
-div.tabViewButtonRegion>label>span {
+div.tabViewButtonRegion > label > span {
   display: inline-block;
   --side-margin: calc(2 * var(--margin));
   margin: 0 var(--side-margin) 0 var(--side-margin);
 }
 
-div.tabViewButtonRegion>label>input {
+div.tabViewButtonRegion > label > input {
   appearance: none;
   display: inline-block;
   height: 100%;
@@ -293,11 +293,11 @@ select:hover {
 /* ToggleButton */
 input[type="button"].toggleState0 {
   border: outset 1px var(--color-border-light);
-  box-shadow: 1px 1px 3px var(--color-text-dim);
+  box-shadow: 1px 1px 1px var(--color-border-light);
 }
 
 input[type="button"].toggleState0:hover {
-  box-shadow: 1px 1px 1px var(--color-shadow-main);
+  box-shadow: none;
 }
 
 input[type="button"].toggleState1 {
@@ -518,7 +518,7 @@ dialog.recipeExport {
   border: 1px solid var(--color-border-mid);
 }
 
-dialog.recipeExport>h2 {
+dialog.recipeExport > h2 {
   margin-top: var(--margin);
 }
 
@@ -534,11 +534,11 @@ div.dialogTextInputLine:hover {
   box-shadow: 1px 1px 4px var(--color-shadow-main);
 }
 
-div.dialogTextInputLine>label {
+div.dialogTextInputLine > label {
   flex-basis: 33%;
 }
 
-div.dialogTextInputLine>input[type="text"] {
+div.dialogTextInputLine > input[type="text"] {
   flex-basis: 67%;
   box-sizing: border-box;
   padding: var(--margin);
@@ -554,7 +554,7 @@ div.dialogConfirmButtonLine {
   margin: calc(3 * var(--margin)) calc(2 * var(--margin));
 }
 
-div.dialogConfirmButtonLine>input[type="button"] {
+div.dialogConfirmButtonLine > input[type="button"] {
   flex-grow: 3;
   vertical-align: middle;
   height: 2em;
@@ -578,11 +578,11 @@ dialog.recipeImport {
   border: 1px solid var(--color-border-mid);
 }
 
-dialog.recipeImport>h2 {
+dialog.recipeImport > h2 {
   margin-top: var(--margin);
 }
 
-dialog.recipeImport>div.RecipeImportInputContainer {
+dialog.recipeImport > div.RecipeImportInputContainer {
   width: 100%;
   display: flex;
   justify-content: center;
@@ -590,7 +590,7 @@ dialog.recipeImport>div.RecipeImportInputContainer {
   margin-bottom: 0;
 }
 
-div.RecipeImportInputContainer>input[type="file"] {
+div.RecipeImportInputContainer > input[type="file"] {
   font-size: inherit;
   box-sizing: border-box;
   padding: var(--margin);
@@ -613,7 +613,7 @@ div#RecipeImportDragAndDropArea {
   align-items: center;
 }
 
-div#RecipeImportDragAndDropArea>span {
+div#RecipeImportDragAndDropArea > span {
   color: var(--color-text-dim);
   font-size: 4rem;
 }
