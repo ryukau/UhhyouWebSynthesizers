@@ -4,7 +4,7 @@
 import * as multirate from "../common/dsp/multirate.js";
 import * as util from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
-import PocketFFT from "../lib/pocketfft/pocketfft.js";
+import {newPocketFFTHelper} from "../lib/pocketfft/pocketffthelper.js";
 
 import {formant, getVowelMixRatio, vowelMesh} from "./formant.js";
 import * as menuitems from "./menuitems.js";
@@ -12,7 +12,7 @@ import * as menuitems from "./menuitems.js";
 // PadSynth from ZynAddSubFX
 // http://zynaddsubfx.sourceforge.net/doc/PADsynth/PADsynth.htm
 function padsynth(
-  fft,
+  fftHelper,
   rng,
   formantSos, // sos = second order sections.
   sampleRate,
@@ -27,8 +27,8 @@ function padsynth(
   lengthInSamples += lengthInSamples % 2;
   const spcSize = Math.floor(lengthInSamples / 2) + 1;
 
-  let spectrum = new fft.vector_complex128();
-  spectrum.resize(spcSize);
+  let spectrum = new Array(spcSize);
+  for (let i = 0; i < spcSize; ++i) { spectrum[i] = {re: 0, im: 0}; }
 
   for (let idx = 0; idx < padFreq.length; ++idx) {
     const bwHz = (2 ** bandWidthOctave - 1) * padFreq[idx]; // bw = band width.
@@ -48,26 +48,20 @@ function padsynth(
       const profileGain = Math.exp(-x * x) / bwIndex;
       const formantGain
         = getGainResponse(formantSos, 0.5 * j / spcSize, formantPower, formantGainType);
-      spectrum.setReal(j, spectrum.getReal(j) + padGain[idx] * profileGain * formantGain);
+      spectrum[j].re += padGain[idx] * profileGain * formantGain;
     }
   }
 
   // Randomize phase.
   const phaseRand = 2 * Math.PI * phaseRandomAmount;
   for (let idx = 1; idx < spcSize; ++idx) {
-    const real = spectrum.getReal(idx);
+    const real = spectrum[idx].re;
     const theta = phaseRand * rng.number();
-    spectrum.setValue(idx, real * Math.cos(theta), real * Math.sin(theta));
+    spectrum[idx].re = real * Math.cos(theta);
+    spectrum[idx].im = real * Math.sin(theta);
   }
 
-  const output = fft.c2r(spectrum);
-  spectrum.delete();
-
-  let sound = new Array(output.size());
-  for (let i = 0; i < output.size(); ++i) sound[i] = output.get(i);
-  output.delete();
-
-  return sound;
+  return fftHelper.c2r(spectrum);
 }
 
 function getGainResponse(sos, normalizedFreq, power, oldVersion = false) {
@@ -154,8 +148,8 @@ function getFormantSos(sampleRate, baseFreq, pv, dsp) {
   };
   const formantMix = getVowelMixRatio(formantPos, formantMesh);
 
-  const vocalType = getVocalType(
-    util.lerp(pv.vocalType, pv.maxVocalType * dsp.rngCh.number(), pv.vocalRandom));
+  const vocalType
+    = getVocalType(util.lerp(pv.vocalType, pv.maxVocalType * dsp.rngCh.number(), pv.vocalRandom));
   const nFormant = formant.bass.a.freq.length;
   let freq = new Array(nFormant).fill(0);
   let amp = new Array(nFormant).fill(0);
@@ -193,7 +187,7 @@ function getFormantSos(sampleRate, baseFreq, pv, dsp) {
   return sos;
 }
 
-function layerPad(fft, buffer, chordPitch, upRate, pv, dsp) {
+function layerPad(fftHelper, buffer, chordPitch, upRate, pv, dsp) {
   const padFreq = [];
   const padGain = [];
   let index = 1;
@@ -205,15 +199,11 @@ function layerPad(fft, buffer, chordPitch, upRate, pv, dsp) {
   const upperFreq = pv.highShelfGain <= 0 ? pv.highShelfHz : nyquist;
   while (currentFreq < upperFreq) {
     let gain = 1 / (index * 0.5);
-    if (currentFreq < pv.highpassHz) {
-      gain *= (currentFreq / pv.highpassHz) ** pv.highpassPower;
-    }
+    if (currentFreq < pv.highpassHz) { gain *= (currentFreq / pv.highpassHz) ** pv.highpassPower; }
     if (currentFreq > pv.lowpassHz) {
       gain *= ((nyquist - currentFreq) / lowpassDenom) ** pv.lowpassPower;
     }
-    if (currentFreq > pv.highShelfHz) {
-      gain *= highshelfScale;
-    }
+    if (currentFreq > pv.highShelfHz) { gain *= highshelfScale; }
 
     if (gain >= Number.EPSILON) {
       padFreq.push(currentFreq);
@@ -227,7 +217,7 @@ function layerPad(fft, buffer, chordPitch, upRate, pv, dsp) {
   const sos = getFormantSos(upRate, baseFreq, pv, dsp);
 
   let pad = padsynth(
-    fft, dsp.rngCh, sos, upRate, buffer.length, padFreq, padGain, pv.bandWidthOctave,
+    fftHelper, dsp.rngCh, sos, upRate, buffer.length, padFreq, padGain, pv.bandWidthOctave,
     pv.phaseRandomAmount, pv.formantPower, pv.formantGainType == 1);
 
   for (let i = 0; i < buffer.length; ++i) buffer[i] += pad[i];
@@ -245,20 +235,19 @@ onmessage = async (event) => {
   };
 
   // PADsynth.
-  const fft = await PocketFFT();
+  const fftHelper = await newPocketFFTHelper();
   const padLength = Math.floor(upRate * pv.renderDuration);
   let buffer = new Array(padLength).fill(0);
 
   const pitchRandLower = 2 ** (-pv.pitchRandomOctave);
   const pitchRandUpper = 2 ** (pv.pitchRandomOctave);
 
-  layerPad(fft, buffer, 1, upRate, pv, dsp);
+  layerPad(fftHelper, buffer, 1, upRate, pv, dsp);
   for (let layer = 1; layer <= pv.nChord; ++layer) {
-    const ptRnd
-      = () => util.uniformFloatMap(dsp.rngCh.number(), pitchRandLower, pitchRandUpper);
-    layerPad(fft, buffer, ptRnd() * pv.chordPitch1 * layer, upRate, pv, dsp);
-    layerPad(fft, buffer, ptRnd() * pv.chordPitch2 * layer, upRate, pv, dsp);
-    layerPad(fft, buffer, ptRnd() * pv.chordPitch3 * layer, upRate, pv, dsp);
+    const ptRnd = () => util.uniformFloatMap(dsp.rngCh.number(), pitchRandLower, pitchRandUpper);
+    layerPad(fftHelper, buffer, ptRnd() * pv.chordPitch1 * layer, upRate, pv, dsp);
+    layerPad(fftHelper, buffer, ptRnd() * pv.chordPitch2 * layer, upRate, pv, dsp);
+    layerPad(fftHelper, buffer, ptRnd() * pv.chordPitch3 * layer, upRate, pv, dsp);
   }
 
   postMessage({sound: buffer});

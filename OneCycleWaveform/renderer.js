@@ -3,7 +3,7 @@
 
 import {clamp, exponentialMap, lerp, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
-import PocketFFT from "../lib/pocketfft/pocketfft.js";
+import {newPocketFFTHelper} from "../lib/pocketfft/pocketffthelper.js";
 
 import * as menuitems from "./menuitems.js";
 
@@ -65,7 +65,7 @@ function expInterp(x0, x1, t) {
   return Math.exp(logX0 + t * (Math.log(x1) - logX0));
 };
 
-function generateTable(renderSamples, tableIndex, freqIdx, pv, wf, rng, fft) {
+function generateTable(renderSamples, tableIndex, freqIdx, pv, wf, rng, fftHelper) {
   let sound = new Array(renderSamples).fill(0);
 
   const interpRatio = pv.nWaveform > 1 ? tableIndex / (pv.nWaveform - 1) : 1;
@@ -115,37 +115,30 @@ function generateTable(renderSamples, tableIndex, freqIdx, pv, wf, rng, fft) {
     sound[idx] = flip * lerp(mirror, repeat, mirrorRepeat);
   }
 
-  // Spectral processing. See `lib/pocketfft/build/test.html` for `fft` usage.
-  let inVec = new fft.vector_f64();
-  inVec.resize(sound.length, 0);
-  for (let i = 0; i < sound.length; ++i) inVec.set(i, sound[i]);
+  // Spectral processing using fftHelper.
+  let inSpc = fftHelper.r2c(sound);
 
-  let inSpc = fft.r2c(inVec);
-  inVec.delete();
+  let powerSpc = new Array(inSpc.length).fill(0);
+  let outSpc = new Array(inSpc.length);
+  for (let i = 0; i < outSpc.length; ++i) { outSpc[i] = {re: 0, im: 0}; }
 
-  let powerSpc = new Array(inSpc.size()).fill(0);
-  let outSpc = new fft.vector_complex128();
-  outSpc.resize(inSpc.size());
-
-  const lengthWithoutDC = inSpc.size() - 1;
+  const lengthWithoutDC = inSpc.length - 1;
   const start = Math.floor(highpass * lengthWithoutDC);
   const end = Math.floor(lowpass * lengthWithoutDC);
   const notchStartIndex = Math.floor(notchStart * lengthWithoutDC);
-
-  for (let i = 0; i < outSpc.size(); ++i) outSpc.setValue(i, 0, 0);
 
   for (let idx = start; idx < end; ++idx) {
     if (idx == notchStartIndex) idx += Math.floor(notchRange * lengthWithoutDC);
 
     const target = spectralSpread * idx + 1;
     const index = Math.floor(target);
-    if (index >= inSpc.size()) break;
+    if (index >= inSpc.length) break;
     const frac = target - index;
 
     const gain = Math.abs(1 - 2 * frac);
 
-    const reIn = inSpc.getReal(index);
-    const imIn = inSpc.getImag(index);
+    const reIn = inSpc[index].re;
+    const imIn = inSpc[index].im;
 
     const len = Math.sqrt(reIn * reIn + imIn * imIn);
     const arg = Math.atan2(imIn, reIn);
@@ -154,20 +147,15 @@ function generateTable(renderSamples, tableIndex, freqIdx, pv, wf, rng, fft) {
     const imVal = len * Math.sin(arg + phaseSlope * len);
 
     powerSpc[idx] = gain * Math.sqrt(reVal * reVal + imVal * imVal);
-    outSpc.setValue(idx + 1, gain * reVal, gain * imVal);
+    outSpc[idx + 1] = {re: gain * reVal, im: gain * imVal};
   }
   const lowshelfEndIndex = Math.floor(lowshelfEnd * lengthWithoutDC);
   for (let idx = 1; idx < lowshelfEndIndex + 1; ++idx) {
-    outSpc.setValue(
-      idx, lowshelfGain * outSpc.getReal(idx), lowshelfGain * outSpc.getImag(idx));
+    outSpc[idx].re *= lowshelfGain;
+    outSpc[idx].im *= lowshelfGain;
   }
-  inSpc.delete();
 
-  let outVec = fft.c2r(outSpc);
-  outSpc.delete();
-
-  for (let i = 0; i < outVec.size(); ++i) sound[i] = outVec.get(i);
-  outVec.delete();
+  sound = fftHelper.c2r(outSpc);
 
   // Normalize amplitude.
   const maxSample = sound.reduce((p, c) => Math.max(p, Math.abs(c)), 0);
@@ -217,8 +205,8 @@ class ParamExp {
     if (this.startFromDefault === 1) {
       bs = lerp(this.defaultValue, bs, interpRatio);
     } else if (this.startFromDefault === 2) {
-      bs = expInterp(
-        Math.max(this.defaultValue, this.lower), Math.max(bs, this.lower), interpRatio);
+      bs
+        = expInterp(Math.max(this.defaultValue, this.lower), Math.max(bs, this.lower), interpRatio);
     }
     const logRange = this.range * Math.log(this.upper / this.lower);
     const low = Math.max(this.lower, bs * Math.exp(-logRange));
@@ -244,8 +232,7 @@ function prepareWaveformParameter(pv) {
     mirrorRepeat: new ParamLin(pv.mirrorRepeat, 0, 0, 1, rnd, readMenu("Mirror/Repeat")),
     flip: new ParamLin(pv.flip, -1, -1, 1, rnd, readMenu("Flip")),
 
-    spectralSpread:
-      new ParamExp(pv.spectralSpread, 1, 0.01, 100, rnd, readMenu("Spectral Spread")),
+    spectralSpread: new ParamExp(pv.spectralSpread, 1, 0.01, 100, rnd, readMenu("Spectral Spread")),
     phaseSlope: new ParamExp(pv.phaseSlope, 0, 0.001, 1000, rnd, readMenu("Phase Slope")),
 
     highpass: new ParamExp(pv.highpass, 0, 0.001, 1, rnd, readMenu("Highpass")),
@@ -253,14 +240,13 @@ function prepareWaveformParameter(pv) {
     notchStart: new ParamExp(pv.notchStart, 1, 0.001, 1, rnd, readMenu("Notch Start")),
     notchRange: new ParamExp(pv.notchRange, 0.01, 0.001, 1, rnd, readMenu("Notch Range")),
     lowshelfEnd: new ParamExp(pv.lowshelfEnd, 0, 0.001, 1, rnd, readMenu("Lowshelf End")),
-    lowshelfGain:
-      new ParamExp(pv.lowshelfGain, 1, 0.01, 100, rnd, readMenu("Lowshelf Gain")),
+    lowshelfGain: new ParamExp(pv.lowshelfGain, 1, 0.01, 100, rnd, readMenu("Lowshelf Gain")),
   };
 }
 
 onmessage = async (event) => {
   const pv = event.data; // Parameter values.
-  const fft = await PocketFFT();
+  const fftHelper = await newPocketFFTHelper();
   const rng = new PcgRandom(BigInt(pv.seed));
   const renderSamples = alignToOdd(pv.renderSamples);
 
@@ -271,7 +257,7 @@ onmessage = async (event) => {
 
   let tables = [];
   for (let i = 0; i < pv.nWaveform; ++i) {
-    tables.push(generateTable(renderSamples, i, freqIdx, pv, wf, rng, fft));
+    tables.push(generateTable(renderSamples, i, freqIdx, pv, wf, rng, fftHelper));
   }
   if (pv.automationScaling === menuitems.automationScalingItems.indexOf("Off")) {
     tables.sort((a, b) => a.slope < b.slope ? -1 : a.slope > b.slope ? 1 : 0);

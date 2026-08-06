@@ -18,6 +18,7 @@ np.testing.assert_allclose(cpp_out, np_out)
 
 exit()
 
+# Quick visual checks.
 plt.figure()
 plt.title("Real")
 plt.plot(np_spc.real, label="np_spc")

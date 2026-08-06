@@ -6,18 +6,18 @@ import * as multirate from "../common/dsp/multirate.js";
 import {SVF} from "../common/dsp/svf.js";
 import * as util from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
-import PocketFFT from "../lib/pocketfft/pocketfft.js";
+import {newPocketFFTHelper} from "../lib/pocketfft/pocketffthelper.js";
 
 import * as menuitems from "./menuitems.js";
 
 // PadSynth from ZynAddSubFX
 // http://zynaddsubfx.sourceforge.net/doc/PADsynth/PADsynth.htm
-function padsynth(fft, sampleRate, sigSize, freq, gain, bandWidthOct, gainSlope, rng) {
+function padsynth(fftHelper, sampleRate, sigSize, freq, gain, bandWidthOct, gainSlope, rng) {
   sigSize += sigSize % 2;
   const spcSize = Math.floor(sigSize / 2) + 1;
 
-  let spectrum = new fft.vector_complex128();
-  spectrum.resize(spcSize);
+  let spectrum = new Array(spcSize);
+  for (let i = 0; i < spcSize; ++i) { spectrum[i] = {re: 0, im: 0}; }
 
   for (let idx = 0; idx < freq.length; ++idx) {
     const bandWidthHz = (Math.pow(2, bandWidthOct) - 1) * freq[idx];
@@ -34,8 +34,7 @@ function padsynth(fft, sampleRate, sigSize, freq, gain, bandWidthOct, gainSlope,
 
     for (let j = start; j < end; ++j) {
       const x = (j / spcSize - freqI) / bandWidthI;
-      const value = spectrum.getReal(j) + gain[idx] * Math.exp(-x * x) / bandWidthI;
-      spectrum.setReal(j, value);
+      spectrum[j].re += gain[idx] * Math.exp(-x * x) / bandWidthI;
     }
   }
 
@@ -46,20 +45,14 @@ function padsynth(fft, sampleRate, sigSize, freq, gain, bandWidthOct, gainSlope,
     const oct = Math.log2(idx / (spcSize - 1) * nyquistHz);
     const filterGain = gainSlope ** (nyquistOct - oct);
 
-    const real = spectrum.getReal(idx) * filterGain;
+    const real = spectrum[idx].re * filterGain;
     const theta = rng.number() * 2 * Math.PI;
 
-    spectrum.setValue(idx, real * Math.cos(theta), real * Math.sin(theta));
+    spectrum[idx].re = real * Math.cos(theta);
+    spectrum[idx].im = real * Math.sin(theta);
   }
 
-  const output = fft.c2r(spectrum);
-  spectrum.delete();
-
-  let sound = new Array(output.size());
-  for (let i = 0; i < output.size(); ++i) sound[i] = output.get(i);
-  output.delete();
-
-  return sound;
+  return fftHelper.c2r(spectrum);
 }
 
 function process(pv, dsp, input) {
@@ -75,7 +68,7 @@ function process(pv, dsp, input) {
 }
 
 onmessage = async (event) => {
-  const fft = await PocketFFT();
+  const fftHelper = await newPocketFFTHelper();
   const pv = event.data; // Parameter values.
 
   const upFold = parseInt(menuitems.oversampleItems[pv.overSample]);
@@ -104,16 +97,15 @@ onmessage = async (event) => {
       freq[i] = pv.minFreq + mixedRandom() * (upRate / 2 - pv.minFreq)
       gain[i] = minGain + mixedRandom() * (1 - minGain)
     }
-    let pad = padsynth(
-      fft, upRate, duration, freq, gain, pv.bandWidthOctave, pv.gainSlope, rngCh);
+    let pad
+      = padsynth(fftHelper, upRate, duration, freq, gain, pv.bandWidthOctave, pv.gainSlope, rngCh);
 
     // Post effect.
     let gainEnv = 1;
     let decay = Math.pow(pv.padDecayTo, 1.0 / (buf.length - delay));
     const attackEnd = Math.min(buf.length, delay + attackSamples);
     for (let i = delay; i < attackEnd; ++i) {
-      const attack
-        = Math.cos(Math.PI * 0.5 * (attackSamples - i + delay) / attackSamples);
+      const attack = Math.cos(Math.PI * 0.5 * (attackSamples - i + delay) / attackSamples);
       buf[i] += pad[i] * gainEnv * attack;
       gainEnv *= decay;
     }
@@ -122,8 +114,8 @@ onmessage = async (event) => {
       gainEnv *= decay;
     }
 
-    delay += Math.floor(util.lerp(
-      intervalSamples, -Math.log(1 - mixedRandom()) * intervalSamples, pv.jitter));
+    delay += Math.floor(
+      util.lerp(intervalSamples, -Math.log(1 - mixedRandom()) * intervalSamples, pv.jitter));
   }
 
   // Serial allpass.

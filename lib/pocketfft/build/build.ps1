@@ -1,10 +1,10 @@
-em++.bat `
-  -sMODULARIZE=1 `
-  -sEXPORT_ES6=1 `
-  -sPOLYFILL=1 `
-  -sALLOW_MEMORY_GROWTH=1 `
+em++ `
+  -s MODULARIZE=1 `
+  -s EXPORT_ES6=1 `
+  -s ALLOW_MEMORY_GROWTH=1 `
   -lembind `
+  -std=c++20 `
   -O3 `
   -flto `
-  -o"pocketfft.js" `
+  -o "pocketfft.js" `
   .\pocketfftbind.cpp

@@ -1,6 +1,3 @@
-// Copyright Takamitsu Endo (ryukau@gmail.com)
-// SPDX-License-Identifier: Apache-2.0
-
 #include "pocketfft_hdronly.h"
 
 struct PocketFFTData {
@@ -13,9 +10,7 @@ struct PocketFFTData {
 
 PocketFFTData getData1D(size_t length) {
   PocketFFTData dt;
-
   dt.shape = {length};
-
   dt.strideR.resize(dt.shape.size());
   dt.strideC.resize(dt.shape.size());
 
@@ -29,10 +24,9 @@ PocketFFTData getData1D(size_t length) {
   }
 
   dt.ndata = 1;
-  for (const auto &shp : dt.shape) dt.ndata *= shp;
+  for (const auto &shp : dt.shape) { dt.ndata *= shp; }
 
   dt.axes.resize(dt.shape.size());
-
   return dt;
 }
 
@@ -54,8 +48,45 @@ std::vector<double> c2r(const std::vector<std::complex<double>> &spc) {
 #ifndef UHHYOU_TEST
 
   #include <emscripten/bind.h>
+  #include <emscripten/val.h>
 
 using namespace emscripten;
+
+val r2c_fast(const val &typedArray) {
+  size_t length = typedArray["length"].as<size_t>();
+  std::vector<double> sig(length);
+
+  val(typed_memory_view(length, sig.data())).call<void>("set", typedArray);
+
+  auto dt = getData1D(length);
+  std::vector<std::complex<double>> spc(length / 2 + 1);
+  pocketfft::r2c(dt.shape, dt.strideR, dt.strideC, dt.axes, true, sig.data(), spc.data(), 1.0);
+
+  size_t out_size = spc.size() * 2;
+  val js_array = val::global("Float64Array").new_(out_size);
+  js_array.call<void>("set", typed_memory_view(out_size, reinterpret_cast<double *>(spc.data())));
+
+  return js_array;
+}
+
+val c2r_fast(const val &typedArray) {
+  size_t length2 = typedArray["length"].as<size_t>();
+  size_t num_complex = length2 / 2;
+  std::vector<std::complex<double>> spc(num_complex);
+
+  val(typed_memory_view(length2, reinterpret_cast<double *>(spc.data())))
+    .call<void>("set", typedArray);
+
+  auto dt = getData1D((num_complex - 1) * 2);
+  std::vector<double> sig(dt.ndata);
+  pocketfft::c2r(
+    dt.shape, dt.strideC, dt.strideR, dt.axes, false, spc.data(), sig.data(), 1.0 / dt.ndata);
+
+  val js_array = val::global("Float64Array").new_(sig.size());
+  js_array.call<void>("set", typed_memory_view(sig.size(), sig.data()));
+
+  return js_array;
+}
 
 template<typename Complex> struct ComplexAccess {
   static val getReal(const Complex &v) { return val(v.real()); }
@@ -74,7 +105,6 @@ template<typename Complex> struct ComplexAccess {
 
 template<typename T> class_<std::complex<T>> register_complex(const char *name) {
   typedef std::complex<T> C;
-
   return class_<std::complex<T>>(name)
     .template constructor<>()
     .property("real", &ComplexAccess<C>::getReal, &ComplexAccess<C>::setReal)
@@ -85,11 +115,7 @@ template<typename VecType> struct ComplexVectorAccess {
   typedef typename VecType::value_type::value_type ValueType;
 
   static val get(const VecType &v, typename VecType::size_type index) {
-    if (index < v.size()) {
-      return val(v[index]);
-    } else {
-      return val::undefined();
-    }
+    return index < v.size() ? val(v[index]) : val::undefined();
   }
 
   static val getReal(const VecType &v, typename VecType::size_type index) {
@@ -100,32 +126,25 @@ template<typename VecType> struct ComplexVectorAccess {
     return (index < v.size()) ? val(v[index].imag()) : val::undefined();
   }
 
-  static bool set(
-    VecType &v,
-    typename VecType::size_type index,
-    const typename VecType::value_type &value) {
+  static bool
+  set(VecType &v, typename VecType::size_type index, const typename VecType::value_type &value) {
     v[index] = value;
     return true;
   }
 
   static bool setValue(
-    VecType &v,
-    typename VecType::size_type index,
-    const ValueType real,
-    const ValueType imag) {
+    VecType &v, typename VecType::size_type index, const ValueType real, const ValueType imag) {
     v[index].real(real);
     v[index].imag(imag);
     return true;
   }
 
-  static bool
-  setReal(VecType &v, typename VecType::size_type index, const ValueType value) {
+  static bool setReal(VecType &v, typename VecType::size_type index, const ValueType value) {
     v[index].real(value);
     return true;
   }
 
-  static bool
-  setImag(VecType &v, typename VecType::size_type index, const ValueType value) {
+  static bool setImag(VecType &v, typename VecType::size_type index, const ValueType value) {
     v[index].imag(value);
     return true;
   }
@@ -134,7 +153,6 @@ template<typename VecType> struct ComplexVectorAccess {
 template<typename T>
 class_<std::vector<std::complex<T>>> register_complex_vector(const char *name) {
   typedef std::vector<std::complex<T>> VecType;
-
   void (VecType::*push_back)(const std::complex<T> &) = &VecType::push_back;
   void (VecType::*resize)(const size_t) = &VecType::resize;
   size_t (VecType::*size)() const = &VecType::size;
@@ -159,6 +177,9 @@ EMSCRIPTEN_BINDINGS(PocketFFT) {
 
   function("r2c", &r2c);
   function("c2r", &c2r);
+
+  function("r2c_fast", &r2c_fast);
+  function("c2r_fast", &c2r_fast);
 }
 
 int main() { return 0; }
@@ -173,30 +194,29 @@ int main() { return 0; }
 
 int main() {
   std::string text;
-
   std::vector<double> input(1111);
   std::minstd_rand rng{0};
   std::normal_distribution<double> dist{};
-  for (auto &v : input) v = dist(rng);
+  for (auto &v : input) { v = dist(rng); }
 
   auto spectrum = r2c(input);
   auto output = c2r(spectrum);
 
   text += "{\"input\":[";
-  for (const auto &v : input) text += std::format("{},", v);
+  for (const auto &v : input) { text += std::format("{},", v); }
   text.pop_back();
 
   text += "],\"spectrum\":[";
-  for (const auto &v : spectrum) text += std::format("[{},{}],", v.real(), v.imag());
+  for (const auto &v : spectrum) { text += std::format("[{},{}],", v.real(), v.imag()); }
   text.pop_back();
 
   text += "],\"output\":[";
-  for (const auto &v : output) text += std::format("{},", v);
+  for (const auto &v : output) { text += std::format("{},", v); }
   text.pop_back();
   text += "]}";
 
   std::ofstream fs("pocketfft.json");
-  if (fs.is_open()) fs << text;
+  if (fs.is_open()) { fs << text; }
 
   return 0;
 }
