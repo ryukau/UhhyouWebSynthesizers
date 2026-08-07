@@ -13,6 +13,7 @@ export class WaveView {
   #isUpperHalf;
   #isMouseDown;
   #lastX;
+  #peakText; // Peak gain indicator text.
 
   constructor(parent, width, height, data, autoScale) {
     this.div = document.createElement("div");
@@ -37,11 +38,12 @@ export class WaveView {
     this.#isUpperHalf = false;
     this.#isMouseDown = false;
     this.#lastX = 0;
+    this.#peakText = "";
 
     this.set(data);
   }
 
-  set(data) {
+  set(data, rawPeak = null) {
     this.#offset = 0;
     if (Array.isArray(data)) {
       this.#data = data;
@@ -58,6 +60,34 @@ export class WaveView {
           this.#isUpperHalf = false;
           break;
         }
+      }
+    }
+
+    // Calculate peak gain.
+    let maxVal = 0;
+    if (rawPeak === null) {
+      this.#peakText = "";
+    } else {
+      if (rawPeak !== undefined && Number.isFinite(rawPeak)) {
+        maxVal = rawPeak;
+      } else {
+        for (let i = 0; i < this.#data.length; ++i) {
+          const absVal = Math.abs(this.#data[i]);
+          if (absVal > maxVal) { maxVal = absVal; }
+        }
+      }
+
+      const peak = 20 * Math.log10(maxVal);
+      if (Number.isNaN(peak)) {
+        this.#peakText = "+nan dB";
+      } else if (peak === Infinity) {
+        this.#peakText = "+inf dB";
+      } else if (peak === -Infinity) {
+        this.#peakText = "-inf dB";
+      } else {
+        let peakStr = peak.toFixed(2);
+        if (peakStr[0] !== "-") { peakStr = "+" + peakStr; }
+        this.#peakText = `${peakStr} dB`;
       }
     }
 
@@ -164,6 +194,11 @@ export class WaveView {
     this.context.fillStyle = palette.foreground;
     this.context.font = `${fontSize}px ${palette.fontFamily}`;
     this.context.fillText(`${this.#offset}/${this.#data.length}`, 0, fontSize + 1);
+
+    // Peak gain indicator.
+    this.context.textAlign = "right";
+    this.context.fillText(this.#peakText, width, fontSize + 1);
+    this.context.textAlign = "left"; // Restore default alignment.
   }
 
   drawAxes(y0) {
