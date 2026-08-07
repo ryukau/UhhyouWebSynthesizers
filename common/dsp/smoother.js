@@ -24,7 +24,7 @@ export class EMAFilter {
 
   reset(value = 0) { this.value = value; }
 
-  // `cutoff` is normalized frequency in [0.0, 0.5].
+  // `cutoff` is normalized frequency in [0, 0.5].
   setCutoff(cutoff) { this.alpha = cutoffToEmaAlpha(cutoff); }
   setCutoffFromTime(samples) { this.alpha = timeToOnePoleKp(samples); }
   process(input) { return this.value += this.alpha * (input - this.value); }
@@ -41,7 +41,7 @@ export class DoubleEMAFilter {
     this.v2 = value;
   }
 
-  // `cutoff` is normalized frequency in [0.0, 0.5].
+  // `cutoff` is normalized frequency in [0, 0.5].
   setCutoff(cutoff) { this.alpha = cutoffToEmaAlpha(cutoff); }
   setCutoffFromTime(samples) { this.alpha = timeToOnePoleKp(samples); }
 
@@ -60,12 +60,33 @@ export class EMAHighpass {
 
   reset(value = 0) { this.v1 = value; }
 
-  // `cutoff` is normalized frequency in [0.0, 0.5].
+  // `cutoff` is normalized frequency in [0, 0.5].
   setCutoff(cutoff) { this.alpha = cutoffToEmaAlpha(cutoff); }
 
   process(input) {
     this.v1 += this.alpha * (input - this.v1);
     return input - this.v1;
+  }
+}
+
+export class EMAHighShelving {
+  constructor() {
+    this.alpha = 1;
+    this.gain = 1;
+    this.reset();
+  }
+
+  reset(value = 0) { this.v1 = value; }
+
+  // `cutoff` is normalized frequency in [0.0, 0.5].
+  setCutoff(cutoff) { this.alpha = cutoffToEmaAlpha(cutoff); }
+  setCutoffFromTime(samples) { this.alpha = timeToOnePoleKp(samples); }
+  setGain(gain) { this.gain = gain; }
+
+  process(input) {
+    this.v1 += this.alpha * (input - this.v1);
+    const hp = input - this.v1;
+    return input + (this.gain - 1) * hp;
   }
 }
 

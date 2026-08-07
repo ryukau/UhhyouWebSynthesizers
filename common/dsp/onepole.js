@@ -94,3 +94,38 @@ export class AP1 {
     return this.#y1;
   }
 }
+
+// High-shelving.
+export class HS1 {
+  #b0 = 1;
+  #a1 = 1;
+  #gain = 1;
+  #x1 = 0;
+  #y1 = 0;
+
+  constructor(cutoffNormalized, gain = 1) {
+    this.setCutoff(cutoffNormalized);
+    this.setGain(gain);
+  }
+
+  reset() {
+    this.#x1 = 0;
+    this.#y1 = 0;
+  }
+
+  setCutoff(cutoffNormalized) {
+    const k = 1 / Math.tan(Math.PI * clamp(cutoffNormalized, minCutoff, nyquist));
+    const a0 = 1 + k;
+    this.#b0 = k / a0;
+    this.#a1 = (1 - k) / a0;
+  }
+
+  setGain(gain) { this.#gain = gain; }
+
+  process(x0) {
+    const hp = this.#b0 * (x0 - this.#x1) - this.#a1 * this.#y1;
+    this.#x1 = x0;
+    this.#y1 = hp;
+    return x0 + (this.#gain - 1) * hp;
+  }
+}
