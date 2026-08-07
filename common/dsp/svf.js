@@ -31,8 +31,7 @@ export class SVF {
   }
 
   tick(v0) {
-    const v1 = (this.#ic1eq + this.#g * (v0 - this.#ic2eq))
-      / (1 + this.#g * (this.#g + this.#k));
+    const v1 = (this.#ic1eq + this.#g * (v0 - this.#ic2eq)) / (1 + this.#g * (this.#g + this.#k));
     const v2 = this.#ic2eq + this.#g * v1;
 
     this.#ic1eq = 2 * v1 - this.#ic1eq;
@@ -96,6 +95,14 @@ export class SVFBP extends SVF {
   }
 }
 
+export class SVFAP extends SVF {
+  process(v0) { return this.ap(v0); }
+  processMod(v0, cutoffNormalized, Q) {
+    this.setCutoff(cutoffNormalized, Q);
+    return this.process(v0);
+  }
+}
+
 export class SVFNotch extends SVF {
   process(v0) { return this.notch(v0); }
   processMod(v0, cutoffNormalized, Q) {
@@ -128,8 +135,7 @@ export class SVFBell {
   }
 
   process(v0) {
-    const v1 = (this.#ic1eq + this.#g * (v0 - this.#ic2eq))
-      / (1 + this.#g * (this.#g + this.#k));
+    const v1 = (this.#ic1eq + this.#g * (v0 - this.#ic2eq)) / (1 + this.#g * (this.#g + this.#k));
     const v2 = this.#ic2eq + this.#g * v1;
 
     this.#ic1eq = 2 * v1 - this.#ic1eq;
@@ -158,14 +164,12 @@ export class SVFLowShelf {
 
   setCutoff(cutoffNormalized, Q, shelvingGainAmp) {
     this.#A = Math.sqrt(shelvingGainAmp);
-    this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI)
-      / Math.sqrt(this.#A);
+    this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI) / Math.sqrt(this.#A);
     this.#k = 1 / Q;
   }
 
   process(v0) {
-    const v1 = (this.#ic1eq + this.#g * (v0 - this.#ic2eq))
-      / (1 + this.#g * (this.#g + this.#k));
+    const v1 = (this.#ic1eq + this.#g * (v0 - this.#ic2eq)) / (1 + this.#g * (this.#g + this.#k));
     const v2 = this.#ic2eq + this.#g * v1;
 
     this.#ic1eq = 2 * v1 - this.#ic1eq;
@@ -194,14 +198,12 @@ export class SVFHighShelf {
 
   setCutoff(cutoffNormalized, Q, shelvingGainAmp) {
     this.#A = Math.sqrt(shelvingGainAmp);
-    this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI)
-      * Math.sqrt(this.#A);
+    this.#g = Math.tan(clamp(cutoffNormalized, minCutoff, nyquist) * Math.PI) * Math.sqrt(this.#A);
     this.#k = 1 / Q;
   }
 
   process(v0) {
-    const v1 = (this.#ic1eq + this.#g * (v0 - this.#ic2eq))
-      / (1 + this.#g * (this.#g + this.#k));
+    const v1 = (this.#ic1eq + this.#g * (v0 - this.#ic2eq)) / (1 + this.#g * (this.#g + this.#k));
     const v2 = this.#ic2eq + this.#g * v1;
 
     this.#ic1eq = 2 * v1 - this.#ic1eq;
