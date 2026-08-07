@@ -1,53 +1,6 @@
-function createTable(data) {
-  const tr = (parent) => {
-    const elem = document.createElement("tr");
-    parent.appendChild(elem);
-    return elem;
-  };
+import {addSignStr, createTable, freqToMidi, setRefresh, setupResizer} from "../tableutil.js";
 
-  const container = document.getElementById("tuningTableContainer");
-
-  const table = document.createElement("table");
-  container.innerHTML = "";
-  container.appendChild(table);
-
-  // Title.
-  const thead = document.createElement("thead");
-  table.appendChild(thead);
-
-  const rowHeading = tr(thead);
-  for (let key in data) {
-    const elem = document.createElement("th");
-    elem.innerText = key;
-    rowHeading.appendChild(elem);
-  }
-
-  // Data.
-  const tbody = document.createElement("tbody");
-  table.appendChild(tbody);
-
-  let rows = [];
-  for (let [key, value] of Object.entries(data)) {
-    if (rows.length < value.length) {
-      const nAppend = value.length - rows.length;
-      for (let idx = 0; idx < nAppend; ++idx) rows.push(tr(tbody));
-    }
-
-    for (let idx = 0; idx < value.length; ++idx) {
-      const elem = document.createElement("td");
-      if (value[idx] !== undefined && value[idx] !== null) elem.innerHTML = value[idx];
-      rows[idx].appendChild(elem);
-    }
-  }
-}
-
-function freqToMidi(freqHz, centerHz = 440) {
-  return 12 * Math.log2(freqHz / centerHz) + 69;
-}
-
-function midiToFreq(note, centerHz = 440) {
-  return centerHz * Math.pow(2, (note - 69) / 12);
-}
+function midiToFreq(note, centerHz = 440) { return centerHz * Math.pow(2, (note - 69) / 12); }
 
 function midiNoteToNoteName(note) {
   const mod = (n, m) => (n % m + m) % m;
@@ -60,8 +13,6 @@ function midiNoteToNoteName(note) {
 
   return `${noteStr[stInt]}<sub>${octave}</sub>`;
 }
-
-function addSignStr(number) { return (number < 0 ? "" : "+") + number; }
 
 function highlightError(errorInCent, threshold = 1) {
   if (isNaN(errorInCent)) return `<span class="error">NaN</span>`;
@@ -95,8 +46,7 @@ function refresh() {
     return;
   }
 
-  const errorThresholdCent
-    = parseFloat(document.getElementById("errorThresholdCent").value);
+  const errorThresholdCent = parseFloat(document.getElementById("errorThresholdCent").value);
   if (!(errorThresholdCent >= 0)) {
     paragraphStatus.innerHTML
       = '<span class="error">Error: "Error highlight threshold" must be greater than or equal to 0 cent.</span>';
@@ -159,15 +109,11 @@ function refresh() {
   }
 }
 
-function setRefresh(id) {
-  const input = document.getElementById(id);
-  input.addEventListener("input", refresh);
-}
-
-setRefresh("sampleRateHz");
-setRefresh("highestNote");
-setRefresh("lowestNote");
-setRefresh("centerHz");
-setRefresh("errorThresholdCent");
+setRefresh("sampleRateHz", refresh);
+setRefresh("highestNote", refresh);
+setRefresh("lowestNote", refresh);
+setRefresh("centerHz", refresh);
+setRefresh("errorThresholdCent", refresh);
 
 refresh();
+setupResizer();

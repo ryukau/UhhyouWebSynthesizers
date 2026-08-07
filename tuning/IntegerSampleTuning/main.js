@@ -1,5 +1,6 @@
-function isPrime(n)
-{
+import {addSignStr, createTable, freqToMidi, setRefresh, setupResizer} from "../tableutil.js";
+
+function isPrime(n) {
   if (n == 2) return true;
   if (n < 2 || n % 2 == 0) return false;
   const sqrt = Math.ceil(Math.sqrt(n));
@@ -9,57 +10,7 @@ function isPrime(n)
   return true;
 }
 
-function createTable(data)
-{
-  const tr = (parent) => {
-    const elem = document.createElement("tr");
-    parent.appendChild(elem);
-    return elem;
-  };
-
-  const container = document.getElementById("tuningTableContainer");
-
-  const table = document.createElement("table");
-  container.innerHTML = "";
-  container.appendChild(table);
-
-  // Title.
-  const thead = document.createElement("thead");
-  table.appendChild(thead);
-
-  const rowHeading = tr(thead);
-  for (let key in data) {
-    const elem = document.createElement("th");
-    elem.innerText = key;
-    rowHeading.appendChild(elem);
-  }
-
-  // Data.
-  const tbody = document.createElement("tbody");
-  table.appendChild(tbody);
-
-  let rows = [];
-  for (let [key, value] of Object.entries(data)) {
-    if (rows.length < value.length) {
-      const nAppend = value.length - rows.length;
-      for (let idx = 0; idx < nAppend; ++idx) rows.push(tr(tbody));
-    }
-
-    for (let idx = 0; idx < value.length; ++idx) {
-      const elem = document.createElement("td");
-      if (value[idx] !== undefined && value[idx] !== null) elem.innerHTML = value[idx];
-      rows[idx].appendChild(elem);
-    }
-  }
-}
-
-function freqToMidi(freqHz, centerHz = 440)
-{
-  return 12 * Math.log2(freqHz / centerHz) + 69;
-}
-
-function midiNoteToNoteName(freqHz, centerHz, addCents = false)
-{
+function midiNoteToNoteName(freqHz, centerHz, addCents = false) {
   const mod = (n, m) => (n % m + m) % m;
   const note = 12 * Math.log2(freqHz / centerHz) + 69;
   const roundedNote = Math.round(note);
@@ -67,7 +18,7 @@ function midiNoteToNoteName(freqHz, centerHz, addCents = false)
   const semitone = mod(roundedNote, 12);
   const stInt = Math.floor(semitone);
 
-  const noteStr = [ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" ];
+  const noteStr = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
   if (addCents) {
     const cent = 100 * (note - roundedNote);
@@ -77,18 +28,14 @@ function midiNoteToNoteName(freqHz, centerHz, addCents = false)
   return `${noteStr[stInt]}<sub>${octave}</sub>`;
 }
 
-function addSignStr(number) { return (number < 0 ? "" : "+") + number; }
-
-function differenceToTarget(freqHz, centerHz)
-{
+function differenceToTarget(freqHz, centerHz) {
   const note = 12 * Math.log2(freqHz / centerHz) + 69;
   const roundedNote = Math.round(note);
   const cent = 100 * (note - roundedNote);
   return addSignStr(cent);
 }
 
-function findClosestDenominator(sampleRate, noteFreq, maxDenominator)
-{
+function findClosestDenominator(sampleRate, noteFreq, maxDenominator) {
   let result = 0;
   let minError = Number.MAX_VALUE;
   for (let denom = 1; denom <= maxDenominator; ++denom) {
@@ -103,21 +50,18 @@ function findClosestDenominator(sampleRate, noteFreq, maxDenominator)
   return result;
 }
 
-function formatPeriod(sampleRate, closestDenom, noteFreq, maxDenominator)
-{
+function formatPeriod(sampleRate, closestDenom, noteFreq, maxDenominator) {
   const period = Math.floor(closestDenom * sampleRate / noteFreq);
   return maxDenominator == 1 ? `${period}` : `${period} / ${closestDenom}`;
 }
 
-function highlightError(errorInCent, maxDenominator, threshold = 1)
-{
+function highlightError(errorInCent, maxDenominator, threshold = 1) {
   const errorStr = errorInCent.toFixed(3);
   if (Math.abs(errorInCent) < threshold) return errorStr;
   return `<span class="error">${errorStr}</span>`;
 }
 
-function refresh()
-{
+function refresh() {
   const paragraphStatus = document.getElementById("status");
 
   const minPeriod = parseFloat(document.getElementById("minPeriodSample").value);
@@ -161,8 +105,7 @@ function refresh()
     return;
   }
 
-  const errorThresholdCent
-    = parseFloat(document.getElementById("errorThresholdCent").value);
+  const errorThresholdCent = parseFloat(document.getElementById("errorThresholdCent").value);
   if (!(errorThresholdCent >= 0)) {
     paragraphStatus.innerHTML
       = '<span class="error">Error: "Error highlight threshold" must be greater than or equal to 0 cent.</span>';
@@ -208,13 +151,13 @@ function refresh()
   }
 
   const data = {
-    "Index" : indices,
-    "Target" : targetNoteNames,
-    "Closest" : closestNoteNames,
-    "MIDI [st.]" : midiNoteNumbers,
-    "Frequency [Hz]" : freqHz,
-    "Period [sample]" : periods,
-    "Error [cent]" : errorsInCents,
+    "Index": indices,
+    "Target": targetNoteNames,
+    "Closest": closestNoteNames,
+    "MIDI [st.]": midiNoteNumbers,
+    "Frequency [Hz]": freqHz,
+    "Period [sample]": periods,
+    "Error [cent]": errorsInCents,
   };
 
   // Comparing the pitch of note number 69 between MIDI and this tuning.
@@ -230,17 +173,12 @@ function refresh()
   paragraphStatus.innerText = "Everything is awesome.";
 }
 
-function setRefresh(id)
-{
-  const input = document.getElementById(id);
-  input.addEventListener("input", refresh);
-}
-
-setRefresh("minPeriodSample");
-setRefresh("sampleRateHz");
-setRefresh("lowestFreqHz");
-setRefresh("centerHz");
-setRefresh("maxDenominator");
-setRefresh("errorThresholdCent");
+setRefresh("minPeriodSample", refresh);
+setRefresh("sampleRateHz", refresh);
+setRefresh("lowestFreqHz", refresh);
+setRefresh("centerHz", refresh);
+setRefresh("maxDenominator", refresh);
+setRefresh("errorThresholdCent", refresh);
 
 refresh();
+setupResizer();

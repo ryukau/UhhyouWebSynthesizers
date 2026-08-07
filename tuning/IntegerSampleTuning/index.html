@@ -6,152 +6,10 @@
   <title>Integer Sample Pitch Table</title>
   <link rel="icon" type="image/svg+xml" href="../../style/favicon/favicon.svg">
   <link rel="icon" type="image/png" href="../../style/favicon/favicon.png">
+  <link rel="stylesheet" href="../style.css">
   <style>
-    :root {
-      --background-color: #ffffff;
-      --foreground-color: #000000;
-      --table-odd-background-color: #eeeeee;
-      --link-color: #0000ee;
-      --visited-color: #551a8b;
-      --active-color: #ff0000;
-      --border-color-light: #bbbbbb;
-      --border-color: #888888;
-      --border-color-dark: #444444;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      html {
-        filter: invert(0.8745);
-      }
-    }
-
-    details {
-      margin: 1rem 0 1rem 0;
-    }
-
-
-    h2,
-    summary {
-      font-weight: normal;
-      font-size: medium;
-
-      text-decoration: underline dotted var(--border-color-light);
-      text-underline-offset: 0.5rem;
-    }
-
-    table {
-      border-spacing: 0px;
-      border-collapse: separate;
-      border-left: 1px solid var(--border-color);
-      border-right: 1px solid var(--border-color);
-      border-top: 1px solid var(--border-color);
-      border-bottom: hidden;
-    }
-
-    tr:nth-child(odd) {
-      background: var(--table-odd-background-color);
-    }
-
-    tr:nth-child(even) {
-      background: var(--background-color);
-    }
-
-    th {
-      height: 2em;
-      padding: 4px 1em 4px 1em;
-      background: var(--background-color);
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    th:not(:first-child) {
-      border-left: 1px solid var(--border-color);
-    }
-
     td {
-      height: 1.5em;
-      padding: 4px 1em 4px 1em;
-      border-bottom: 1px solid var(--border-color);
       text-align: right;
-    }
-
-    td:not(:first-child) {
-      border-left: 1px solid var(--border-color);
-    }
-
-    .error {
-      color: var(--active-color);
-    }
-
-    .emphasis {
-      font-size: large;
-      font-weight: bold;
-    }
-
-    input[type="number"] {
-      max-width: 12rem;
-      font-size: large;
-      height: 1.5rem;
-      margin: 0.25rem;
-    }
-
-    input.inline[type="number"] {
-      max-width: 6rem;
-    }
-
-    #parameters {
-      max-width: 700px;
-      margin-left: 4rem;
-      display: grid;
-      grid-template-columns: auto 1fr;
-    }
-
-    #parameters>div {
-      margin: 0.5rem 0 0.5rem 0;
-    }
-
-    #parameters>div::after {
-      content: " : ";
-      margin-right: 1rem;
-    }
-
-    #status::before {
-      content: "Status: ";
-    }
-
-    #control {
-      box-sizing: border-box;
-      position: fixed;
-      padding-right: 2%;
-      left: 2%;
-      width: 38%;
-      height: 99%;
-      overflow: scroll;
-    }
-
-    #tableView {
-      box-sizing: border-box;
-      position: fixed;
-      padding-right: 1rem;
-      left: 40%;
-      width: 60%;
-      height: 99%;
-      overflow: scroll;
-    }
-
-
-    .link-index::before {
-      display: inline-block;
-      background-image: url('../../style/favicon/favicon.svg');
-      content: "";
-      vertical-align: middle;
-      background-size: 3rem 3rem;
-      width: 3rem;
-      height: 3rem;
-      margin: 0.5rem;
-    }
-
-    pre {
-      overflow-x: scroll;
     }
   </style>
 </head>
@@ -208,6 +66,8 @@ console.log(period);</pre>
     <hr>
     <p><a class="link-index" href="../../index.html">Back to Index</a></p>
   </div>
+
+  <div id="resizer"></div>
 
   <div id="tableView">
     <div id="tuningTableContainer">(Tuning table is not yet computed.)</div>

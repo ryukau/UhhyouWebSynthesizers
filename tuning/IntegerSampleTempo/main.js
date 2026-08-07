@@ -1,45 +1,4 @@
-function createTable(data) {
-  const tr = (parent) => {
-    const elem = document.createElement("tr");
-    parent.appendChild(elem);
-    return elem;
-  };
-
-  const container = document.getElementById("bpmTableContainer");
-
-  const table = document.createElement("table");
-  container.innerHTML = "";
-  container.appendChild(table);
-
-  // Header row
-  const thead = document.createElement("thead");
-  table.appendChild(thead);
-
-  const rowHeading = tr(thead);
-  for (let key in data) {
-    const elem = document.createElement("th");
-    elem.innerText = key;
-    rowHeading.appendChild(elem);
-  }
-
-  // Data rows
-  const tbody = document.createElement("tbody");
-  table.appendChild(tbody);
-
-  let rows = [];
-  for (let [key, value] of Object.entries(data)) {
-    if (rows.length < value.length) {
-      const nAppend = value.length - rows.length;
-      for (let idx = 0; idx < nAppend; ++idx) rows.push(tr(tbody));
-    }
-
-    for (let idx = 0; idx < value.length; ++idx) {
-      const elem = document.createElement("td");
-      if (value[idx] !== undefined && value[idx] !== null) elem.innerHTML = value[idx];
-      rows[idx].appendChild(elem);
-    }
-  }
-}
+import {createTable, setRefresh, setupResizer} from "../tableutil.js";
 
 function getOddPart(n) {
   if (n === 0) return 0;
@@ -70,7 +29,7 @@ function gcd(a, b) {
   return a;
 }
 
-function findIntegerSampleBpms(samplingRate, minBpm = 40, maxBpm = 300) {
+function findIntegerSampleBpms(samplingRate, minBpm = 40, maxBpm = 300, beat = 1) {
   const val = 60 * samplingRate;
   const oddPartTotal = getOddPart(val);
   const oddDivisors = getAllDivisors(oddPartTotal);
@@ -94,12 +53,19 @@ function findIntegerSampleBpms(samplingRate, minBpm = 40, maxBpm = 300) {
       const den = Math.floor(N / g);
       const bpmRational = den === 1 ? `${num}` : `${num}/${den}`;
 
-      tableData.push({bpmFloat: bpmFloat, bpmRational: bpmRational, samplesPerBeat: N});
+      const secondsPerBeat = (N * beat) / samplingRate;
+
+      tableData.push({
+        bpmFloat: bpmFloat,
+        bpmRational: bpmRational,
+        secondsPerBeat: secondsPerBeat,
+        samplesPerBeat: N,
+      });
     }
   }
 
   // Sort ascending by BPM float value
-  tableData.sort((a, b) => a.bpmFloat - b.bpmFloat);
+  tableData.sort((a, b) => b.bpmFloat - a.bpmFloat);
   return tableData;
 }
 
@@ -127,36 +93,42 @@ function refresh() {
     return;
   }
 
-  const results = findIntegerSampleBpms(sampleRate, minBpm, maxBpm);
+  const beat = parseFloat(document.getElementById("beat").value);
+  if (!(beat > 0)) {
+    paragraphStatus.innerHTML = '<span class="error">Error: "Beat" must be greater than 0.</span>';
+    return;
+  }
+
+  const results = findIntegerSampleBpms(sampleRate, minBpm, maxBpm, beat);
 
   const bpmFloats = [];
   const bpmRationals = [];
   const samplesPerBeat = [];
+  const secondsPerBeat = [];
 
   for (const row of results) {
     bpmFloats.push(row.bpmFloat);
     bpmRationals.push(row.bpmRational);
     samplesPerBeat.push(row.samplesPerBeat);
+    secondsPerBeat.push(row.secondsPerBeat);
   }
 
   const data = {
     "BPM (Float)": bpmFloats,
     "BPM (Rational)": bpmRationals,
     "Samples / Beat (N)": samplesPerBeat,
+    "Seconds / Beats": secondsPerBeat,
   };
 
-  createTable(data);
+  createTable(data, "bpmTableContainer");
 
   paragraphStatus.innerText = "Everything is awesome.";
 }
 
-function setRefresh(id) {
-  const input = document.getElementById(id);
-  input.addEventListener("input", refresh);
-}
-
-setRefresh("sampleRateHz");
-setRefresh("minBpm");
-setRefresh("maxBpm");
+setRefresh("sampleRateHz", refresh);
+setRefresh("minBpm", refresh);
+setRefresh("maxBpm", refresh);
+setRefresh("beat", refresh);
 
 refresh();
+setupResizer();
