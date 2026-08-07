@@ -16,11 +16,25 @@ function erfc(z) {
     * (x2 + 5.16722705817812584 * x + 9.12661617673673262)
     / (x2 + 4.03296893109262491 * x + 5.13578530585681539)
     * (x2 + 5.95908795446633271 * x + 9.19435612886969243)
-    / (x2 + 4.11240942957450885 * x + 4.48640329523408675) * Math.E ** (-x2);
+    / (x2 + 4.11240942957450885 * x + 4.48640329523408675) * Math.exp(-x2);
   return z >= 0 ? r : 2 - r;
 }
 
-function erf(z) { return 1 - erfc(z); }
+function erf(z) {
+  const abs_z = Math.abs(z);
+  if (abs_z < 0.28) {
+    const z2 = z * z;
+    let v = -1.492565035840625e-05 * z2 + 0.00012055332981789664;
+    v = v * z2 + -0.0008548327023450852;
+    v = v * z2 + 0.005223977625442188;
+    v = v * z2 + -0.026866170645131252;
+    v = v * z2 + 0.11283791670955126;
+    v = v * z2 + -0.37612638903183754;
+    v = v * z2 + 1.1283791670955126;
+    return z * v
+  }
+  return z >= 0 ? 1 - erfc(z) : erfc(-z) - 1;
+}
 
 export function softclipInnerTanh(x, t) {
   const absed = Math.abs(x);
@@ -151,9 +165,7 @@ class ExpCompressor {
 
   #curveInnerArctan(x) {
     const scale = 1.5707963267948966; // Math.PI / 2;
-    if (x < this.threshold) {
-      return x < Number.EPSILON ? 1 : Math.atan(x * scale) / (x * scale);
-    }
+    if (x < this.threshold) { return x < Number.EPSILON ? 1 : Math.atan(x * scale) / (x * scale); }
     return (this.slopeArctan * (x - this.threshold) + this.interceptArctan) / x;
   }
 
@@ -213,8 +225,7 @@ class LinkwitzRileyIirEven {
     this.sos = new Array(nSection);
     for (let idx = 0; idx < nSection; ++idx) {
       let q = 0.5 / Math.cos(0.5 * idx * Math.PI / nSection);
-      const coefficents = this.sos[idx]
-        = new SosFilterImmediate(sosFunc(cutoffNormalized, q));
+      const coefficents = this.sos[idx] = new SosFilterImmediate(sosFunc(cutoffNormalized, q));
     }
   }
 
@@ -234,9 +245,9 @@ class BandSplitter {
   //
   // `steepnesses` is an Array of natural numbers (value >= 1). The value means that:
   //
-  // - `steepnesses[n] == 1` is -12 dB/oct,
-  // - `steepnesses[n] == 2` is -24 dB/oct,
-  // - `steepnesses[n] == 3` is -36 dB/oct,
+  // - `steepnesses[n] == 1` is -24 dB/oct,
+  // - `steepnesses[n] == 2` is -48 dB/oct,
+  // - `steepnesses[n] == 3` is -72 dB/oct,
   //
   // and so on.
   //
@@ -279,9 +290,7 @@ class BandSplitter {
   // `input` is `[high, mid, low]`.
   merge(input) {
     let sig = 0;
-    for (let i = 0; i < this.ap.length; ++i) {
-      sig = this.ap[i].process(input[i] + sig);
-    }
+    for (let i = 0; i < this.ap.length; ++i) { sig = this.ap[i].process(input[i] + sig); }
     return input.at(-1) + sig;
   }
 
