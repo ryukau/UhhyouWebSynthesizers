@@ -48,14 +48,14 @@ export class NumberInput {
     this.container.appendChild(this.number);
 
     this.div.addEventListener("pointerdown", (event) => {
-      if (event.altKey) {
+      if (event.ctrlKey) {
         event.preventDefault();
         this.reset();
       }
     }, false);
 
     this.label.addEventListener("pointerdown", (event) => {
-      if (event.altKey) return;
+      if (event.ctrlKey) return;
       this.param.lockRandomization = !this.param.lockRandomization;
       this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
     }, false);
