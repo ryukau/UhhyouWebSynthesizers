@@ -6,6 +6,8 @@ import * as util from "./util.js";
 export class Audio {
   #source;
   #gain;
+  #startTime = 0;
+  #cachedBuffer = null;
   #rendererPath;
   #fadeOutDuration = 0.01;
 
@@ -25,39 +27,54 @@ export class Audio {
   }
 
   play(upFold = 1) {
-    let buffer = this.audioContext.createBuffer(
-      this.wave.channels, this.wave.frames, upFold * this.audioContext.sampleRate);
+    if (!this.#cachedBuffer) {
+      let buffer = this.audioContext.createBuffer(
+        this.wave.channels, this.wave.frames, upFold * this.audioContext.sampleRate);
 
-    for (let i = 0; i < this.wave.channels; ++i) {
-      buffer.copyToChannel(new Float32Array(this.wave.data[i]), i, 0);
+      for (let i = 0; i < this.wave.channels; ++i) {
+        buffer.copyToChannel(new Float32Array(this.wave.data[i]), i, 0);
+      }
+      this.#cachedBuffer = buffer;
     }
 
     this.stop();
 
-    // Gain node is used to remove pop noise when stopping in the middle of sound.
     this.#gain = this.audioContext.createGain();
     this.#gain.gain.value = 1;
     this.#gain.connect(this.audioContext.destination);
 
     this.#source = this.audioContext.createBufferSource();
-    this.#source.buffer = buffer;
+    this.#source.buffer = this.#cachedBuffer; // Use the cached buffer
     this.#source.connect(this.#gain);
-    this.#source.start(this.audioContext.currentTime + this.#fadeOutDuration + 0.001);
+
+    this.#startTime = this.audioContext.currentTime + this.#fadeOutDuration + 0.001;
+    this.#source.start(this.#startTime);
   }
 
   stop() {
     if (this.#source === undefined) return;
-    this.#gain.gain.setValueAtTime(1, this.audioContext.currentTime);
-    this.#gain.gain.linearRampToValueAtTime(
-      0, this.audioContext.currentTime + this.#fadeOutDuration);
-    this.#source.stop(this.audioContext.currentTime + this.#fadeOutDuration + 0.001);
+
+    const gainToFade = this.#gain;
+    const now = this.audioContext.currentTime;
+
+    try {
+      gainToFade.gain.setTargetAtTime(0, now, 0.003);
+
+      setTimeout(() => {
+        try {
+          gainToFade.disconnect();
+        } catch (e) {}
+      }, 50);
+    } catch (e) { console.warn("Audio stop handled gracefully:", e); }
+
+    this.#source = undefined;
+    this.#gain = undefined;
   }
 
   save(loop = false, cue = [], upFold = 1) {
     const buffer = Wave.toBuffer(this.wave, this.wave.channels);
     const header = Wave.fileHeader(
-      upFold * this.audioContext.sampleRate, this.wave.channels, buffer.length, loop,
-      cue);
+      upFold * this.audioContext.sampleRate, this.wave.channels, buffer.length, loop, cue);
 
     const blob = new Blob([header, buffer], {type: "application/octet-stream"});
     const url = window.URL.createObjectURL(blob);
@@ -105,8 +122,7 @@ export class Audio {
             parameter.stereoMerge === undefined ? 0 : parameter.stereoMerge,
             //
             // Making assumption that `sampleRateScaler` is always power of 2. :(
-            parameter.sampleRateScaler === undefined ? 1
-                                                     : (1 << parameter.sampleRateScaler),
+            parameter.sampleRateScaler === undefined ? 1 : (1 << parameter.sampleRateScaler),
             quickSave,
           );
 
@@ -136,15 +152,14 @@ export class Audio {
       this.wave.normalizePerChannel();
     }
 
+    this.#cachedBuffer = null;
+
     this.onRenderFinish(this.wave);
 
     if (this.renderStatusElement !== undefined) {
       this.renderStatusElement.textContent = "Rendering finished. ✓";
     }
 
-    // TODO: Refactor. This `quickSave` implementation is bad because synth can't provide
-    // loop or cue information. Perhaps a better way is to get the info from renderer,
-    // then hold that info until next rendering.
     if (quickSave) this.save(false, [], sampleRateScaler);
   }
 }
@@ -316,8 +331,7 @@ export class Wave {
     if (!Array.isArray(cue)) cue = [];
 
     if (!Array.isArray(loop)) {
-      loop
-        = loop === true ? [{start: 0, end: bufferLengthBytes - fmt.bytesPerFrame}] : [];
+      loop = loop === true ? [{start: 0, end: bufferLengthBytes - fmt.bytesPerFrame}] : [];
     }
 
     //
