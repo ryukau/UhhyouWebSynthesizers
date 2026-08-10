@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {IntDelay} from "../common/dsp/delay.js";
+import {SurgeEnvelope} from "../common/dsp/envelope.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {HP1} from "../common/dsp/onepole.js";
 import {cutoffToEmaAlpha, DoubleEMAFilter} from "../common/dsp/smoother.js";
@@ -466,58 +467,6 @@ class ExpDecay {
   process(input) {
     var output = input * this.value;
     this.value *= this.gamma;
-    return output;
-  }
-}
-
-class SurgeEnvelope {
-  constructor(attackSamples, totalLengthSamples, endValue = 1e-5) {
-    this.configure(attackSamples, totalLengthSamples, endValue);
-  }
-
-  configure(attackSamples, totalLengthSamples, endValue = 1e-5) {
-    const attack = Number.isFinite(attackSamples) ? Math.max(1, attackSamples) : 1;
-    const total = Number.isFinite(totalLengthSamples) ? Math.max(attack + 1, totalLengthSamples)
-                                                      : attack + 1000;
-    const end = Number.isFinite(endValue) ? Math.min(Math.max(endValue, 1e-12), 0.9999) : 1e-5;
-
-    this.attackSamples = attack;
-    this.totalLengthSamples = total;
-    this.endValue = end;
-    this.tPeak = attack;
-
-    const r = total / attack;
-    const denom = Math.log(r) + 1 - r; // strictly negative for r > 1
-
-    this.a = Math.log(end) / denom; // > 0
-    this.b = this.a / attack;       // > 0
-    this.c = this.a * (1 - Math.log(this.tPeak));
-
-    this.reset();
-  }
-
-  reset() {
-    this.t = 0;
-    this.value = this.calcEnvelope(0);
-  }
-
-  calcEnvelope(t) {
-    if (!Number.isFinite(t) || t <= 0) return 0.0;
-    const logVal = this.a * Math.log(t) + this.c - this.b * t;
-    return Math.exp(logVal);
-  }
-
-  env() {
-    var out = this.value;
-    this.t++;
-    this.value = this.calcEnvelope(this.t);
-    return out;
-  }
-
-  process(input) {
-    var output = input * this.value;
-    this.t++;
-    this.value = this.calcEnvelope(this.t);
     return output;
   }
 }

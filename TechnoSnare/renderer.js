@@ -264,7 +264,8 @@ onmessage = async (event) => {
   let dsp = {};
   dsp.rng = rng;
 
-  dsp.bodyEnvelope = new ExpPolyEnvelope(upRate, pv.bodyAttackSeconds, pv.bodyEnvelopeCurve);
+  dsp.bodyEnvelope
+    = new ExpPolyEnvelope(pv.bodyAttackSeconds * upRate, pv.bodyEnvelopeCurve / upRate);
   dsp.bodyOsc = [];
   let bodyGain = [0, 1, 2].map(v => pv.bodyOvertoneGain ** v);
   let bodyGainSum = bodyGain.reduce((p, c) => p + c);
@@ -283,7 +284,8 @@ onmessage = async (event) => {
   }
   dsp.bodyLowpass = new SVF(pv.bodyLowpassHz / upRate, 0.5);
 
-  dsp.noiseEnvelope = new ExpPolyEnvelope(upRate, pv.noiseAttackSeconds, pv.noiseEnvelopeCurve);
+  dsp.noiseEnvelope
+    = new ExpPolyEnvelope(pv.noiseAttackSeconds * upRate, pv.noiseEnvelopeCurve / upRate);
   dsp.noiseBandpass = new SosFilterImmediate(
     sosMatchedBandpass(clamp(pv.noiseBandpassHz / upRate, 10 / 48000, 0.49998), Math.SQRT1_2));
 

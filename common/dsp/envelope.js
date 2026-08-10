@@ -130,9 +130,7 @@ function minimizeScalarBrent(func) {
       deltax = rat;
 
       // check parabolic fit.
-      if (
-        p > tmp2 * (a - x) && p < tmp2 * (b - x)
-        && Math.abs(p) < Math.abs(0.5 * tmp2 * dx_temp))
+      if (p > tmp2 * (a - x) && p < tmp2 * (b - x) && Math.abs(p) < Math.abs(0.5 * tmp2 * dx_temp))
       {
         rat = p * 1 / tmp2; // if parabolic step is useful.
         let u = x + rat;
@@ -256,22 +254,6 @@ export class DoubleEmaADEnvelope {
   }
 };
 
-export class ExpPolyEnvelope {
-  constructor(sampleRate, attackSeconds, curve) {
-    this.a = attackSeconds * curve;
-    this.b = -curve;
-    this.gain = 1 / (Math.pow(attackSeconds, this.a) * Math.exp(this.b * attackSeconds));
-
-    this.delta = 1 / sampleRate;
-    this.t = 0; // Time elapsed in seconds.
-  }
-
-  process() {
-    this.t += this.delta;
-    return this.gain * Math.pow(this.t, this.a) * Math.exp(this.b * this.t);
-  }
-}
-
 export class ExpADEnvelope {
   constructor(attackSamples, decaySamples, threshold = 1e-3) {
     attackSamples = Math.max(attackSamples, 1);
@@ -293,7 +275,78 @@ export class ExpADEnvelope {
   process() {
     this.valueA *= this.alphaA;
     this.valueD *= this.alphaD;
-    return this.gain * (1 - this.threshold - this.valueA)
-      * (this.valueD - this.threshold);
+    return this.gain * (1 - this.threshold - this.valueA) * (this.valueD - this.threshold);
+  }
+}
+
+export class ExpPolyEnvelope {
+  constructor(attackSamples, curve) {
+    this.a
+      = Number.isFinite(attackSamples) ? Math.max(Number.EPSILON, attackSamples) : Number.EPSILON;
+    this.c = curve;
+    this.n = 0;
+  }
+
+  reset() { this.n = 0; }
+
+  process() {
+    this.n++;
+    if (this.n <= 0) return 0.0;
+    const logVal = this.c * (this.a * Math.log(this.n / this.a) - (this.n - this.a));
+    return Math.exp(logVal);
+  }
+}
+
+export class SurgeEnvelope {
+  constructor(attackSamples, totalLengthSamples, endValue = 1e-5) {
+    this.configure(attackSamples, totalLengthSamples, endValue);
+  }
+
+  configure(attackSamples, totalLengthSamples, endValue = 1e-5) {
+    const attack = Number.isFinite(attackSamples) ? Math.max(1, attackSamples) : 1;
+    const total = Number.isFinite(totalLengthSamples) ? Math.max(attack + 1, totalLengthSamples)
+                                                      : attack + 64;
+    const end = Number.isFinite(endValue)
+      ? Math.min(Math.max(endValue, Number.EPSILON), 1 - Number.EPSILON)
+      : Number.EPSILON;
+
+    this.attackSamples = attack;
+    this.totalLengthSamples = total;
+    this.endValue = end;
+    this.tPeak = attack;
+
+    const r = total / attack;
+    const denom = Math.log(r) + 1 - r; // strictly negative for r > 1
+
+    this.a = Math.log(end) / denom; // > 0
+    this.b = this.a / attack;       // > 0
+    this.c = this.a * (1 - Math.log(this.tPeak));
+
+    this.reset();
+  }
+
+  reset() {
+    this.t = 0;
+    this.value = this.calcEnvelope(0);
+  }
+
+  calcEnvelope(t) {
+    if (!Number.isFinite(t) || t <= 0) return 0.0;
+    const logVal = this.a * Math.log(t) + this.c - this.b * t;
+    return Math.exp(logVal);
+  }
+
+  env() {
+    var out = this.value;
+    this.t++;
+    this.value = this.calcEnvelope(this.t);
+    return out;
+  }
+
+  process(input) {
+    var output = input * this.value;
+    this.t++;
+    this.value = this.calcEnvelope(this.t);
+    return output;
   }
 }
