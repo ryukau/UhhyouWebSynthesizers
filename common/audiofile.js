@@ -1,20 +1,28 @@
-/**
- * Wraps a Float64Array in a SharedArrayBuffer for safe zero-copy sharing with Web Workers.
- * @param {Float64Array} floatArray
- * @returns {Float64Array}
- */
 export function makeShared(floatArray) {
-  if (typeof SharedArrayBuffer === "undefined") {
-    return floatArray; // Fallback to standard array copy if SharedArrayBuffer is unsupported
+  if (typeof SharedArrayBuffer === "undefined") { return floatArray; }
+  if (floatArray.buffer instanceof SharedArrayBuffer) { return floatArray; }
+  try {
+    const sab = new SharedArrayBuffer(floatArray.byteLength);
+    const shared = new Float64Array(sab);
+    shared.set(floatArray);
+    if ("sampleRate" in floatArray) {
+      Object.defineProperties(shared, {
+        sampleRate: {value: floatArray.sampleRate, writable: false, enumerable: true},
+        channels: {value: floatArray.channels, writable: false, enumerable: true},
+      });
+    }
+    return shared;
+  } catch (err) {
+    if (err instanceof RangeError || (err.name && err.name.includes("RangeError"))) {
+      throw new Error(
+        `Memory allocation failed for SharedArrayBuffer (the size is too large): ${err.message}`);
+    }
+    throw err;
   }
-  const sab = new SharedArrayBuffer(floatArray.byteLength);
-  const shared = new Float64Array(sab);
-  shared.set(floatArray);
-  return shared;
 }
 
 /**
- * Manages loaded audio files, caching, and on-demand resampling.
+ * Manages loaded audio files, caching, and on-demand resampling without redundant copying.
  */
 export class AudioFileManager {
   #items;
@@ -45,7 +53,12 @@ export class AudioFileManager {
     this.#items[index].resampledAudio = null;
     this.#items[index].resampledAudioSampleRate = 0;
 
-    await this.#resampleItem(this.#items[index], targetRate);
+    try {
+      await this.#resampleItem(this.#items[index], targetRate);
+    } catch (err) {
+      this.clearAudio(index);
+      throw err;
+    }
   }
 
   /**
@@ -66,30 +79,26 @@ export class AudioFileManager {
     if (!item.originalAudio) return;
 
     if (item.originalAudio.sampleRate === targetRate) {
-      if (!item.resampledAudio || item.resampledAudioSampleRate !== targetRate) {
-        item.resampledAudio = makeShared(item.originalAudio);
-        item.resampledAudioSampleRate = targetRate;
-      }
+      item.resampledAudio = makeShared(item.originalAudio);
+      item.resampledAudioSampleRate = targetRate;
       return;
     }
 
-    if (item.resampledAudioSampleRate === targetRate) return;
+    if (item.resampledAudioSampleRate === targetRate && item.resampledAudio) return;
 
-    try {
-      const {resample} = await import("../lib/ffmpeg/ffmpeg_bridge.js");
-      const resampled = await resample(
-        item.originalAudio,
-        item.originalAudio.sampleRate,
-        targetRate,
-        item.originalAudio.channels,
-      );
-      item.resampledAudio = makeShared(resampled);
-      item.resampledAudioSampleRate = targetRate;
-    } catch (err) { console.error("Resampling failed:", err); }
+    const {resample} = await import("../lib/ffmpeg/ffmpeg_bridge.js");
+    const resampled = await resample(
+      item.originalAudio,
+      item.originalAudio.sampleRate,
+      targetRate,
+      item.originalAudio.channels,
+    );
+    item.resampledAudio = makeShared(resampled);
+    item.resampledAudioSampleRate = targetRate;
   }
 
   /**
-   * Resamples all active audio slots if targetRate changed.
+   * Resamples all active audio slots when sampleRateScaler changes.
    * @param {number} targetRate
    */
   async resample(targetRate) {
@@ -104,23 +113,14 @@ export class AudioFileManager {
    * Returns audio data formatted for transmission to the renderer worker.
    */
   toMessage() {
-    const loadedAudios = [];
-    for (const item of this.#items) {
-      if (item.resampledAudio && item.originalAudio) {
-        loadedAudios.push({
-          data: item.resampledAudio,
-          channels: item.originalAudio.channels,
-          sampleRate: item.resampledAudioSampleRate,
-        });
-      }
-    }
-
-    const first = loadedAudios[0];
-    return {
-      loadedAudios,
-      loadedAudio: first ? first.data : null,
-      loadedAudioChannels: first ? first.channels : 0,
-      loadedAudioSampleRate: first ? first.sampleRate : 0,
-    };
+    const loadedAudios = this.#items.map(item => {
+      if (!item.resampledAudio || !item.originalAudio) return null;
+      return {
+        data: item.resampledAudio,
+        channels: item.originalAudio.channels,
+        sampleRate: item.resampledAudioSampleRate,
+      };
+    });
+    return {loadedAudios};
   }
 }

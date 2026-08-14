@@ -1,3 +1,5 @@
+import {makeShared} from "../audiofile.js";
+
 export class AudioLoader {
   constructor(parent, label, onLoadSuccessFunc, onLoadFailureFunc, maxDuration = 16) {
     this.maxDuration = maxDuration;
@@ -22,7 +24,7 @@ export class AudioLoader {
 
     this.divDragAndDropArea.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault(); // Prevents page scrolling on Space press
+        e.preventDefault();
         this.inputFile.click();
       }
     });
@@ -69,6 +71,7 @@ export class AudioLoader {
   #onInputFileChange(event) {
     const files = this.inputFile.files;
     if (files.length > 0) { this.#processFile(files[0]); }
+    this.inputFile.value = "";
   }
 
   async #processFile(file) {
@@ -79,7 +82,6 @@ export class AudioLoader {
       const {decode} = await import("../../lib/ffmpeg/ffmpeg_bridge.js");
       let decodedData = await decode(file);
 
-      // Record original duration in samples prior to any trimming
       const originalSamples = Math.floor(decodedData.length / decodedData.channels);
       const totalSeconds = originalSamples / decodedData.sampleRate;
 
@@ -92,7 +94,14 @@ export class AudioLoader {
         );
 
         const maxElements = maxSamples * decodedData.channels;
-        const trimmed = decodedData.slice(0, maxElements);
+        let trimmed;
+        try {
+          trimmed = makeShared(decodedData.subarray(0, maxElements));
+        } catch (e) {
+          throw new Error(
+            `Memory allocation failed while trimming audio (size too large): ${e.message || e}`);
+        }
+
         Object.defineProperties(trimmed, {
           sampleRate: {value: decodedData.sampleRate, writable: false, enumerable: true},
           channels: {value: decodedData.channels, writable: false, enumerable: true},
@@ -106,6 +115,8 @@ export class AudioLoader {
       const minutes = Math.floor(totalSecondsTrimmed / 60);
       const seconds = Math.floor(totalSecondsTrimmed % 60).toString().padStart(2, "0");
 
+      if (this.onLoadSuccessFunc) { await this.onLoadSuccessFunc(decodedData, file.name); }
+
       if (isTrimmed) {
         this.spanStatus.textContent = `Warning: Trimmed to ${this.maxDuration}s\nLoaded: ${
           file.name}\n ${minutes}:${seconds} (${originalSamples} samples), ${
@@ -116,11 +127,10 @@ export class AudioLoader {
           originalSamples} samples), ${decodedData.channels}ch, ${decodedData.sampleRate}Hz`;
         this.spanStatus.classList.add("success");
       }
-
-      if (this.onLoadSuccessFunc) { this.onLoadSuccessFunc(decodedData, file.name); }
     } catch (err) {
       console.error(err);
-      this.spanStatus.textContent = `Error: ${err.message || err}`;
+      const message = err?.message || String(err);
+      this.spanStatus.textContent = `Error: ${message}`;
       this.spanStatus.classList.add("error");
 
       if (this.onLoadFailureFunc) { this.onLoadFailureFunc(err); }

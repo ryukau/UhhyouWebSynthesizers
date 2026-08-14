@@ -223,7 +223,6 @@ export class Wave {
       this.peakValue = peak.value;
       peakValue = this.peakValue;
     } else if (peakValue === 0) {
-      console.warn("Divisor is 0.");
       return;
     }
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 set -e
 
 # Adjust path to your compiled FFmpeg directory
@@ -42,7 +41,7 @@ else
 fi
 
 echo "--> Compiling WebAssembly audio loader module..."
-em++ -O3 -std=c++20 main.cpp \
+em++ -O3 -std=c++20 -fexceptions main.cpp \
   -I${FFMPEG_DIR} \
   -L${FFMPEG_DIR}/libavformat -lavformat \
   -L${FFMPEG_DIR}/libavcodec -lavcodec \
@@ -51,10 +50,12 @@ em++ -O3 -std=c++20 main.cpp \
   -lembind \
   -s FORCE_FILESYSTEM=1 \
   -s ALLOW_MEMORY_GROWTH=1 \
+  -s INITIAL_MEMORY=16MB \
+  -s MAXIMUM_MEMORY=4GB \
   -s MODULARIZE=1 \
   -s EXPORT_ES6=1 \
   -s EXPORT_NAME="createFFmpegModule" \
-  -s EXPORTED_RUNTIME_METHODS='["FS", "HEAPF64"]' \
+  -s EXPORTED_RUNTIME_METHODS='["FS", "HEAPF64", "HEAPU8"]' \
   -o ffmpeg.js
 
 echo "--> Build completed."
