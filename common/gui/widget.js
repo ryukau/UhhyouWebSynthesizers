@@ -4,6 +4,7 @@
 import {option, select} from "./combobox.js";
 import {ToggleButton} from "./togglebutton.js";
 
+export {AudioLoader} from "./audioloader.js";
 export {BarBox} from "./barbox.js";
 export {BezierEnvelopeView} from "./bezierenvelopeview.js";
 export {CheckBoxLine} from "./checkbox.js";
@@ -121,8 +122,7 @@ export function playControl(
   pc.divPlayControl = div(parent, null, "playControl");
 
   const defaultName = " - Default";
-  const defaultRandom
-    = randomizeRecipes.includes(defaultName) ? defaultName : randomizeRecipes[0];
+  const defaultRandom = randomizeRecipes.includes(defaultName) ? defaultName : randomizeRecipes[0];
   pc.selectRandom = select(
     pc.divPlayControl, "Randomize Recipe", "randomRecipe", undefined, randomizeRecipes,
     defaultRandom, randomizeFunc);
@@ -134,8 +134,8 @@ export function playControl(
   pc.buttonPlay = Button(pc.divPlayControl, "Play", playFunc);
   pc.buttonStop = Button(pc.divPlayControl, "Stop", stopFunc);
   pc.buttonSave = Button(pc.divPlayControl, "Save", saveFunc);
-  pc.togglebuttonQuickSave = new ToggleButton(
-    pc.divPlayControl, "QuickSave", undefined, undefined, 0, quickSaveFunc);
+  pc.togglebuttonQuickSave
+    = new ToggleButton(pc.divPlayControl, "QuickSave", undefined, undefined, 0, quickSaveFunc);
 
   pc.divRecipeControl = div(parent, null, "playControl");
   pc.buttonPush = Button(pc.divRecipeControl, "Push", pushRecipeFunc);
@@ -183,8 +183,7 @@ export class RecipeExportDialog {
 
     this.divDescription = div(this.dialog, null, "dialogDescription");
     this.pDescriptionFormat = paragraph(this.divDescription, null, null);
-    this.pDescriptionFormat.textContent
-      = "The recipe will be displayed as \"Author - Recipe\".";
+    this.pDescriptionFormat.textContent = "The recipe will be displayed as \"Author - Recipe\".";
     this.pDescriptionAuthor = paragraph(this.divDescription, null, "pDialogBottomMost");
     this.pDescriptionAuthor.textContent = "Set unique \"Author\" to avoid name conflict.";
   }
@@ -231,14 +230,11 @@ export class RecipeImportDialog {
 
   #readRecipeJsonFile(file) {
     const reader = new FileReader();
+    reader.addEventListener("load", (ev) => { this.onLoadFunc(ev, JSON.parse(reader.result)); });
     reader.addEventListener(
-      "load", (ev) => { this.onLoadFunc(ev, JSON.parse(reader.result)); });
+      "error", (ev) => { console.error(`Failed to load ${file.name}`, new Error(reader.error)); });
     reader.addEventListener(
-      "error",
-      (ev) => { console.error(`Failed to load ${file.name}`, new Error(reader.error)); });
-    reader.addEventListener("abort", (ev) => {
-      console.warn(`Aborted to load ${file.name}.`, new Error(reader.error));
-    });
+      "abort", (ev) => { console.warn(`Aborted to load ${file.name}.`, new Error(reader.error)); });
     reader.readAsText(file, "utf-8");
   }
 

@@ -479,6 +479,63 @@ select.inputLine {
   flex-grow: 1;
 }
 
+/* AudioLoader */
+div.audioLoaderContainer {
+  width: calc(var(--control-width) - var(--margin));
+  box-sizing: border-box;
+  margin: var(--margin);
+  display: flex;
+  flex-direction: column;
+}
+
+div.audioLoaderDragAndDropArea {
+  max-width: 100%;
+  min-height: 6em;
+  box-sizing: border-box;
+  border: inset 3px var(--color-border-light);
+  transition: all 0.08s ease-out;
+
+  display: grid;
+  grid-template-areas:
+    "label instruction"
+    "status status";
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  align-content: center;
+  row-gap: var(--margin);
+  padding: var(--margin);
+  cursor: pointer;
+}
+
+div.audioLoaderDragAndDropArea > span {
+  font-size: inherit;
+}
+
+div.audioLoaderDragAndDropArea:hover,
+div.audioLoaderDragAndDropArea.dragover {
+  background: var(--color-highlight);
+  box-shadow: inset 1px 1px 4px var(--color-shadow-main);
+}
+
+.audioLoaderLabel {
+  grid-area: label;
+  justify-self: start;
+  font-weight: var(--font-weight-base);
+  color: var(--color-text-main);
+}
+
+.audioLoaderInstruction {
+  grid-area: instruction;
+  justify-self: end;
+}
+
+.audioLoaderStatus {
+  grid-area: status;
+  grid-column: 1 / -1;
+  text-align: left;
+  white-space: pre-line;
+}
+
 /* Barbox */
 div.barboxContainer {
   background: inherit;

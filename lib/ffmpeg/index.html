@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WASM FFmpeg Audio Loader</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    #drop-zone {
+      border: 2px dashed #0076ff;
+      border-radius: 8px;
+      background-color: #fff;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    #drop-zone.dragover {
+      background-color: #e0f0ff;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #metadata {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    .status {
+      font-style: italic;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>WASM FFmpeg Resampler</h2>
+  <p>Drag and drop an audio file (MP3, WAV, FLAC, M4A, etc.) to decode and resample it via WASM.</p>
+
+  <div id="drop-zone">
+    <p id="drop-text">Drag & drop your audio file here, or click to select</p>
+    <input type="file" id="file-input" accept="audio/*" style="display: none;" />
+  </div>
+
+  <audio id="audio-player" controls></audio>
+
+  <div id="metadata">
+    <p class="status">Please drop an audio file to begin.</p>
+  </div>
+
+  <!-- Load bridge module and process using ES modules -->
+  <script type="module">
+    import { decode, resample } from './ffmpeg_bridge.js';
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const audioPlayer = document.getElementById('audio-player');
+    const metadataDiv = document.getElementById('metadata');
+    const dropText = document.getElementById('drop-text');
+
+    // Setup Drag & Drop Listeners
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        processFile(files[0]);
+      }
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        processFile(e.target.files[0]);
+      }
+    });
+
+    async function processFile(file) {
+      dropText.textContent = `Selected: ${file.name}`;
+
+      const fileURL = URL.createObjectURL(file);
+      audioPlayer.src = fileURL;
+      audioPlayer.style.display = 'block';
+
+      metadataDiv.innerHTML = '<p class="status">Step 1: Decoding audio via FFmpeg WASM...</p>';
+
+      try {
+        const audioCtx = new AudioContext();
+        const targetSampleRate = audioCtx.sampleRate; // Target rate
+        const start = performance.now();
+
+        const decodedArray = await decode(file);
+        const originalSampleRate = decodedArray.sampleRate;
+        const channels = decodedArray.channels;
+
+        metadataDiv.innerHTML = '<p class="status">Step 2: Resampling decoded audio via FFmpeg WASM...</p>';
+
+        const resampledArray = await resample(decodedArray, originalSampleRate, targetSampleRate, channels);
+
+        const duration = (performance.now() - start).toFixed(2);
+
+        metadataDiv.innerHTML = `
+                    <h3>Metadata (via FFmpeg)</h3>
+                    <p><strong>Original Sample Rate:</strong> ${originalSampleRate} Hz</p>
+                    <p><strong>Target Sample Rate:</strong> ${resampledArray.sampleRate} Hz</p>
+                    <p><strong>Channels:</strong> ${resampledArray.channels}</p>
+                    <p><strong>Original Samples Length:</strong> ${decodedArray.length} values</p>
+                    <p><strong>Resampled Samples Length:</strong> ${resampledArray.length} values</p>
+                    <p><strong>Audio Duration:</strong> ${((resampledArray.length / resampledArray.channels) / resampledArray.sampleRate).toFixed(2)} seconds</p>
+                    <p><strong>Total Processing Time:</strong> ${duration} ms</p>
+                    <p><strong>First few resampled samples:</strong> [${Array.from(resampledArray.slice(0, 5)).map(v => v.toFixed(6)).join(', ')}]</p>
+                `;
+      } catch (err) {
+        metadataDiv.innerHTML = `<p class="status" style="color:red">Error during execution: ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+
+</html>
