@@ -186,8 +186,8 @@ const audio = new wave.Audio(
   2,
   "./renderer.js",
   undefined,
-  (wave) => {
-    for (let i = 0; i < waveView.length; ++i) waveView[i].set(wave.data[i]);
+  (x) => {
+    for (let i = 0; i < waveView.length; ++i) { waveView[i].set(x.data[i], x.peakValue); }
   },
 );
 

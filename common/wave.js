@@ -121,7 +121,7 @@ export class Audio {
             parameter.fadeOut === undefined ? 0 : parameter.fadeOut,
             parameter.stereoMerge === undefined ? 0 : parameter.stereoMerge,
             //
-            // Making assumption that `sampleRateScaler` is always power of 2. :(
+            // Making an assumption that `sampleRateScaler` is always power of 2. :(
             parameter.sampleRateScaler === undefined ? 1 : (1 << parameter.sampleRateScaler),
             quickSave,
           );
@@ -146,8 +146,11 @@ export class Audio {
     this.wave.declickOut(fadeOutSeconds * upRate);
     this.wave.stereoMerge(stereoMerge);
 
+    const peak = this.wave.findPeak();
+    this.wave.peakValue = peak === null ? 0 : peak.value;
+
     if (normalize === "link") {
-      this.wave.normalize();
+      this.wave.normalize(this.wave.peakValue);
     } else if (normalize === "perChannel") {
       this.wave.normalizePerChannel();
     }
@@ -170,7 +173,7 @@ export class Wave {
     for (let i = 0; i < channels; ++i) this.data.push([]);
   }
 
-  get frames() { return this.data[0].length; }
+  get frames() { return this.data.length > 0 ? this.data[0].length : 0; }
   get channels() { return this.data.length; }
 
   get left() { return this.data[0]; }
@@ -182,7 +185,7 @@ export class Wave {
   isMono() { return this.data.length === 1; }
   isStereo() { return this.data.length === 2; }
 
-  // Align channel length to the longest one.
+  // Align channel lengths to the longest one.
   align() {
     let maxLength = 0;
     for (let i = 0; i < this.data.length; ++i) {
@@ -219,6 +222,9 @@ export class Wave {
       }
       this.peakValue = peak.value;
       peakValue = this.peakValue;
+    } else if (peakValue === 0) {
+      console.warn("Divisor is 0.");
+      return;
     }
 
     for (let i = 0; i < this.data.length; ++i) {
@@ -234,7 +240,7 @@ export class Wave {
         if (max < value) max = value;
       }
 
-      if (max <= Number.EPSILON) continue;
+      if (max <= 0) continue;
 
       for (let sample = 0; sample < this.data[channel].length; ++sample) {
         this.data[channel][sample] /= max;
@@ -248,12 +254,12 @@ export class Wave {
   }
 
   declickRatio(fadein, fadeout) {
+    if (this.data.length === 0) return;
     const length = this.data[0].length;
     this.declickIn(Math.floor(length * fadein / 100));
     this.declickOut(Math.floor(length * fadeout / 100));
   }
 
-  // Using quater cosine from equal power panning.
   #fadeCurve(t) { return Math.cos((1 - t) * Math.PI / 2); }
 
   declickIn(fadeLength) {
@@ -275,11 +281,10 @@ export class Wave {
     }
   }
 
-  // amount is in [0, 1]. 0 stays intact, 1 is merge to mono.
+  // amount is in [0, 1]. 0 stays intact, 1 merges to mono.
   stereoMerge(amount) {
     if (amount === 0) return;
     if (this.data.length !== 2) return;
-
     if (this.data[0].length !== this.data[1].length) return;
 
     amount /= 2;
@@ -292,15 +297,23 @@ export class Wave {
   }
 
   copyChannel(channel) {
+    if (channel < 0 || channel >= this.channels) return;
     for (let ch = 0; ch < this.channels; ++ch) {
       if (channel !== ch) this.data[ch] = Array.from(this.data[channel]);
     }
   }
 
   rotate(channel, amount) {
+    if (channel < 0 || channel >= this.channels) return;
     let data = this.data[channel];
+    const len = data.length;
+    if (len === 0) return;
+
+    amount = amount % len;
+    if (amount === 0) return;
+
     if (amount > 0) {
-      let temp = data.splice(amount, data.length - amount);
+      let temp = data.splice(len - amount, amount);
       this.data[channel] = temp.concat(data);
     } else if (amount < 0) {
       let temp = data.splice(0, Math.abs(amount));
@@ -308,10 +321,14 @@ export class Wave {
     }
   }
 
-  // References:
-  // http://www.piclist.com/techref/io/serial/midi/wave.html
-  // https://web.archive.org/web/20230108120912/https://sites.google.com/site/musicgapi/technical-documents/wav-file-format
   static fileHeader(sampleRate, channels, bufferLengthBytes, loop = false, cue = false) {
+    /*
+    References:
+    https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
+    https://web.archive.org/web/20250613232553/http://www.piclist.com/techref/io/serial/midi/wave.html
+    https://web.archive.org/web/20230108120912/https://sites.google.com/site/musicgapi/technical-documents/wav-file-format
+    */
+
     const ascii = (string) => {
       let ascii = new Uint8Array(string.length);
       for (let i = 0; i < string.length; ++i) ascii[i] = string.charCodeAt(i);
@@ -331,114 +348,86 @@ export class Wave {
     if (!Array.isArray(cue)) cue = [];
 
     if (!Array.isArray(loop)) {
-      loop = loop === true ? [{start: 0, end: bufferLengthBytes - fmt.bytesPerFrame}] : [];
+      loop = loop === true ? [{start: 0, end: (bufferLengthBytes / fmt.bytesPerFrame) - 1}] : [];
     }
 
-    //
-    // +8 is 4 byte ascii ID and following 4 byte chunk size.
-    //
-    // fmt_, 18 + 8 = 26 [byte]
-    // fact, 4 + 8 = 12 [byte]
-    // cue_, 4 + 8 + 24 * numCue [byte]
-    // smpl, 36 + 8 + 24 * numLoop [byte]
-    // data, 4 + bufferLengthBytes [byte]
-    //
     const cueChunkSize = cue.length >= 1 ? 8 + 4 + 24 * cue.length : 0;
     const smplChunkSize = loop.length >= 1 ? 8 + 36 + 24 * loop.length : 0;
-    let riffChunkSize = 42 + cueChunkSize + smplChunkSize;
 
-    let cueId = 0; // To avoid duplicate of IDs in cue and smpl.
+    let riffChunkSize = 50 + cueChunkSize + smplChunkSize;
+
+    let cueId = 0;
 
     let header = [
-      ascii("RIFF"),                          // # "riff" Chunk
-      u32(riffChunkSize + bufferLengthBytes), // riffChunkSize
-      ascii("WAVE"),                          // # "wave" Chunk
+      ascii("RIFF"),
+      u32(riffChunkSize + bufferLengthBytes),
+      ascii("WAVE"),
 
-      ascii("fmt "),                           // # "fmt_" Chunk
-      u32(18),                                 // fmtChunkSize
-      u16(0x0003),                             // formatTag, 0x0003 = IEEE 32 bit float
-      u16(fmt.channels),                       // channels
-      u32(fmt.sampleRate),                     // samplePerSec
-      u32(fmt.sampleRate * fmt.bytesPerFrame), // bytesPerSec
-      u16(fmt.bytesPerFrame),                  // blockAlign
-      u16(fmt.sampleSize),                     // bitsPerSample
-      u16(0x0000),                             // cbSize
+      ascii("fmt "),
+      u32(18),
+      u16(0x0003), // 0x0003 = IEEE Float
+      u16(fmt.channels),
+      u32(fmt.sampleRate),
+      u32(fmt.sampleRate * fmt.bytesPerFrame),
+      u16(fmt.bytesPerFrame),
+      u16(fmt.sampleSize),
+      u16(0x0000),
 
-      ascii("fact"),                              // fact
-      u32(4),                                     // factChunkSize
-      u32(bufferLengthBytes / fmt.bytesPerFrame), // sampleLength
+      ascii("fact"),
+      u32(4),
+      u32(bufferLengthBytes / fmt.bytesPerFrame),
     ];
 
     if (cue.length >= 1) {
-      header.push.apply(header, [
-        ascii("cue "),         // # "cue " Chunk
-        u32(cueChunkSize - 8), // cueChunkSize
-        u32(cue.length),       // numCuePoints
-      ]);
+      header.push(ascii("cue "), u32(cueChunkSize - 8), u32(cue.length));
       for (let index = 0; index < cue.length; ++index) {
-        header.push.apply(header, [
-          u32(cueId),                                          // ID
-          u32(0),                                              // position
-          ascii("data"),                                       // dataChunkID
-          u32(0),                                              // chunkStart
-          u32(cue[index].start),                               // blockStart
-          u32((cue.length - index) * 24 + smplChunkSize - 12), // sampleOffset
-        ]);
+        header.push(
+          u32(cueId),
+          u32(cue[index].start), // position in sample frames
+          ascii("data"), u32(0),
+          u32(0),               // blockStart (always 0 for uncompressed PCM)
+          u32(cue[index].start) // sampleOffset
+        );
         ++cueId;
       }
     }
 
     if (loop.length >= 1) {
-      header.push.apply(header, [
-        ascii("smpl"),             // # "smpl" Chunk
-        u32(smplChunkSize - 8),    // smplChunkSize
-        u32(0),                    // manufacturer
-        u32(0),                    // product
-        u32(1e9 / fmt.sampleRate), // samplePeriod
-        u32(60),                   // midiUnityNote
-        u32(0),                    // midiPitchFraction
-        u32(0),                    // smpteFormat
-        u32(0),                    // smpteOffset
-        u32(loop.length),          // numSampleLoops
-        u32(24 * loop.length),     // samplerData
-      ]);
+      header.push(
+        ascii("smpl"), u32(smplChunkSize - 8), u32(0), u32(0),
+        u32(Math.round(1e9 / fmt.sampleRate)), // samplePeriod
+        u32(60), u32(0), u32(0), u32(0), u32(loop.length), u32(24 * loop.length));
 
       for (let index = 0; index < loop.length; ++index) {
-        header.push.apply(header, [
-          u32(cueId),             // cuePointID
-          u32(0),                 // type
-          u32(loop[index].start), // start
-          u32(loop[index].end),   // end
-          u32(0),                 // fraction
-          u32(0),                 // playCount
-        ]);
+        header.push(
+          u32(cueId), u32(0),
+          u32(loop[index].start), // start frame
+          u32(loop[index].end),   // end frame
+          u32(0), u32(0));
         ++cueId;
       }
     }
 
-    header.push.apply(header, [
-      ascii("data"),          // data
-      u32(bufferLengthBytes), // dataChunkSize
-    ]);
+    header.push(ascii("data"), u32(bufferLengthBytes));
 
-    return this.#concatTypedArray(header)
+    return this.#concatTypedArray(header);
   }
 
   static #concatTypedArray(arrays) {
     let dest = new Uint8Array(arrays.reduce((sum, arr) => sum + arr.byteLength, 0));
     let index = 0;
     arrays.forEach(arr => {
-      new Uint8Array(arr.buffer).forEach(value => {
-        dest[index] = value;
-        ++index;
-      });
+      let byteView = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+      dest.set(byteView, index);
+      index += arr.byteLength;
     });
     return dest;
   }
 
-  // Transpose `data` to Wave file buffer.
-  static toBuffer(wave, channels) {
+  static toBuffer(wave) {
     wave.align();
+    const channels = wave.channels;
+    if (channels === 0) return new Uint8Array(0);
     let f32 = new Float32Array(wave.frames * channels);
     for (let i = 0; i < wave.frames; ++i) {
       const ic = i * channels;
