@@ -376,7 +376,7 @@ label.inputLine {
 
 /* NumberInput: <input type="range"> */
 input[type="range"] {
-  -webkit-appearance: none;
+  appearance: none;
 
   width: var(--input-range-width);
   margin: 0;
@@ -414,7 +414,7 @@ input[type=range]:hover::-moz-range-track {
 }
 
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
+  appearance: none;
   margin-top: calc(-0.5 * var(--font-size-body));
 
   box-shadow: 1px 1px var(--color-shadow-dim);
@@ -432,7 +432,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 input[type=range]::-webkit-slider-runnable-track {
-  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   height: calc(0.1 * var(--font-size-body));
   background: var(--color-track-background);
