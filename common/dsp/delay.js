@@ -284,6 +284,11 @@ export class SincDelay {
     }
     return sum;
   }
+
+  processMod(input, timeSamples) {
+    this.setTime(timeSamples);
+    return this.process(input);
+  }
 }
 
 export class MultiTapDelay {
