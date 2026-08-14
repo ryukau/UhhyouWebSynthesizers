@@ -20,6 +20,7 @@ export function toMessage(param, info) {
 ground truth of current state.
 */
 export class Parameter {
+  static isRandomizing = false;
   #raw; // DSP value.
 
   constructor(defaultDsp, scale, displayDsp = false, comment = "") {
@@ -47,19 +48,31 @@ export class Parameter {
 
   resetToDefault() { this.#raw = this.defaultDsp; }
 
+  #guardWrite() { return Parameter.isRandomizing && this.lockRandomization; }
+
   get ui() { return this.scale.toUi(this.#raw); }
-  set ui(x) { this.#raw = this.scale.toDsp(x); }
+  set ui(x) {
+    if (this.#guardWrite()) { return; }
+    this.#raw = this.scale.toDsp(x);
+  }
 
   get dsp() { return this.#raw; }
-  set dsp(x) { this.#raw = util.clamp(x, this.scale.minDsp, this.scale.maxDsp); }
+  set dsp(x) {
+    if (this.#guardWrite()) { return; }
+    this.#raw = util.clamp(x, this.scale.minDsp, this.scale.maxDsp);
+  }
 
   get normalized() { return (this.ui - this.scale.minUi) / (this.scale.maxUi - this.scale.minUi); }
   set normalized(x) {
+    if (this.#guardWrite()) { return; }
     this.ui = this.scale.minUi + (this.scale.maxUi - this.scale.minUi) * util.clamp(x, 0, 1);
   }
 
   get display() { return this.displayDsp ? this.dsp : this.ui; }
-  set display(x) { this.displayDsp ? (this.dsp = x) : (this.ui = x); }
+  set display(x) {
+    if (this.#guardWrite()) { return; }
+    this.displayDsp ? (this.dsp = x) : (this.ui = x);
+  }
   get defaultDispaly() { return this.displayDsp ? this.defaultDsp : this.defaultUi; }
   get minDisplay() { return this.displayDsp ? this.scale.minDsp : this.scale.minUi; }
   get maxDisplay() { return this.displayDsp ? this.scale.maxDsp : this.scale.maxUi; }
@@ -645,11 +658,13 @@ class Randomizer {
 
 function applyLocalRecipe(parameter, recipe) {
   if (typeof recipe === "function") {
+    Parameter.isRandomizing = true;
     recipe(parameter);
+    Parameter.isRandomizing = false;
     return;
   }
 
-  // The rest of the code is kept for backward compatibility.
+  // The rest is kept for backward compatibility.
   for (const [key, prm] of Object.entries(parameter)) {
     if (recipe.hasOwnProperty(key)) {
       if (Array.isArray(prm)) {
