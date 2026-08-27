@@ -1,3 +1,6 @@
+// Copyright Takamitsu Endo (ryukau@gmail.com)
+// SPDX-License-Identifier: Apache-2.0
+
 export class Log1pAdaa1 {
   constructor() { this.x1_ = 0.0; }
   reset() { this.x1_ = 0.0; }

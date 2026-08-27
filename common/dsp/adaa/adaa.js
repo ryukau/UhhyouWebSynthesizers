@@ -1,3 +1,6 @@
+// Copyright Takamitsu Endo (ryukau@gmail.com)
+// SPDX-License-Identifier: Apache-2.0
+
 export * from "./atan.js";
 export * from "./bypass.js";
 export * from "./cubicclip2b.js";

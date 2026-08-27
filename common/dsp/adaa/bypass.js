@@ -1,3 +1,6 @@
+// Copyright Takamitsu Endo (ryukau@gmail.com)
+// SPDX-License-Identifier: Apache-2.0
+
 export class BypassAdaa1 {
   #x1 = 0.0;
 

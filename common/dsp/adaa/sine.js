@@ -1,3 +1,6 @@
+// Copyright Takamitsu Endo (ryukau@gmail.com)
+// SPDX-License-Identifier: Apache-2.0
+
 export function sineAdaa1(x0, x1) {
   if (!Number.isFinite(x0) || !Number.isFinite(x1)) { return NaN; }
 
@@ -32,4 +35,16 @@ export function sineAdaa1(x0, x1) {
   }
 
   return sin_mid * sinc;
+}
+
+export class SineAdaa1 {
+  #x1 = 0.0;
+
+  reset() { this.#x1 = 0.0; }
+
+  process(input) {
+    const y = adaa.sineAdaa1(this.#x1, input);
+    this.#x1 = input;
+    return y;
+  }
 }
