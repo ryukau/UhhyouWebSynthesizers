@@ -569,7 +569,7 @@ export class ComplexResonator {
     const w = 2 * Math.PI * clamp(cutoff, 0, 0.5);
     const ar = R * Math.cos(w);
     const ai = R * Math.sin(w);
-    const {yr, yi} = this.#y;
+    const {re: yr, im: yi} = this.#y;
 
     this.#y.re = x0 + ar * yr - ai * yi;
     this.#y.im = x0 + ar * yi + ai * yr;

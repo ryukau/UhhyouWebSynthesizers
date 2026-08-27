@@ -7,18 +7,65 @@ import {FeedbackDelayNetwork} from "../common/dsp/fdn.js";
 import {MovingAverageFilter} from "../common/dsp/limiter.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
-import {BiquadResonator, ComplexResonator, SVF} from "../common/dsp/svf.js";
-import {
-  exponentialMap,
-  lerp,
-  normalDistributionMap,
-  uniformFloatMap
-} from "../common/util.js";
+import {SVF} from "../common/dsp/svf.js";
+import {exponentialMap, lerp, normalDistributionMap, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
 
 const exp2Scaler = Math.log(2);
+
+// This implementation is kept for the compatibility reason. The normalization is not correct but
+// changing it breaks the character of the output. `svf.js` has the correct `ComplexResonator`.
+export class ComplexResonatorOld {
+  #y1;
+  #output;
+
+  constructor() { this.reset(); }
+
+  reset() {
+    this.#y1 = {re: 0, im: 0};
+    this.#output = {re: 0, im: 0};
+  }
+
+  // `resonance` in [0, 1).
+  process(x0, cutoffNormalized, resonance) {
+    // Complex: a1 = resonance * exp(1j + omega);
+    const omega = 2 * Math.PI * clamp(cutoffNormalized, 0, 0.5);
+    const freqRe = Math.cos(omega);
+    const freqIm = Math.sin(omega);
+    const a1Re = resonance * freqRe;
+    const a1Im = resonance * freqIm;
+
+    // Complex: y1 = x0 + a1 * y1;
+    const y1re = this.#y1.re;
+    this.#y1.re = x0 + a1Re * y1re - a1Im * this.#y1.im;
+    this.#y1.im = x0 + a1Re * this.#y1.im + a1Im * y1re;
+    return this.#y1;
+  }
+
+  // Real output exceeds 0 dB at low frequencies.
+  processNormalized(x0, cutoffNormalized, resonance) {
+    const omega = 2 * Math.PI * clamp(cutoffNormalized, 0, 0.5);
+    const freqRe = Math.cos(omega);
+    const freqIm = Math.sin(omega);
+    const a1Re = resonance * freqRe;
+    const a1Im = resonance * freqIm;
+
+    // Complex: gainInversed = abs(1 - a1 * exp(1j + omega)).
+    const gRe = 1 - a1Re * freqRe;
+    const gIm = a1Im * freqIm;
+    const gainInv = Math.sqrt(gRe * gRe + gIm * gIm);
+
+    const y1re = this.#y1.re;
+    this.#y1.re = x0 + a1Re * y1re - a1Im * this.#y1.im;
+    this.#y1.im = x0 + a1Re * this.#y1.im + a1Im * y1re;
+
+    this.#output.re = gainInv * this.#y1.re;
+    this.#output.im = gainInv * this.#y1.im;
+    return this.#output;
+  }
+}
 
 function createNoisyTable(upRate, pv, dsp) {
   const cycleSamples = Math.floor(upRate / pv.baseHz);
@@ -54,8 +101,8 @@ function process(upRate, pv, dsp) {
   for (let idx = 0; idx < dsp.resonators.length; ++idx) {
     const env = dsp.resonatorEnv[idx].process();
     if (env <= Number.EPSILON) continue;
-    const cutoffMod = Math.exp(
-      dsp.resonatorCutMod[idx] * env + dsp.resonatorModGain[idx] * spread[idx]);
+    const cutoffMod
+      = Math.exp(dsp.resonatorCutMod[idx] * env + dsp.resonatorModGain[idx] * spread[idx]);
 
     if (spread[idx] !== 0) dsp.resonatorModGain[idx] *= dsp.resonatorModDecay[idx];
 
@@ -100,7 +147,7 @@ onmessage = async (event) => {
   const resonanceRandomMax = 2 ** pv.resonanceRandom;
   const resonanceEnvMod = 2 ** pv.resonanceEnvMod;
   for (let idx = 0; idx < pv.nResonator; ++idx) {
-    dsp.resonators.push(new ComplexResonator());
+    dsp.resonators.push(new ComplexResonatorOld());
 
     const cutFreq
       = exponentialMap(rng.number(), 1, resonanceRandomMax) * pv.resonanceBaseHz / upRate;
@@ -122,11 +169,10 @@ onmessage = async (event) => {
 
   let spreadSamples = new Array(pv.nResonator);
   for (let idx = 0; idx < spreadSamples.length; ++idx) {
-    spreadSamples[idx]
-      = uniformFloatMap(rng.number(), 1, Math.ceil(upRate * pv.timeSpreadSeconds));
+    spreadSamples[idx] = uniformFloatMap(rng.number(), 1, Math.ceil(upRate * pv.timeSpreadSeconds));
   }
-  dsp.spreadDelay = new MultiTapDelay(
-    Math.ceil(upRate * pv.timeSpreadSeconds) + 2, spreadSamples.length);
+  dsp.spreadDelay
+    = new MultiTapDelay(Math.ceil(upRate * pv.timeSpreadSeconds) + 2, spreadSamples.length);
   dsp.spreadDelay.setTime(spreadSamples);
 
   dsp.fdn = new FeedbackDelayNetwork(8, upRate * pv.reverbBaseSecond);
