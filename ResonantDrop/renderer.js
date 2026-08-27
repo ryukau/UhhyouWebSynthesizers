@@ -8,7 +8,13 @@ import {MovingAverageFilter} from "../common/dsp/limiter.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {SVF} from "../common/dsp/svf.js";
-import {exponentialMap, lerp, normalDistributionMap, uniformFloatMap} from "../common/util.js";
+import {
+  clamp,
+  exponentialMap,
+  lerp,
+  normalDistributionMap,
+  uniformFloatMap
+} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
