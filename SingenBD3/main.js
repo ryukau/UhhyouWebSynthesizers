@@ -236,11 +236,12 @@ const divLeft = widget.div(divMain, undefined, "controlBlock");
 const divRight = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
+const divWaveRow = widget.div(divLeft, undefined, "viewRow");
 const waveView = [
   new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[0], false),
+    divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[0], false),
   new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
+    divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
@@ -289,6 +290,8 @@ const detailBody = widget.details(divRight, "Body");
 const detailClick = widget.details(divRight, "Click");
 const detailReverb = widget.details(divRight, "Reverb");
 
+const divBezierRow = widget.div(detailBody, undefined, "viewRow");
+
 const ui = {
   renderDuration:
     new widget.NumberInput(detailRender, "Duration [s]", param.renderDuration, render),
@@ -309,11 +312,11 @@ const ui = {
   overtoneAmp: new widget.NumberInput(detailOvertone, "Amp Descend", param.overtoneAmp, render),
 
   gainBezier: new widget.BezierEnvelopeView(
-    detailBody, uiSize.bezierEnvelopeWidth, uiSize.bezierEnvelopeHeight, param.gainBezier, "Gain",
+    divBezierRow, uiSize.bezierEnvelopeWidth, uiSize.bezierEnvelopeHeight, param.gainBezier, "Gain",
     render),
   pitchBezier: new widget.BezierEnvelopeView(
-    detailBody, uiSize.bezierEnvelopeWidth, uiSize.bezierEnvelopeHeight, param.pitchBezier, "Pitch",
-    render),
+    divBezierRow, uiSize.bezierEnvelopeWidth, uiSize.bezierEnvelopeHeight, param.pitchBezier,
+    "Pitch", render),
   baseFreq: new widget.NumberInput(detailBody, "Base Frequency [Hz]", param.baseFreq, render),
   pitchDropBezier:
     new widget.NumberInput(detailBody, "Bezier Range [oct]", param.pitchDropBezier, render),

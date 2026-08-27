@@ -198,11 +198,12 @@ const divRightA = widget.div(divMain, undefined, "controlBlock");
 const divRightB = widget.div(divMain, undefined, "controlBlock");
 
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
+const divWaveRow = widget.div(divLeft, undefined, "viewRow");
 const waveView = [
   new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[0], false),
+    divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[0], false),
   new widget.WaveView(
-    divLeft, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
+    divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);

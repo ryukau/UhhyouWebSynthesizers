@@ -90,6 +90,14 @@ div.controlBlock {
   margin: var(--margin);
 }
 
+div.viewRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 p#renderStatus {
   writing-mode: horizontal-tb;
   text-orientation: upright;
