@@ -43,6 +43,66 @@ function getChordRatio(minSt, maxSt, targetSts = null) {
 
 const localRecipeBook = {
   "Default": (param) => {
+    const isSaw = param.osc0_oscillatorType.dsp === 4;
+
+    randomInt(param.enableMonoBass, 0, 2);
+    if (Math.random() < 0.34) {
+      param.asymModAmount.dsp = 0;
+    } else {
+      randomFull(param.asymModAmount);
+    }
+
+    randomInt(param.subInvertPhase, 0, 2);
+    randomInt(param.subOscOctave, -2, 1);
+    randomLoguniform(param.subOscSkew, 1, 8);
+
+    randomUniform(param.unisonDetune, param.unisonDetune.scale.minDsp, isSaw ? 10 : 100);
+    randomUniform(param.unisonPhase, 0, 1);
+    randomUniform(param.unisonCombTime, 0, 1);
+    randomInt(param.seed, 0, param.seed.scale.maxDsp);
+
+    randomUniform(
+      param.lfoDuration, param.lfoDuration.scale.minDsp, param.lfoDuration.scale.maxDsp);
+    randomUniform(param.lfoPmIndex, 0, 8);
+    randomUniform(param.lfoPhase, 0, 1);
+    randomInt(param.lfoFreqDenominator, 10, 200);
+
+    for (let i = 0; i < nOsc; ++i) {
+      param[`osc${i}_combTime`].resetToDefault();
+      param[`osc${i}_combFeedback`].resetToDefault();
+
+      if (i === 0) {
+        param[`osc${i}_envDuration`].randomize((p) => (p.dsp = 4));
+        param[`osc${i}_envCurve`].randomize((p) => (p.dsp = 1));
+        param[`osc${i}_envSustain`].randomize((p) => (p.dsp = 0));
+        randomUniform(param[`osc${i}_envSaturation`], 0, 1);
+        param[`osc${i}_freqDenominator`].randomize((p) => (p.dsp = 3));
+        param[`osc${i}_freqNumerator`].randomize((p) => (p.dsp = 3));
+      } else {
+        randomUniform(param[`osc${i}_envCurve`], 1, 4);
+        randomUniform(param[`osc${i}_envSustain`], 0, 1 / 8);
+        param[`osc${i}_envSaturation`].randomize((p) => (p.dsp = 0));
+
+        randomUniform(param[`osc${i}_envDuration`], 1, 16);
+        param[`osc${i}_freqDenominator`].randomize((p) => (p.dsp = 1));
+        const freqNum = Math.floor(2 ** util.uniformIntMap(Math.random(), 0, 6))
+          + util.uniformIntMap(Math.random(), 0, 3);
+        param[`osc${i}_freqNumerator`].randomize((p) => (p.dsp = freqNum));
+      }
+
+      if (i === nOsc - 1) {
+        param[`osc${i}_pmIndex`].randomize((p) => (p.dsp = 0.1 * Math.random()));
+      } else if (i === 0) {
+        randomUniform(param[`osc${i}_pmIndex`], 0.5, 10);
+      } else {
+        randomUniform(param[`osc${i}_pmIndex`], 0.5, 10);
+      }
+
+      randomUniform(param[`osc${i}_sinPhase`], 0, 1);
+    }
+  },
+
+  "Waveform": (param) => {
     for (let i = 0; i < nOsc; ++i) {
       param[`osc${i}_oscillatorType`].randomize((p) => {
         const choices = [0, 1, 3, 4];
@@ -51,7 +111,10 @@ const localRecipeBook = {
     }
     const isSaw = param.osc0_oscillatorType.dsp === 4;
 
-    randomInt(param.subInvertPhase, 0, 1 + 1); // Upper bound is exclusive, [low, high).
+    randomInt(param.enableMonoBass, 0, 2);
+    randomFull(param.asymModAmount);
+
+    randomInt(param.subInvertPhase, 0, 2); // Upper bound is exclusive, [low, high).
     randomInt(param.subOscOctave, -2, 1);
     randomLoguniform(param.subOscSkew, 1, 8);
 
@@ -106,69 +169,6 @@ const localRecipeBook = {
         param[`osc${i}_sinShaper`].randomize((p) => (p.dsp = 0.2 * Math.random()));
         const isMagicOsc = param[`osc${i}_oscillatorType`].dsp === 2;
         randomUniform(param[`osc${i}_pmIndex`], 0.5, isMagicOsc ? 2 : 10);
-      }
-
-      randomUniform(param[`osc${i}_sinPhase`], 0, 1);
-    }
-  },
-
-  "HighFreq": (param) => {
-    for (let i = 0; i < nOsc; ++i) {
-      param[`osc${i}_oscillatorType`].randomize((p) => {
-        const choices = [0, 1, 3, 4];
-        p.dsp = choices[Math.floor(Math.random() * choices.length)];
-      });
-    }
-    const isSaw = param.osc0_oscillatorType.dsp === 4;
-
-    randomInt(param.subInvertPhase, 0, 2);
-    randomInt(param.subOscOctave, -2, 1);
-    randomLoguniform(param.subOscSkew, 1, 8);
-
-    randomUniform(param.unisonDetune, param.unisonDetune.scale.minDsp, isSaw ? 10 : 100);
-    randomUniform(param.unisonPhase, 0, 1);
-    randomUniform(param.unisonCombTime, 0, 1);
-    randomInt(param.seed, 0, param.seed.scale.maxDsp);
-
-    randomUniform(
-      param.lfoDuration, param.lfoDuration.scale.minDsp, param.lfoDuration.scale.maxDsp);
-    randomUniform(param.lfoPmIndex, 0, 8);
-    randomUniform(param.lfoPhase, 0, 1);
-    randomInt(param.lfoFreqDenominator, 10, 200);
-
-    for (let i = 0; i < nOsc; ++i) {
-      param[`osc${i}_combTime`].resetToDefault();
-      param[`osc${i}_combFeedback`].resetToDefault();
-      randomLoguniform(param[`osc${i}_sinSkew`], 1, 8);
-
-      if (i === 0) {
-        param[`osc${i}_envDuration`].randomize((p) => (p.dsp = 4));
-        param[`osc${i}_envCurve`].randomize((p) => (p.dsp = 1));
-        param[`osc${i}_envSustain`].randomize((p) => (p.dsp = 0));
-        randomUniform(param[`osc${i}_envSaturation`], 0, 1);
-        param[`osc${i}_freqDenominator`].randomize((p) => (p.dsp = 3));
-        param[`osc${i}_freqNumerator`].randomize((p) => (p.dsp = 3));
-      } else {
-        randomUniform(param[`osc${i}_envCurve`], 1, 4);
-        randomUniform(param[`osc${i}_envSustain`], 0, 1 / 8);
-        param[`osc${i}_envSaturation`].randomize((p) => (p.dsp = 0));
-
-        randomUniform(param[`osc${i}_envDuration`], 1, 16);
-        param[`osc${i}_freqDenominator`].randomize((p) => (p.dsp = 1));
-        const freqNum = Math.floor(2 ** util.uniformIntMap(Math.random(), 0, 6))
-          + util.uniformIntMap(Math.random(), 0, 3);
-        param[`osc${i}_freqNumerator`].randomize((p) => (p.dsp = freqNum));
-      }
-
-      if (i === nOsc - 1) {
-        randomUniform(param[`osc${i}_sinShaper`], 0, 1);
-        param[`osc${i}_pmIndex`].randomize((p) => (p.dsp = 0.1 * Math.random()));
-      } else if (i === 0) {
-        param[`osc${i}_sinShaper`].randomize((p) => (p.dsp = 0));
-        randomUniform(param[`osc${i}_pmIndex`], 0.5, 10);
-      } else {
-        param[`osc${i}_sinShaper`].randomize((p) => (p.dsp = 0.2 * Math.random()));
-        randomUniform(param[`osc${i}_pmIndex`], 0.5, 10);
       }
 
       randomUniform(param[`osc${i}_sinPhase`], 0, 1);
@@ -781,13 +781,13 @@ const param = {
   lfoFreqDenominator: new parameter.Parameter(40, scales.lfoFreqDenominator, true),
 
   modHpfCutoff: new parameter.Parameter(0, scales.modHpfCutoff, true),
+  asymModAmount: new parameter.Parameter(0, scales.asymAmount, true),
   subOscGain: new parameter.Parameter(0, scales.subGain, true),
   subOscOctave: new parameter.Parameter(-1, scales.subOscOctave),
   subOscSkew: new parameter.Parameter(2, scales.sinSkew, true),
   subOscBesselComp: new parameter.Parameter(0.25, scales.besselComp, true),
   subInvertPhase: new parameter.Parameter(0, scales.boolean),
   enableMonoBass: new parameter.Parameter(1, scales.boolean),
-  asymModAmount: new parameter.Parameter(0, scales.asymAmount, true),
 
   lorGain: new parameter.Parameter(0, scales.lorGain, false),
   lorDuration: new parameter.Parameter(1.0, scales.lorDuration, true),

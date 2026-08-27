@@ -5,9 +5,6 @@ import {IntDelay} from "../common/dsp/delay.js";
 import {SurgeEnvelope} from "../common/dsp/envelope.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {HP1} from "../common/dsp/onepole.js";
-import {cutoffToEmaAlpha, DoubleEMAFilter} from "../common/dsp/smoother.js";
-import {SVFHP} from "../common/dsp/svf.js";
-import {clamp} from "../common/util.js";
 
 import * as menuitems from "./menuitems.js";
 

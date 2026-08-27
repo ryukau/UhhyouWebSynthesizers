@@ -27,8 +27,8 @@ class AdaptiveNotchComb {
     this.fbGain = 1;
     this.fbSig = 0;
 
-    this.notch = new adaptiveNotchType(
-      sampleRate, 1 / delaySeconds, notchNarrowness, notchStepSizeScale);
+    this.notch
+      = new adaptiveNotchType(sampleRate, 1 / delaySeconds, notchNarrowness, notchStepSizeScale);
     this.mix = notchMixGain;
   }
 
@@ -39,6 +39,7 @@ class AdaptiveNotchComb {
   }
 }
 
+// Incorrect because the high-pass is in the feedback.
 class BrownNoise {
   constructor(sampleRate, highpassCutoffHz) {
     this.value = 0;
@@ -100,8 +101,8 @@ onmessage = async (event) => {
     dsp.brownNoise = new BrownNoise(upRate, 1);
     dsp.noiseFunc = (rng) => dsp.brownNoise.process(rng);
   } else {
-    console.error(`Invalid noise distribution. pv.noiseDistribution is set to ${
-      pv.noiseDistribution}`);
+    console.error(
+      `Invalid noise distribution. pv.noiseDistribution is set to ${pv.noiseDistribution}`);
   }
 
   dsp.bandpass = new MatchedBiquad();
@@ -126,8 +127,7 @@ onmessage = async (event) => {
 
   dsp.notches = [];
   for (let idx = 0; idx < pv.notchCount; ++idx) {
-    dsp.notches.push(
-      new AdaptiveNotchCPZ(upRate, 10, pv.notchNarrowness, pv.notchStepSizeScale));
+    dsp.notches.push(new AdaptiveNotchCPZ(upRate, 10, pv.notchNarrowness, pv.notchStepSizeScale));
   }
   dsp.notchInvert = pv.notchInvert === 1;
 
