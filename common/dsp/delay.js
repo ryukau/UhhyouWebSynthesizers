@@ -131,6 +131,8 @@ export class CubicDelay {
 
 export class SincDelay {
   /**
+   * Unstable with ±1 feedback.
+   *
    * @param {number} maxTap Maximum number of taps for the convolution filter (must be positive and
    *   even).
    * @param {number} [maxTimeSamples] Optional maximum delay time in samples to pre-allocate buffer.
@@ -353,7 +355,6 @@ export class MultiTapDelay {
       let rptr1 = rptr0 - 1;
       if (rptr1 < 0) rptr1 += this.#buf.length;
 
-      // Read from buffer.
       this.output[idx]
         = this.#buf[rptr0] + this.#rFraction[idx] * (this.#buf[rptr1] - this.#buf[rptr0]);
     }

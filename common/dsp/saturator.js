@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
+WARNING: Do not use this file in new projects. Use the implementations in `adaa`
+
+Implementations in this file are numerically problematic. This file is kept for backward
+compatibility, and will be removed in future.
+
 References:
 - https://github.com/jatinchowdhury18/ADAA
 - Antiderivative Antialiasing for Memoryless Nonlinearities, Stefan Bilbao, Fabián
@@ -76,9 +81,8 @@ export class SaturatorAdaa2 {
     const x0 = input;
 
     const f2_x1 = this.f2(this.x1);
-    const s0 = Math.abs(x0 - this.x1) < Number.EPSILON
-      ? this.f1((x0 + this.x1) / 2)
-      : (this.f2(x0) - f2_x1) / (x0 - this.x1);
+    const s0 = Math.abs(x0 - this.x1) < Number.EPSILON ? this.f1((x0 + this.x1) / 2)
+                                                       : (this.f2(x0) - f2_x1) / (x0 - this.x1);
 
     let output;
     if (this.x1 == 0 && this.x2 == 0) {
@@ -221,8 +225,8 @@ function softclipNJ2(x0, C = 1, R = 0.5, beta = 2, S = 0.1) {
   const Q2 = xc - xs;
   const Q2_pow_beta = Q2 ** beta;
   return Math.sign(x0)
-    * (A * Q0 ** b2 * (1 - 1 / b2) / b1 + C * Q0 * Q0 / 2
-       + S * (z * z * z - xc * xc * xc) / 6 + rc * rc * (xc / 2 - rc / 3)
+    * (A * Q0 ** b2 * (1 - 1 / b2) / b1 + C * Q0 * Q0 / 2 + S * (z * z * z - xc * xc * xc) / 6
+       + rc * rc * (xc / 2 - rc / 3)
        + (z - xc)
          * (A * (Q0 ** b1 / b1 - xc * Q2_pow_beta) - C * rc + S * xc * (xs - xc / 2) + rc * rc / 2 + (z + xc) / 2 * (A * Q2_pow_beta + C - S * xs)));
 }
@@ -236,9 +240,7 @@ function tanhJ2(x) {
 
 function atanJ0(x) { return 2 / Math.PI * Math.atan(x); }
 function atanJ1(x) { return 2 / Math.PI * (x * Math.atan(x) - Math.log1p(x * x) / 2); }
-function atanJ2(x) {
-  return (x - x * Math.log1p(x * x) + (x * x - 1) * Math.atan(x)) / Math.PI;
-}
+function atanJ2(x) { return (x - x * Math.log1p(x * x) + (x * x - 1) * Math.atan(x)) / Math.PI; }
 
 function algebraicJ0(x) { return x / (Math.abs(x) + 1); }
 function algebraicJ1(x) {
@@ -278,13 +280,10 @@ function exppolyJ2(x, β = 2) {
   const b1 = β + 1;
   const b2 = β + 2;
   return Math.sign(x)
-    * (gamma(b2) * (igamc(b2, z) - igamc(b2, 0))
-       + z * gamma(b1) * (igamc(b1, 0) - igamc(b1, z)));
+    * (gamma(b2) * (igamc(b2, z) - igamc(b2, 0)) + z * gamma(b1) * (igamc(b1, 0) - igamc(b1, z)));
 }
 
-function cosdecayJ0(x) {
-  return Math.abs(x) <= Number.EPSILON ? 0 : (1 - Math.cos(x)) / x;
-}
+function cosdecayJ0(x) { return Math.abs(x) <= Number.EPSILON ? 0 : (1 - Math.cos(x)) / x; }
 function cosdecayJ1(x) {
   if (x == 0) return 0;
   const z = Math.abs(x);

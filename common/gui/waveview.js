@@ -13,7 +13,9 @@ export class WaveView {
   #isUpperHalf;
   #isMouseDown;
   #lastX;
-  #peakText; // Peak gain indicator text.
+  #peakText;
+  #rmsPeakText;
+  #displayRms = false; // For debugging.
 
   constructor(parent, width, height, data, autoScale) {
     this.div = document.createElement("div");
@@ -39,8 +41,22 @@ export class WaveView {
     this.#isMouseDown = false;
     this.#lastX = 0;
     this.#peakText = "";
+    this.#rmsPeakText = "";
 
     this.set(data);
+  }
+
+  #formatDb(db) {
+    if (Number.isNaN(db)) {
+      return "+nan dB";
+    } else if (db === Infinity) {
+      return "+inf dB";
+    } else if (db === -Infinity) {
+      return "-inf dB";
+    }
+    let dbStr = db.toFixed(2);
+    if (dbStr[0] !== "-") { dbStr = "+" + dbStr; }
+    return `${dbStr} dB`;
   }
 
   set(data, rawPeak = null) {
@@ -63,32 +79,30 @@ export class WaveView {
       }
     }
 
-    // Calculate peak gain.
+    // Calculate peak gain and RMS peak.
     let maxVal = 0;
+    let sumSq = 0;
     if (rawPeak === null) {
       this.#peakText = "";
+      this.#rmsPeakText = "";
     } else {
-      if (rawPeak !== undefined && Number.isFinite(rawPeak)) {
-        maxVal = rawPeak;
-      } else {
-        for (let i = 0; i < this.#data.length; ++i) {
-          const absVal = Math.abs(this.#data[i]);
+      const hasRawPeak = rawPeak !== undefined && Number.isFinite(rawPeak);
+      if (hasRawPeak) { maxVal = rawPeak; }
+      for (let i = 0; i < this.#data.length; ++i) {
+        const val = this.#data[i];
+        if (!hasRawPeak) {
+          const absVal = Math.abs(val);
           if (absVal > maxVal) { maxVal = absVal; }
         }
+        sumSq += val * val;
       }
 
       const peak = 20 * Math.log10(maxVal);
-      if (Number.isNaN(peak)) {
-        this.#peakText = "+nan dB";
-      } else if (peak === Infinity) {
-        this.#peakText = "+inf dB";
-      } else if (peak === -Infinity) {
-        this.#peakText = "-inf dB";
-      } else {
-        let peakStr = peak.toFixed(2);
-        if (peakStr[0] !== "-") { peakStr = "+" + peakStr; }
-        this.#peakText = `${peakStr} dB`;
-      }
+      this.#peakText = this.#formatDb(peak);
+
+      const rmsVal = this.#data.length > 0 ? Math.sqrt(sumSq / this.#data.length) : 0;
+      const rmsPeak = 20 * Math.log10(rmsVal);
+      this.#rmsPeakText = this.#formatDb(rmsPeak);
     }
 
     this.draw();
@@ -195,9 +209,10 @@ export class WaveView {
     this.context.font = `${fontSize}px ${palette.fontFamily}`;
     this.context.fillText(`${this.#offset}/${this.#data.length}`, 0, fontSize + 1);
 
-    // Peak gain indicator.
+    // Peak gain indicator and RMS peak indicator.
     this.context.textAlign = "right";
     this.context.fillText(this.#peakText, width, fontSize + 1);
+    if (this.#displayRms) { this.context.fillText(this.#rmsPeakText, width, (fontSize + 1) * 2); }
     this.context.textAlign = "left"; // Restore default alignment.
   }
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //
-// Don't import any other code to avoid circular dependency.
+// Do not import any other code to avoid circular dependency.
 //
 
 export function clamp(value, low, high) { return Math.max(low, Math.min(value, high)); }
@@ -287,11 +287,12 @@ export function shuffleArray(rng, array, start, end) {
 
 // `x` in [0, 1].
 export function superellipse(x, n) { return x < 0 ? 1 : (1 - x ** n) ** (1 / n); }
+export function lameCurve(x, p, q) { return x <= 0 ? 1 : x >= 1 ? 0 : (1 - x ** p) ** (1 / q); }
 
-export function chebyshev1_2(x) { return 2 * x * x; }
-export function chebyshev1_3(x) { return 4 * x * x * x - 3 * x; }
-export function chebyshev1_4(x) { return 8 * x * x * x * x - 8 * x * x; }
-export function chebyshev1_5(x) { return 16 * x * x * x * x * x - 20 * x * x * x + 5 * x; }
+export function chebyshev1_2(x) { return 2 * x * x - 1; }
+export function chebyshev1_3(x) { return (4 * x * x - 3) * x; }
+export function chebyshev1_4(x) { return (8 * x * x - 8) * x * x + 1; }
+export function chebyshev1_5(x) { return ((16 * x * x - 20) * x * x + 5) * x; }
 
 export function triangularNumber(n) { return (n * n + n) / 2; }
 

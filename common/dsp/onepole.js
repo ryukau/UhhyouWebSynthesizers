@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
-Details are written in:
+Details:
 https://ryukau.github.io/filter_notes/one_pole_lowpass/one_pole_lowpass.html
 */
 
@@ -36,6 +36,11 @@ export class LP1 {
     this.#x1 = x0;
     return this.#y1;
   }
+
+  processMod(x0, cutoffNormalized) {
+    this.setCutoff(cutoffNormalized);
+    return this.process(x0);
+  }
 }
 
 export class HP1 {
@@ -62,6 +67,11 @@ export class HP1 {
     this.#y1 = this.#b0 * (x0 - this.#x1) - this.#a1 * this.#y1;
     this.#x1 = x0;
     return this.#y1;
+  }
+
+  processMod(x0, cutoffNormalized) {
+    this.setCutoff(cutoffNormalized);
+    return this.process(x0);
   }
 }
 
@@ -92,6 +102,11 @@ export class AP1 {
     this.#y1 = this.#a * (x0 - this.#y1) + this.#x1;
     this.#x1 = x0;
     return this.#y1;
+  }
+
+  processMod(x0, cutoffNormalized) {
+    this.setCutoff(cutoffNormalized);
+    return this.process(x0);
   }
 }
 
@@ -127,5 +142,44 @@ export class HS1 {
     this.#x1 = x0;
     this.#y1 = hp;
     return x0 + (this.#gain - 1) * hp;
+  }
+
+  processMod(x0, cutoffNormalized, gain) {
+    this.setCutoff(cutoffNormalized);
+    this.setGain(gain);
+    return this.process(x0);
+  }
+}
+
+export class TiltFilter {
+  #b0 = 1;
+  #b1 = 0;
+  #a1 = 0;
+  #x1 = 0;
+  #y1 = 0;
+
+  constructor(cutoffNormalized = 0.1, tilt = 0) { this.set(cutoffNormalized, tilt); }
+
+  reset() {
+    this.#x1 = 0;
+    this.#y1 = 0;
+  }
+
+  // `tilt = 0`: pass-through, `tilt > 0`: treble heavy, `tilt < 0`: bass heavy.
+  set(cutoffNormalized, tiltDecibel, energyNormalization = false) {
+    const g = Math.tan(Math.PI * clamp(cutoffNormalized, minCutoff, nyquist));
+    const alpha = Math.exp(-tiltDecibel * 0.05 * Math.LN10);
+
+    const invDenom = energyNormalization ? 1 / Math.sqrt((1 + g) * (1 + g * alpha * alpha))
+                                         : 1 / ((1 + g) * Math.max(1, alpha));
+    this.#b0 = (g * alpha + 1) * invDenom;
+    this.#b1 = (g * alpha - 1) * invDenom;
+    this.#a1 = (1 - g) / (1 + g); // Negated (-a1) for Direct Form I.
+  }
+
+  process(x0) {
+    this.#y1 = this.#b0 * x0 + this.#b1 * this.#x1 + this.#a1 * this.#y1;
+    this.#x1 = x0;
+    return this.#y1;
   }
 }
