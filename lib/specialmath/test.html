@@ -7,20 +7,37 @@
   <style>
     body {
       font-family: monospace;
+      padding: 1rem;
+      background-color: #fdfdfd;
+      color: #222;
     }
 
     h1 {
       margin-bottom: 10px;
     }
 
+    h2 {
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 0.25rem;
+    }
+
     .summary {
       font-weight: bold;
       padding: 1rem;
       margin-bottom: 1rem;
+      border-radius: 4px;
+    }
+
+    .summary.pass {
+      background-color: #e6f4ea;
+      color: #137333;
     }
 
     .summary.fail {
-      color: #d23030;
+      background-color: #fce8e6;
+      color: #c5221f;
     }
 
     ul {
@@ -28,17 +45,25 @@
       padding-left: 0;
     }
 
+    li {
+      margin: 2px 0;
+    }
+
+    .pass-item {
+      color: #137333;
+    }
+
     .fail-item {
-      color: #d23030;
+      color: #c5221f;
+      font-weight: bold;
     }
   </style>
 </head>
 
 <body>
   <h1>UhhyouSpecialMath Functionality Tests</h1>
-  <div id="summary"
-       class="summary">Running tests...</div>
-  <ul id="log"></ul>
+  <div id="summary" class="summary">Running tests...</div>
+  <div id="test-container"></div>
 
   <script type="module">
     import UhhyouSpecialMath from "./specialmath.js";
@@ -46,8 +71,19 @@
     let passed = 0;
     let failed = 0;
 
-    const logList = document.getElementById("log");
     const summaryDiv = document.getElementById("summary");
+    const container = document.getElementById("test-container");
+
+    let currentList = null;
+
+    function addCategory(title) {
+      const h2 = document.createElement("h2");
+      h2.textContent = title;
+      container.appendChild(h2);
+
+      currentList = document.createElement("ul");
+      container.appendChild(currentList);
+    }
 
     function logResult(success, message) {
       if (success) {
@@ -61,12 +97,14 @@
       const li = document.createElement("li");
       li.className = success ? "pass-item" : "fail-item";
       li.textContent = `${success ? "✓ PASS" : "✗ FAIL"}: ${message}`;
-      logList.appendChild(li);
+      if (currentList) {
+        currentList.appendChild(li);
+      }
     }
 
     function assertCloseTo(actual, expected, tolerance = 1e-9, label = "") {
       const diff = Math.abs(actual - expected);
-      const success = diff <= tolerance;
+      const success = Number.isFinite(actual) && diff <= tolerance;
       logResult(
         success,
         `${label} (Expected: ~${expected}, Actual: ${actual}, Diff: ${diff.toExponential(2)})`
@@ -82,14 +120,178 @@
       try {
         const usm = await UhhyouSpecialMath();
 
-        // 1. Boost Math Function Tests
+        // 1. Library & Meta
+        addCategory("1. Library & Meta");
         logResult(typeof usm.boost_version() === "string", `boost_version: ${usm.boost_version()}`);
-        assertCloseTo(usm.gamma_p(2, 0.5), 0.09020401043104986, 1e-9, "gamma_p(2, 0.5)");
-        assertCloseTo(usm.gamma_q(2, 0.5), 0.9097959895689501, 1e-9, "gamma_q(2, 0.5)");
-        assertCloseTo(usm.tgamma_lower(2, 0.5), 0.09020401043104986, 1e-9, "tgamma_lower(2, 0.5)");
-        assertCloseTo(usm.tgamma(2, 0.5), 0.9097959895689501, 1e-9, "tgamma(2, 0.5)");
 
-        // 2. Fresnel Integrals: Boundary at x = 0
+        // 2. Gamma & Polygamma Functions
+        addCategory("2. Gamma & Polygamma Functions");
+        assertCloseTo(usm.tgamma(5.0), 24.0, 1e-12, "tgamma(5.0) == 4!");
+        assertCloseTo(usm.tgamma(0.5), Math.sqrt(Math.PI), 1e-12, "tgamma(0.5) == sqrt(pi)");
+        assertCloseTo(usm.tgamma_upper(2.0, 0.5), 0.9097959895689501, 1e-9, "tgamma_upper(2, 0.5)");
+        assertCloseTo(usm.tgamma_lower(2.0, 0.5), 0.09020401043104986, 1e-9, "tgamma_lower(2, 0.5)");
+        assertCloseTo(usm.tgamma1pm1(0.0), 0.0, 1e-15, "tgamma1pm1(0.0)");
+        assertCloseTo(usm.lgamma(5.0), Math.log(24.0), 1e-12, "lgamma(5.0) == ln(24)");
+        assertCloseTo(usm.digamma(1.0), -0.5772156649015329, 1e-12, "digamma(1.0) == -gamma_Euler");
+        assertCloseTo(usm.trigamma(1.0), (Math.PI * Math.PI) / 6.0, 1e-12, "trigamma(1.0) == pi^2/6");
+        assertCloseTo(usm.polygamma(1, 1.0), (Math.PI * Math.PI) / 6.0, 1e-12, "polygamma(1, 1.0) == trigamma(1)");
+        assertCloseTo(usm.tgamma_ratio(5.0, 4.0), 4.0, 1e-12, "tgamma_ratio(5.0, 4.0)");
+        assertCloseTo(usm.tgamma_delta_ratio(4.0, 1.0), 0.25, 1e-12, "tgamma_delta_ratio(4.0, 1.0)");
+        assertCloseTo(usm.gamma_p(2.0, 0.5), 0.09020401043104986, 1e-9, "gamma_p(2.0, 0.5)");
+        assertCloseTo(usm.gamma_q(2.0, 0.5), 0.9097959895689501, 1e-9, "gamma_q(2.0, 0.5)");
+        assertCloseTo(usm.gamma_p_inv(2.0, 0.09020401043104986), 0.5, 1e-7, "gamma_p_inv");
+        assertCloseTo(usm.gamma_q_inv(2.0, 0.9097959895689501), 0.5, 1e-7, "gamma_q_inv");
+        assertCloseTo(usm.gamma_p_inva(0.5, 0.09020401043104986), 2.0, 1e-7, "gamma_p_inva");
+        assertCloseTo(usm.gamma_q_inva(0.5, 0.9097959895689501), 2.0, 1e-7, "gamma_q_inva");
+        assertCloseTo(usm.gamma_p_derivative(2.0, 1.0), Math.exp(-1.0), 1e-9, "gamma_p_derivative(2, 1)");
+
+        // 3. Factorials and Combinatorics
+        addCategory("3. Factorials and Combinatorics");
+        assertCloseTo(usm.factorial(5), 120.0, 1e-12, "factorial(5)");
+        assertCloseTo(usm.double_factorial(5), 15.0, 1e-12, "double_factorial(5)");
+        assertCloseTo(usm.rising_factorial(3.0, 3), 60.0, 1e-12, "rising_factorial(3, 3)");
+        assertCloseTo(usm.falling_factorial(5.0, 3), 60.0, 1e-12, "falling_factorial(5, 3)");
+        assertCloseTo(usm.binomial_coefficient(6, 2), 15.0, 1e-12, "binomial_coefficient(6, 2)");
+
+        // 4. Beta Functions
+        addCategory("4. Beta Functions");
+        assertCloseTo(usm.beta(2.0, 3.0), 1.0 / 12.0, 1e-12, "beta(2.0, 3.0)");
+        assertCloseTo(usm.ibeta(2.0, 3.0, 0.5), 0.6875, 1e-12, "ibeta(2.0, 3.0, 0.5)");
+        assertCloseTo(usm.ibetac(2.0, 3.0, 0.5), 0.3125, 1e-12, "ibetac(2.0, 3.0, 0.5)");
+        assertCloseTo(usm.betac(2.0, 3.0, 0.5), 0.3125 / 12.0, 1e-12, "betac(2.0, 3.0, 0.5)");
+        assertCloseTo(usm.ibeta_inv(2.0, 3.0, 0.6875), 0.5, 1e-9, "ibeta_inv");
+        assertCloseTo(usm.ibetac_inv(2.0, 3.0, 0.3125), 0.5, 1e-9, "ibetac_inv");
+        assertCloseTo(usm.ibeta_inva(3.0, 0.5, 0.6875), 2.0, 1e-7, "ibeta_inva");
+        assertCloseTo(usm.ibetac_inva(3.0, 0.5, 0.3125), 2.0, 1e-7, "ibetac_inva");
+        assertCloseTo(usm.ibeta_invb(2.0, 0.5, 0.6875), 3.0, 1e-7, "ibeta_invb");
+        assertCloseTo(usm.ibetac_invb(2.0, 0.5, 0.3125), 3.0, 1e-7, "ibetac_invb");
+        assertCloseTo(usm.ibeta_derivative(2.0, 3.0, 0.5), 1.5, 1e-9, "ibeta_derivative(2.0, 3.0, 0.5)");
+
+        // 5. Error Functions
+        addCategory("5. Error Functions");
+        assertCloseTo(usm.erf(0.5), 0.5204998778130465, 1e-9, "erf(0.5)");
+        assertCloseTo(usm.erfc(0.5), 0.4795001221869535, 1e-9, "erfc(0.5)");
+        assertCloseTo(usm.erf_inv(0.5204998778130465), 0.5, 1e-9, "erf_inv");
+        assertCloseTo(usm.erfc_inv(0.4795001221869535), 0.5, 1e-9, "erfc_inv");
+
+        // 6. Polynomials and Spherical Harmonics
+        addCategory("6. Polynomials & Harmonics");
+        assertCloseTo(usm.legendre_p(2, 0.5), -0.125, 1e-12, "legendre_p(2, 0.5)");
+        assertCloseTo(usm.legendre_p_assoc(2, 1, 0.5), -1.299038105676658, 1e-9, "legendre_p_assoc(2, 1, 0.5)");
+        assertCloseTo(usm.legendre_p_prime(2, 0.5), 1.5, 1e-12, "legendre_p_prime(2, 0.5)");
+        assertCloseTo(usm.legendre_q(0, 0.5), 0.5493061443340549, 1e-9, "legendre_q(0, 0.5)");
+        assertCloseTo(usm.legendre_next(1, 0.5, 0.5, 1.0), -0.125, 1e-12, "legendre_next");
+
+        assertCloseTo(usm.laguerre(2, 1.0), -0.5, 1e-12, "laguerre(2, 1.0)");
+        assertCloseTo(usm.laguerre_assoc(2, 1, 1.0), 0.5, 1e-12, "laguerre_assoc(2, 1, 1.0)");
+        assertCloseTo(usm.laguerre_next(1, 1.0, 0.0, 1.0), -0.5, 1e-12, "laguerre_next");
+        assertCloseTo(usm.laguerre_assoc_next(1, 1, 1.0, 1.0, 1.0), 0.5, 1e-12, "laguerre_assoc_next");
+
+        assertCloseTo(usm.hermite(3, 2.0), 40.0, 1e-12, "hermite(3, 2.0)");
+        assertCloseTo(usm.hermite_next(2, 2.0, 14.0, 4.0), 40.0, 1e-12, "hermite_next");
+
+        assertCloseTo(usm.chebyshev_t(3, 0.5), -1.0, 1e-12, "chebyshev_t(3, 0.5)");
+        assertCloseTo(usm.chebyshev_u(2, 0.5), 0.0, 1e-12, "chebyshev_u(2, 0.5)");
+        assertCloseTo(usm.chebyshev_t_prime(2, 0.5), 2.0, 1e-12, "chebyshev_t_prime(2, 0.5)");
+        assertCloseTo(usm.chebyshev_next(0.5, 0.5, 1.0), -0.5, 1e-12, "chebyshev_next");
+
+        assertCloseTo(usm.gegenbauer(2, 1.0, 0.5), 0.0, 1e-12, "gegenbauer(2, 1.0, 0.5)");
+        assertCloseTo(usm.gegenbauer_prime(2, 1.0, 0.5), 4.0, 1e-12, "gegenbauer_prime(2, 1.0, 0.5)");
+
+        assertCloseTo(usm.jacobi(2, 0.0, 0.0, 0.5), -0.125, 1e-12, "jacobi(2, 0, 0, 0.5)");
+        assertCloseTo(usm.jacobi_prime(2, 0.0, 0.0, 0.5), 1.5, 1e-12, "jacobi_prime(2, 0, 0, 0.5)");
+        assertCloseTo(usm.jacobi_double_prime(2, 0.0, 0.0, 0.5), 3.0, 1e-12, "jacobi_double_prime(2, 0, 0, 0.5)");
+
+        assertCloseTo(usm.spherical_harmonic_r(1, 0, 0.0, 0.0), Math.sqrt(3.0 / (4.0 * Math.PI)), 1e-9, "spherical_harmonic_r");
+        assertCloseTo(usm.spherical_harmonic_i(1, 0, 0.0, 0.0), 0.0, 1e-12, "spherical_harmonic_i");
+
+        // 7. Bessel, Neumann, and Airy Functions
+        addCategory("7. Bessel, Neumann, and Airy Functions");
+        assertCloseTo(usm.cyl_bessel_j(0.0, 0.0), 1.0, 1e-12, "cyl_bessel_j(0, 0)");
+        assertCloseTo(usm.cyl_bessel_j_zero(0.0, 1), 2.404825557695773, 1e-9, "cyl_bessel_j_zero(0, 1)");
+        assertCloseTo(usm.cyl_bessel_j_prime(0.0, 0.0), 0.0, 1e-12, "cyl_bessel_j_prime(0, 0)");
+
+        assertCloseTo(usm.cyl_neumann(0.0, 1.0), 0.08825696421567696, 1e-9, "cyl_neumann(0, 1)");
+        assertCloseTo(usm.cyl_neumann_zero(0.0, 1), 0.8935769662791675, 1e-9, "cyl_neumann_zero(0, 1)");
+        assertCloseTo(usm.cyl_neumann_prime(0.0, 1.0), 0.7812128213002887, 1e-9, "cyl_neumann_prime(0, 1)");
+
+        assertCloseTo(usm.cyl_bessel_i(0.0, 0.0), 1.0, 1e-12, "cyl_bessel_i(0, 0)");
+        assertCloseTo(usm.cyl_bessel_i_prime(0.0, 0.0), 0.0, 1e-12, "cyl_bessel_i_prime(0, 0)");
+        assertCloseTo(usm.cyl_bessel_k(0.0, 1.0), 0.42102443824070834, 1e-9, "cyl_bessel_k(0, 1)");
+        assertCloseTo(usm.cyl_bessel_k_prime(0.0, 1.0), -0.6019072301972346, 1e-9, "cyl_bessel_k_prime(0, 1)");
+
+        assertCloseTo(usm.sph_bessel(0, 1.0), Math.sin(1.0), 1e-9, "sph_bessel(0, 1.0)");
+        assertCloseTo(usm.sph_bessel_prime(0, 1.0), Math.cos(1.0) - Math.sin(1.0), 1e-9, "sph_bessel_prime(0, 1.0)");
+        assertCloseTo(usm.sph_neumann(0, 1.0), -Math.cos(1.0), 1e-9, "sph_neumann(0, 1.0)");
+        assertCloseTo(usm.sph_neumann_prime(0, 1.0), Math.sin(1.0) + Math.cos(1.0), 1e-9, "sph_neumann_prime(0, 1.0)");
+
+        assertCloseTo(usm.airy_ai(0.0), 0.35502805388781724, 1e-9, "airy_ai(0.0)");
+        assertCloseTo(usm.airy_bi(0.0), 0.6149266274460007, 1e-9, "airy_bi(0.0)");
+        assertCloseTo(usm.airy_ai_prime(0.0), -0.2588194037928068, 1e-9, "airy_ai_prime(0.0)");
+        assertCloseTo(usm.airy_bi_prime(0.0), 0.44828835735382635, 1e-9, "airy_bi_prime(0.0)");
+        assertCloseTo(usm.airy_ai_zero(1), -2.338107410459767, 1e-9, "airy_ai_zero(1)");
+        assertCloseTo(usm.airy_bi_zero(1), -1.173713222709128, 1e-9, "airy_bi_zero(1)");
+
+        // 8. Elliptic Integrals and Jacobi Elliptic Functions
+        addCategory("8. Elliptic Integrals & Jacobi Elliptic Functions");
+        assertCloseTo(usm.ellint_rf(1.0, 2.0, 0.0), 1.3110287771460599, 1e-9, "ellint_rf(1, 2, 0)");
+        assertCloseTo(usm.ellint_rd(0.0, 2.0, 1.0), 1.79721035210339, 1e-9, "ellint_rd(0, 2, 1)");
+        assertCloseTo(usm.ellint_rj(0.0, 1.0, 2.0, 3.0), 0.776886237785823, 1e-9, "ellint_rj(0, 1, 2, 3)");
+        assertCloseTo(usm.ellint_rc(0.0, 1.0), Math.PI / 2.0, 1e-9, "ellint_rc(0, 1)");
+        assertCloseTo(usm.ellint_rg(0.0, 1.0, 2.0), 0.955049447256928, 1e-9, "ellint_rg(0, 1, 2)");
+
+        assertCloseTo(usm.ellint_1_complete(0.5), 1.6857503548126, 1e-9, "ellint_1_complete(0.5)");
+        assertCloseTo(usm.ellint_1(0.5, 0.5), 0.505088727578648, 1e-9, "ellint_1(0.5, 0.5)");
+        assertCloseTo(usm.ellint_2_complete(0.5), 1.46746220933943, 1e-9, "ellint_2_complete(0.5)");
+        assertCloseTo(usm.ellint_2(0.5, 0.5), 0.495001703016415, 1e-9, "ellint_2(0.5, 0.5)");
+        assertCloseTo(usm.ellint_3_complete(0.5, 0.2), 1.8922947612264, 1e-9, "ellint_3_complete(0.5, 0.2)");
+        assertCloseTo(usm.ellint_3(0.5, 0.2, 0.5), 0.513392814019525, 1e-9, "ellint_3(0.5, 0.2, 0.5)");
+
+        assertCloseTo(usm.jacobi_zeta(0.5, 0.5), 0.05531701425512965, 1e-9, "jacobi_zeta(0.5, 0.5)");
+        assertCloseTo(usm.heuman_lambda(0.5, 0.5), 0.4484638788008964, 1e-9, "heuman_lambda(0.5, 0.5)");
+
+        // Jacobi elliptic functions at k = 0
+        assertCloseTo(usm.jacobi_sn(0.0, 1.0), Math.sin(1.0), 1e-12, "jacobi_sn(0, 1) == sin(1)");
+        assertCloseTo(usm.jacobi_cn(0.0, 1.0), Math.cos(1.0), 1e-12, "jacobi_cn(0, 1) == cos(1)");
+        assertCloseTo(usm.jacobi_dn(0.0, 1.0), 1.0, 1e-12, "jacobi_dn(0, 1) == 1");
+        assertCloseTo(usm.jacobi_cd(0.0, 1.0), Math.cos(1.0), 1e-12, "jacobi_cd(0, 1) == cos(1)");
+        assertCloseTo(usm.jacobi_sd(0.0, 1.0), Math.sin(1.0), 1e-12, "jacobi_sd(0, 1) == sin(1)");
+        assertCloseTo(usm.jacobi_nd(0.0, 1.0), 1.0, 1e-12, "jacobi_nd(0, 1) == 1");
+        assertCloseTo(usm.jacobi_dc(0.0, 1.0), 1.0 / Math.cos(1.0), 1e-12, "jacobi_dc(0, 1) == sec(1)");
+        assertCloseTo(usm.jacobi_nc(0.0, 1.0), 1.0 / Math.cos(1.0), 1e-12, "jacobi_nc(0, 1) == sec(1)");
+        assertCloseTo(usm.jacobi_sc(0.0, 1.0), Math.tan(1.0), 1e-12, "jacobi_sc(0, 1) == tan(1)");
+        assertCloseTo(usm.jacobi_ns(0.0, 1.0), 1.0 / Math.sin(1.0), 1e-12, "jacobi_ns(0, 1) == csc(1)");
+        assertCloseTo(usm.jacobi_ds(0.0, 1.0), 1.0 / Math.sin(1.0), 1e-12, "jacobi_ds(0, 1) == csc(1)");
+        assertCloseTo(usm.jacobi_cs(0.0, 1.0), 1.0 / Math.tan(1.0), 1e-12, "jacobi_cs(0, 1) == cot(1)");
+
+        // 9. Zeta and Exponential Integrals
+        addCategory("9. Zeta & Exponential Integrals");
+        assertCloseTo(usm.zeta(2.0), (Math.PI * Math.PI) / 6.0, 1e-12, "zeta(2.0) == pi^2/6");
+        assertCloseTo(usm.expint(1.0), 1.8951178163559368, 1e-9, "expint(1.0)");
+        assertCloseTo(usm.expint_n(1, 1.0), 0.21938393439552029, 1e-9, "expint_n(1, 1.0)");
+
+        // 10. Number Series, Transcendental, and Utilities
+        addCategory("10. Number Series & Math Utilities");
+        assertCloseTo(usm.bernoulli_b2n(1), 1.0 / 6.0, 1e-12, "bernoulli_b2n(1)");
+        assertCloseTo(usm.tangent_t2n(1), 1.0, 1e-12, "tangent_t2n(1)");
+        assertEqual(usm.prime(0), 2, "prime(0) === 2");
+        assertEqual(usm.prime(9), 29, "prime(9) === 29");
+
+        assertCloseTo(usm.sinc_pi(0.5), Math.sin(0.5) / 0.5, 1e-12, "sinc_pi(0.5)");
+        assertCloseTo(usm.sinhc_pi(1.0), Math.sinh(1.0) / 1.0, 1e-12, "sinhc_pi(1.0)");
+        assertCloseTo(usm.sin_pi(0.5), 1.0, 1e-15, "sin_pi(0.5)");
+        assertCloseTo(usm.cos_pi(1.0), -1.0, 1e-15, "cos_pi(1.0)");
+        assertCloseTo(usm.log1p(0.5), Math.log(1.5), 1e-15, "log1p(0.5)");
+        assertCloseTo(usm.expm1(1.0), Math.E - 1.0, 1e-15, "expm1(1.0)");
+        assertCloseTo(usm.log1pmx(0.5), Math.log(1.5) - 0.5, 1e-15, "log1pmx(0.5)");
+        assertCloseTo(usm.hypot(3.0, 4.0), 5.0, 1e-15, "hypot(3, 4)");
+        assertCloseTo(usm.powm1(2.0, 3.0), 7.0, 1e-15, "powm1(2, 3)");
+        assertCloseTo(usm.cbrt(27.0), 3.0, 1e-15, "cbrt(27.0)");
+        assertCloseTo(usm.sqrt1pm1(3.0), 1.0, 1e-15, "sqrt1pm1(3.0)");
+        assertCloseTo(usm.owens_t(1.0, 0.5), 0.043064691120785356, 1e-9, "owens_t(1.0, 0.5)");
+
+        // 11. Fresnel Integrals
+        addCategory("11. Fresnel Integrals");
         assertCloseTo(usm.fresnel_cos(0), 0.0, 1e-15, "fresnel_cos(0) === 0");
         assertCloseTo(usm.fresnel_sin(0), 0.0, 1e-15, "fresnel_sin(0) === 0");
 
@@ -97,31 +299,23 @@
         assertCloseTo(zeroRes.c, 0.0, 1e-15, "fresnel(0).c === 0");
         assertCloseTo(zeroRes.s, 0.0, 1e-15, "fresnel(0).s === 0");
 
-        // 3. Fresnel Integrals: Known Value at x = 1.0
-        // Expected: C(1) ≈ 0.7798934003768228, S(1) ≈ 0.4382591473903547
         assertCloseTo(usm.fresnel_cos(1.0), 0.7798934003768228, 1e-9, "fresnel_cos(1.0)");
         assertCloseTo(usm.fresnel_sin(1.0), 0.4382591473903547, 1e-9, "fresnel_sin(1.0)");
 
-        // 4. Fresnel Integrals: Consistency Check
-        // Verify fresnel(x) matches fresnel_cos(x) and fresnel_sin(x)
         const res = usm.fresnel(1.5);
         assertEqual(res.c, usm.fresnel_cos(1.5), "fresnel(1.5).c matches fresnel_cos(1.5)");
         assertEqual(res.s, usm.fresnel_sin(1.5), "fresnel(1.5).s matches fresnel_sin(1.5)");
 
-        // 5. Fresnel Integrals: Symmetry Property
-        // Odd functions: C(-x) = -C(x), S(-x) = -S(x)
         const posVal = usm.fresnel(2.0);
         const negVal = usm.fresnel(-2.0);
         assertCloseTo(negVal.c, -posVal.c, 1e-12, "Odd symmetry: fresnel(-2.0).c === -fresnel(2.0).c");
         assertCloseTo(negVal.s, -posVal.s, 1e-12, "Odd symmetry: fresnel(-2.0).s === -fresnel(2.0).s");
 
-        // 6. Fresnel Integrals: Large x Asymptote
-        // C(x) -> 0.5, S(x) -> 0.5 as x -> ∞
         const largeVal = usm.fresnel(10.0);
         assertCloseTo(largeVal.c, 0.499898694205515723, 1e-2, "Asymptote: fresnel(10.0).c");
         assertCloseTo(largeVal.s, 0.468169978584882240, 1e-2, "Asymptote: fresnel(10.0).s");
 
-        // Update UI Summary
+        // Summary Update
         summaryDiv.className = failed === 0 ? "summary pass" : "summary fail";
         summaryDiv.textContent = `Tests Completed: ${passed + failed} | Passed: ${passed} | Failed: ${failed}`;
 
