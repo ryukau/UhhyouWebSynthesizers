@@ -1,3 +1,6 @@
+// Copyright Takamitsu Endo (ryukau@gmail.com)
+// SPDX-License-Identifier: Apache-2.0
+
 import {clamp} from "../util.js";
 
 import {palette} from "./palette.js";
@@ -5,31 +8,52 @@ import {palette} from "./palette.js";
 export class BezierEnvelopeView {
   #highlighted = null;
   #grabbed = null;
+  #selectedPointIndex = 0;
+  #focused = false;
 
   constructor(parent, width, height, bezierParameters, label, onChangeFunc) {
+    this.param = bezierParameters; // Array of [x1, y1, x2, y2].
+    this.onChangeFunc = onChangeFunc;
+
+    this.divContainer = document.createElement("div");
+    this.divContainer.classList.add("bezierEnvelopeContainer");
+    parent.appendChild(this.divContainer);
+
+    this.label = document.createElement("label");
+    this.label.textContent = label;
+    this.label.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (this.param.length <= 0) return;
+        const newState = !this.param[0].lockRandomization;
+        for (let prm of this.param) { prm.lockRandomization = newState; }
+        this.label.style.color = newState ? palette.inactive : "unset";
+      },
+      false,
+    );
+    this.divContainer.appendChild(this.label);
+
     this.divCanvasMargin = document.createElement("div");
     this.divCanvasMargin.classList.add("canvasMargin");
-    parent.appendChild(this.divCanvasMargin);
+    this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
     this.canvas.classList.add("envelopeView");
     this.canvas.ariaLabel = `${label}, canvas`;
-    this.canvas.ariaDescription = "";
+    this.canvas.ariaDescription
+      = "Use arrow keys to move control points. Press 1 or 2 to switch points.";
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener(
-      "pointerdown", (event) => this.onPointerDown(event), false);
-    this.canvas.addEventListener(
-      "pointermove", (event) => this.onPointerMove(event), false);
+    this.canvas.addEventListener("pointerdown", (event) => this.onPointerDown(event), false);
+    this.canvas.addEventListener("pointermove", (event) => this.onPointerMove(event), false);
     this.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event), false);
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
+    this.canvas.addEventListener("keydown", (event) => this.onKeyDown(event), false);
+    this.canvas.addEventListener("focus", () => this.onFocus(), false);
+    this.canvas.addEventListener("blur", () => this.onBlur(), false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
-
-    this.param = bezierParameters; // Array of [x1, y1, x2, y2].
-    this.label = label;
-    this.onChangeFunc = onChangeFunc;
 
     this.pointRadius = palette.fontSize / 2;
     this.setControlPoints(
@@ -37,6 +61,8 @@ export class BezierEnvelopeView {
 
     this.#highlighted = null;
     this.#grabbed = null;
+    this.#selectedPointIndex = 0;
+    this.#focused = false;
 
     this.draw();
   }
@@ -58,14 +84,18 @@ export class BezierEnvelopeView {
       const dx = point.x - mousePosition.x;
       const dy = point.y - mousePosition.y;
       const length = Math.sqrt(dx * dx + dy * dy);
-      if (length <= this.pointRadius) return point;
+      if (length <= this.pointRadius) { return point; }
     }
     return null;
   }
 
   onPointerDown(event) {
     this.#grabbed = this.grabPoint(this.#getMousePosition(event));
-    if (this.#grabbed !== null) this.canvas.setPointerCapture(event.pointerId);
+    if (this.#grabbed !== null) {
+      this.#selectedPointIndex = this.points.indexOf(this.#grabbed);
+      this.canvas.setPointerCapture(event.pointerId);
+      this.draw();
+    }
   }
 
   onPointerMove(event) {
@@ -73,8 +103,8 @@ export class BezierEnvelopeView {
       const prev = this.#highlighted;
       this.#highlighted = this.grabPoint(this.#getMousePosition(event));
 
-      // Draw only if internal state is changed.
-      if (prev !== this.#highlighted) this.draw();
+      // Draw only if the internal state is changed.
+      if (prev !== this.#highlighted) { this.draw(); }
 
       return;
     }
@@ -98,7 +128,64 @@ export class BezierEnvelopeView {
     this.draw();
   }
 
+  onFocus() {
+    this.#focused = true;
+    this.draw();
+  }
+
+  onBlur() {
+    this.#focused = false;
+    this.draw();
+  }
+
+  onKeyDown(event) {
+    if (!this.points || this.points.length === 0) return;
+
+    let handled = false;
+    const step = event.shiftKey ? 10 : 1;
+    const activePoint = this.points[this.#selectedPointIndex];
+
+    switch (event.key) {
+      case "1":
+      case "Home":
+      case "PageUp":
+        this.#selectedPointIndex = 0;
+        handled = true;
+        break;
+      case "2":
+      case "End":
+      case "PageDown":
+        this.#selectedPointIndex = 1;
+        handled = true;
+        break;
+      case "ArrowLeft":
+        activePoint.x = clamp(activePoint.x - step, 0, this.canvas.width);
+        handled = true;
+        break;
+      case "ArrowRight":
+        activePoint.x = clamp(activePoint.x + step, 0, this.canvas.width);
+        handled = true;
+        break;
+      case "ArrowUp":
+        activePoint.y = clamp(activePoint.y - step, 0, this.canvas.height);
+        handled = true;
+        break;
+      case "ArrowDown":
+        activePoint.y = clamp(activePoint.y + step, 0, this.canvas.height);
+        handled = true;
+        break;
+    }
+
+    if (handled) {
+      event.preventDefault();
+      this.#updateParameter();
+      this.onChangeFunc();
+      this.draw();
+    }
+  }
+
   refresh() {
+    this.label.style.color = this.param[0]?.lockRandomization ? palette.inactive : "unset";
     this.setControlPoints(
       this.param[0].dsp, this.param[1].dsp, this.param[2].dsp, this.param[3].dsp);
     this.draw();
@@ -112,6 +199,7 @@ export class BezierEnvelopeView {
   }
 
   random() {
+    if (this.param[0]?.lockRandomization) { return; }
     for (let point of this.points) {
       point.x = this.canvas.width * Math.random();
       point.y = this.canvas.height * Math.random();
@@ -128,19 +216,31 @@ export class BezierEnvelopeView {
     this.context.fillStyle = palette.background;
     this.context.fillRect(0, 0, width, height);
 
-    // Label.
-    this.context.fillStyle = palette.overlay;
-    this.context.font
-      = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
-    this.context.fillText(this.label, palette.fontSize, height - palette.fontSize);
+    // Active control point for hover/touch/keyboard.
+    let activePoint = this.#grabbed ?? this.#highlighted;
+    if (activePoint === null && this.#focused) {
+      activePoint = this.points[this.#selectedPointIndex];
+    }
+
+    // Display coordinate only when pointer or focus is on a control point.
+    if (activePoint !== null) {
+      const isStart = activePoint === this.points[0];
+      const p = isStart
+        ? `${this.param[0].display.toFixed(3)}, ${this.param[1].display.toFixed(3)}`
+        : `${this.param[2].display.toFixed(3)}, ${this.param[3].display.toFixed(3)}`;
+      const text = `${isStart ? "↖" : "↘"} ${p}`;
+
+      this.context.fillStyle = palette.overlay;
+      this.context.font = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
+      this.context.fillText(text, palette.fontSize, height - palette.fontSize);
+    }
 
     // Envelope curve.
     this.context.strokeStyle = palette.foreground;
     this.context.beginPath();
     this.context.moveTo(0, 0);
     this.context.bezierCurveTo(
-      this.points[0].x, this.points[0].y, this.points[1].x, this.points[1].y, width,
-      height);
+      this.points[0].x, this.points[0].y, this.points[1].x, this.points[1].y, width, height);
     this.context.stroke();
 
     // Dashed lines to control points.
@@ -156,14 +256,11 @@ export class BezierEnvelopeView {
     this.context.stroke();
     this.context.setLineDash([0]);
 
-    // draw control points.
+    // Draw control points.
     for (const point of this.points) {
-      this.context.fillStyle = point === this.#highlighted || point === this.#grabbed
-        ? palette.overlay
-        : "#c0c0c088";
+      this.context.fillStyle = point === activePoint ? palette.overlay : "#c0c0c088";
       this.context.beginPath();
-      this.context.ellipse(
-        point.x, point.y, this.pointRadius, this.pointRadius, 0, 0, 2 * Math.PI);
+      this.context.ellipse(point.x, point.y, this.pointRadius, this.pointRadius, 0, 0, 2 * Math.PI);
       this.context.fill();
     }
   }

@@ -53,6 +53,8 @@ export const uiSize = {
   controlWidth: controlWidth,
   waveViewWidth: controlWidth * 15 / 32,
   waveViewHeight: controlWidth * 8 / 32,
+  bezierEnvelopeWidth: controlWidth * 15 / 32,
+  bezierEnvelopeHeight: controlWidth * 8 / 32,
   barboxWidth: controlWidth,
   barboxHeight: controlWidth * 12 / 32,
 };

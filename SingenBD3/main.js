@@ -309,9 +309,11 @@ const ui = {
   overtoneAmp: new widget.NumberInput(detailOvertone, "Amp Descend", param.overtoneAmp, render),
 
   gainBezier: new widget.BezierEnvelopeView(
-    detailBody, palette.fontSize * 15, palette.fontSize * 8, param.gainBezier, "Gain", render),
+    detailBody, uiSize.bezierEnvelopeWidth, uiSize.bezierEnvelopeHeight, param.gainBezier, "Gain",
+    render),
   pitchBezier: new widget.BezierEnvelopeView(
-    detailBody, palette.fontSize * 15, palette.fontSize * 8, param.pitchBezier, "Pitch", render),
+    detailBody, uiSize.bezierEnvelopeWidth, uiSize.bezierEnvelopeHeight, param.pitchBezier, "Pitch",
+    render),
   baseFreq: new widget.NumberInput(detailBody, "Base Frequency [Hz]", param.baseFreq, render),
   pitchDropBezier:
     new widget.NumberInput(detailBody, "Bezier Range [oct]", param.pitchDropBezier, render),

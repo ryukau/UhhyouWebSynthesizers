@@ -566,6 +566,28 @@ input.barbox {
   display: inline-block;
 }
 
+/* BezierEnvelopeView */
+div.bezierEnvelopeContainer {
+  display: inline-block;
+  vertical-align: top;
+  margin: var(--margin);
+}
+
+div.bezierEnvelopeContainer > label {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 0 2px 0;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+div.bezierEnvelopeContainer > div.canvasMargin {
+  margin: 0;
+}
+
 /* RecipeExportDialog */
 dialog.recipeExport {
   padding: calc(3 * var(--margin));
