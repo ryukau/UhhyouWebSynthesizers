@@ -13,6 +13,7 @@ export * from "./sine.js";
 export * from "./softsign.js";
 export * from "./tanh.js";
 export * from "./triangle.js";
+export * from "./evenquadraticclip.js"
 
 export const saturatorAdaa1Items = [
   "Bypass",
@@ -25,6 +26,7 @@ export const saturatorAdaa1Items = [
   "Log1p",
   "Halfwave",
   "Fullwave",
+  "EvenQuadraticClip",
   "Sawtooth",
   "Sine",
   "Triangle",

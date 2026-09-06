@@ -230,8 +230,15 @@ export class SVF {
   }
 
   ap(v0) {
-    const [v1, v2] = this.tick(v0);
+    const [v1, _] = this.tick(v0);
     return v0 - 2 * this.#k * v1;
+  }
+
+  // `type` crossfades between LP, BP, HP. 0.0: Lowpass, 0.5: Bandpass, 1.0: Highpass.
+  morph(v0, t = 0) {
+    const [bp, lp] = this.tick(v0);
+    const mix = clamp(t, 0, 1) * 2 - 1;
+    return bp + mix * ((mix < 0 ? bp : v0 - this.#k * bp - bp) - lp);
   }
 }
 
@@ -271,6 +278,24 @@ export class SVFNotch extends SVF {
   process(v0) { return this.notch(v0); }
   processMod(v0, cutoffNormalized, Q) {
     this.setCutoff(cutoffNormalized, Q);
+    return this.process(v0);
+  }
+}
+
+export class SVFMultiMode extends SVF {
+  #type = 0;
+
+  constructor(cutoffNormalized, Q, type = 0) {
+    super(cutoffNormalized, Q);
+    this.setType(type);
+  }
+
+  setType(type) { this.#type = clamp(type, 0, 1); }
+  process(v0) { return this.morph(v0, this.#type); }
+
+  processMod(v0, cutoffNormalized, Q, type = this.#type) {
+    this.setCutoff(cutoffNormalized, Q);
+    this.setType(type);
     return this.process(v0);
   }
 }

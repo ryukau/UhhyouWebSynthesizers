@@ -110,6 +110,20 @@ export class AP1 {
   }
 }
 
+export class AP1TPT {
+  #s = 0;
+
+  reset() { this.#s = 0; }
+
+  // `cutoffNormalized` in [0, 0.5).
+  processMod(x0, cutoffNormalized) {
+    const fc = clamp(cutoffNormalized, minCutoff, nyquist);
+    const xs = x0 - this.#s;
+    this.#s += (2 * xs * fc) / ((1 / Math.PI) + fc);
+    return this.#s - xs;
+  }
+}
+
 // High-shelving.
 export class HS1 {
   #b0 = 1;
