@@ -24,6 +24,8 @@ Reference:
 - https://ryukau.github.io/filter_notes/matched_iir_filter/matched_iir_filter.html
 */
 
+import {clamp} from "../util.js";
+
 // Transposed direct form II.
 export class SosFilterImmediate {
   #v1;
@@ -43,7 +45,7 @@ export class SosFilterImmediate {
       if (this.co[i].length == 6) this.co[i].splice(3, 1);
     }
 
-    if (this.co[0].length != 5) {
+    if (this.co.length > 0 && this.co[0].length != 5) {
       console.error("SosFilterImmediate coefficient is ill formatted.", this.co);
     }
 
@@ -86,7 +88,7 @@ export class SosFilterImmediateDF1 {
       if (this.co[i].length == 6) this.co[i].splice(3, 1);
     }
 
-    if (this.co[0].length != 5) {
+    if (this.co.length > 0 && this.co[0].length != 5) {
       console.error("SosFilterImmediateDirectFormI coefficient is ill formatted.", this.co);
     }
 
@@ -105,12 +107,8 @@ export class SosFilterImmediateDF1 {
 
   process(input) {
     for (let i = 0; i < this.co.length; ++i) {
-      const y0                         //
-        = this.co[i][0] * input        //
-        + this.co[i][1] * this.#x1[i]  //
-        + this.co[i][2] * this.#x2[i]  //
-        - this.co[i][3] * this.#y1[i]  //
-        - this.co[i][4] * this.#y2[i]; //
+      const y0 = this.co[i][0] * input + this.co[i][1] * this.#x1[i] + this.co[i][2] * this.#x2[i]
+        - this.co[i][3] * this.#y1[i] - this.co[i][4] * this.#y2[i];
 
       this.#x2[i] = this.#x1[i];
       this.#x1[i] = input;
@@ -198,14 +196,12 @@ export function sosBiquadBandpassNormalized(cutoffNormalized, bandWidth) {
 
 export function sosBiquadNotch(cutoffNormalized, bandWidth) {
   const [ω0, cs, sn, A, α] = getBiquadBwParam(cutoffNormalized, bandWidth, 0);
-
   const b0 = 1;
   const b1 = -2 * cs;
   const b2 = 1;
   const a0 = 1 + α;
   const a1 = -2 * cs;
   const a2 = 1 - α;
-
   return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
 }
 
@@ -245,7 +241,7 @@ export function sosBiquadHighShelf(cutoffNormalized, slope, gainAmp) {
   const [ω0, cs, sn, A, α, B] = getBiquadSlopeParam(cutoffNormalized, slope, gainAmp);
   const b0 = A * ((A + 1) + (A - 1) * cs + B);
   const b1 = -2 * A * ((A - 1) + (A + 1) * cs);
-  const b2 = A * ((A + 1) + (A - 1) * cs - B);
+  const b2 = A * ((A + 1) - (A - 1) * cs - B);
   const a0 = (A + 1) - (A - 1) * cs + B;
   const a1 = 2 * ((A - 1) - (A + 1) * cs);
   const a2 = (A + 1) - (A - 1) * cs - B;
@@ -338,7 +334,6 @@ export function sosMatchedPeak(cutoffNormalized, Q, gainAmp) {
   return [b0, b1, b2, a1, a2];
 }
 
-// 1-pole high shelf.
 export function sosMatchedHighShelf1(cutoffNormalized, gainAmp) {
   const fc = 2 * cutoffNormalized;
   const G = gainAmp;
@@ -346,10 +341,10 @@ export function sosMatchedHighShelf1(cutoffNormalized, gainAmp) {
   const fm = 0.9;
   const φm = 1 - Math.cos(Math.PI * fm);
 
-  const pp = T(2) / (pi * pi);
-  const xi = pp / (φm * φm) - T(1) / φm;
+  const pp = 2 / (Math.PI * Math.PI);
+  const xi = pp / (φm * φm) - 1 / φm;
   const α = xi + pp / (G * fc * fc);
-  const β = xi + pp * G / (fc * fc);
+  const β = xi + (pp * G) / (fc * fc);
 
   const a1 = -α / (1 + α + Math.sqrt(1 + 2 * α));
   const b = -β / (1 + β + Math.sqrt(1 + 2 * β));
@@ -360,44 +355,164 @@ export function sosMatchedHighShelf1(cutoffNormalized, gainAmp) {
 }
 
 export function getSosGain(sos, normalizedFreq, inDecibel = false) {
-  // Complex number functions.
-  const add = (s, t) => {
-    return {
-      re: s.re + t.re,
-      im: s.im + t.im,
-    };
-  };
-  const mul = (s, t) => {
-    return {
-      re: s.re * t.re - s.im * t.im,
-      im: s.re * t.im + s.im * t.re,
-    };
-  };
-  const div = (s, t) => {
-    const denom = t.re * t.re + t.im * t.im;
-    return {
-      re: (t.re * s.re + t.im * s.im) / denom,
-      im: (t.re * s.im - t.im * s.re) / denom,
-    };
-  };
-  const rmul = (re, t) => { return {re: re * t.re, im: re * t.im}; };
-  const radd = (re, t) => { return {re: re + t.re, im: t.im}; };
-
   const omega = 2 * Math.PI * normalizedFreq;
-  const z = {re: Math.cos(omega), im: -Math.sin(omega)}; // exp(-1j * omega).
-  const z2 = mul(z, z);
-  let gain = {re: 1, im: 0};
-  for (const co of sos) {
-    // Equivalent to:
-    // gain += (co[0] + co[1] * z + co[2] * z * z) / (1 + co[3] * z + co[4] * z * z);
-    const H = div(
-      add(radd(co[0], rmul(co[1], z)), rmul(co[2], z2)),
-      add(radd(1, rmul(co[3], z)), rmul(co[4], z2)),
-    );
-    gain = mul(gain, H);
+  const cos_w = Math.cos(omega);
+  const sin_w = Math.sin(omega);
+  const cos_2w = 2 * cos_w * cos_w - 1;
+  const sin_2w = 2 * sin_w * cos_w;
+
+  let re = 1;
+  let im = 0;
+
+  for (let i = 0; i < sos.length; ++i) {
+    const co = sos[i];
+
+    const num_re = co[0] + co[1] * cos_w + co[2] * cos_2w;
+    const num_im = -co[1] * sin_w - co[2] * sin_2w;
+
+    const den_re = 1.0 + co[3] * cos_w + co[4] * cos_2w;
+    const den_im = -co[3] * sin_w - co[4] * sin_2w;
+
+    const den_mag2 = den_re * den_re + den_im * den_im;
+    if (den_mag2 <= 0) continue;
+
+    const h_re = (num_re * den_re + num_im * den_im) / den_mag2;
+    const h_im = (num_im * den_re - num_re * den_im) / den_mag2;
+
+    const next_re = re * h_re - im * h_im;
+    const next_im = re * h_im + im * h_re;
+    re = next_re;
+    im = next_im;
   }
-  const gn = Math.sqrt(gain.re * gain.re + gain.im * gain.im); // abs(gain).
-  return inDecibel ? 20 * Math.log10(gn) : gn;
+
+  const gn = Math.sqrt(re * re + im * im);
+  return inDecibel ? 20 * Math.log10(Math.max(gn, 1e-12)) : gn;
+}
+
+/**
+ * Evaluates the maximum amplitude response across all frequencies [0, 0.5].
+ * Uses candidates (DC, Nyquist, filter center frequencies) + log grid + golden section refinement.
+ */
+export function getSosMaxGain(sos, candidateNormalizedFreqs = [], numGridPoints = 128) {
+  if (!sos || sos.length === 0) return 1.0;
+
+  let maxGain = 0.0;
+  let bestF = 0.0;
+
+  const testFreq = (f) => {
+    const cf = clamp(f, 0.0, 0.49999);
+    const g = getSosGain(sos, cf, false);
+    if (g > maxGain) {
+      maxGain = g;
+      bestF = cf;
+    }
+  };
+
+  testFreq(0.0);
+  testFreq(0.49999);
+  for (let i = 0; i < candidateNormalizedFreqs.length; ++i) {
+    testFreq(candidateNormalizedFreqs[i]);
+  }
+
+  const logMin = Math.log(10 / 48000);
+  const logMax = Math.log(0.49999);
+  const step = (logMax - logMin) / numGridPoints;
+  for (let i = 0; i <= numGridPoints; ++i) { testFreq(Math.exp(logMin + i * step)); }
+
+  // Golden section refinement around the best candidate
+  if (bestF > 0.0001 && bestF < 0.499) {
+    const span = bestF * 0.15;
+    let a = Math.max(0.0001, bestF - span);
+    let b = Math.min(0.4999, bestF + span);
+    const rphi = 2.0 - (1.0 + Math.sqrt(5.0)) / 2.0;
+    let c = a + rphi * (b - a);
+    let d = b - rphi * (b - a);
+    let yc = getSosGain(sos, c, false);
+    let yd = getSosGain(sos, d, false);
+
+    for (let iter = 0; iter < 8; ++iter) {
+      if (yc > yd) {
+        b = d;
+        d = c;
+        yd = yc;
+        c = a + rphi * (b - a);
+        yc = getSosGain(sos, c, false);
+      } else {
+        a = c;
+        c = d;
+        yc = yd;
+        d = b - rphi * (b - a);
+        yd = getSosGain(sos, d, false);
+      }
+    }
+    maxGain = Math.max(maxGain, yc, yd);
+  }
+
+  return maxGain;
+}
+
+/**
+ * Computes automatic gain adjustment parameters.
+ * Mode:
+ * - "ceiling": Attenuates only if peak response > ceilingDB (guarantees <= 0 dB in feedback loops).
+ * - "normalize": Always scales so the peak response equals ceilingDB.
+ * - "none": Applies no automatic gain adjustment.
+ */
+export function computeSosAutoGain(
+  sos,
+  candidateNormalizedFreqs = [],
+  mode = "ceiling",
+  ceilingDB = 0.0,
+) {
+  if (mode === "none" || !sos || sos.length === 0) {
+    return {maxGainAmp: 1.0, maxGainDB: 0.0, autoGainAmp: 1.0, autoGainDB: 0.0};
+  }
+
+  const maxGainAmp = getSosMaxGain(sos, candidateNormalizedFreqs);
+  const maxGainDB = 20 * Math.log10(Math.max(maxGainAmp, 1e-12));
+
+  let autoGainDB = 0.0;
+  if (mode === "ceiling") {
+    autoGainDB = maxGainDB > ceilingDB ? ceilingDB - maxGainDB : 0.0;
+  } else if (mode === "normalize") {
+    autoGainDB = ceilingDB - maxGainDB;
+  }
+
+  const autoGainAmp = 10 ** (autoGainDB / 20);
+  return {maxGainAmp, maxGainDB, autoGainAmp, autoGainDB};
+}
+
+/**
+ * Generic serial second-order section (SOS) equalizer with auto-gain support.
+ * Replaces PeakingFilterBank.
+ */
+export class SerialSosEqualizer {
+  constructor(sos, options = {}) {
+    const {
+      autoGain = "none",
+      ceilingDB = 0.0,
+      candidateNormalizedFreqs = [],
+      masterGainDB = 0.0,
+    } = options;
+
+    this.sos = sos ?? [];
+    this.hasFilter = this.sos.length > 0;
+    this.filter = this.hasFilter ? new SosFilterImmediate(this.sos) : null;
+
+    const auto = computeSosAutoGain(this.sos, candidateNormalizedFreqs, autoGain, ceilingDB);
+    const masterAmp = 10 ** (masterGainDB / 20);
+
+    this.gain = masterAmp * auto.autoGainAmp;
+    this.autoGainDB = auto.autoGainDB;
+    this.maxGainDB = auto.maxGainDB;
+  }
+
+  reset() { this.filter?.reset(); }
+
+  process(x) {
+    const y = this.filter ? this.filter.process(x) : x;
+    return y * this.gain;
+  }
 }
 
 //
@@ -447,7 +562,7 @@ export function selectSosFilter(filterType) {
     case "hs1mt":
       return (cut, Q, gain = 1) => sosMatchedHighShelf1(cut, gain);
   }
-  console.warn("filterType is invalid.")
+  console.warn("filterType is invalid.");
   return null;
 }
 

@@ -1,13 +1,12 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {sosFilterType} from "../common/dsp/sos.js";
 import {uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
 import * as util from "../common/util.js";
 import * as wave from "../common/wave.js";
-
-import {EqualizerXYPad} from "./equalizerxypad.js";
 
 const version = 0;
 
@@ -107,7 +106,12 @@ const divRight = widget.div(divMain, undefined, "controlBlock");
 const headingWaveform = widget.heading(divLeft, 6, "Waveform");
 const waveView = [
   new widget.WaveView(
-    divLeft, 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, audio.wave.data[0], false),
+    divLeft,
+    2 * uiSize.waveViewWidth,
+    2 * uiSize.waveViewHeight,
+    audio.wave.data[0],
+    false,
+    ),
 ];
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
@@ -164,18 +168,34 @@ const ui = {
     new widget.NumberInput(detailSource, "LP Cutoff [Hz]", param.sourceLowpassCutoffHz, render),
   sourceLowpassQ: new widget.NumberInput(detailSource, "LP Q", param.sourceLowpassQ, render),
 
-  eq: new EqualizerXYPad(
-    detailGainPeak, audio.audioContext.sampleRate, 4 * uiSize.waveViewWidth,
-    4 * uiSize.waveViewHeight, "Peaking Filters", scales.cutoffHz, scales.Q, scales.gain,
+  eq: new widget.EqualizerXYPad(
+    detailGainPeak,
+    audio.audioContext.sampleRate,
+    4 * uiSize.waveViewWidth,
+    4 * uiSize.waveViewHeight,
+    "Peaking Filters",
+    scales.cutoffHz,
+    scales.Q,
+    scales.gain,
     [
       param.dcHighpass,
       param.nyquistLowpass,
       param.peak1,
       param.peak2,
       param.peak3,
-      // param.peak4, param.peak5,
     ],
-    render),
+    render,
+    {
+      filterTypes: [
+        sosFilterType.hp2mt,
+        sosFilterType.lp2bq,
+        sosFilterType.pk2mt,
+        sosFilterType.pk2mt,
+        sosFilterType.pk2mt,
+      ],
+      autoGain: "none",
+    },
+    ),
 };
 
 render();

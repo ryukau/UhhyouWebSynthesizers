@@ -709,3 +709,42 @@ div#RecipeImportDragAndDropArea:hover {
   background: var(--color-highlight);
   box-shadow: inset 8px 8px 16px var(--color-shadow-main);
 }
+
+/* EqualizerXYPad */
+div.equalizerContainer {
+  display: inline-block;
+  vertical-align: top;
+  margin: var(--margin);
+}
+
+div.equalizerInputLine {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  width: 100%;
+  margin: 0.25em 0;
+  padding: 0 var(--margin);
+}
+
+div.equalizerInputLine:hover {
+  box-shadow: 1px 1px 4px var(--color-shadow-main);
+}
+
+span.equalizer {
+  display: inline-block;
+  width: var(--input-line-label-width);
+  margin: auto;
+  padding-left: var(--margin);
+  text-align: left;
+}
+
+input.equalizer {
+  display: inline-block;
+  font-size: inherit;
+  font-family: inherit;
+  width: calc(100% - var(--input-line-label-width));
+  margin: auto;
+  background: var(--color-input-background);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border-dark);
+}

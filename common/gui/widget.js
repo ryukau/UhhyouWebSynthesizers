@@ -9,17 +9,18 @@ export {BarBox} from "./barbox.js";
 export {BezierEnvelopeView} from "./bezierenvelopeview.js";
 export {CheckBoxLine} from "./checkbox.js";
 export {ComboBoxLine, option, select} from "./combobox.js";
-export {MultiCheckBoxVertical} from "./multicheckbox.js"
+export {EqualizerXYPad} from "./equalizerxypad.js";
+export {MultiCheckBoxVertical} from "./multicheckbox.js";
 export {NumberInput} from "./numberinput.js";
-export {TabView} from "./tabview.js"
+export {TabView} from "./tabview.js";
 export {ToggleButton, ToggleButtonLine} from "./togglebutton.js";
-export {WaveformXYPad} from "./waveformxypad.js"
+export {WaveformXYPad} from "./waveformxypad.js";
 export {WaveView} from "./waveview.js";
 
 export function refresh(ui) {
   for (const key in ui) {
     if (Array.isArray(ui[key])) {
-      ui[key].array.forEach(element => { element?.refresh(); });
+      ui[key].array.forEach((element) => { element?.refresh(); });
     } else {
       ui[key].refresh?.();
     }
@@ -84,7 +85,7 @@ export function pageTitle(parent) {
   const img = document.createElement("img");
   img.src = "../style/favicon/favicon.svg";
   img.alt = "Logo image.";
-  img.title = "Go back to index page."
+  img.title = "Go back to index page.";
   img.style.height = "2rem";
   img.style.verticalAlign = "middle";
   img.style.marginRight = "0.25em";
@@ -183,9 +184,9 @@ export class RecipeExportDialog {
 
     this.divDescription = div(this.dialog, null, "dialogDescription");
     this.pDescriptionFormat = paragraph(this.divDescription, null, null);
-    this.pDescriptionFormat.textContent = "The recipe will be displayed as \"Author - Recipe\".";
+    this.pDescriptionFormat.textContent = 'The recipe will be displayed as "Author - Recipe".';
     this.pDescriptionAuthor = paragraph(this.divDescription, null, "pDialogBottomMost");
-    this.pDescriptionAuthor.textContent = "Set unique \"Author\" to avoid name conflict.";
+    this.pDescriptionAuthor.textContent = 'Set unique "Author" to avoid name conflict.';
   }
 
   open() { this.dialog.showModal(); }
