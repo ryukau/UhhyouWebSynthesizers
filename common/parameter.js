@@ -144,9 +144,10 @@ export class LinearScale {
 // Decibel in UI, amplitude in DSP.
 export class DecibelScale {
   constructor(minDB, maxDB, minToZero) {
-    console.assert(Number.isFinite(minDB) || -Infinity === minDB, new Error());
-    console.assert(Number.isFinite(maxDB), new Error());
-    console.assert(typeof minToZero === "boolean", new Error());
+    console.assert(
+      Number.isFinite(minDB) || -Infinity === minDB, "minDB must be finite or -inf.", new Error());
+    console.assert(Number.isFinite(maxDB), "maxDB must be finite.", new Error());
+    console.assert(typeof minToZero === "boolean", "minToZero must be boolean.", new Error());
 
     this.minToZero = minToZero;
     this.minDB = minDB;
