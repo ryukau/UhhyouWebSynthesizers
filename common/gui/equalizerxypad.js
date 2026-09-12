@@ -1,27 +1,52 @@
+// Copyright Takamitsu Endo (ryukau@gmail.com)
+// SPDX-License-Identifier: Apache-2.0
+
 import {
   computeSosAutoGain,
   getSosGain,
   selectSosFilter,
-  sosFilterType,
 } from "../dsp/sos.js";
 import {clamp, dbToAmp} from "../util.js";
 
 import {palette} from "./palette.js";
 
 const filterTypeBadges = {
-  hp2mt: "H",
-  hp2bq: "H",
-  lp2mt: "L",
   lp2bq: "L",
-  pk2mt: "P",
-  pk2bq: "P",
-  ls2bq: "LS",
-  hs2bq: "HS",
-  bp2mt: "B",
+  hp2bq: "H",
   bp2bq: "B",
   nt2bq: "N",
   ap2bq: "A",
+  pk2bq: "P",
+  ls2bq: "LS",
+  hs2bq: "HS",
+  lp2mt: "L",
+  hp2mt: "H",
+  pk2mt: "P",
+  bp2mt: "B",
+  hs1mt: "HS",
+  lp1ema: "L",
+  hp1ema: "H",
+  ap1ema: "A",
+  ls1ema: "LS",
+  hs1ema: "HS",
+  pk2ema: "P",
+  lp1blt: "L",
+  hp1blt: "H",
+  ap1blt: "A",
+  ls1blt: "LS",
+  hs1blt: "HS",
+  pk2blt: "P",
 };
+
+const noGainTypes = [
+  "lp2bq", "hp2bq", "bp2bq", "ap2bq", "nt2bq", "lp2mt", "hp2mt", "bp2mt", "lp1ema", "hp1ema",
+  "ap1ema", "lp1blt", "hp1blt", "ap1blt"
+];
+
+const noQTypes = [
+  "hs1mt", "lp1ema", "hp1ema", "ls1ema", "hs1ema", "ap1ema", "lp1blt", "hp1blt", "ls1blt", "hs1blt",
+  "ap1blt"
+];
 
 export class EqualizerXYPad {
   #isMouseDown = false;
@@ -35,32 +60,52 @@ export class EqualizerXYPad {
 
   constructor(
     parent,
-    sampleRate,
+    label,
     width,
     height,
-    label,
-    scaleCutoffHz,
-    scaleQ,
-    scaleGain,
     parameters,
     onChangeFunc,
     options = {},
   ) {
-    this.scaleCutoffHz = scaleCutoffHz;
-    this.scaleQ = scaleQ;
-    this.scaleGain = scaleGain;
     this.param = parameters;
     this.onChangeFunc = onChangeFunc;
 
+    this.scaleCutoffHz = options.scaleCutoffHz ?? parameters[0]?.[1]?.scale;
+    this.scaleQ = options.scaleQ ?? parameters[0]?.[2]?.scale;
+    this.scaleGain = options.scaleGain ?? parameters[0]?.[3]?.scale;
+
+    if (!this.scaleCutoffHz || !this.scaleQ || !this.scaleGain) {
+      console.warn(
+        "EqualizerXYPad: Missing scale definitions for equalizer parameters.", parameters);
+    }
+
+    this.#sampleRate = options.sampleRate ?? 48000;
     this.autoGain = options.autoGain ?? "none";
     this.ceilingDB = options.ceilingDB ?? 0.0;
     this.customLabels = options.sectionLabels ?? null;
 
-    this.#sampleRate = sampleRate;
-
     this.divContainer = document.createElement("div");
     this.divContainer.classList.add("equalizerContainer");
     parent.appendChild(this.divContainer);
+
+    this.label = document.createElement("label");
+    this.label.classList.add("equalizer");
+    this.label.textContent = label;
+    this.label.addEventListener("pointerdown", (event) => {
+      if (this.param.length <= 0) return;
+      const firstParam = Array.isArray(this.param[0]) ? this.param[0][0] : this.param[0];
+      const newState = !firstParam.lockRandomization;
+      for (let prm of this.param) {
+        if (Array.isArray(prm)) {
+          for (let p of prm) p.lockRandomization = newState;
+        } else {
+          prm.lockRandomization = newState;
+        }
+      }
+
+      this.label.style.color = newState ? palette.inactive : "unset";
+    }, false);
+    this.divContainer.appendChild(this.label);
 
     this.divCanvasMargin = document.createElement("div");
     this.divCanvasMargin.classList.add("canvasMargin");
@@ -99,8 +144,8 @@ export class EqualizerXYPad {
     this.spanCutoffHz = this.#addSpan("Cutoff [Hz]");
     this.cutoffInputContainer.appendChild(this.spanCutoffHz);
     this.inputCutoffHz = this.#addInput("Cutoff Hz", "Cutoff frequency in Hz.");
-    this.inputCutoffHz.min = this.scaleCutoffHz.minDsp;
-    this.inputCutoffHz.max = this.scaleCutoffHz.maxDsp;
+    this.inputCutoffHz.min = this.scaleCutoffHz ? this.scaleCutoffHz.minDsp : 20;
+    this.inputCutoffHz.max = this.scaleCutoffHz ? this.scaleCutoffHz.maxDsp : 20000;
     this.inputCutoffHz.step = "any";
     this.inputCutoffHz.value = 100;
     this.cutoffInputContainer.appendChild(this.inputCutoffHz);
@@ -111,8 +156,8 @@ export class EqualizerXYPad {
     this.spanQ = this.#addSpan("Q");
     this.qInputContainer.appendChild(this.spanQ);
     this.inputQ = this.#addInput("Q", "Q factor of equalizer section.");
-    this.inputQ.min = this.scaleQ.minDsp;
-    this.inputQ.max = this.scaleQ.maxDsp;
+    this.inputQ.min = this.scaleQ ? this.scaleQ.minDsp : 0.1;
+    this.inputQ.max = this.scaleQ ? this.scaleQ.maxDsp : 50;
     this.inputQ.step = "any";
     this.inputQ.value = Math.SQRT1_2;
     this.qInputContainer.appendChild(this.inputQ);
@@ -123,8 +168,8 @@ export class EqualizerXYPad {
     this.spanGainDB = this.#addSpan("Gain [dB]");
     this.gainInputContainer.appendChild(this.spanGainDB);
     this.inputGainDB = this.#addInput("Gain dB", "Gain in decibels.");
-    this.inputGainDB.min = this.scaleGain.minUi;
-    this.inputGainDB.max = this.scaleGain.maxUi;
+    this.inputGainDB.min = this.scaleGain ? this.scaleGain.minUi : -60;
+    this.inputGainDB.max = this.scaleGain ? this.scaleGain.maxUi : 60;
     this.inputGainDB.step = "any";
     this.inputGainDB.value = 0.0;
     this.gainInputContainer.appendChild(this.inputGainDB);
@@ -134,10 +179,10 @@ export class EqualizerXYPad {
     this.inputQ.addEventListener("input", (e) => this.#inputCallback(e), false);
     this.inputGainDB.addEventListener("input", (e) => this.#inputCallback(e), false);
 
-    this.leftHz = this.scaleCutoffHz.minDsp;
-    this.rightHz = this.scaleCutoffHz.maxDsp;
-    this.topDB = this.scaleGain.maxUi;
-    this.bottomDB = this.scaleGain.minUi;
+    this.leftHz = this.scaleCutoffHz ? this.scaleCutoffHz.minDsp : 20;
+    this.rightHz = this.scaleCutoffHz ? this.scaleCutoffHz.maxDsp : 20000;
+    this.topDB = this.scaleGain ? this.scaleGain.maxUi : 60;
+    this.bottomDB = this.scaleGain ? this.scaleGain.minUi : -60;
     const logLeft = Math.log2(this.leftHz);
     const logRight = Math.log2(this.rightHz);
     const logRange = logRight - logLeft;
@@ -145,18 +190,30 @@ export class EqualizerXYPad {
     this.mapDbToY = (dB) => ((this.topDB - dB) / (this.topDB - this.bottomDB)) * height;
     this.mapYToDb = (y) => this.topDB - (y * (this.topDB - this.bottomDB)) / height;
     this.mapXToHz = (x) => Math.pow(2, (x * logRange) / width + logLeft);
-    this.#nyquistX = this.mapHzToX(0.5 * sampleRate);
+    this.#nyquistX = this.mapHzToX(0.5 * this.#sampleRate);
 
-    // Initialize sections based on options.filterTypes or default to pk2mt
     this.#section = [];
-    const filterTypes
-      = options.filterTypes ?? new Array(this.param.length).fill(sosFilterType.pk2mt);
     for (let idx = 0; idx < this.param.length; ++idx) {
-      const type = filterTypes[idx] ?? sosFilterType.pk2mt;
-      this.addSection(type, this.param[idx][0].dsp, this.param[idx][1].dsp, this.param[idx][2].ui);
+      const band = this.param[idx];
+      const typeParam = band?.[0];
+      let type = options.filterTypes?.[idx];
+      if (!type && typeParam?.scale?.items) { type = typeParam.scale.items[typeParam.dsp]; }
+      if (!type || !selectSosFilter(type)) {
+        console.warn(`EqualizerXYPad: Invalid filterType at section index ${idx}.`, band);
+      }
+      this.addSection(type, band[1].dsp, band[2].dsp, band[3].ui);
     }
 
     this.refresh();
+  }
+
+  toMessage() {
+    return {
+      params: this.param.map((band) => [band[1].dsp, band[2].dsp, band[3].dsp]),
+      filterTypes: this.#section.map((s) => s.type),
+      autoGain: this.autoGain,
+      ceilingDB: this.ceilingDB,
+    };
   }
 
   setSampleRate(sampleRate) {
@@ -186,12 +243,13 @@ export class EqualizerXYPad {
   #inputCallback(event) {
     this.#detailIndex = clamp(Math.floor(this.inputIndex.value), 0, this.#section.length - 1);
 
+    const maxX = Math.min(this.canvas.width, this.#nyquistX);
     const sc = this.#section[this.#detailIndex];
     sc.cutoff = Math.min(this.inputCutoffHz.value / this.#sampleRate, 0.49999);
     sc.Q = this.inputQ.value;
     sc.gainDB = this.inputGainDB.value;
-    sc.x = this.mapHzToX(this.inputCutoffHz.value);
-    sc.y = this.mapDbToY(this.inputGainDB.value);
+    sc.x = clamp(this.mapHzToX(this.inputCutoffHz.value), 0, maxX);
+    sc.y = clamp(this.mapDbToY(this.inputGainDB.value), 0, this.canvas.height);
 
     this.#updateParameters(this.#detailIndex);
     this.onChangeFunc();
@@ -208,8 +266,10 @@ export class EqualizerXYPad {
     this.inputQ.value = sc.Q;
     this.inputGainDB.value = sc.gainDB;
 
-    // Disable gain input if filter type does not take gain
-    const noGainTypes = ["lp2bq", "hp2bq", "bp2bq", "ap2bq", "nt2bq", "lp2mt", "hp2mt", "bp2mt"];
+    const hasQ = !noQTypes.includes(sc.type);
+    this.inputQ.disabled = !hasQ;
+    this.spanQ.style.color = hasQ ? palette.foreground : palette.inactive;
+
     const hasGain = !noGainTypes.includes(sc.type);
     this.inputGainDB.disabled = !hasGain;
     this.spanGainDB.style.color = hasGain ? palette.foreground : palette.inactive;
@@ -221,21 +281,38 @@ export class EqualizerXYPad {
     if (index >= this.#section.length || index >= this.param.length) return;
     const sc = this.#section[index];
     const param = this.param[index];
-    param[0].dsp = sc.cutoff * this.#sampleRate;
-    param[1].dsp = sc.Q;
-    param[2].ui = sc.gainDB;
+    if (param[0]?.scale?.items) {
+      const typeIdx = param[0].scale.items.indexOf(sc.type);
+      if (typeIdx >= 0) {
+        param[0].dsp = typeIdx;
+      } else {
+        console.warn(`EqualizerXYPad: Unknown section type "${sc.type}" at index ${index}.`);
+      }
+    }
+    param[1].dsp = sc.cutoff * this.#sampleRate;
+    param[2].dsp = sc.Q;
+    param[3].ui = sc.gainDB;
   }
 
   refresh() {
+    const maxX = Math.min(this.canvas.width, this.#nyquistX);
     for (let index = 0; index < this.param.length; ++index) {
       if (index >= this.#section.length) break;
       const sc = this.#section[index];
       const param = this.param[index];
-      sc.cutoff = param[0].dsp / this.#sampleRate;
-      sc.Q = param[1].dsp;
-      sc.gainDB = param[2].ui;
-      sc.x = this.mapHzToX(sc.cutoff * this.#sampleRate);
-      sc.y = this.mapDbToY(sc.gainDB);
+      if (param[0]?.scale?.items) {
+        const type = param[0].scale.items[param[0].dsp];
+        if (!type || !selectSosFilter(type)) {
+          console.warn(`EqualizerXYPad.refresh: Invalid filterType at index ${index}.`, param[0]);
+        } else {
+          sc.type = type;
+        }
+      }
+      sc.cutoff = param[1].dsp / this.#sampleRate;
+      sc.Q = param[2].dsp;
+      sc.gainDB = param[3].ui;
+      sc.x = clamp(this.mapHzToX(sc.cutoff * this.#sampleRate), 0, maxX);
+      sc.y = clamp(this.mapDbToY(sc.gainDB), 0, this.canvas.height);
       this.#updateParameters(index);
     }
     this.#refreshInternal(this.#detailIndex);
@@ -249,20 +326,22 @@ export class EqualizerXYPad {
 
   addSection(filterType, cutoffHz, Q, gainDB) {
     const cut = cutoffHz / this.#sampleRate;
+    const maxX = Math.min(this.canvas.width, this.#nyquistX);
     this.#section.push({
       type: filterType,
       cutoff: cut,
       Q: Q,
       gainDB: gainDB,
-      x: this.mapHzToX(cutoffHz),
-      y: this.mapDbToY(gainDB),
+      x: clamp(this.mapHzToX(cutoffHz), 0, maxX),
+      y: clamp(this.mapDbToY(gainDB), 0, this.canvas.height),
     });
   }
 
   sos() {
     let sos = [];
     for (const sc of this.#section) {
-      sos.push(selectSosFilter(sc.type)(sc.cutoff, sc.Q, dbToAmp(sc.gainDB)));
+      const filterFunc = selectSosFilter(sc.type);
+      if (filterFunc) { sos.push(filterFunc(sc.cutoff, sc.Q, dbToAmp(sc.gainDB))); }
     }
     return sos;
   }
@@ -298,10 +377,21 @@ export class EqualizerXYPad {
     if (this.#grabbedPoint >= 0) {
       this.#detailIndex = this.#grabbedPoint;
       if (event.ctrlKey) {
-        this.#section[this.#grabbedPoint].gainDB = 0;
-        this.#section[this.#grabbedPoint].y = this.mapDbToY(0);
+        const sc = this.#section[this.#grabbedPoint];
+        const defaultCutoffHz = this.param[this.#grabbedPoint]?.[1]?.defaultDsp ?? 1000;
+        const maxX = Math.min(this.canvas.width, this.#nyquistX);
+
+        sc.cutoff = clamp(defaultCutoffHz / this.#sampleRate, 1e-6, 0.49999);
+        sc.Q = this.param[this.#grabbedPoint]?.[2]?.defaultDsp ?? Math.SQRT1_2;
+        sc.gainDB = 0;
+
+        sc.x = clamp(this.mapHzToX(sc.cutoff * this.#sampleRate), 0, maxX);
+        sc.y = clamp(this.mapDbToY(0), 0, this.canvas.height);
+
+        this.onChangeFunc();
       }
       this.#refreshInternal(this.#grabbedPoint);
+      if (event.ctrlKey) this.#grabbedPoint = -1;
     }
 
     this.draw();
@@ -319,11 +409,11 @@ export class EqualizerXYPad {
       const movementX = clamp(event.movementX, -24, 24);
       const movementY = clamp(event.movementY, -24, 24);
 
+      const maxX = Math.min(this.canvas.width, this.#nyquistX);
       const sc = this.#section[this.#grabbedPoint];
-      sc.x = clamp(sc.x + movementX, 0, this.#nyquistX);
+      sc.x = clamp(sc.x + movementX, 0, maxX);
       sc.cutoff = clamp(this.mapXToHz(sc.x) / this.#sampleRate, 1e-6, 0.49999);
 
-      const noGainTypes = ["lp2bq", "hp2bq", "bp2bq", "ap2bq", "nt2bq", "lp2mt", "hp2mt", "bp2mt"];
       if (!noGainTypes.includes(sc.type)) {
         sc.y = clamp(sc.y + movementY, 0, this.canvas.height);
         sc.gainDB = this.mapYToDb(sc.y);
@@ -391,14 +481,29 @@ export class EqualizerXYPad {
     }
 
     // Decibel ticks
-    const intervalDB = 6;
+    const dbRange = this.topDB - this.bottomDB;
+    const minPixelSpacing = palette.fontSize * 2.5;
+    const maxTicks = Math.max(2, Math.floor(height / minPixelSpacing));
+    const rawInterval = dbRange / maxTicks;
+
+    const candidateSteps = [0.1, 0.2, 0.5, 1, 2, 3, 6, 12, 18, 24];
+    const intervalDB = candidateSteps.find((s) => s >= rawInterval) ?? 6;
+    const precision = Number.isInteger(intervalDB) ? 0 : 1;
+
     const minN = Math.ceil((this.bottomDB + 1e-5) / intervalDB);
     const maxN = Math.floor((this.topDB - 1e-5) / intervalDB);
     const dbTicks = [];
+
     for (let n = minN; n <= maxN; ++n) {
-      const gridDB = n * intervalDB;
+      const gridDB = Math.round(n * intervalDB * 100) / 100;
       const y = this.mapDbToY(gridDB);
-      const text = `${gridDB} dB`;
+
+      // Skip ticks that are too close to top/bottom edges
+      if (y < palette.fontSize / 2 || y > height - palette.fontSize / 2) { continue; }
+
+      const sign = gridDB > 0 ? "+" : "";
+      const text = `${sign}${gridDB.toFixed(precision)} dB`;
+
       dbTicks.push({
         dB: gridDB,
         y,
@@ -591,7 +696,6 @@ export class EqualizerXYPad {
         bottom: 8 + palette.fontSize,
       };
 
-      // Ensure centered auto-gain text does not collide with decibel ticks if canvas is narrow
       const overlapsTicks = dbTicks.some((dbTick) => {
         const dbBoxLeft = {
           left: 0,
@@ -618,7 +722,7 @@ export class EqualizerXYPad {
       });
 
       if (!overlapsTicks) {
-        this.context.fillStyle = palette.highlightWarning || "#e04040";
+        this.context.fillStyle = palette.foreground;
         this.context.textAlign = "center";
         this.context.textBaseline = "top";
         this.context.fillText(autoText, width / 2, 8);

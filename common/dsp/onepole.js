@@ -197,3 +197,72 @@ export class TiltFilter {
     return this.#y1;
   }
 }
+
+export class WidePeakingFilter {
+  /**
+  @param {number} cutoff - Normalized center frequency f0 in (0, 0.5) (i.e. f / fs).
+  @param {number} bandWidth - Bandwidth in octaves.
+  @param {number} gain - Linear peaking gain (1.0 = flat bypass).
+  */
+  constructor(cutoff, bandWidth, gain) {
+    this.s1 = 0.0;
+    this.s2 = 0.0;
+
+    this.b0 = 1.0;
+    this.b1 = 0.0;
+    this.b2 = 0.0;
+    this.a1 = 0.0;
+    this.a2 = 0.0;
+
+    this.update(cutoff, bandWidth, gain);
+  }
+
+  update(cutoff, bandWidth, gain) {
+    const ratio = 2.0 ** (bandWidth * 0.5);
+    const cutLow = clamp(cutoff * ratio, minCutoff, nyquist);
+    const cutHigh = clamp(cutoff / ratio, minCutoff, nyquist);
+
+    // LP1 coefficients.
+    const kL = 1 / Math.tan(Math.PI * cutLow);
+    const a0L = 1 + kL;
+    const a1L = (kL - 1) / a0L;
+
+    // HP1 coefficients.
+    const kH = 1 / Math.tan(Math.PI * cutHigh);
+    const a0H = 1 + kH;
+    const a1H = (1 - kH) / a0H;
+
+    // Denominator: (1 - a1L * z^-1) * (1 + a1H * z^-1)
+    this.a1 = a1H - a1L;
+    this.a2 = -a1L * a1H;
+
+    const w0 = 2.0 * Math.PI * cutoff;
+    const sn0 = Math.sin(w0);
+
+    let b0Bp = 0.0;
+    if (sn0 > 0.0) {
+      const cos0 = Math.cos(w0);
+      const dL = Math.sqrt(1.0 - 2.0 * a1L * cos0 + a1L * a1L);
+      const dH = Math.sqrt(1.0 + 2.0 * a1H * cos0 + a1H * a1H);
+      b0Bp = (dL * dH) / (2.0 * sn0);
+    }
+
+    const gDiff = gain - 1.0;
+
+    this.b0 = 1.0 + gDiff * b0Bp;
+    this.b1 = this.a1;
+    this.b2 = this.a2 - gDiff * b0Bp;
+  }
+
+  reset() {
+    this.s1 = 0.0;
+    this.s2 = 0.0;
+  }
+
+  process(x) {
+    const y = this.b0 * x + this.s1;
+    this.s1 = this.b1 * x - this.a1 * y + this.s2;
+    this.s2 = this.b2 * x - this.a2 * y;
+    return y;
+  }
+}

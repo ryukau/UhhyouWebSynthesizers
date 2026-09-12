@@ -299,11 +299,16 @@ export function triangularNumber(n) { return (n * n + n) / 2; }
 // Range of t is in [0, 1]. Interpolates between y1 and y2.
 // y0 is current, y3 is earlier sample.
 export function lagrange3Interp(y0, y1, y2, y3, t) {
-  const u = 1 + t;
-  const d0 = y0 - y1;
-  const d1 = d0 - (y1 - y2);
-  const d2 = d1 - ((y1 - y2) - (y2 - y3));
-  return y0 - u * (d0 + (1 - u) / 2 * (d1 + (2 - u) / 3 * d2));
+  // Branching point is `eps^2 / 8`, assuming `y*` in ±2/eps.
+  if (t <= 6.162975822039155e-33) { return y1; }
+  if (t >= 1) { return y2; }
+
+  const t0 = (-1 / 6) / (t + 1);
+  const t1 = (1 / 2) / t;
+  const t2 = (-1 / 2) / (t - 1);
+  const t3 = (1 / 6) / (t - 2);
+
+  return (t0 * y0 + t1 * y1 + t2 * y2 + t3 * y3) / (t0 + t1 + t2 + t3);
 }
 
 // `a` is an array of polynomial coefficients.

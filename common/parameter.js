@@ -4,28 +4,27 @@
 import * as util from "./util.js";
 
 export function toMessage(param, info) {
+  const mapValue = (val) => Array.isArray(val) ? val.map(mapValue) : val.dsp;
   let dest = {};
-  for (const key in param) {
-    if (Array.isArray(param[key])) {
-      dest[key] = param[key].map(element => element.dsp);
-    } else {
-      dest[key] = param[key].dsp;
-    }
-  }
+  for (const key in param) { dest[key] = mapValue(param[key]); }
   return Object.assign({}, dest, info);
 }
 
 /**
 `Parameter` provides different representations of a same value. DSP value is considered as
-ground truth of current state.
+the ground truth of current state.
 */
 export class Parameter {
   static isRandomizing = false;
   #raw; // DSP value.
 
   constructor(defaultDsp, scale, displayDsp = false, comment = "") {
-    console.assert(defaultDsp >= scale.minDsp, new Error());
-    console.assert(defaultDsp <= scale.maxDsp, new Error());
+    console.assert(
+      defaultDsp >= scale.minDsp, "Parameter default DSP value is less than scale.minDsp",
+      new Error());
+    console.assert(
+      defaultDsp <= scale.maxDsp, "Parameter default DSP value is greater than scale.maxDsp",
+      new Error());
 
     this.scale = scale;
     this.displayDsp = displayDsp;

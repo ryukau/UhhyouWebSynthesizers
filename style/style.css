@@ -717,6 +717,14 @@ div.equalizerContainer {
   margin: var(--margin);
 }
 
+label.equalizer {
+  display: inline-block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: var(--margin);
+  text-align: center;
+}
+
 div.equalizerInputLine {
   display: flex;
   box-sizing: border-box;

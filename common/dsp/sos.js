@@ -26,6 +26,11 @@ Reference:
 
 import {clamp} from "../util.js";
 
+import {cutoffToEmaAlpha} from "./smoother.js";
+
+const minCutoff = 0.00001;
+const nyquist = 0.49998;
+
 // Transposed direct form II.
 export class SosFilterImmediate {
   #v1;
@@ -121,6 +126,144 @@ export class SosFilterImmediateDF1 {
   }
 }
 
+export function sosEmaLowpass(cutoffNormalized) {
+  const k = cutoffToEmaAlpha(cutoffNormalized);
+  return [k, 0, 0, k - 1, 0];
+}
+
+export function sosEmaHighpass(cutoffNormalized) {
+  const k = cutoffToEmaAlpha(cutoffNormalized);
+  return [1 - k, k - 1, 0, k - 1, 0];
+}
+
+export function sosEmaLowShelf(cutoffNormalized, gainAmp = 1) {
+  const k = cutoffToEmaAlpha(cutoffNormalized);
+  const a1 = k - 1;
+  const b0 = (gainAmp - 1) * k + 1;
+  return [b0, a1, 0, a1, 0];
+}
+
+export function sosEmaHighShelf(cutoffNormalized, gainAmp = 1) {
+  const k = cutoffToEmaAlpha(cutoffNormalized);
+  const a0 = 1;
+  const a1 = k - 1;
+  const b0 = (1 - gainAmp) * k + gainAmp * a0;
+  const b1 = gainAmp * a1;
+  return [b0, b1, 0, a1, 0];
+}
+
+export function sosEmaAllpass(cutoffNormalized) {
+  const k = cutoffToEmaAlpha(cutoffNormalized);
+  const a1 = k - 1;
+  return [a1, 1, 0, a1, 0];
+}
+
+export function sosEmaPeak(cutoffNormalized, bandWidth, gainAmp = 1) {
+  const ratio = 2.0 ** (bandWidth * 0.5);
+  const fLow = Math.min(cutoffNormalized * ratio, 0.5);
+  const fHigh = Math.max(cutoffNormalized / ratio, 0);
+
+  const kpLow = cutoffToEmaAlpha(fLow);
+  const kpHigh = cutoffToEmaAlpha(fHigh);
+
+  const q = kpLow - 1.0;
+  const r = kpHigh - 1.0;
+  const a1 = q + r;
+  const a2 = q * r;
+
+  const sn0 = Math.sin(Math.PI * cutoffNormalized);
+  const sn0Sq = sn0 * sn0;
+
+  let b0Bp = 0.0;
+  if (sn0 > 0.0) {
+    const dL = Math.sqrt(kpLow * kpLow + 4.0 * (1.0 - kpLow) * sn0Sq);
+    const dH = Math.sqrt(kpHigh * kpHigh + 4.0 * (1.0 - kpHigh) * sn0Sq);
+    b0Bp = (dL * dH) / (2.0 * sn0);
+  }
+
+  const b1Bp = -b0Bp;
+  const gDiff = gainAmp - 1.0;
+
+  const b0 = 1.0 + gDiff * b0Bp;
+  const b1 = a1 + gDiff * b1Bp;
+  const b2 = a2;
+
+  return [b0, b1, b2, a1, a2];
+}
+
+function getBilinear1Param(cutoffNormalized) {
+  const k = 1 / Math.tan(Math.PI * cutoffNormalized);
+  const a0 = 1 + k;
+  const a1 = 1 - k;
+  return [k, a0, a1];
+}
+
+export function sosOnePoleBilinearLowpass(cutoffNormalized) {
+  const [, a0, a1] = getBilinear1Param(cutoffNormalized);
+  return [1 / a0, 1 / a0, 0, a1 / a0, 0];
+}
+
+export function sosOnePoleBilinearHighpass(cutoffNormalized) {
+  const [k, a0, a1] = getBilinear1Param(cutoffNormalized);
+  return [k / a0, -k / a0, 0, a1 / a0, 0];
+}
+
+export function sosOnePoleBilinearLowShelf(cutoffNormalized, gainAmp = 1) {
+  const [, a0, a1] = getBilinear1Param(cutoffNormalized);
+  const b0 = (gainAmp - 1) + a0;
+  const b1 = (gainAmp - 1) + a1;
+  return [b0 / a0, b1 / a0, 0, a1 / a0, 0];
+}
+
+export function sosOnePoleBilinearHighShelf(cutoffNormalized, gainAmp = 1) {
+  const [, a0, a1] = getBilinear1Param(cutoffNormalized);
+  const b0 = (1 - gainAmp) + gainAmp * a0;
+  const b1 = (1 - gainAmp) + gainAmp * a1;
+  return [b0 / a0, b1 / a0, 0, a1 / a0, 0];
+}
+
+export function sosOnePoleBilinearAllpass(cutoffNormalized) {
+  const [, a0, a1] = getBilinear1Param(cutoffNormalized);
+  const a = a1 / a0;
+  return [a, 1, 0, a, 0];
+}
+
+export function sosWidePeak(cutoffNormalized, bandWidth, gainAmp = 1) {
+  const ratio = 2.0 ** (bandWidth * 0.5);
+  const cutLow = clamp(cutoffNormalized * ratio, minCutoff, nyquist);
+  const cutHigh = clamp(cutoffNormalized / ratio, minCutoff, nyquist);
+
+  const kL = 1 / Math.tan(Math.PI * cutLow);
+  const a0L = 1 + kL;
+  const a1L = (kL - 1) / a0L;
+
+  const kH = 1 / Math.tan(Math.PI * cutHigh);
+  const a0H = 1 + kH;
+  const a1H = (1 - kH) / a0H;
+
+  const a1 = a1H - a1L;
+  const a2 = -a1L * a1H;
+
+  const w0 = 2.0 * Math.PI * cutoffNormalized;
+  const sn0 = Math.sin(w0);
+
+  let b0Bp = 0.0;
+  if (sn0 > 0.0) {
+    const cos0 = Math.cos(w0);
+    const dL = Math.sqrt(1.0 - 2.0 * a1L * cos0 + a1L * a1L);
+    const dH = Math.sqrt(1.0 + 2.0 * a1H * cos0 + a1H * a1H);
+    b0Bp = (dL * dH) / (2.0 * sn0);
+  }
+
+  const gDiff = gainAmp - 1.0;
+
+  const b0 = 1.0 + gDiff * b0Bp;
+  const b1 = a1;
+  const b2 = a2 - gDiff * b0Bp;
+
+  return [b0, b1, b2, a1, a2];
+}
+
 function getBiquadQParam(cutoffNormalized, Q) {
   const ω0 = 2 * Math.PI * cutoffNormalized;
   const cs = Math.cos(ω0);
@@ -129,7 +272,7 @@ function getBiquadQParam(cutoffNormalized, Q) {
 }
 
 export function sosBiquadLowpass(cutoffNormalized, Q) {
-  const [ω0, cs, α] = getBiquadQParam(cutoffNormalized, Q);
+  const [, cs, α] = getBiquadQParam(cutoffNormalized, Q);
   const b0 = (1 - cs) / 2;
   const b1 = 1 - cs;
   const b2 = (1 - cs) / 2;
@@ -140,7 +283,7 @@ export function sosBiquadLowpass(cutoffNormalized, Q) {
 }
 
 export function sosBiquadHighpass(cutoffNormalized, Q) {
-  const [ω0, cs, α] = getBiquadQParam(cutoffNormalized, Q);
+  const [, cs, α] = getBiquadQParam(cutoffNormalized, Q);
   const b0 = (1 + cs) / 2;
   const b1 = -(1 + cs);
   const b2 = (1 + cs) / 2;
@@ -152,7 +295,7 @@ export function sosBiquadHighpass(cutoffNormalized, Q) {
 
 // Peak gain = Q.
 export function sosBiquadBandpass(cutoffNormalized, Q) {
-  const [ω0, cs, α] = getBiquadQParam(cutoffNormalized, Q);
+  const [, cs, α] = getBiquadQParam(cutoffNormalized, Q);
   const b0 = Q * α;
   const b1 = 0;
   const b2 = -Q * α;
@@ -163,7 +306,7 @@ export function sosBiquadBandpass(cutoffNormalized, Q) {
 }
 
 export function sosBiquadAllpass(cutoffNormalized, Q) {
-  const [ω0, cs, α] = getBiquadQParam(cutoffNormalized, Q);
+  const [, cs, α] = getBiquadQParam(cutoffNormalized, Q);
   const b0 = 1 - α;
   const b1 = -2 * cs;
   const b2 = 1 + α;
@@ -184,7 +327,7 @@ function getBiquadBwParam(cutoffNormalized, bandWidth, gainAmp = 1) {
 
 // Peak gain = 0 dB.
 export function sosBiquadBandpassNormalized(cutoffNormalized, bandWidth) {
-  const [ω0, cs, sn, A, α] = getBiquadBwParam(cutoffNormalized, bandWidth, 0);
+  const [, cs, , , α] = getBiquadBwParam(cutoffNormalized, bandWidth, 0);
   const b0 = α;
   const b1 = 0;
   const b2 = -α;
@@ -195,7 +338,7 @@ export function sosBiquadBandpassNormalized(cutoffNormalized, bandWidth) {
 }
 
 export function sosBiquadNotch(cutoffNormalized, bandWidth) {
-  const [ω0, cs, sn, A, α] = getBiquadBwParam(cutoffNormalized, bandWidth, 0);
+  const [, cs, , , α] = getBiquadBwParam(cutoffNormalized, bandWidth, 0);
   const b0 = 1;
   const b1 = -2 * cs;
   const b2 = 1;
@@ -206,7 +349,7 @@ export function sosBiquadNotch(cutoffNormalized, bandWidth) {
 }
 
 export function sosBiquadPeak(cutoffNormalized, bandWidth, gainAmp) {
-  const [ω0, cs, sn, A, α] = getBiquadBwParam(cutoffNormalized, bandWidth, gainAmp);
+  const [, cs, , A, α] = getBiquadBwParam(cutoffNormalized, bandWidth, gainAmp);
   const b0 = 1 + α * A;
   const b1 = -2 * cs;
   const b2 = 1 - α * A;
@@ -227,7 +370,7 @@ function getBiquadSlopeParam(cutoffNormalized, slope, gainAmp = 1) {
 }
 
 export function sosBiquadLowShelf(cutoffNormalized, slope, gainAmp) {
-  const [ω0, cs, sn, A, α, B] = getBiquadSlopeParam(cutoffNormalized, slope, gainAmp);
+  const [, cs, , A, , B] = getBiquadSlopeParam(cutoffNormalized, slope, gainAmp);
   const b0 = A * ((A + 1) - (A - 1) * cs + B);
   const b1 = 2 * A * ((A - 1) - (A + 1) * cs);
   const b2 = A * ((A + 1) - (A - 1) * cs - B);
@@ -238,7 +381,7 @@ export function sosBiquadLowShelf(cutoffNormalized, slope, gainAmp) {
 }
 
 export function sosBiquadHighShelf(cutoffNormalized, slope, gainAmp) {
-  const [ω0, cs, sn, A, α, B] = getBiquadSlopeParam(cutoffNormalized, slope, gainAmp);
+  const [, cs, , A, , B] = getBiquadSlopeParam(cutoffNormalized, slope, gainAmp);
   const b0 = A * ((A + 1) + (A - 1) * cs + B);
   const b1 = -2 * A * ((A - 1) + (A + 1) * cs);
   const b2 = A * ((A + 1) - (A - 1) * cs - B);
@@ -248,7 +391,7 @@ export function sosBiquadHighShelf(cutoffNormalized, slope, gainAmp) {
   return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
 }
 
-function getMatchedFilterParams(cutoffNormalized, Q) {
+function getMatchedFilterParam(cutoffNormalized, Q) {
   const ω0 = 2 * Math.PI * cutoffNormalized;
 
   const q = 0.5 / Q;
@@ -272,7 +415,7 @@ function getMatchedFilterParams(cutoffNormalized, Q) {
 }
 
 export function sosMatchedLowpass(cutoffNormalized, Q) {
-  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParams(cutoffNormalized, Q);
+  const [, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParam(cutoffNormalized, Q);
 
   const sqrt_B0 = 1 + a1 + a2;
   const B0 = A0;
@@ -287,7 +430,7 @@ export function sosMatchedLowpass(cutoffNormalized, Q) {
 }
 
 export function sosMatchedHighpass(cutoffNormalized, Q) {
-  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParams(cutoffNormalized, Q);
+  const [, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParam(cutoffNormalized, Q);
 
   const b0 = Q * Math.sqrt(A0 * φ0 + A1 * φ1 + A2 * φ2) / (4 * φ1);
   const b1 = -2 * b0;
@@ -297,7 +440,7 @@ export function sosMatchedHighpass(cutoffNormalized, Q) {
 }
 
 export function sosMatchedBandpass(cutoffNormalized, Q) {
-  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParams(cutoffNormalized, Q);
+  const [, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParam(cutoffNormalized, Q);
 
   const R1 = A0 * φ0 + A1 * φ1 + A2 * φ2;
   const R2 = -A0 + A1 + 4 * (φ0 - φ1) * A2;
@@ -313,7 +456,7 @@ export function sosMatchedBandpass(cutoffNormalized, Q) {
 }
 
 export function sosMatchedPeak(cutoffNormalized, Q, gainAmp) {
-  const [ω0, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParams(cutoffNormalized, Q);
+  const [, a1, a2, φ0, φ1, φ2, A0, A1, A2] = getMatchedFilterParam(cutoffNormalized, Q);
   const G = gainAmp;
 
   const R1 = G * G * (A0 * φ0 + A1 * φ1 + A2 * φ2);
@@ -390,9 +533,9 @@ export function getSosGain(sos, normalizedFreq, inDecibel = false) {
 }
 
 /**
- * Evaluates the maximum amplitude response across all frequencies [0, 0.5].
- * Uses candidates (DC, Nyquist, filter center frequencies) + log grid + golden section refinement.
- */
+Evaluates the maximum amplitude response across all frequencies [0, 0.5].
+Uses candidates (DC, Nyquist, filter center frequencies) + log grid + golden section refinement.
+*/
 export function getSosMaxGain(sos, candidateNormalizedFreqs = [], numGridPoints = 128) {
   if (!sos || sos.length === 0) return 1.0;
 
@@ -400,7 +543,7 @@ export function getSosMaxGain(sos, candidateNormalizedFreqs = [], numGridPoints 
   let bestF = 0.0;
 
   const testFreq = (f) => {
-    const cf = clamp(f, 0.0, 0.49999);
+    const cf = clamp(f, 0.0, nyquist);
     const g = getSosGain(sos, cf, false);
     if (g > maxGain) {
       maxGain = g;
@@ -409,21 +552,21 @@ export function getSosMaxGain(sos, candidateNormalizedFreqs = [], numGridPoints 
   };
 
   testFreq(0.0);
-  testFreq(0.49999);
+  testFreq(nyquist);
   for (let i = 0; i < candidateNormalizedFreqs.length; ++i) {
     testFreq(candidateNormalizedFreqs[i]);
   }
 
-  const logMin = Math.log(10 / 48000);
-  const logMax = Math.log(0.49999);
+  const logMin = Math.log(minCutoff);
+  const logMax = Math.log(nyquist);
   const step = (logMax - logMin) / numGridPoints;
   for (let i = 0; i <= numGridPoints; ++i) { testFreq(Math.exp(logMin + i * step)); }
 
   // Golden section refinement around the best candidate
-  if (bestF > 0.0001 && bestF < 0.499) {
+  if (bestF > Number.EPSILON && bestF < nyquist) {
     const span = bestF * 0.15;
-    let a = Math.max(0.0001, bestF - span);
-    let b = Math.min(0.4999, bestF + span);
+    let a = Math.max(Number.EPSILON, bestF - span);
+    let b = Math.min(nyquist, bestF + span);
     const rphi = 2.0 - (1.0 + Math.sqrt(5.0)) / 2.0;
     let c = a + rphi * (b - a);
     let d = b - rphi * (b - a);
@@ -452,11 +595,11 @@ export function getSosMaxGain(sos, candidateNormalizedFreqs = [], numGridPoints 
 }
 
 /**
- * Computes automatic gain adjustment parameters.
- * Mode:
- * - "ceiling": Attenuates only if peak response > ceilingDB (guarantees <= 0 dB in feedback loops).
- * - "normalize": Always scales so the peak response equals ceilingDB.
- * - "none": Applies no automatic gain adjustment.
+Computes automatic gain adjustment parameters.
+Mode:
+- "ceiling": Attenuates only if peak response > ceilingDB (guarantees <= 0 dB in feedback loops).
+- "normalize": Always scales so the peak response equals ceilingDB.
+- "none": Applies no automatic gain adjustment.
  */
 export function computeSosAutoGain(
   sos,
@@ -483,19 +626,34 @@ export function computeSosAutoGain(
 }
 
 /**
- * Generic serial second-order section (SOS) equalizer with auto-gain support.
- * Replaces PeakingFilterBank.
- */
+Construct a filter bank (equalizer) with auto-gain.
+Intened to be used with `EqualizerXYPad`.
+
+`eqMessage = {params, filterTypes, autoGain, ceilingDB, masterGainDB}`
+*/
 export class SerialSosEqualizer {
-  constructor(sos, options = {}) {
+  constructor(sampleRate, eqMessage = {}) {
     const {
+      params = [],
+      filterTypes = [],
       autoGain = "none",
       ceilingDB = 0.0,
-      candidateNormalizedFreqs = [],
       masterGainDB = 0.0,
-    } = options;
+    } = eqMessage;
 
-    this.sos = sos ?? [];
+    const sos = [];
+    const candidateNormalizedFreqs = [];
+    for (let i = 0; i < params.length; ++i) {
+      const prm = params[i];
+      const filterFunc = selectSosFilter(filterTypes[i]);
+      if (prm && prm.length >= 3 && filterFunc) {
+        const fcNorm = Math.min(prm[0] / sampleRate, 0.4999);
+        sos.push(filterFunc(fcNorm, prm[1], prm[2]));
+        candidateNormalizedFreqs.push(fcNorm);
+      }
+    }
+
+    this.sos = sos;
     this.hasFilter = this.sos.length > 0;
     this.filter = this.hasFilter ? new SosFilterImmediate(this.sos) : null;
 
@@ -515,24 +673,26 @@ export class SerialSosEqualizer {
   }
 }
 
-//
-// `filterType` format is <type><order><method>.
-// For example, lp2bq means lowpass, order 2, biquad.
-//
-// Filter types:
-// - lp: lowpass
-// - hp: highpass
-// - bp: bandpass
-// - ap: allpass
-// - nt: notch
-// - pk: peak
-// - ls: low shelf
-// - hs: high shelf
-//
-// Design method:
-// - bq: biquad
-// - mt: matched
-//
+/**
+`filterType` format is <type><order><method>.
+For example, lp2bq means lowpass, order 2, biquad.
+
+Filter types:
+- lp: lowpass
+- hp: highpass
+- bp: bandpass
+- ap: allpass
+- nt: notch
+- pk: peak
+- ls: low shelf
+- hs: high shelf
+
+Design method:
+- bq: biquad
+- mt: matched
+- ema: exponential moving average
+- blt: bilinear
+*/
 export function selectSosFilter(filterType) {
   switch (filterType) {
     case "lp2bq":
@@ -561,6 +721,30 @@ export function selectSosFilter(filterType) {
       return (cut, Q, gain = 1) => sosMatchedPeak(cut, Q, gain);
     case "hs1mt":
       return (cut, Q, gain = 1) => sosMatchedHighShelf1(cut, gain);
+    case "lp1ema":
+      return (cut, Q = 1, gain = 1) => sosEmaLowpass(cut);
+    case "hp1ema":
+      return (cut, Q = 1, gain = 1) => sosEmaHighpass(cut);
+    case "ls1ema":
+      return (cut, Q = 1, gain = 1) => sosEmaLowShelf(cut, gain);
+    case "hs1ema":
+      return (cut, Q = 1, gain = 1) => sosEmaHighShelf(cut, gain);
+    case "ap1ema":
+      return (cut, Q = 1, gain = 1) => sosEmaAllpass(cut);
+    case "pk2ema":
+      return (cut, BW, gain = 1) => sosEmaPeak(cut, BW, gain);
+    case "lp1blt":
+      return (cut, Q = 1, gain = 1) => sosOnePoleBilinearLowpass(cut);
+    case "hp1blt":
+      return (cut, Q = 1, gain = 1) => sosOnePoleBilinearHighpass(cut);
+    case "ls1blt":
+      return (cut, Q = 1, gain = 1) => sosOnePoleBilinearLowShelf(cut, gain);
+    case "hs1blt":
+      return (cut, Q = 1, gain = 1) => sosOnePoleBilinearHighShelf(cut, gain);
+    case "ap1blt":
+      return (cut, Q = 1, gain = 1) => sosOnePoleBilinearAllpass(cut);
+    case "pk2blt":
+      return (cut, BW, gain = 1) => sosWidePeak(cut, BW, gain);
   }
   console.warn("filterType is invalid.");
   return null;
@@ -580,4 +764,16 @@ export const sosFilterType = {
   bp2mt: "bp2mt",
   pk2mt: "pk2mt",
   hs1mt: "hs1mt",
+  lp1ema: "lp1ema",
+  hp1ema: "hp1ema",
+  ls1ema: "ls1ema",
+  hs1ema: "hs1ema",
+  ap1ema: "ap1ema",
+  lp1blt: "lp1blt",
+  hp1blt: "hp1blt",
+  ls1blt: "ls1blt",
+  hs1blt: "hs1blt",
+  ap1blt: "ap1blt",
+  pk2blt: "pk2blt",
+  pk2ema: "pk2ema",
 };
