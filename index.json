@@ -9,6 +9,15 @@
       "summary": {"ja": "", "en": ""},
       "list"   : [
         {
+          "href"       : "./BassString/synth.html",
+          "name"       : "BassString",
+          "tag"        : {"ja": "Bass", "en": "Bass"},
+          "description": {
+            "ja": "コントラバス (double bass) のスラップ奏法に似せたシンセサイザ。",
+            "en": "Imitation of double bass slap."
+          }
+        },
+        {
           "href"       : "./FMTechnoBass2/synth.html",
           "name"       : "FMTechnoBass2",
           "tag"        : {"ja": "FM", "en": "FM"},
