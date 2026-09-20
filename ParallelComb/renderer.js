@@ -4,21 +4,15 @@
 import {CubicDelay, Delay, IntDelay} from "../common/dsp/delay.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
-import {cutoffToOnePoleKp, EMAFilter} from "../common/dsp/smoother.js";
+import {cutoffToEmaAlpha} from "../common/dsp/smoother.js";
 import {
   sosBiquadBandpassNormalized,
   sosBiquadHighpass,
   sosBiquadLowpass,
   SosFilterImmediate
 } from "../common/dsp/sos.js";
-import {BiquadResonator, SVF, SVFBP} from "../common/dsp/svf.js";
-import {
-  circularModes,
-  dbToAmp,
-  lerp,
-  syntonicCommaRatio,
-  uniformFloatMap
-} from "../common/util.js";
+import {BiquadResonator} from "../common/dsp/svf.js";
+import {circularModes, lerp, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
@@ -32,8 +26,8 @@ class EmaBandpass {
 
     this.v_lp = 0;
     this.v_hp = 0;
-    this.k_lp = cutoffToOnePoleKp(1, lowCut);
-    this.k_hp = cutoffToOnePoleKp(1, highCut);
+    this.k_lp = cutoffToEmaAlpha(lowCut);
+    this.k_hp = cutoffToEmaAlpha(highCut);
 
     // Compute normalize gain which is `1 / |H(e^(j*midRadian))|` for following
     // transfer function:
@@ -113,9 +107,7 @@ class FilteredComb {
     outputGain,
     crossRatio,
   ) {
-    const delayType = delayInterpType == 0 ? IntDelay
-      : delayInterpType == 1               ? Delay
-                                           : CubicDelay;
+    const delayType = delayInterpType == 0 ? IntDelay : delayInterpType == 1 ? Delay : CubicDelay;
     this.delay = new delayType(2 * delaySamples);
     // this.delay.setTime(delaySamples - 1);
     this.timeBase = delaySamples - 1;
@@ -128,14 +120,13 @@ class FilteredComb {
       this.filter = new LpHp(cutoffNormalized, 16 * filterQ);
     } else if (menuitems.filterTypeItems[filterType] === "HP") {
       const cut = Math.min(cutoffNormalized / 2, 0.4999);
-      this.filter
-        = new SosFilterImmediate(sosBiquadHighpass(cut, filterQ * Math.SQRT1_2));
+      this.filter = new SosFilterImmediate(sosBiquadHighpass(cut, filterQ * Math.SQRT1_2));
     } else if (menuitems.filterTypeItems[filterType] === "LP") {
       const cut = Math.min(cutoffNormalized * 2, 0.4999);
       this.filter = new SosFilterImmediate(sosBiquadLowpass(cut, filterQ * Math.SQRT1_2));
     } else if (menuitems.filterTypeItems[filterType] === "BP") {
-      this.filter = new SosFilterImmediate(
-        sosBiquadBandpassNormalized(cutoffNormalized, 10 * filterQ));
+      this.filter
+        = new SosFilterImmediate(sosBiquadBandpassNormalized(cutoffNormalized, 10 * filterQ));
     } else if (menuitems.filterTypeItems[filterType] === "Resonator") {
       this.filter = new ResonatorWrapper(cutoffNormalized, filterQ);
     } else if (menuitems.filterTypeItems[filterType] === "Gentle BP") {
@@ -149,8 +140,7 @@ class FilteredComb {
   process(input, summed) {
     let sig = input - this.feedback * this.buffer;
     sig = this.filter.process(sig);
-    this.buffer
-      = this.delay.processMod(sig, this.timeBase - Math.abs(sig) * this.timeMod);
+    this.buffer = this.delay.processMod(sig, this.timeBase - Math.abs(sig) * this.timeMod);
     return this.outputGain * lerp(this.buffer, this.crossSign * summed, this.crossRatio);
   }
 }
@@ -205,8 +195,7 @@ onmessage = async (event) => {
   const stereoPitch = 2 ** (pv.stereoPitchCent / 1200);
   for (let idx = 0; idx < dsp.comb.length; ++idx) {
     const delayTimeSample = pitchFunc(idx, timeBase);
-    const randTime
-      = uniformFloatMap(rng.number(), delayTimeSample, delayTimeSample * stereoPitch);
+    const randTime = uniformFloatMap(rng.number(), delayTimeSample, delayTimeSample * stereoPitch);
     const randCutoff
       = uniformFloatMap(rng.number(), delayTimeSample, delayTimeSample * stereoPitch);
     dsp.comb[idx] = new FilteredComb(

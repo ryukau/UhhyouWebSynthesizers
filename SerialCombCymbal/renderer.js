@@ -4,7 +4,7 @@
 import {CubicDelay, Delay, IntDelay, LongAllpass} from "../common/dsp/delay.js";
 import {downSampleLinearPhase} from "../common/dsp/multirate.js";
 import {SlopeFilter} from "../common/dsp/slopefilter.js"
-import {timeToOnePoleKp} from "../common/dsp/smoother.js"
+import {timeToEmaAlpha} from "../common/dsp/smoother.js"
 import {SVF} from "../common/dsp/svf.js";
 import * as util from "../common/util.js"
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
@@ -13,7 +13,7 @@ import * as menuitems from "./menuitems.js";
 
 class EMADecayEnvelope {
   constructor(timeInSamples) {
-    this.alpha = timeToOnePoleKp(timeInSamples);
+    this.alpha = timeToEmaAlpha(timeInSamples);
     this.reset();
   }
 
