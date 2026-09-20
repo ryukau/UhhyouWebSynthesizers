@@ -430,7 +430,7 @@ function renderSurgePulse(freq, upRate, upFold, shape, specialMath) {
 
   const envLength = 2 * Math.ceil(totalLengthSamples);
   const buffer = new Array(envLength);
-  for (let i = 0; i < envLength; ++i) buffer[i] = envelope.env();
+  for (let i = 0; i < envLength; ++i) buffer[i] = envelope.process();
   return buffer;
 }
 

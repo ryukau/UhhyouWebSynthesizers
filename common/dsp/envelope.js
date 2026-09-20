@@ -1,6 +1,10 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {clamp} from "../util.js";
+
+import {timeToEmaAlpha} from "./smoother.js";
+
 /**
 Brent's method to find local minimum of scalar function. Translated from
 `scipy.optimize.minimize_scalar`.
@@ -189,12 +193,6 @@ function doubleEmaEnvelopeD0Negative(n, k_A, k_D) {
   return (A - 1) * D;
 }
 
-function samplesToKp(timeInSamples) {
-  if (timeInSamples < Number.EPSILON) return 1;
-  const y = 1 - Math.cos(2 * Math.PI / timeInSamples);
-  return -y + Math.sqrt(y * (y + 2));
-}
-
 export class DoubleEmaADEnvelope {
   #v1_A = 0;
   #v2_A = 0;
@@ -219,8 +217,8 @@ export class DoubleEmaADEnvelope {
   }
 
   noteOn(targetAmplitude, attackTimeSamples, decayTimeSamples) {
-    const kA = samplesToKp(attackTimeSamples);
-    const kD = samplesToKp(decayTimeSamples);
+    const kA = timeToEmaAlpha(attackTimeSamples);
+    const kD = timeToEmaAlpha(decayTimeSamples);
 
     if (kA == 1.0 || kD == 1.0) {
       this.#gain = 1;
@@ -299,10 +297,10 @@ export class ExpPolyEnvelope {
 
 export class SurgeEnvelope {
   constructor(attackSamples, totalLengthSamples, endValue = 1e-5) {
-    this.configure(attackSamples, totalLengthSamples, endValue);
+    this.set(attackSamples, totalLengthSamples, endValue);
   }
 
-  configure(attackSamples, totalLengthSamples, endValue = 1e-5) {
+  set(attackSamples, totalLengthSamples, endValue = 1e-5) {
     const attack = Number.isFinite(attackSamples) ? Math.max(1, attackSamples) : 1;
     const total = Number.isFinite(totalLengthSamples) ? Math.max(attack + 1, totalLengthSamples)
                                                       : attack + 64;
@@ -336,15 +334,70 @@ export class SurgeEnvelope {
     return Math.exp(logVal);
   }
 
-  env() {
-    var out = this.value;
+  process() {
+    const output = this.value;
     this.t++;
     this.value = this.calcEnvelope(this.t);
-    return out;
+    return output;
+  }
+}
+
+// y(t) = t < t_p ? A * surge(t) + bias * (1 - surge(min)) : A * surge(t),
+// where A is a normalization factor.
+export class SurgeEnvelopeBiased {
+  constructor(attackSamples, totalLengthSamples, endValue = 1e-5, bias = 0.0, targetPeak = 1.0) {
+    this.set(attackSamples, totalLengthSamples, endValue, bias, targetPeak);
   }
 
-  process(input) {
-    var output = input * this.value;
+  set(attackSamples, totalLengthSamples, endValue = 1e-5, bias = 0.0, targetPeak = 1.0) {
+    const attack = Number.isFinite(attackSamples) ? Math.max(1, attackSamples) : 1;
+    const total = Number.isFinite(totalLengthSamples) ? Math.max(attack + 1, totalLengthSamples)
+                                                      : attack + 64;
+    const end = Number.isFinite(endValue) ? clamp(endValue, Number.EPSILON, 1 - Number.EPSILON)
+                                          : Number.EPSILON;
+
+    this.bias = Number.isFinite(bias) ? clamp(bias, -1.0, 1.0) : 0.0;
+    this.targetPeak = Number.isFinite(targetPeak) ? clamp(targetPeak, -1.0, 1.0) : 1.0;
+
+    this.attackSamples = attack;
+    this.totalLengthSamples = total;
+    this.endValue = end;
+    this.tPeak = attack;
+
+    const r = total / attack;
+    const denom = Math.log(r) + 1 - r; // strictly negative for r > 1
+
+    this.a = Math.log(end) / denom; // > 0
+    this.b = this.a / attack;       // > 0
+    this.c = this.a * (1 - Math.log(this.tPeak));
+
+    this.reset();
+  }
+
+  reset(bias = this.bias) {
+    this.bias = Number.isFinite(bias) ? clamp(bias, -1.0, 1.0) : 0.0;
+    this.t = 0;
+    this.value = this.calcEnvelope(0);
+  }
+
+  calcEnvelope(t) {
+    if (!Number.isFinite(t) || t <= 0) { return (t === 0) ? this.bias : 0.0; }
+
+    const logVal = this.a * Math.log(t) + this.c - this.b * t;
+
+    if (t < this.tPeak) {
+      const f = Math.exp(logVal);
+      return this.bias + (this.targetPeak - this.bias) * f;
+    }
+
+    return this.targetPeak * Math.exp(logVal);
+  }
+
+  get isFinished() { return this.t >= this.tPeak && this.value === 0.0; }
+
+  process() {
+    if (this.t >= this.tPeak && this.value === 0.0) { return 0.0; }
+    const output = this.value;
     this.t++;
     this.value = this.calcEnvelope(this.t);
     return output;

@@ -455,12 +455,6 @@ class ExpDecay {
     this.value = 1;
   }
 
-  env() {
-    var out = this.value;
-    this.value *= this.gamma;
-    return out;
-  }
-
   process(input) {
     var output = input * this.value;
     this.value *= this.gamma;
@@ -477,7 +471,7 @@ class DecayEnvelope {
   }
 
   process() {
-    return this.sustain + (1 - this.sustain) * this.shaper(this.env.env() ** this.curve);
+    return this.sustain + (1 - this.sustain) * this.shaper(this.env.process(1) ** this.curve);
   }
 }
 
