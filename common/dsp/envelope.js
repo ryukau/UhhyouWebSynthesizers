@@ -342,8 +342,21 @@ export class SurgeEnvelope {
   }
 }
 
-// y(t) = t < t_p ? A * surge(t) + bias * (1 - surge(min)) : A * surge(t),
-// where A is a normalization factor.
+/**
+ * y(t) = t < t_p ? A * surge(t) + bias * (1 - surge(min)) : A * surge(t)
+ * where A is a normalization factor.
+ *
+ * @class SurgeEnvelopeBiased
+ * @param {number} attackSamples - Duration of the attack phase (time to peak) in samples. Minimum
+ *   value is 1.
+ * @param {number} totalLengthSamples - Total duration of the envelope in samples. Must be strictly
+ *   greater than `attackSamples` (minimum: `attackSamples + 1`).
+ * @param {number} [endValue=1e-5] - Target amplitude at `totalLengthSamples` used to determine the
+ *   decay rate. Clamped to `(EPSILON, 1 - EPSILON)`.
+ * @param {number} [bias=0.0] - Starting value / DC offset at `t = 0`. Clamped to `[-1.0, 1.0]`.
+ * @param {number} [targetPeak=1.0] - Peak amplitude reached at `t = attackSamples`. Clamped to
+ *   `[-1.0, 1.0]`.
+ */
 export class SurgeEnvelopeBiased {
   constructor(attackSamples, totalLengthSamples, endValue = 1e-5, bias = 0.0, targetPeak = 1.0) {
     this.set(attackSamples, totalLengthSamples, endValue, bias, targetPeak);
