@@ -363,8 +363,8 @@ function getBiquadSlopeParam(cutoffNormalized, slope, gainAmp = 1) {
   const ω0 = 2 * Math.PI * cutoffNormalized;
   const cs = Math.cos(ω0);
   const sn = Math.sin(ω0);
-  const A = Math.sqrt(gainAmp) * Math.SQRT1_2;
-  const α = 0.5 * sn * Math.sqrt((A + 1 / A) * (1 / slope - 1) + 2);
+  const A = Math.sqrt(gainAmp);
+  const α = 0.5 * sn * Math.sqrt(Math.max(0, (A + 1 / A) * (1 / slope - 1) + 2));
   const B = 2 * Math.sqrt(A) * α;
   return [ω0, cs, sn, A, α, B];
 }
@@ -384,7 +384,7 @@ export function sosBiquadHighShelf(cutoffNormalized, slope, gainAmp) {
   const [, cs, , A, , B] = getBiquadSlopeParam(cutoffNormalized, slope, gainAmp);
   const b0 = A * ((A + 1) + (A - 1) * cs + B);
   const b1 = -2 * A * ((A - 1) + (A + 1) * cs);
-  const b2 = A * ((A + 1) - (A - 1) * cs - B);
+  const b2 = A * ((A + 1) + (A - 1) * cs - B);
   const a0 = (A + 1) - (A - 1) * cs + B;
   const a1 = 2 * ((A - 1) - (A + 1) * cs);
   const a2 = (A + 1) - (A - 1) * cs - B;
