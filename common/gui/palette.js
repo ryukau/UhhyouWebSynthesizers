@@ -5,7 +5,7 @@ import {clamp} from "../util.js";
 
 function rgbaInt(r, g, b, a) {
   const u8 = (value) => Math.floor(clamp(value, 0, 255));
-  return `rgba(${u8(r)}, ${u8(g)}, ${u8(b)}, ${u8(a) / 255})`;
+  return `rgba(${u8(r)}, ${u8(b)}, ${u8(a) / 255})`;
 }
 
 // `colorCode` is "#rrggbb".
@@ -55,6 +55,6 @@ export const uiSize = {
   waveViewHeight: controlWidth * 8 / 32,
   bezierEnvelopeWidth: controlWidth * 15 / 32,
   bezierEnvelopeHeight: controlWidth * 8 / 32,
-  barboxWidth: controlWidth,
+  barboxWidth: controlWidth * 31 / 32,
   barboxHeight: controlWidth * 12 / 32,
 };

@@ -49,37 +49,33 @@ export class BarBox {
     this.divContainer.appendChild(this.label);
 
     this.divInputLine = document.createElement("div");
-    this.divInputLine.style.width = "100%";
-    this.divInputLine.style.display = "flex";
-    this.divInputLine.style.alignItems = "center";
+    this.divInputLine.className = "inputLine";
     this.divContainer.appendChild(this.divInputLine);
 
-    this.divIndexLabel = document.createElement("div");
+    this.divIndexLabel = document.createElement("span");
     this.divIndexLabel.classList.add("barbox");
     this.divIndexLabel.textContent = "Index";
     this.divInputLine.appendChild(this.divIndexLabel);
 
     this.inputIndex = document.createElement("input");
     this.inputIndex.classList.add("barbox");
-    this.inputIndex.style.flexGrow = 1;
     this.inputIndex.ariaLabel = label + ", index selector";
     this.inputIndex.ariaDescription
       = "Select index of bar box control. Each index corresponds to a value in an array. The value can be set at the next element.";
     this.inputIndex.type = "number";
     this.inputIndex.min = 0; // TODO: Add offset.
-    this.inputIndex.max = parameters.length;
+    this.inputIndex.max = parameters.length - 1;
     this.inputIndex.step = 1;
     this.inputIndex.value = 0;
     this.divInputLine.appendChild(this.inputIndex);
 
-    this.divValueLabel = document.createElement("div");
+    this.divValueLabel = document.createElement("span");
     this.divValueLabel.classList.add("barbox");
     this.divValueLabel.textContent = "Value";
     this.divInputLine.appendChild(this.divValueLabel);
 
     this.inputValue = document.createElement("input");
     this.inputValue.classList.add("barbox");
-    this.inputValue.style.flexGrow = 1;
     this.inputValue.ariaLabel = label + ", value input";
     this.inputValue.ariaDescription
       = "Set value of bar box control. This value is a part of an array. The index of array can be set at the previous element.";
@@ -90,8 +86,10 @@ export class BarBox {
     this.inputValue.value = parameters[0].dsp;
     this.divInputLine.appendChild(this.inputValue);
 
-    this.inputIndex.addEventListener("input", (e) => this.#inputCallback(e), false);
-    this.inputValue.addEventListener("input", (e) => this.#inputCallback(e), false);
+    this.inputIndex.addEventListener("input", (e) => this.#onIndexInput(e), false);
+    this.inputIndex.addEventListener("change", (e) => this.#onIndexInput(e), false);
+    this.inputValue.addEventListener("input", (e) => this.#onValueInput(e), false);
+    this.inputValue.addEventListener("change", (e) => this.#onValueInput(e), false);
 
     this.divCanvasMargin = document.createElement("div");
     this.divCanvasMargin.classList.add("canvasMargin");
@@ -133,7 +131,11 @@ export class BarBox {
   }
 
   refresh() {
-    this.inputValue.value = this.param[this.inputIndex.value].dsp;
+    let index = parseInt(this.inputIndex.value);
+    if (isNaN(index)) index = 0;
+    index = clamp(index, 0, this.param.length - 1);
+    this.inputIndex.value = index;
+    this.inputValue.value = this.param[index].dsp;
     this.draw();
   }
 
@@ -142,8 +144,21 @@ export class BarBox {
     this.draw();
   }
 
-  #inputCallback(event) {
-    this.param[parseInt(this.inputIndex.value)].dsp = parseFloat(this.inputValue.value);
+  #onIndexInput(event) {
+    let index = parseInt(this.inputIndex.value);
+    if (isNaN(index)) return;
+    index = clamp(index, 0, this.param.length - 1);
+    this.inputIndex.value = index;
+    this.inputValue.value = this.param[index].dsp;
+  }
+
+  #onValueInput(event) {
+    let index = parseInt(this.inputIndex.value);
+    if (isNaN(index)) index = 0;
+    index = clamp(index, 0, this.param.length - 1);
+    const val = parseFloat(this.inputValue.value);
+    if (isNaN(val)) return;
+    this.param[index].dsp = val;
     this.draw();
     this.onInputFunc();
   }
@@ -219,8 +234,7 @@ export class BarBox {
 
     // Highlight.
     if (this.#isMouseEntered) {
-      const index
-        = Math.floor(this.#indexL + this.#indexRange * this.#mousePosition.x / width);
+      const index = Math.floor(this.#indexL + this.#indexRange * this.#mousePosition.x / width);
       if (index < this.param.length && index >= 0) {
         this.context.fillStyle = palette.overlayHighlight;
         this.context.fillRect(
@@ -231,8 +245,8 @@ export class BarBox {
         this.context.fillStyle = palette.overlay;
         this.context.textAlign = "center";
         this.context.fillText(
-          `#${index + this.indexOffset}: ${this.param[index].display.toFixed(5)}`,
-          width / 2, height / 2);
+          `#${index + this.indexOffset}: ${this.param[index].display.toFixed(5)}`, width / 2,
+          height / 2);
       }
     } else {
       // // Parameter name.
@@ -258,8 +272,7 @@ export class BarBox {
 
       const radius = 4;
       this.context.beginPath();
-      this.context.ellipse(
-        this.#anchor.x, this.#anchor.y, radius, radius, 0, 0, 2 * Math.PI);
+      this.context.ellipse(this.#anchor.x, this.#anchor.y, radius, radius, 0, 0, 2 * Math.PI);
       this.context.fill();
 
       this.context.beginPath();
@@ -398,7 +411,7 @@ export class BarBox {
     // `Array.findLast()` can be used, but it's too early to adapt. (2022-09-16)
     let idx = 0;
     for (; idx < this.snapValue.length; ++idx) {
-      if (this.snapValue[idx] < val) continue;
+      if (this.snapValue[idx] < value) continue;
       break;
     }
     return idx < this.snapValue.length ? this.snapValue[idx] : 1;
@@ -406,7 +419,7 @@ export class BarBox {
 
   #setValueFromPosition(event, position) {
     const index = this.#calcIndex(position);
-    if (index >= this.canvas.length) return;
+    if (index >= this.param.length) return;
 
     if (event.ctrlKey && !event.shiftKey) {
       this.#resetValueAt(index);

@@ -356,6 +356,7 @@ input[type="button"].checkBoxLine {
 /* `inputLine` class is shared between controls that occupies a line. */
 div.inputLine {
   display: flex;
+  align-items: center;
   text-align: center;
   width: auto;
   padding: var(--margin);
@@ -553,25 +554,41 @@ div.barboxContainer:hover {
   background: var(--color-highlight);
 }
 
+div.barboxContainer > div.inputLine:hover {
+  box-shadow: none;
+}
+
 label.barbox {
   display: inline-block;
   width: 100%;
   box-sizing: border-box;
-  margin: var(--margin);
+  margin: var(--margin) 0;
   text-align: center;
 }
 
 span.barbox {
-  margin: var(--margin) var(--margin) var(--margin) calc(2 * var(--margin));
-  width: fit-content;
+  margin: 0 var(--margin) 0 0;
+  padding-left: var(--margin);
   display: inline-block;
   text-align: left;
 }
 
 input.barbox {
-  margin: var(--margin);
-  width: fit-content;
-  display: inline-block;
+  margin: 0 var(--margin) 0 0;
+  box-sizing: border-box;
+}
+
+input.barbox:first-of-type {
+  width: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+input.barbox:last-of-type {
+  width: 0;
+  flex: 2;
+  min-width: 0;
+  margin-right: 0;
 }
 
 /* BezierEnvelopeView */
