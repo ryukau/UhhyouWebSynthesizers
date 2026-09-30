@@ -57,17 +57,6 @@ function solve(A, b, size) {
   return x;
 }
 
-/**
-`WaveformXYPad` does not take parameters, but only returns polynomial coefficients from
-`coefficients()` method.
-
-This is because of randomization. It requires one of the following conversions:
-
-1. From `#controlPoints` to polynomial coefficients.
-2. From polynomial coefficients to `#controlPoints`.
-
-Conversion 2 is not implemented for now, because it requires to solve some math problem.
-*/
 export class WaveformXYPad {
   #isMouseDown = false;
   #controlRadius = 8;
@@ -143,13 +132,15 @@ export class WaveformXYPad {
 
     this.#coefficients = new Array(this.#controlPoints.length + 2).fill(0);
 
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+      .addEventListener?.("change", () => this.draw());
+
     this.#updateCoefficients();
     this.refresh();
   }
 
   setControlPoints(waveform) {
     const triangle = (t) => {
-      // Output amplitude is in [0, 1]. Starting amp is 0.5, then rise, fall, rise.
       t += 0.75;
       t -= Math.floor(t);
       return Math.abs(2 * t - 1);
@@ -200,7 +191,7 @@ export class WaveformXYPad {
           x: 10 ** (-2 * ratio) * this.canvas.width,
           y: (idx % 2) * this.canvas.height,
         };
-      } else { // "sine"
+      } else {
         this.#controlPoints[idx] = {
           x: ratio * this.canvas.width,
           y: (Math.sin(2 * Math.PI * ratio) + 1) * this.canvas.height / 2,
@@ -236,7 +227,6 @@ export class WaveformXYPad {
       polyX[i] = ctrlPoints[i - 1].x / this.canvas.width;
     }
 
-    // A[n] = [x[n]^0, x[n]^1, x[n]^2, x[n]^3, ...].
     let A = new Array(size);
     for (let i = 0; i < size; ++i) A[i] = new Array(size);
     A[0].fill(0);
@@ -248,8 +238,6 @@ export class WaveformXYPad {
 
     this.#coefficients = solve(A, b, size);
 
-    // From here, it starts finding normalization gain.
-    // `d1` is 1st order derivative of target polynomial.
     let d1 = new Array(this.#coefficients.length - 1);
     for (let i = 0; i < d1.length; ++i) d1[i] = (i + 1) * this.#coefficients[i + 1];
 
@@ -257,7 +245,6 @@ export class WaveformXYPad {
     let getPeakPoint
       = (x) => { return {x: x, y: Math.abs(computePolynomial(x, this.#coefficients))}; };
     for (let i = 0; i < polyX.length - 1; ++i) {
-      // Binary search. L: left, M: mid, R: right.
       let xL = polyX[i];
       let xR = polyX[i + 1];
       let xM;
@@ -288,12 +275,11 @@ export class WaveformXYPad {
         } else if (signR === signM) {
           xR = xM;
         }
-      } while (++iter < 53); // 53 is number of significand bits in double float.
+      } while (++iter < 53);
 
       if (iter >= 53) peaks.push(getPeakPoint(xM));
     }
 
-    // Find max peak.
     let maxPeak = peaks[0].y;
     for (let i = 1; i < peaks.length; ++i) {
       if (maxPeak < peaks[i].y) maxPeak = peaks[i].y;
@@ -336,10 +322,6 @@ export class WaveformXYPad {
 
     const mouse = this.#getMousePosition(event);
     this.#grabbedPoint = this.#hitTest(mouse);
-
-    if (this.#grabbedPoint >= 0 && event.altKey) {
-    }
-
     this.draw();
   }
 
@@ -380,18 +362,13 @@ export class WaveformXYPad {
   onPointerLeave(event) { this.draw(); }
 
   onWheel(event) {
-    event.preventDefault(); // Prevent page scrolling.
-
+    event.preventDefault();
     if (event.deltaY == 0) return;
 
     this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
     if (this.#focusedPoint < 0) return;
 
     this.#detailIndex = this.#focusedPoint;
-
-    const amount = event.deltaY > 0 ? 1 : -1;
-    const sensi = event.shiftKey ? 0.01 : event.ctrlKey ? 1 : 0.2;
-
     this.draw();
   }
 
@@ -434,14 +411,11 @@ export class WaveformXYPad {
 
     // Draw grid.
     this.context.lineWidth = 0.5;
-    this.context.strokeStyle = "#f0f0f0";
-    this.context.fillStyle = "#808080";
-    // this.context.font = `${palette.fontWeightBase} ${palette.fontSize}px
-    //   ${palette.fontFamily}`;
+    this.context.strokeStyle = palette.borderLight;
+    this.context.fillStyle = palette.textDim;
     const nGrid = 12;
     for (let idx = 1; idx < nGrid; ++idx) {
       const ratio = idx / nGrid;
-
       const x = ratio * width;
       const y = ratio * height;
 
@@ -454,18 +428,6 @@ export class WaveformXYPad {
       this.context.moveTo(0, y);
       this.context.lineTo(width, y);
       this.context.stroke();
-
-      // this.context.textAlign = "left";
-      // this.context.textBaseline = "top";
-      // this.context.fillText(`${idx}/${nGrid}`, x, 4);
-      // this.context.textBaseline = "bottom";
-      // this.context.fillText(`${idx}/${nGrid}`, x, height);
-
-      // this.context.textBaseline = "middle";
-      // this.context.textAlign = "left";
-      // this.context.fillText(`${idx}/${nGrid}`, 0, y);
-      // this.context.textAlign = "right";
-      // this.context.fillText(`${idx}/${nGrid}`, width, y);
     }
 
     // Draw waveform.
@@ -477,7 +439,7 @@ export class WaveformXYPad {
     }
 
     this.context.lineWidth = 2;
-    this.context.strokeStyle = "#202020";
+    this.context.strokeStyle = palette.waveform;
     this.context.beginPath();
     this.context.moveTo(0, mapPolyToY(poly[0], height));
     for (let idx = 1; idx <= width; ++idx) {
@@ -488,18 +450,18 @@ export class WaveformXYPad {
     // Draw normalized waveform.
     const nvWidth = this.normalizedView.width;
     const nvHeight = this.normalizedView.height;
-    this.nvCtx.fillStyle = "#ffffff";
+    this.nvCtx.fillStyle = palette.background;
     this.nvCtx.fillRect(0, 0, nvWidth, nvHeight);
 
     this.nvCtx.lineWidth = 0.5;
-    this.nvCtx.strokeStyle = "#e0e0e0";
+    this.nvCtx.strokeStyle = palette.borderLight;
     this.nvCtx.beginPath();
     this.nvCtx.moveTo(0, nvHeight / 2);
     this.nvCtx.lineTo(nvWidth, nvHeight / 2);
     this.nvCtx.stroke();
 
     this.nvCtx.lineWidth = 2;
-    this.nvCtx.strokeStyle = "#000000";
+    this.nvCtx.strokeStyle = palette.foreground;
     this.nvCtx.beginPath();
 
     let polyMax = 2.1 * poly.reduce((p, c) => Math.max(p, Math.abs(c)), 0);
@@ -511,9 +473,8 @@ export class WaveformXYPad {
     }
     this.nvCtx.stroke();
 
-    this.nvCtx.fillStyle = "#00000080";
-    this.nvCtx.font
-      = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
+    this.nvCtx.fillStyle = palette.overlay;
+    this.nvCtx.font = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
     this.nvCtx.textBaseline = "top";
     this.nvCtx.textAlign = "center";
     this.nvCtx.fillText("Normalized", nvWidth / 2, palette.fontSize);
@@ -521,8 +482,7 @@ export class WaveformXYPad {
     // Draw control points.
     this.context.lineWidth = 2;
     for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
-      this.context.strokeStyle
-        = this.#focusedPoint == idx ? "#00000044" : palette.overlay;
+      this.context.strokeStyle = this.#focusedPoint === idx ? palette.accent : palette.overlay;
       this.context.beginPath();
       this.context.ellipse(
         this.#controlPoints[idx].x, this.#controlPoints[idx].y, this.#controlRadius,
@@ -531,8 +491,8 @@ export class WaveformXYPad {
 
       this.context.beginPath();
       this.context.ellipse(
-        this.#controlPoints[idx].x, this.#controlPoints[idx].y,
-        this.#controlRadius * 0.42, this.#controlRadius * 0.42, 0, 0, 2 * Math.PI);
+        this.#controlPoints[idx].x, this.#controlPoints[idx].y, this.#controlRadius * 0.42,
+        this.#controlRadius * 0.42, 0, 0, 2 * Math.PI);
       this.context.stroke();
     }
   }

@@ -47,6 +47,9 @@ export class MultiCheckBoxVertical {
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+      .addEventListener?.("change", () => this.draw());
+
     this.draw();
   }
 
@@ -60,14 +63,12 @@ export class MultiCheckBoxVertical {
 
     // Text.
     const labelLeft = 2 * this.labelHeight;
-    this.context.font
-      = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontMonospace}`;
+    this.context.font = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontMonospace}`;
     this.context.fillStyle = palette.foreground;
     this.context.textAlign = "start";
     this.context.textBaseline = "middle";
     for (let idx = 0; idx < this.valueNames.length; ++idx) {
-      this.context.fillText(
-        `${this.valueNames[idx]}`, labelLeft, (idx + 1) * this.labelHeight);
+      this.context.fillText(`${this.valueNames[idx]}`, labelLeft, (idx + 1) * this.labelHeight);
     }
 
     // Check marks.

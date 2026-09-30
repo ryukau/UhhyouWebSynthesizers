@@ -126,6 +126,9 @@ export class BarBox {
     this.#anchor = null;
     this.#sliderWidth = width / parameters.length;
 
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+      .addEventListener?.("change", () => this.draw());
+
     this.#setViewRange(0, 1);
     this.draw();
   }
@@ -257,7 +260,7 @@ export class BarBox {
     }
 
     // Zero line.
-    this.context.strokeStyle = "#c0c0c0";
+    this.context.strokeStyle = palette.borderMid;
     this.context.lineWidth = 0.2;
     this.context.beginPath();
     this.context.moveTo(0, zeroLineHeight);

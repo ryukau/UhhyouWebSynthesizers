@@ -58,15 +58,7 @@ export class EqualizerXYPad {
   #grabbedPoint = -1;
   #nyquistX;
 
-  constructor(
-    parent,
-    label,
-    width,
-    height,
-    parameters,
-    onChangeFunc,
-    options = {},
-  ) {
+  constructor(parent, label, width, height, parameters, onChangeFunc, options = {}) {
     this.param = parameters;
     this.onChangeFunc = onChangeFunc;
 
@@ -102,7 +94,6 @@ export class EqualizerXYPad {
           prm.lockRandomization = newState;
         }
       }
-
       this.label.style.color = newState ? palette.inactive : "unset";
     }, false);
     this.divContainer.appendChild(this.label);
@@ -203,6 +194,9 @@ export class EqualizerXYPad {
       }
       this.addSection(type, band[1].dsp, band[2].dsp, band[3].ui);
     }
+
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+      .addEventListener?.("change", () => this.draw());
 
     this.refresh();
   }
@@ -433,7 +427,6 @@ export class EqualizerXYPad {
 
   onWheel(event) {
     event.preventDefault();
-
     if (event.deltaY === 0) return;
 
     this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
@@ -461,7 +454,7 @@ export class EqualizerXYPad {
     this.context.fillStyle = palette.background;
     this.context.fillRect(0, 0, width, height);
 
-    this.context.fillStyle = "#f8f8f8";
+    this.context.fillStyle = palette.shaded;
     this.context.fillRect(this.#nyquistX, 0, width - this.#nyquistX, height);
 
     // Prepare Grid & Tick Data
@@ -605,7 +598,7 @@ export class EqualizerXYPad {
 
     // Grid Lines
     this.context.lineWidth = 0.5;
-    this.context.strokeStyle = "#f0f0f0";
+    this.context.strokeStyle = palette.borderLight;
 
     // Frequency grid vertical lines
     for (const hz of verticalGrids) {
@@ -626,7 +619,7 @@ export class EqualizerXYPad {
 
     // Emphasize 0 dB line
     this.context.lineWidth = 0.5;
-    this.context.strokeStyle = "#303030";
+    this.context.strokeStyle = palette.borderDark;
     this.context.beginPath();
     this.context.moveTo(0, this.mapDbToY(0));
     this.context.lineTo(width, this.mapDbToY(0));
@@ -635,7 +628,7 @@ export class EqualizerXYPad {
     // Raw gain response (faint line if compensated)
     if (this.autoGain !== "none" && Math.abs(autoGainDB) > 0.05) {
       this.context.lineWidth = 1;
-      this.context.strokeStyle = "#1060ff44";
+      this.context.strokeStyle = palette.overlay;
       this.context.beginPath();
       this.context.moveTo(-10, this.getGainY(this.mapXToHz(0), 0.0));
       const upSample = 4;
@@ -651,7 +644,7 @@ export class EqualizerXYPad {
 
     // Effective gain response curve (with autoGain applied)
     this.context.lineWidth = 2;
-    this.context.strokeStyle = "#1060ff";
+    this.context.strokeStyle = palette.accent;
     this.context.beginPath();
     this.context.moveTo(-10, this.getGainY(this.mapXToHz(0), autoGainDB));
     const upSample = 8;
@@ -665,7 +658,7 @@ export class EqualizerXYPad {
     this.context.stroke();
 
     // Tick texts & Auto gain text
-    this.context.fillStyle = "#808080";
+    this.context.fillStyle = palette.textDim;
     this.context.font = `${palette.fontWeightBase} ${palette.fontSize}px ${palette.fontFamily}`;
 
     // Frequency ticks
@@ -732,12 +725,12 @@ export class EqualizerXYPad {
     // Control Points
     for (let idx = 0; idx < this.#section.length; ++idx) {
       const sc = this.#section[idx];
-      this.context.fillStyle = this.#focusedPoint === idx ? "#00000044" : palette.overlay;
+      this.context.fillStyle = this.#focusedPoint === idx ? palette.accent : palette.overlay;
       this.context.beginPath();
       this.context.ellipse(sc.x, sc.y, this.#controlRadius, this.#controlRadius, 0, 0, 2 * Math.PI);
       this.context.fill();
 
-      this.context.fillStyle = "#ffffff";
+      this.context.fillStyle = palette.background;
       this.context.font = `${palette.fontWeightStrong} ${palette.fontSize}px ${palette.fontFamily}`;
       this.context.textBaseline = "middle";
       this.context.textAlign = "center";

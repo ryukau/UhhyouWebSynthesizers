@@ -25,6 +25,14 @@
   --color-track-background: #b0b0b0;
   --color-track-active: #808080;
   --color-thumb-background: #ffffff;
+
+  /* Canvas & UI Accent Colors (Light Mode) */
+  --color-overlay: rgba(0, 0, 0, 0.53);
+  --color-overlay-highlight: rgba(0, 0, 0, 0.125);
+  --color-waveform: #303030;
+  --color-warning: #fc8080;
+  --color-accent: #1060ff;
+  --color-shaded: rgba(0, 0, 0, 0.04);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -43,13 +51,17 @@
     --color-track-background: #5b5b5b;
     --color-track-active: #7f7f7f;
     --color-thumb-background: #202020;
+
+    /* Canvas & UI Accent Colors (Dark Mode) */
+    --color-overlay: rgba(223, 223, 223, 0.53);
+    --color-overlay-highlight: rgba(255, 255, 255, 0.125);
+    --color-waveform: #cfcfcf;
+    --color-warning: #fc8080;
+    --color-accent: #4d8aff;
+    --color-shaded: rgba(255, 255, 255, 0.05);
   }
 
   a {
-    filter: invert(0.8745);
-  }
-
-  canvas {
     filter: invert(0.8745);
   }
 }
@@ -120,18 +132,14 @@ h2 {
   font-weight: var(--font-weight-strong);
 }
 
-
 h6 {
   display: inline-block;
-
   box-sizing: border-box;
   width: 100%;
   margin: 0.5em 0 0.5em 0;
   padding: 0.25em 0 0.25em 0em;
-
   font-size: 1em;
   font-weight: var(--font-weight-base);
-
   text-align: center;
   vertical-align: middle;
 }
@@ -140,14 +148,10 @@ h6 {
 details,
 .tabViewContentRegion {
   display: inline-block;
-
   box-sizing: border-box;
   width: 100%;
-
   text-align: left;
   vertical-align: middle;
-
-  /* When closed. */
   padding: 0;
 }
 
@@ -182,7 +186,6 @@ summary:hover {
 .tabViewButtonRegion {
   display: flex;
   align-items: center;
-
   width: calc(100% - 2 * var(--margin));
   padding: var(--margin);
 }
@@ -190,7 +193,6 @@ summary:hover {
 label.tabRadioLabel {
   display: flex;
   align-items: center;
-
   flex-grow: 1;
   height: calc(var(--font-size-body) + 2 * var(--margin));
   border-radius: var(--border-radius-mid);
@@ -267,7 +269,6 @@ input[type="button"] {
   font-family: inherit;
   height: 2em;
   color: var(--color-text-main);
-
   border-radius: var(--border-radius-mid);
   border: solid 1px var(--color-border-dark);
   background: var(--color-input-background);
@@ -286,7 +287,6 @@ select#randomRecipe {
   width: 28%;
   max-width: 28%;
   box-sizing: border-box;
-
   vertical-align: middle;
   font-size: inherit;
   font-family: inherit;
@@ -340,10 +340,8 @@ div.checkBoxLine:hover {
 label.checkBoxLine {
   display: block;
   width: var(--input-line-label-width);
-
   margin: auto;
   padding-left: var(--margin);
-
   text-align: left;
 }
 
@@ -376,17 +374,14 @@ div.inputLineContainer {
 label.inputLine {
   display: block;
   width: var(--input-line-label-width);
-
   margin: auto;
   padding-left: var(--margin);
-
   text-align: left;
 }
 
 /* NumberInput: <input type="range"> */
 input[type="range"] {
   appearance: none;
-
   width: var(--input-range-width);
   margin: 0;
   display: inline-block;
@@ -425,7 +420,6 @@ input[type=range]:hover::-moz-range-track {
 input[type=range]::-webkit-slider-thumb {
   appearance: none;
   margin-top: calc(-0.5 * var(--font-size-body));
-
   box-shadow: 1px 1px var(--color-shadow-dim);
   border: 2px ridge var(--color-border-mid);
   height: var(--font-size-body);
@@ -457,13 +451,11 @@ input[type=range]:hover::-webkit-slider-runnable-track {
 /* NumberInput: <input type="number"> */
 input[type="number"] {
   appearance: textfield;
-
   display: inline-block;
   font-size: inherit;
   font-family: inherit;
   width: calc(100% - var(--input-range-width));
   margin: auto;
-
   background: var(--color-input-background);
   color: var(--color-text-main);
   border: 1px solid var(--color-border-dark);

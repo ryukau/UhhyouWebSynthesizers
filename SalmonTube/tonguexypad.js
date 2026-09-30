@@ -35,10 +35,8 @@ export class TongueXYPad {
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener(
-      "pointerdown", (event) => this.onPointerDown(event), false);
-    this.canvas.addEventListener(
-      "pointermove", (event) => this.onPointerMove(event), false);
+    this.canvas.addEventListener("pointerdown", (event) => this.onPointerDown(event), false);
+    this.canvas.addEventListener("pointermove", (event) => this.onPointerMove(event), false);
     this.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event), false);
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.divCanvasMargin.appendChild(this.canvas);
@@ -49,6 +47,9 @@ export class TongueXYPad {
       {x: parameterX1, y: parameterY1, width: parameterW1},
     ];
     this.onChangeFunc = onChangeFunc;
+
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+      .addEventListener?.("change", () => this.draw());
 
     this.#grabbed = this.params.length;
     this.#pointingAt = this.params.length;
@@ -149,9 +150,9 @@ export class TongueXYPad {
     const fontSize = Math.ceil(1.5 * palette.fontSize);
     this.context.font = `${palette.fontWeightStrong} ${fontSize}px ${palette.fontFamily}`;
     for (let idx = 0; idx < this.#position.length; ++idx) {
-      this.context.fillStyle = idx == this.#grabbed ? "#3388ff"
-        : idx == this.#pointingAt                   ? palette.highlightAccent
-                                                    : "#00000088";
+      this.context.fillStyle = idx == this.#grabbed ? palette.overlayHighlight
+        : idx == this.#pointingAt                   ? palette.foreground
+                                                    : palette.overlay;
       this.context.beginPath();
       this.context.ellipse(
         this.#position[idx].x, this.#position[idx].y, this.#radius, this.#radius, 0, 0,
@@ -160,8 +161,7 @@ export class TongueXYPad {
 
       this.context.textAlign = "center";
       this.context.textBaseline = "middle";
-      this.context.fillText(
-        `${idx}`, this.#position[idx].x, this.#position[idx].y - fontSize);
+      this.context.fillText(`${idx}`, this.#position[idx].x, this.#position[idx].y - fontSize);
     }
   }
 }

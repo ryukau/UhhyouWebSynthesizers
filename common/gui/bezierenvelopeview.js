@@ -64,6 +64,9 @@ export class BezierEnvelopeView {
     this.#selectedPointIndex = 0;
     this.#focused = false;
 
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+      .addEventListener?.("change", () => this.draw());
+
     this.draw();
   }
 
@@ -258,7 +261,7 @@ export class BezierEnvelopeView {
 
     // Draw control points.
     for (const point of this.points) {
-      this.context.fillStyle = point === activePoint ? palette.overlay : "#c0c0c088";
+      this.context.fillStyle = point === activePoint ? palette.overlay : palette.borderLight;
       this.context.beginPath();
       this.context.ellipse(point.x, point.y, this.pointRadius, this.pointRadius, 0, 0, 2 * Math.PI);
       this.context.fill();

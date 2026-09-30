@@ -46,8 +46,7 @@ export class TabView {
     tab.label = document.createElement("label");
     tab.label.classList.add("tabRadioLabel");
     tab.label.classList.add("tabRadioLabelInactive");
-    tab.label.addEventListener(
-      "mousedown", (event) => this.#onChange(tab.tabInfo.index), false);
+    tab.label.addEventListener("mousedown", (event) => this.#onChange(tab.tabInfo.index), false);
     this.buttonRegion.appendChild(tab.label);
 
     tab.radio = document.createElement("input");
@@ -55,8 +54,7 @@ export class TabView {
     tab.radio.name = this.radioButtonName;
     tab.radio.value = tab.tabInfo.index;
     tab.radio.className = "tabRadioButton";
-    tab.radio.addEventListener(
-      "change", (event) => this.#onChange(tab.tabInfo.index), false);
+    tab.radio.addEventListener("change", (event) => this.#onChange(tab.tabInfo.index), false);
     tab.label.appendChild(tab.radio);
 
     tab.labelText = document.createElement("span");
@@ -98,9 +96,7 @@ export class TabView {
   refresh() {
     for (let tab of this.tabs) {
       const widgets = tab.tabInfo.widgets;
-      for (let [key, widget] of Object.entries(widgets)) {
-        widget?.refresh();
-      }
+      for (let [key, widget] of Object.entries(widgets)) { widget?.refresh?.(); }
     }
   }
 }

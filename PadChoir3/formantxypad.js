@@ -24,10 +24,8 @@ export class FormantXYPad {
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
-    this.canvas.addEventListener(
-      "pointerdown", (event) => this.onPointerDown(event), false);
-    this.canvas.addEventListener(
-      "pointermove", (event) => this.onPointerMove(event), false);
+    this.canvas.addEventListener("pointerdown", (event) => this.onPointerDown(event), false);
+    this.canvas.addEventListener("pointermove", (event) => this.onPointerMove(event), false);
     this.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event), false);
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.divCanvasMargin.appendChild(this.canvas);
@@ -36,6 +34,9 @@ export class FormantXYPad {
     this.paramX = parameterX;
     this.paramY = parameterY;
     this.onChangeFunc = onChangeFunc;
+
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+      .addEventListener?.("change", () => this.draw());
 
     this.#setTriangle();
     this.#targetPos = {x: 0, y: this.canvas.height};
@@ -112,8 +113,8 @@ export class FormantXYPad {
 
     // Vowel.
     this.context.fillStyle = palette.foreground;
-    this.context.font = `${palette.fontWeightBase} ${
-      Math.ceil(palette.fontSize * 1.5)}px ${palette.fontMonospace}`;
+    this.context.font
+      = `${palette.fontWeightBase} ${Math.ceil(palette.fontSize * 1.5)}px ${palette.fontMonospace}`;
     const margin = palette.fontSize / 4;
 
     this.context.textAlign = "left";
@@ -132,7 +133,7 @@ export class FormantXYPad {
 
     if (this.#triangleIndex !== null && this.#isMouseDown) {
       // Triangle.
-      this.context.fillStyle = "#c0c0c020";
+      this.context.fillStyle = palette.shaded;
       const tri = this.#triangles[this.#triangleIndex];
       this.context.beginPath();
       this.context.moveTo(tri[0].x, tri[0].y);
@@ -144,10 +145,9 @@ export class FormantXYPad {
 
     // Target point.
     const radius = palette.fontSize / 2;
-    this.context.fillStyle = "#00000088";
+    this.context.fillStyle = palette.overlay;
     this.context.beginPath();
-    this.context.ellipse(
-      this.#targetPos.x, this.#targetPos.y, radius, radius, 0, 0, 2 * Math.PI);
+    this.context.ellipse(this.#targetPos.x, this.#targetPos.y, radius, radius, 0, 0, 2 * Math.PI);
     this.context.fill();
   }
 }

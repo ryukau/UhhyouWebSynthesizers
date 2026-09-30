@@ -43,6 +43,9 @@ export class WaveView {
     this.#peakText = "";
     this.#rmsPeakText = "";
 
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+      .addEventListener?.("change", () => this.draw());
+
     this.set(data);
   }
 
