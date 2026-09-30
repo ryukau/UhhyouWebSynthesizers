@@ -127,6 +127,15 @@ const recipeBook = parameter.addLocalRecipes(localRecipeBook);
 await parameter.loadJson(param, recipeBook, []);
 
 // Add controls.
+const audio = new wave.Audio(
+  2,
+  "./renderer.js",
+  undefined,
+  (wave) => {
+    for (let i = 0; i < waveView.length; ++i) { waveView[i].set(wave.data[i], wave.peakValue); }
+  },
+);
+
 const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
 
@@ -142,15 +151,6 @@ const waveView = [
   new widget.WaveView(
     divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
-
-const audio = new wave.Audio(
-  2,
-  "./renderer.js",
-  undefined,
-  (wave) => {
-    for (let i = 0; i < waveView.length; ++i) { waveView[i].set(wave.data[i], wave.peakValue); }
-  },
-);
 for (let i = 0; i < waveView.length; ++i) waveView[i].set(audio.wave.data[i]);
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
