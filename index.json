@@ -6,8 +6,14 @@
   "sections"    : [
     {
       "title"  : {"ja": "シンセサイザ", "en": "Synthesizer"},
-      "summary": {"ja": "", "en": ""},
+      "summary": {"ja": "",             "en": ""           },
       "list"   : [
+        {
+          "href"       : "./Pluck2/synth.html",
+          "name"       : "Pluck2",
+          "tag"        : {"ja": "ギター", "en": "Guitar"},
+          "description": {"ja": "ギターシンセサイザ。", "en": "Guitar synthesizer."}
+        },
         {
           "href"       : "./BassString/synth.html",
           "name"       : "BassString",
@@ -260,7 +266,7 @@
       ]
     },
     {
-      "title"  : {"ja": "インパルス応答", "en": "Impulse Response"},
+      "title": {"ja": "インパルス応答", "en": "Impulse Response"},
       "summary": {
         "ja": "IRコンボルバに読み込んで使うインパルス応答を合成します。",
         "en": "These are intended to be used with external IR convolver."
@@ -329,7 +335,7 @@
       ]
     },
     {
-      "title"  : {"ja": "古いシンセサイザ", "en": "Old Synthesizer"},
+      "title": {"ja": "古いシンセサイザ", "en": "Old Synthesizer"},
       "summary": {
         "ja": "コードのスタイルが古いシンセサイザ。 (<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers/blob/main/docs/code_walkthrough.md#old-synth\">詳細</a>)",
         "en": "Synthesizers using old style code. (<a href=\"https://github.com/ryukau/UhhyouWebSynthesizers/blob/main/docs/code_walkthrough.md#old-synth\">Details</a>)"
@@ -465,7 +471,7 @@
     },
     {
       "title"  : {"ja": "WebAudio", "en": "WebAudio"},
-      "summary": {"ja": "", "en": ""},
+      "summary": {"ja": "",         "en": ""        },
       "list"   : [
         {
           "href"       : "./oldsynth/ECAC/index.html",
@@ -479,7 +485,7 @@
       ]
     },
     {
-      "title"  : {"ja": "調律の表", "en": "Tuning Table"},
+      "title"  : {"ja": "調律の表",               "en": "Tuning Table"               },
       "summary": {"ja": "標準的でない調律の表。", "en": "Non standard tuning tables."},
       "list"   : [
         {

@@ -20,6 +20,13 @@ export class IntDelay {
 
   setTime(timeInSample) { this.timeInt = clamp(Math.floor(timeInSample), 0, this.#buf.length - 1); }
 
+  read(timeInSample) {
+    const timeInt = clamp(Math.floor(timeInSample), 0, this.#buf.length - 1);
+    let rptr = this.#wptr - timeInt;
+    if (rptr < 0) rptr += this.#buf.length;
+    return this.#buf[rptr];
+  }
+
   // Call `setTime` at least once before `process`.
   process(input) {
     if (++this.#wptr >= this.#buf.length) this.#wptr -= this.#buf.length;
@@ -57,6 +64,19 @@ export class Delay {
     const clamped = clamp(timeInSample, 0, this.#buf.length - 2);
     this.timeInt = Math.floor(clamped);
     this.rFraction = clamped - this.timeInt;
+  }
+
+  read(timeInSample) {
+    const clamped = clamp(timeInSample, 0, this.#buf.length - 2);
+    const timeInt = Math.floor(clamped);
+    const rFraction = clamped - timeInt;
+
+    let rptr0 = this.#wptr - timeInt;
+    let rptr1 = rptr0 - 1;
+    if (rptr0 < 0) rptr0 += this.#buf.length;
+    if (rptr1 < 0) rptr1 += this.#buf.length;
+
+    return this.#buf[rptr0] + rFraction * (this.#buf[rptr1] - this.#buf[rptr0]);
   }
 
   // Call `setTime` at least once before `process`.
@@ -102,6 +122,31 @@ export class CubicDelay {
     this.rFraction = clamped - this.timeInt;
   }
 
+  read(timeInSample) {
+    if (timeInSample <= 0) return this.#buf[this.#wptr];
+    if (timeInSample < 1) {
+      let rptr1 = this.#wptr - 1;
+      if (rptr1 < 0) rptr1 += this.#buf.length;
+      return this.#buf[this.#wptr] + timeInSample * (this.#buf[rptr1] - this.#buf[this.#wptr]);
+    }
+
+    const clamped = clamp(timeInSample - 1, 0, this.#buf.length - 4);
+    const timeInt = Math.floor(clamped);
+    const rFraction = clamped - timeInt;
+
+    let rptr0 = this.#wptr - timeInt;
+    let rptr1 = rptr0 - 1;
+    let rptr2 = rptr0 - 2;
+    let rptr3 = rptr0 - 3;
+    if (rptr0 < 0) rptr0 += this.#buf.length;
+    if (rptr1 < 0) rptr1 += this.#buf.length;
+    if (rptr2 < 0) rptr2 += this.#buf.length;
+    if (rptr3 < 0) rptr3 += this.#buf.length;
+
+    return lagrange3Interp(
+      this.#buf[rptr0], this.#buf[rptr1], this.#buf[rptr2], this.#buf[rptr3], rFraction);
+  }
+
   // Call `setTime` at least once before `process`.
   process(input) {
     // Write to buffer.
@@ -122,7 +167,6 @@ export class CubicDelay {
       this.#buf[rptr0], this.#buf[rptr1], this.#buf[rptr2], this.#buf[rptr3], this.rFraction);
   }
 
-  // Convenient method for audio-rate modulation.
   processMod(input, timeInSample) {
     this.setTime(timeInSample);
     return this.process(input);

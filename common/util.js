@@ -33,9 +33,7 @@ export function nextafter(x, y) {
   y = Number(y);
 
   if (Number.isNaN(x) || Number.isNaN(y)) { return NaN; }
-
   if (x === y) { return y; }
-
   if (x === 0) { return y > 0 ? Number.MIN_VALUE : -Number.MIN_VALUE; }
 
   nextafter_f64[0] = x;
