@@ -552,8 +552,7 @@ function renderSinglePluckString(
   }
 
   const {nFilter, pickCombTime, pickCombFB} = stringParams;
-  const isBypassed = Boolean(stringParams.pickCombBypass ?? stringParams.excitationCombBypass);
-  const excitationAllpass = (!isBypassed && pickCombFB > 0 && nFilter > 0)
+  const excitationAllpass = stringParams.pickCombOn && Math.abs(pickCombFB) > 0 && nFilter > 0
     ? new ExcitationComb(
         upRate, stringFreq, pickCombTime * Math.exp(1 - rng.number()), pickCombFB, rng, nFilter)
     : null;

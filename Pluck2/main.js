@@ -11,7 +11,7 @@ import * as wave from "../common/wave.js";
 import {GuitarChordSelector} from "./guitarchordselector.js";
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const randomUniform
   = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
@@ -134,7 +134,7 @@ const localRecipeBook = {
     for (const p of param.ffCombPoint) { randomFull(p); }
     for (const p of param.ffCombGain) { randomFull(p); }
 
-    randomFull(param.pickCombBypass);
+    randomFull(param.pickCombOn);
     randomFull(param.pickCombTime);
     randomFull(param.pickCombFB);
     randomFull(param.nFilter);
@@ -268,7 +268,7 @@ const param = {
   ffCombPoint: createArrayParametersSequenced(0.1234, scales.ffCombPoint),
   ffCombGain: createArrayParametersUniform(0.125, scales.ffCombGain),
 
-  pickCombBypass: new parameter.Parameter(1, scales.boolean),
+  pickCombOn: new parameter.Parameter(0, scales.boolean),
   pickCombTime: new parameter.Parameter(1.0, scales.pickCombTime, true),
   pickCombFB: new parameter.Parameter(0.3, scales.pickCombFB, false),
   nFilter: new parameter.Parameter(8, scales.nFilter),
@@ -292,12 +292,6 @@ const param = {
   chordLpCutoffs:
     createChordParameters([72, 72, 72, 72, 72, 72], scales.lpCutoffRelative, "LP Cutoff"),
 };
-
-Object.defineProperty(param, "excitationCombBypass", {
-  get() { return param.pickCombBypass; },
-  set(v) { param.pickCombBypass = v; },
-  enumerable: false,
-});
 
 const audioFileManager = new AudioFileManager(1);
 
@@ -527,9 +521,9 @@ ui.tabExcitation = new widget.TabView(detailExcitation, "excitationTab", [
     };
   },
   (parent) => {
-    ui.pickCombBypass = new widget.ToggleButtonLine(
-      parent, ["Bypass Off", "Bypass On"], param.pickCombBypass, render);
-    ui.excitationCombBypass = ui.pickCombBypass;
+    ui.pickCombOn = new widget.ToggleButtonLine(
+      parent, ["Extra Comb Off", "Extra Comb On"], param.pickCombOn, render);
+    ui.excitationCombBypass = ui.pickCombOn;
     ui.pickCombTime = new widget.NumberInput(parent, "Time [ratio]", param.pickCombTime, render);
     ui.pickCombFB = new widget.NumberInput(parent, "Feedback", param.pickCombFB, render);
     ui.nFilter = new widget.NumberInput(parent, "Stages", param.nFilter, render);
@@ -537,7 +531,7 @@ ui.tabExcitation = new widget.TabView(detailExcitation, "excitationTab", [
       index: 2,
       label: "Extra Comb",
       widgets: {
-        pickCombBypass: ui.pickCombBypass,
+        pickCombOn: ui.pickCombOn,
         excitationCombBypass: ui.excitationCombBypass,
         pickCombTime: ui.pickCombTime,
         pickCombFB: ui.pickCombFB,
