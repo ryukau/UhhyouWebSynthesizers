@@ -97,6 +97,12 @@ function getLowestStringNote(frets, bassPitchMidi = 40) {
   return lowestIdx === -1 ? null : getStringNoteName(lowestIdx, frets[lowestIdx], bassPitchMidi);
 }
 
+export function getChordRoot(chord, bassPitchMidi = 40) {
+  const lowestIdx = chord.mutes.findIndex((m) => m === 0);
+  if (lowestIdx === -1) return null;
+  return getStringNoteName(lowestIdx, chord.frets[lowestIdx], bassPitchMidi);
+}
+
 export function buildGuitarChordLibrary(table = chordTable) {
   const library = [];
   const seen = new Set();
@@ -113,6 +119,7 @@ export function buildGuitarChordLibrary(table = chordTable) {
       const root = getLowestStringNote(fretList);
       library.push({
         name: root ? `${root} ${quality}` : quality,
+        root,
         frets: fretList.map((f) => (f < 0 ? 0 : f)),
         mutes: fretList.map((f) => (f < 0 ? 1 : 0)),
         tags,
@@ -218,6 +225,7 @@ export class GuitarChordSelector {
     this.tuningParam = this.params.tuning;
     this.chordInfo = null;
     this.chordLibrary = guitarChordLibrary;
+    this.fixRoot = false;
 
     this.selectedTags = new Set(
       RANDOMIZATION_TAGS.filter((t) => t.defaultActive).map((t) => t.id),
@@ -288,6 +296,10 @@ export class GuitarChordSelector {
     this.chordInfo = info;
 
     if (this.chordNameElement) { this.chordNameElement.textContent = info.chordNameWithSemitones; }
+    if (this.chordNotesElement) {
+      this.chordNotesElement.textContent
+        = info.noteNames?.length > 0 ? `[${info.noteNames.join(", ")}]` : "";
+    }
 
     return info;
   }
@@ -312,6 +324,7 @@ export class GuitarChordSelector {
         delaySeconds,
         feedback: this.params.feedbacks[s].dsp,
         lpCutoffRelative: this.params.lpCutoffs[s].dsp,
+        pickPosition: this.params.pickPositions[s].dsp,
       });
     }
 
@@ -399,10 +412,16 @@ export class GuitarChordSelector {
     this.chordDisplay.style.display = "flex";
     this.chordDisplay.style.justifyContent = "center";
     this.chordDisplay.style.alignItems = "center";
+    this.chordDisplay.style.gap = "6px";
 
     this.chordNameElement = document.createElement("span");
     this.chordNameElement.textContent = "--";
     this.chordDisplay.appendChild(this.chordNameElement);
+
+    this.chordNotesElement = document.createElement("span");
+    this.chordNotesElement.className = "chordNotes";
+    this.chordNotesElement.style.color = "var(--color-text-dim)";
+    this.chordDisplay.appendChild(this.chordNotesElement);
 
     this.container.appendChild(this.chordDisplay);
 
@@ -438,6 +457,21 @@ export class GuitarChordSelector {
         };
       },
       (tabParent) => {
+        this.pickPositionBarBox = new BarBox(
+          tabParent,
+          "String Pick Position [ratio]",
+          this.width,
+          uiSize.barboxHeight,
+          this.params.pickPositions,
+          () => this.#updateDspAndNotify(),
+        );
+        return {
+          index: 1,
+          label: "Pick Pos.",
+          widgets: {pickPosition: this.pickPositionBarBox},
+        };
+      },
+      (tabParent) => {
         this.feedbackBarBox = new BarBox(
           tabParent,
           "String Feedback",
@@ -448,7 +482,7 @@ export class GuitarChordSelector {
         );
         this.feedbackBarBox.sliderZero = 0.5;
         return {
-          index: 1,
+          index: 2,
           label: "Feedback",
           widgets: {feedback: this.feedbackBarBox},
         };
@@ -463,7 +497,7 @@ export class GuitarChordSelector {
           () => this.#updateDspAndNotify(),
         );
         return {
-          index: 2,
+          index: 3,
           label: "LP Cutoff",
           widgets: {lpCutoff: this.lpCutoffBarBox},
         };
@@ -478,7 +512,7 @@ export class GuitarChordSelector {
           () => this.#updateDspAndNotify(),
         );
         return {
-          index: 3,
+          index: 4,
           label: "Delay",
           widgets: {delay: this.delayBarBox},
         };
@@ -515,8 +549,18 @@ export class GuitarChordSelector {
       this.#updateTagUI();
     });
 
+    this.btnFixRoot = document.createElement("input");
+    this.btnFixRoot.type = "button";
+    this.btnFixRoot.value = "Fix Root";
+    this.btnFixRoot.title = "Fix root note on chord randomization";
+    this.btnFixRoot.addEventListener("click", () => {
+      this.fixRoot = !this.fixRoot;
+      this.#updateTagUI();
+    });
+
     actions.appendChild(btnAll);
     actions.appendChild(btnNone);
+    actions.appendChild(this.btnFixRoot);
     header.appendChild(actions);
     this.tagContainer.appendChild(header);
 
@@ -552,6 +596,11 @@ export class GuitarChordSelector {
       const isSelected = this.selectedTags.has(tagId);
       btn.classList.toggle("toggleState1", isSelected);
       btn.classList.toggle("toggleState0", !isSelected);
+    }
+
+    if (this.btnFixRoot) {
+      this.btnFixRoot.classList.toggle("toggleState1", this.fixRoot);
+      this.btnFixRoot.classList.toggle("toggleState0", !this.fixRoot);
     }
 
     if (this.tagStatusLabel) {
@@ -707,10 +756,24 @@ export class GuitarChordSelector {
     if (lockables[0].lockRandomization) return;
     if (this.selectedTags.size === 0) return;
 
-    const pool = this.chordLibrary.filter(
+    let pool = this.chordLibrary.filter(
       (chord) => chord.tags.some((tag) => this.selectedTags.has(tag)),
     );
     if (pool.length === 0) return;
+
+    if (this.fixRoot) {
+      const currentRoot = getLowestStringNote(this.getCurrentFrets(), this.getBassPitchMidi());
+      if (currentRoot != null) {
+        const rootPool = pool.filter(
+          (chord) => getChordRoot(chord, this.getBassPitchMidi()) === currentRoot,
+        );
+        if (rootPool.length > 0) {
+          pool = rootPool;
+        } else {
+          return;
+        }
+      }
+    }
 
     const chord = pool[Math.floor(Math.random() * pool.length)];
     if (!chord) return;
@@ -737,6 +800,7 @@ export class GuitarChordSelector {
     this.tabView.refresh();
     this.gainBarBox.refresh();
     this.feedbackBarBox.refresh();
+    this.pickPositionBarBox.refresh();
     this.lpCutoffBarBox.refresh();
     this.delayBarBox.refresh();
     this.updateChordDisplay();

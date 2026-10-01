@@ -10,3 +10,4 @@ export const excitationItems =
 export const noiseFilterItems = ["Lowpass", "Highpass", "Bandpass", "Notch"];
 export const normalizeItems = ["Bypass", "Linked", "Per-Channel"];
 export const chordTuningItems = ["12-TET", "Harmonic Series"];
+export const pickPositionMethodItems = ["2 Reads - More nonlinear effect", "2 Writes - Cleaner"];

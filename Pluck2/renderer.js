@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {CubicDelay, Delay, IntDelay, MultiTapDelay} from "../common/dsp/delay.js";
+import {CubicDelay, IntDelay, MultiTapDelay} from "../common/dsp/delay.js";
 import {SurgeEnvelope, SurgeEnvelopeBiased} from "../common/dsp/envelope.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
 import {HP1, LP1} from "../common/dsp/onepole.js";
@@ -106,6 +106,35 @@ export class ExcitationComb {
   }
 }
 
+function applyPickComb(excitation, pickPosition, delaySamples, isIntegerPitch) {
+  if (pickPosition <= 0.0 || excitation.length === 0) return excitation;
+  const tauBeta = pickPosition * delaySamples;
+
+  if (isIntegerPitch) {
+    const intTau = Math.floor(tauBeta);
+    const totalCombLength = excitation.length + intTau;
+    const combOut = new Array(totalCombLength).fill(0.0);
+    // Two writes per sample on excitation
+    for (let i = 0; i < excitation.length; ++i) {
+      const v = 0.5 * excitation[i];
+      combOut[i] += v;
+      combOut[i + intTau] -= v;
+    }
+    return combOut;
+  }
+
+  const combDelay = new CubicDelay(tauBeta);
+  combDelay.setTime(tauBeta);
+  const totalCombLength = excitation.length + Math.ceil(tauBeta) + 4;
+  const combOut = new Array(totalCombLength);
+  for (let i = 0; i < totalCombLength; ++i) {
+    const x = i < excitation.length ? excitation[i] : 0.0;
+    combDelay.write(x);
+    combOut[i] = 0.5 * (x - combDelay.read(tauBeta));
+  }
+  return combOut;
+}
+
 class TransverseDelay {
   constructor(stringParams, sampleRate) {
     const freq = stringParams.stringFreq;
@@ -129,9 +158,9 @@ class TransverseDelay {
     this.feedback = 0.0;
     this.sampleIdx = 0;
 
-    // Pick/pickup position beta in [0.0, 0.5]
     const pPos = stringParams.pickPosition ?? stringParams.pickupPosition;
     this.pickPosition = (pPos !== undefined) ? clamp(pPos, 0.0, 0.5) : 0.2;
+    this.twoWrites = stringParams.pickPositionMethod;
 
     this.attackNonlinearDamping = stringParams.attackNonlinearDamping;
     this.attackLpOpenCycles = stringParams.attackLpOpenCycles;
@@ -191,7 +220,8 @@ class TransverseDelay {
     this.feedback = fb;
     this.sampleIdx++;
 
-    if (this.pickPosition > 0.0) {
+    // Only do the 2nd read if in 2-reads mode (twoWrites is disabled)
+    if (!this.twoWrites && this.pickPosition > 0.0) {
       const tauBeta = this.pickPosition * dynamicDelay;
       const read2 = this.delayLine.read(tauBeta);
       return 0.5 * (transverseSig - read2);
@@ -485,12 +515,14 @@ function renderSinglePluckString(
   durationSamples,
   feedback,
   lpCutoffRelative,
+  pickPosition,
   rng,
 ) {
   const stringParams = Object.assign({}, renderParams, {
     stringFreq,
     feedback,
     lpCutoffRelative,
+    pickPosition,
   });
 
   const transverseDelay = new TransverseDelay(stringParams, upRate);
@@ -511,6 +543,13 @@ function renderSinglePluckString(
   }
 
   excitation = processFFComb(excitation, stringParams, transverseDelay.delaySamples);
+
+  // If 2 writes method is enabled, apply pick comb filter to excitation
+  if (transverseDelay.twoWrites) {
+    excitation = applyPickComb(
+      excitation, transverseDelay.pickPosition, transverseDelay.delaySamples,
+      stringParams.integerPitch === 1);
+  }
 
   const {nFilter, pickCombTime, pickCombFB} = stringParams;
   const isBypassed = Boolean(stringParams.pickCombBypass ?? stringParams.excitationCombBypass);
@@ -570,7 +609,7 @@ function processPluckChord(renderParams, upRate, upFold, durationSamples, rng) {
 
     const stringSound = renderSinglePluckString(
       renderParams, freq, upRate, upFold, remainingDuration, feedbackScalar * note.feedback,
-      note.lpCutoffRelative + lpCutoffOffset, rng);
+      note.lpCutoffRelative + lpCutoffOffset, note.pickPosition, rng);
 
     const amp = note.amplitude;
     for (let i = 0; i < stringSound.length; ++i) {
@@ -600,9 +639,10 @@ function processPluckBass(renderParams, upRate, upFold, durationSamples, rng) {
 
   const bassFeedback = renderParams.feedbackScalar * renderParams.feedback;
   const lpCutoffOffset = renderParams.lpCutoff ?? renderParams.lpCutoffOffset ?? 0;
+  const bassPickPosition = renderParams.chordPickPositions?.[0] ?? renderParams.pickPosition ?? 0.2;
   const sound = renderSinglePluckString(
     renderParams, stringFreq, upRate, upFold, durationSamples, bassFeedback,
-    renderParams.lpCutoffRelative + lpCutoffOffset, rng);
+    renderParams.lpCutoffRelative + lpCutoffOffset, bassPickPosition, rng);
 
   let gainEnv = 1;
   const decay = Math.pow(renderParams.decayTo, 1.0 / sound.length);

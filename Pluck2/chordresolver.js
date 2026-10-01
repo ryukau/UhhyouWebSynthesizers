@@ -1127,7 +1127,8 @@ export function classifyIntonation(centsDeviation) {
 }
 
 /**
- * Resolves chord identity, global root offset in semitones, and per-string microtonal deviations.
+ * Resolves chord identity, global root offset in semitones, per-string microtonal deviations,
+ * and pitch-class note names present in the chord.
  * @param {number[]} frets - 6-element array of played frets (-1 if muted).
  * @param {(number|null)[]} soundingPitches - Sounding MIDI pitch for each string (or null if
  *   muted).
@@ -1141,6 +1142,7 @@ export function resolveChord(frets, soundingPitches, bassPitchMidi = 40) {
       chordNameWithSemitones: "Muted",
       stringDeviations: [],
       hasDissonance: false,
+      noteNames: [],
     };
   }
 
@@ -1189,10 +1191,26 @@ export function resolveChord(frets, soundingPitches, bassPitchMidi = 40) {
     });
   }
 
+  const playedNotes = [];
+  for (let s = 0; s < frets.length; s++) {
+    if (frets[s] >= 0 && soundingPitches[s] != null) {
+      playedNotes.push(getStringNoteName(s, frets[s], bassPitchMidi));
+    }
+  }
+
+  const rootPitchClass = NOTE_NAMES.indexOf(rootName);
+  const noteNames = rootPitchClass >= 0
+    ? [...new Set(playedNotes)].sort(
+        (a, b) => ((NOTE_NAMES.indexOf(a) - rootPitchClass + 12) % 12)
+          - ((NOTE_NAMES.indexOf(b) - rootPitchClass + 12) % 12),
+        )
+    : [...new Set(playedNotes)];
+
   return {
     chordName,
     chordNameWithSemitones,
     stringDeviations,
     hasDissonance,
+    noteNames,
   };
 }

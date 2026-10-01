@@ -21,71 +21,137 @@ const randomLoguniform
   = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomLoguniform(low, high)));
 const randomFull = (prm) => prm.randomize((p) => (p.normalized = Math.random()));
 
+function randomizeChordDefault(param) {
+  if (!param.chordFrets[0].lockRandomization) { ui?.chordSelector?.randomizeChord?.(); }
+
+  for (const p of param.chordGains) { randomLoguniform(p, util.dbToAmp(-3), 1.0); }
+
+  const scaleLength = 0.648;
+  const stringSpacing = 0.0105;
+  const basePickDist = util.randomUniformFloat(0.04, 0.24);
+  const wristRadius = util.randomUniformFloat(0.10, 0.20);
+  const strumAngle = util.randomUniformFloat(-25 * (Math.PI / 180), 25 * (Math.PI / 180));
+  const arcSign = Math.random() < 0.5 ? 1 : -1;
+  const numStrings = param.chordPickPositions.length;
+  for (let i = 0; i < numStrings; ++i) {
+    const y = (i - 0.5 * (numStrings - 1)) * stringSpacing;
+    const dxAngle = y * Math.tan(strumAngle);
+    const dxArc
+      = arcSign * (wristRadius - Math.sqrt(Math.max(0, wristRadius * wristRadius - y * y)));
+    const jitter = util.randomUniformFloat(-0.0015, 0.0015);
+
+    const pickDist = basePickDist + dxAngle + dxArc + jitter;
+    const pickPos = util.clamp(pickDist / scaleLength, 1e-3, 0.5);
+    param.chordPickPositions[i].randomize((p) => (p.dsp = pickPos));
+  }
+
+  for (const p of param.chordFeedbacks) {
+    p.randomize((x) => (x.dsp = util.randomLoguniform(0.9, 0.95)));
+  }
+  for (const p of param.chordLpCutoffs) { randomUniform(p, 60, 80); }
+
+  const isUpstroke = Math.random() < 0.3;
+  const isArpeggio = Math.random() < 0.15;
+  const strumDuration = util.randomLoguniform(0.015, 0.16);
+  const step = strumDuration / Math.max(1, param.chordDelays.length - 1);
+  for (let i = 0; i < param.chordDelays.length; ++i) {
+    let t;
+    if (isArpeggio) {
+      t = util.randomUniformFloat(0.0, strumDuration);
+    } else {
+      const order = isUpstroke ? (param.chordDelays.length - 1 - i) : i;
+      const jitter = util.randomUniformFloat(-0.002, 0.002);
+      t = Math.max(0, order * step + jitter);
+    }
+    param.chordDelays[i].randomize((p) => (p.dsp = Math.min(t, p.scale.maxDsp)));
+  }
+}
+
+function randomizeExcitationDefault(param) {
+  randomInt(param.excitationType, 0, 2);
+  randomUniform(param.excitationShape, 0.0, 1.0);
+  randomUniform(param.excitationMix, 0.0, 1.0);
+  randomFull(param.noiseSeed);
+  randomLoguniform(param.noiseDecay, 0.05, 2);
+  randomInt(param.noiseFilterType, 0, menuitems.noiseFilterItems.length - 1);
+  randomUniform(param.noiseFilterQ, 0.5, 10.0);
+  randomUniform(param.noiseFilterCutoffStart, 0, 96);
+  randomUniform(param.noiseFilterCutoffPeak, 0, 96);
+  randomUniform(param.noiseFilterCutoffEnd, -24, 48);
+  randomLoguniform(param.noiseFilterAttackTime, 0.01, 1.0);
+
+  const maxFFCombTapsLog2p1 = 1 + Math.round(Math.log2(scales.ffCombTaps.maxDsp));
+  param.ffCombTaps.dsp = 2 ** Math.floor(Math.random() * maxFFCombTapsLog2p1);
+  for (const p of param.ffCombPoint) { randomUniform(p, 0.01, 0.99); }
+  for (const p of param.ffCombGain) { randomFull(p); }
+
+  randomUniform(param.pickCombTime, 0.05, 4.0);
+  randomUniform(param.pickCombFB, 0.0, 0.8);
+  randomInt(param.nFilter, 1, 16);
+}
+
 // Keep the comments in the recipes.
 const localRecipeBook = {
   "Default": (param) => {
-    randomInt(param.excitationType, 0, 2);
-    randomUniform(param.excitationShape, 0.0, 1.0);
-    randomUniform(
-      param.lpCutoffRelative, param.lpCutoffRelative.scale.minDsp,
-      param.lpCutoffRelative.scale.maxDsp);
-
-    randomUniform(param.pickPosition, 0.05, 0.5);
-
-    // const fbSign = Math.sign(Math.random() - 0.5);
-    // for (const p of param.chordFeedbacks) { p.randomize((x) => (x.dsp = fbSign * Math.random()));
-    // }
-
-    // for (const p of param.chordLpCutoffs) {
-    //   randomUniform(p, param.chordLpCutoffs[0].scale.minDsp,
-    //   param.chordLpCutoffs[0].scale.maxDsp);
-    // }
-
-    // for (const p of param.chordGains) { randomUniform(p, util.dbToAmp(-18), 1.0); }
-
-    const isUpstroke = Math.random() < 0.3;
-    const isArpeggio = Math.random() < 0.15;
-    const strumDuration = util.randomLoguniform(0.015, 0.16);
-    const step = strumDuration / Math.max(1, param.chordDelays.length - 1);
-    for (let i = 0; i < param.chordDelays.length; ++i) {
-      let t;
-      if (isArpeggio) {
-        t = util.randomUniformFloat(0.0, strumDuration);
-      } else {
-        const order = isUpstroke ? (param.chordDelays.length - 1 - i) : i;
-        const jitter = util.randomUniformFloat(-0.002, 0.002);
-        t = Math.max(0, order * step + jitter);
-      }
-      param.chordDelays[i].randomize((p) => (p.dsp = Math.min(t, p.scale.maxDsp)));
-    }
-
-    randomUniform(param.excitationMix, 0.0, 1.0);
-    randomFull(param.noiseSeed);
-    randomLoguniform(param.noiseDecay, 0.05, 2);
-    randomInt(param.noiseFilterType, 0, menuitems.noiseFilterItems.length - 1);
-    randomUniform(param.noiseFilterQ, 0.5, 10.0);
-    randomUniform(param.noiseFilterCutoffStart, 0, 96);
-    randomUniform(param.noiseFilterCutoffPeak, 0, 96);
-    randomUniform(param.noiseFilterCutoffEnd, -24, 48);
-    randomLoguniform(param.noiseFilterAttackTime, 0.01, 1.0);
-
-    const maxFFCombTapsLog2p1 = 1 + Math.round(Math.log2(scales.ffCombTaps.maxDsp));
-    param.ffCombTaps.dsp = 2 ** Math.floor(Math.random() * maxFFCombTapsLog2p1);
-    for (const p of param.ffCombPoint) randomUniform(p, 0.01, 0.99);
-    for (const p of param.ffCombGain) randomFull(p);
-
-    randomUniform(param.pickCombTime, 0.05, 4.0);
-    randomUniform(param.pickCombFB, 0.0, 0.8);
-    randomInt(param.nFilter, 1, 16);
-
-    randomUniform(param.randomDetune, -30, 30);
-    randomUniform(param.detuneBias, -1.0, 1.0);
-
     randomLoguniform(param.attackNonlinearDamping, 0.01, 2.5);
     randomUniform(param.attackLpOpenCycles, 0.0, 2.5);
     randomUniform(param.attackFeedbackCycles, 0.0, 2.5);
 
-    if (!param.chordFrets[0].lockRandomization) { ui?.chordSelector?.randomizeChord?.(); }
+    randomizeExcitationDefault(param);
+
+    randomUniform(param.randomDetune, -1, 1);
+    randomUniform(param.detuneBias, -1.0, 1.0);
+
+    randomizeChordDefault(param);
+  },
+  "Chord": (param) => { randomizeChordDefault(param); },
+  "Excitation": (param) => { randomizeExcitationDefault(param); },
+  "Full": (param) => {
+    randomFull(param.feedbackScalar);
+    randomFull(param.lpCutoff);
+    randomFull(param.dcHighpassCutoffRelative);
+    randomFull(param.tensionMod);
+
+    randomFull(param.attackNonlinearDamping);
+    randomFull(param.attackLpOpenCycles);
+    randomFull(param.attackFeedbackCycles);
+
+    randomFull(param.excitationGain);
+    randomFull(param.excitationType);
+    randomFull(param.excitationShape);
+    randomFull(param.excitationMix);
+
+    randomFull(param.noiseSeed);
+    randomFull(param.noiseDecay);
+    randomFull(param.noiseFilterType);
+    randomFull(param.noiseFilterQ);
+    randomFull(param.noiseFilterCutoffStart);
+    randomFull(param.noiseFilterCutoffPeak);
+    randomFull(param.noiseFilterCutoffEnd);
+    randomFull(param.noiseFilterAttackTime);
+
+    randomFull(param.ffCombTaps);
+    for (const p of param.ffCombPoint) { randomFull(p); }
+    for (const p of param.ffCombGain) { randomFull(p); }
+
+    randomFull(param.pickCombBypass);
+    randomFull(param.pickCombTime);
+    randomFull(param.pickCombFB);
+    randomFull(param.nFilter);
+
+    randomFull(param.stereoNoise);
+    randomFull(param.randomDetune);
+    randomFull(param.detuneBias);
+
+    randomFull(param.chordBass);
+    randomFull(param.chordTuning);
+    for (const p of param.chordFrets) { randomFull(p); }
+    for (const p of param.chordMutes) { randomFull(p); }
+    for (const p of param.chordGains) { randomFull(p); }
+    for (const p of param.chordPickPositions) { randomFull(p); }
+    for (const p of param.chordDelays) { randomFull(p); }
+    for (const p of param.chordFeedbacks) { randomFull(p); }
+    for (const p of param.chordLpCutoffs) { randomFull(p); }
   },
 };
 
@@ -97,8 +163,16 @@ const scales = {
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
   sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   normalize: new parameter.MenuItemScale(menuitems.normalizeItems),
+  pickPositionMethod: new parameter.MenuItemScale(menuitems.pickPositionMethodItems),
 
+  feedbackScalar: new parameter.DecibelScale(-60, 0, true),
+  lpCutoff: new parameter.LinearScale(-60, 60),
+  dcHighpassCutoffRelative: new parameter.LinearScale(-60, 60),
   tensionMod: new parameter.DecibelScale(-80, 0, true),
+
+  attackNonlinearDamping: new parameter.DecibelScale(-40, 20, true),
+  attackLpOpenCycles: new parameter.DecibelScale(-40, 20, true),
+  attackFeedbackCycles: new parameter.DecibelScale(-20, 20, true),
 
   excitationGain: new parameter.DecibelScale(-40, 20, false),
   excitationType: new parameter.MenuItemScale(menuitems.excitationItems),
@@ -123,23 +197,15 @@ const scales = {
   randomDetune: new parameter.LinearScale(-200, 200),
   detuneBias: new parameter.LinearScale(-1, 1),
 
-  pickPosition: new parameter.LinearScale(0.0, 0.5),
-  feedback: new parameter.SymmetricLogScale(1e-2, 1),
-  feedbackScalar: new parameter.DecibelScale(-60, 0, true),
-  dcHighpassCutoffRelative: new parameter.LinearScale(-60, 60),
-  lpCutoff: new parameter.LinearScale(-60, 60),
-  lpCutoffRelative: new parameter.LinearScale(0, 96),
-
-  attackNonlinearDamping: new parameter.DecibelScale(-40, 20, true),
-  attackLpOpenCycles: new parameter.DecibelScale(-40, 20, true),
-  attackFeedbackCycles: new parameter.DecibelScale(-20, 20, true),
-
+  chordBass: new parameter.MidiPitchScale(-24, 140, false),
   chordTuning: new parameter.MenuItemScale(menuitems.chordTuningItems),
   chordFret: new parameter.IntScale(0, 5),
   chordMute: new parameter.IntScale(0, 1),
   chordGain: new parameter.DecibelScale(-40, 0, true),
+  pickPosition: new parameter.LinearScale(0.0, 0.5),
   chordDelay: new parameter.LinearScale(0.0, 0.2),
-  chordBass: new parameter.MidiPitchScale(-24, 140, false),
+  feedback: new parameter.SymmetricLogScale(1e-2, 1),
+  lpCutoffRelative: new parameter.LinearScale(0, 96),
 };
 
 function createArrayParametersUniform(defaultDspValue, scale) {
@@ -172,9 +238,17 @@ const param = {
   overSample: new parameter.Parameter(0, scales.overSample),
   sampleRateScaler: new parameter.Parameter(3, scales.sampleRateScaler),
   normalize: new parameter.Parameter(1, scales.normalize),
+  pickPositionMethod: new parameter.Parameter(1, scales.pickPositionMethod),
   integerPitch: new parameter.Parameter(0, scales.boolean),
 
+  feedbackScalar: new parameter.Parameter(1.0, scales.feedbackScalar, true),
+  lpCutoff: new parameter.Parameter(0, scales.lpCutoff, false),
+  dcHighpassCutoffRelative: new parameter.Parameter(-12, scales.dcHighpassCutoffRelative, false),
   tensionMod: new parameter.Parameter(0.0, scales.tensionMod, true),
+
+  attackNonlinearDamping: new parameter.Parameter(0.0, scales.attackNonlinearDamping, true),
+  attackLpOpenCycles: new parameter.Parameter(0.0, scales.attackLpOpenCycles, true),
+  attackFeedbackCycles: new parameter.Parameter(0.0, scales.attackFeedbackCycles, true),
 
   excitationGain: new parameter.Parameter(1, scales.excitationGain, false),
   excitationType: new parameter.Parameter(1, scales.excitationType),
@@ -203,23 +277,14 @@ const param = {
   randomDetune: new parameter.Parameter(0, scales.randomDetune, false),
   detuneBias: new parameter.Parameter(0, scales.detuneBias, false),
 
-  pickPosition: new parameter.Parameter(0.2, scales.pickPosition, false),
-  feedback: new parameter.Parameter(0.95, scales.feedback, true),
-  feedbackScalar: new parameter.Parameter(1.0, scales.feedbackScalar, true),
-  lpCutoff: new parameter.Parameter(0, scales.lpCutoff, false),
-  dcHighpassCutoffRelative: new parameter.Parameter(-12, scales.dcHighpassCutoffRelative, false),
-  lpCutoffRelative: new parameter.Parameter(55, scales.lpCutoffRelative, false),
-
-  attackNonlinearDamping: new parameter.Parameter(0.0, scales.attackNonlinearDamping, true),
-  attackLpOpenCycles: new parameter.Parameter(0.0, scales.attackLpOpenCycles, true),
-  attackFeedbackCycles: new parameter.Parameter(0.0, scales.attackFeedbackCycles, true),
-
-  chordTuning: new parameter.Parameter(0, scales.chordTuning),
   chordBass:
     new parameter.Parameter(util.midiPitchToFreq(40), scales.chordBass, false, "Chord Bass"),
+  chordTuning: new parameter.Parameter(0, scales.chordTuning),
   chordFrets: createChordParameters([0, 2, 2, 1, 0, 0], scales.chordFret, "Fret"),
   chordMutes: createChordParameters([0, 0, 0, 0, 0, 0], scales.chordMute, "Mute"),
   chordGains: createChordParameters([1, 1, 1, 1, 1, 1], scales.chordGain, "Gain"),
+  chordPickPositions:
+    createChordParameters([0.2, 0.2, 0.2, 0.2, 0.2, 0.2], scales.pickPosition, "Pick Position"),
   chordDelays:
     createChordParameters([0.0, 0.008, 0.016, 0.024, 0.032, 0.040], scales.chordDelay, "Delay"),
   chordFeedbacks:
@@ -343,11 +408,11 @@ const ui = {
   sampleRateScaler:
     new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   normalize: new widget.ComboBoxLine(detailRender, "Normalization", param.normalize, render),
+  pickPositionMethod:
+    new widget.ComboBoxLine(detailRender, "Pick Pos. Method", param.pickPositionMethod, render),
   integerPitch: new widget.ToggleButtonLine(
     detailRender, ["Integer Pitch Off", "Integer Pitch On"], param.integerPitch, render),
 
-  pickPosition:
-    new widget.NumberInput(detailString, "Pick Position [ratio]", param.pickPosition, render),
   feedbackScalar:
     new widget.NumberInput(detailString, "Feedback Scalar", param.feedbackScalar, render),
   lpCutoff: new widget.NumberInput(detailString, "LP Cutoff [st.]", param.lpCutoff, render),
@@ -380,6 +445,7 @@ const ui = {
       frets: param.chordFrets,
       mutes: param.chordMutes,
       gains: param.chordGains,
+      pickPositions: param.chordPickPositions,
       delays: param.chordDelays,
       feedbacks: param.chordFeedbacks,
       lpCutoffs: param.chordLpCutoffs,
