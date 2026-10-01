@@ -27,6 +27,11 @@ export class IntDelay {
     return this.#buf[rptr];
   }
 
+  write(input) {
+    if (++this.#wptr >= this.#buf.length) this.#wptr -= this.#buf.length;
+    this.#buf[this.#wptr] = input;
+  }
+
   // Call `setTime` at least once before `process`.
   process(input) {
     if (++this.#wptr >= this.#buf.length) this.#wptr -= this.#buf.length;
@@ -77,6 +82,11 @@ export class Delay {
     if (rptr1 < 0) rptr1 += this.#buf.length;
 
     return this.#buf[rptr0] + rFraction * (this.#buf[rptr1] - this.#buf[rptr0]);
+  }
+
+  write(input) {
+    if (++this.#wptr >= this.#buf.length) this.#wptr -= this.#buf.length;
+    this.#buf[this.#wptr] = input;
   }
 
   // Call `setTime` at least once before `process`.
@@ -145,6 +155,11 @@ export class CubicDelay {
 
     return lagrange3Interp(
       this.#buf[rptr0], this.#buf[rptr1], this.#buf[rptr2], this.#buf[rptr3], rFraction);
+  }
+
+  write(input) {
+    if (++this.#wptr >= this.#buf.length) this.#wptr = 0;
+    this.#buf[this.#wptr] = input;
   }
 
   // Call `setTime` at least once before `process`.
