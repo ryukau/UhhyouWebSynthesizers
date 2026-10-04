@@ -102,6 +102,7 @@ export class BarBox {
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
+    this.canvas.style.cursor = "crosshair";
     this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
     this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
     this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);

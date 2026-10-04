@@ -97,6 +97,7 @@ export class BezierEnvelopeView {
     if (this.#grabbed !== null) {
       this.#selectedPointIndex = this.points.indexOf(this.#grabbed);
       this.canvas.setPointerCapture(event.pointerId);
+      this.canvas.style.cursor = "grabbing";
       this.draw();
     }
   }
@@ -105,6 +106,7 @@ export class BezierEnvelopeView {
     if (this.#grabbed === null) {
       const prev = this.#highlighted;
       this.#highlighted = this.grabPoint(this.#getMousePosition(event));
+      this.canvas.style.cursor = this.#highlighted !== null ? "grab" : "default";
 
       // Draw only if the internal state is changed.
       if (prev !== this.#highlighted) { this.draw(); }
@@ -121,6 +123,8 @@ export class BezierEnvelopeView {
   onPointerUp(event) {
     this.canvas.releasePointerCapture(event.pointerId);
     this.#grabbed = null;
+    this.#highlighted = this.grabPoint(this.#getMousePosition(event));
+    this.canvas.style.cursor = this.#highlighted !== null ? "grab" : "default";
     this.onChangeFunc();
     this.draw();
   }
@@ -128,6 +132,7 @@ export class BezierEnvelopeView {
   onPointerLeave(event) {
     this.#grabbed = null;
     this.#highlighted = null;
+    this.canvas.style.cursor = "default";
     this.draw();
   }
 

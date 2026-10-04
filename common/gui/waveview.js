@@ -25,6 +25,7 @@ export class WaveView {
     this.canvas = document.createElement("canvas");
     this.canvas.width = width;
     this.canvas.height = height;
+    this.canvas.style.cursor = "grab";
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
     this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
@@ -113,11 +114,15 @@ export class WaveView {
 
   onPointerDown(event) {
     this.#isMouseDown = true;
+    this.canvas.style.cursor = "grabbing";
     let rect = event.target.getBoundingClientRect();
     this.#lastX = Math.floor(event.clientX - rect.left);
   }
 
-  onPointerUp(event) { this.#isMouseDown = false; }
+  onPointerUp(event) {
+    this.#isMouseDown = false;
+    this.canvas.style.cursor = "grab";
+  }
 
   onPointerMove(event) {
     if (!this.#isMouseDown) return;
@@ -137,7 +142,10 @@ export class WaveView {
     this.#lastX = x;
   }
 
-  onPointerLeave(event) { this.#isMouseDown = false; }
+  onPointerLeave(event) {
+    this.#isMouseDown = false;
+    this.canvas.style.cursor = "grab";
+  }
 
   onWheel(event) {
     event.preventDefault(); // Prevent page scrolling.

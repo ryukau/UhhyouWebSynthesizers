@@ -369,6 +369,7 @@ export class EqualizerXYPad {
     this.#grabbedPoint = this.#hitTest(mouse);
 
     if (this.#grabbedPoint >= 0) {
+      this.canvas.style.cursor = "grabbing";
       this.#detailIndex = this.#grabbedPoint;
       if (event.ctrlKey) {
         const sc = this.#section[this.#grabbedPoint];
@@ -385,7 +386,12 @@ export class EqualizerXYPad {
         this.onChangeFunc();
       }
       this.#refreshInternal(this.#grabbedPoint);
-      if (event.ctrlKey) this.#grabbedPoint = -1;
+      if (event.ctrlKey) {
+        this.#grabbedPoint = -1;
+        this.canvas.style.cursor = "grab";
+      }
+    } else {
+      this.canvas.style.cursor = "default";
     }
 
     this.draw();
@@ -395,10 +401,12 @@ export class EqualizerXYPad {
     if (!this.#isMouseDown) {
       let prevFocused = this.#focusedPoint;
       this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
+      this.canvas.style.cursor = this.#focusedPoint >= 0 ? "grab" : "default";
       if (prevFocused === this.#focusedPoint) return;
       if (this.#focusedPoint >= 0) this.#detailIndex = this.#focusedPoint;
     } else {
       if (this.#grabbedPoint < 0) return;
+      this.canvas.style.cursor = "grabbing";
 
       const movementX = clamp(event.movementX, -24, 24);
       const movementY = clamp(event.movementY, -24, 24);
@@ -420,10 +428,19 @@ export class EqualizerXYPad {
   onPointerUp(event) {
     this.canvas.releasePointerCapture(event.pointerId);
     this.#isMouseDown = false;
+    this.#grabbedPoint = -1;
+    this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
+    this.canvas.style.cursor = this.#focusedPoint >= 0 ? "grab" : "default";
     this.onChangeFunc();
   }
 
-  onPointerLeave(event) { this.draw(); }
+  onPointerLeave(event) {
+    if (!this.#isMouseDown) {
+      this.#focusedPoint = -1;
+      this.canvas.style.cursor = "default";
+    }
+    this.draw();
+  }
 
   onWheel(event) {
     event.preventDefault();

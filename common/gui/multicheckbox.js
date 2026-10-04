@@ -40,6 +40,7 @@ export class MultiCheckBoxVertical {
     this.canvas.width = width;
     this.canvas.height = (valueNames.length + 1) * this.labelHeight;
     this.canvas.tabIndex = 0;
+    this.canvas.style.cursor = "default";
     this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
     this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
     this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);
@@ -114,6 +115,8 @@ export class MultiCheckBoxVertical {
   onPointerMove(event) {
     const mouse = this.#getMousePosition(event);
     const newIndex = this.#getIndexFromPoint(mouse);
+    this.canvas.style.cursor = newIndex >= 0 ? "pointer" : "default";
+
     if (newIndex == this.#paramIndex || newIndex == -1) return;
     this.#paramIndex = newIndex;
 
@@ -124,11 +127,14 @@ export class MultiCheckBoxVertical {
 
   onPointerUp(event) {
     this.#isMouseDown = false;
+    const mouse = this.#getMousePosition(event);
+    this.canvas.style.cursor = this.#getIndexFromPoint(mouse) >= 0 ? "pointer" : "default";
     this.onChangeFunc();
   }
 
   onPointerLeave(event) {
     this.#paramIndex = -1;
+    this.canvas.style.cursor = "default";
     if (this.#isMouseDown) {
       this.#isMouseDown = false;
       this.onChangeFunc();

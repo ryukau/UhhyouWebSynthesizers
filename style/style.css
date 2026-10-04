@@ -175,6 +175,7 @@ summary {
   --pad: calc(0.25em + var(--margin));
   padding: var(--pad) 0 var(--pad) 0.125em;
   font-weight: var(--font-weight-base);
+  cursor: pointer;
 }
 
 summary:hover {
@@ -197,6 +198,7 @@ label.tabRadioLabel {
   height: calc(var(--font-size-body) + 2 * var(--margin));
   border-radius: var(--border-radius-mid);
   border: outset 2px var(--color-border-light);
+  cursor: pointer;
 }
 
 label.tabRadioLabelActive {
@@ -272,6 +274,7 @@ input[type="button"] {
   border-radius: var(--border-radius-mid);
   border: solid 1px var(--color-border-dark);
   background: var(--color-input-background);
+  cursor: pointer;
 }
 
 input[type="button"]:hover {
@@ -343,6 +346,7 @@ label.checkBoxLine {
   margin: auto;
   padding-left: var(--margin);
   text-align: left;
+  cursor: pointer;
 }
 
 input[type="button"].checkBoxLine {
@@ -377,6 +381,12 @@ label.inputLine {
   margin: auto;
   padding-left: var(--margin);
   text-align: left;
+  cursor: pointer;
+}
+
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
 }
 
 /* NumberInput: <input type="range"> */
@@ -470,6 +480,7 @@ select {
   background: var(--color-input-background);
   color: var(--color-text-main);
   border: 1px solid var(--color-border-dark);
+  cursor: pointer;
 }
 
 select.inputLine {
@@ -556,6 +567,7 @@ label.barbox {
   box-sizing: border-box;
   margin: var(--margin) 0;
   text-align: center;
+  cursor: pointer;
 }
 
 span.barbox {
@@ -598,7 +610,6 @@ div.bezierEnvelopeContainer > label {
   padding: 0 0 2px 0;
   text-align: center;
   cursor: pointer;
-  user-select: none;
 }
 
 div.bezierEnvelopeContainer > div.canvasMargin {
@@ -690,6 +701,7 @@ div.RecipeImportInputContainer > input[type="file"] {
   font-size: inherit;
   box-sizing: border-box;
   padding: var(--margin);
+  cursor: pointer;
 }
 
 input[type="file"]:hover {
@@ -707,6 +719,7 @@ div#RecipeImportDragAndDropArea {
   display: flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
 }
 
 div#RecipeImportDragAndDropArea > span {
@@ -732,6 +745,7 @@ label.equalizer {
   box-sizing: border-box;
   margin: var(--margin);
   text-align: center;
+  cursor: pointer;
 }
 
 div.equalizerInputLine {
