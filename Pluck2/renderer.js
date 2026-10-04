@@ -139,12 +139,35 @@ class TransverseDelay {
   constructor(stringParams, sampleRate) {
     const freq = stringParams.stringFreq;
     const loopDelay = 1.0;
-    this.delaySamples = (stringParams.integerPitch === 1)
-      ? Math.round(sampleRate / freq - loopDelay)
-      : sampleRate / freq - loopDelay;
-    this.delayLine = (stringParams.integerPitch === 1) ? new IntDelay(this.delaySamples)
-                                                       : new CubicDelay(this.delaySamples);
-    this.delayLine.setTime(this.delaySamples);
+    this.integerPitch = stringParams.integerPitch;
+    this.delaySamples = (this.integerPitch === 1) ? Math.round(sampleRate / freq - loopDelay)
+                                                  : sampleRate / freq - loopDelay;
+
+    const pPos = stringParams.pickPosition ?? stringParams.pickupPosition;
+    this.pickPosition = (pPos !== undefined) ? clamp(pPos, 0.0, 0.5) : 0.2;
+    this.pickPositionMethod = stringParams.pickPositionMethod ?? 0;
+    this.twoWrites = this.pickPositionMethod === 1;
+
+    if (this.pickPositionMethod === 2) {
+      const delay1 = this.pickPosition * this.delaySamples;
+      this.delaySamples1 = (this.integerPitch === 1) ? Math.round(delay1) : delay1;
+      this.delaySamples2 = this.delaySamples - this.delaySamples1;
+
+      if (this.integerPitch === 1) {
+        this.delayLine1 = new IntDelay(this.delaySamples1);
+        this.delayLine2 = new IntDelay(this.delaySamples2);
+      } else {
+        this.delayLine1 = new CubicDelay(this.delaySamples1);
+        this.delayLine2 = new CubicDelay(this.delaySamples2);
+      }
+      this.delayLine1.setTime(this.delaySamples1);
+      this.delayLine2.setTime(this.delaySamples2);
+      this.nutOut = 0.0;
+    } else {
+      this.delayLine = (this.integerPitch === 1) ? new IntDelay(this.delaySamples)
+                                                 : new CubicDelay(this.delaySamples);
+      this.delayLine.setTime(this.delaySamples);
+    }
 
     this.lpFilter = new LP1((freq * 2 ** (stringParams.lpCutoffRelative / 12)) / sampleRate);
     this.excDcHighpass
@@ -157,10 +180,6 @@ class TransverseDelay {
     this.tensionState = 0.0;
     this.feedback = 0.0;
     this.sampleIdx = 0;
-
-    const pPos = stringParams.pickPosition ?? stringParams.pickupPosition;
-    this.pickPosition = (pPos !== undefined) ? clamp(pPos, 0.0, 0.5) : 0.2;
-    this.twoWrites = stringParams.pickPositionMethod;
 
     this.attackNonlinearDamping = stringParams.attackNonlinearDamping;
     this.attackLpOpenCycles = stringParams.attackLpOpenCycles;
@@ -180,14 +199,64 @@ class TransverseDelay {
   reset() {
     this.tensionState = 0.0;
     this.feedback = 0.0;
+    this.nutOut = 0.0;
     this.sampleIdx = 0;
-    this.delayLine.reset?.();
+    this.delayLine?.reset?.();
+    this.delayLine1?.reset?.();
+    this.delayLine2?.reset?.();
     this.lpFilter.reset?.();
     this.excDcHighpass.reset?.();
     this.fbAttackFilter?.reset?.();
   }
 
   process(input) {
+    if (this.pickPositionMethod === 2) {
+      const transverseSig = this.excDcHighpass.process(input);
+
+      // Wave arriving from nut reflects (-1) at the fixed end and heads to bridge
+      const waveToBridge = -this.nutOut + 0.5 * transverseSig;
+      const filteredSig = this.lpFilter.process(waveToBridge);
+
+      let bridgeSig;
+      if (this.attackLpOpenCycles > 0 && this.sampleIdx < this.attackLpOpenSamples) {
+        const progress = this.sampleIdx / this.attackLpOpenSamples;
+        const blend = 0.5 * (1.0 + Math.cos(Math.PI * progress));
+        bridgeSig = blend * waveToBridge + (1.0 - blend) * filteredSig;
+      } else {
+        bridgeSig = filteredSig;
+      }
+
+      let dynamicDelay = this.delaySamples;
+      if (this.tensionMod !== 0) {
+        this.tensionState += this.tensionAlpha * (bridgeSig * bridgeSig - this.tensionState);
+        dynamicDelay = this.delaySamples / Math.sqrt(1.0 + this.tensionMod * this.tensionState);
+        const dynamicDelay1 = (this.integerPitch === 1)
+          ? Math.round(this.pickPosition * dynamicDelay)
+          : this.pickPosition * dynamicDelay;
+        const dynamicDelay2 = dynamicDelay - dynamicDelay1;
+        this.delayLine1.setTime(dynamicDelay1);
+        this.delayLine2.setTime(dynamicDelay2);
+      }
+
+      const transDelayOut = this.delayLine1.process(bridgeSig);
+      let bridgeReflected = -this.loopGain * transDelayOut;
+
+      if (this.fbAttackFilter) { bridgeReflected *= this.fbAttackFilter.process(1.0); }
+
+      if (this.attackNonlinearDamping > 0) {
+        bridgeReflected = bridgeReflected
+          / (1.0 + this.attackNonlinearDamping * bridgeReflected * bridgeReflected);
+      }
+
+      // Wave heading to nut is the bridge reflection plus direct excitation
+      const waveToNut = bridgeReflected + 0.5 * transverseSig;
+      this.nutOut = this.delayLine2.process(waveToNut);
+      this.sampleIdx++;
+
+      return waveToNut;
+    }
+
+    // Single-delay processing.
     let transverseSig = this.excDcHighpass.process(input);
 
     transverseSig += this.feedback;

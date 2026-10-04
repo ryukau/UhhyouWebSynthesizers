@@ -11,7 +11,7 @@ import * as wave from "../common/wave.js";
 import {GuitarChordSelector} from "./guitarchordselector.js";
 import * as menuitems from "./menuitems.js";
 
-const version = 1;
+const version = 2;
 
 const randomUniform
   = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
@@ -238,7 +238,7 @@ const param = {
   overSample: new parameter.Parameter(0, scales.overSample),
   sampleRateScaler: new parameter.Parameter(3, scales.sampleRateScaler),
   normalize: new parameter.Parameter(1, scales.normalize),
-  pickPositionMethod: new parameter.Parameter(1, scales.pickPositionMethod),
+  pickPositionMethod: new parameter.Parameter(2, scales.pickPositionMethod),
   integerPitch: new parameter.Parameter(0, scales.boolean),
 
   feedbackScalar: new parameter.Parameter(1.0, scales.feedbackScalar, true),
