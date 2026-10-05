@@ -20,11 +20,12 @@ export class ToggleButton {
 
   setState(state) {
     console.assert(
-      Number.isInteger(state) && state >= 0,
-      "ToggleButton.state must be 0 or positive integer.", new Error());
+      Number.isInteger(state) && state >= 0, "ToggleButton.state must be 0 or positive integer.",
+      new Error());
     this.state = state;
     this.button.className = this.className;
     this.button.classList.add(`toggleState${this.state}`);
+    this.button.setAttribute("aria-pressed", state > 0 ? "true" : "false");
   }
 
   onClick(event) {

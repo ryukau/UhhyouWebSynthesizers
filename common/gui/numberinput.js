@@ -17,6 +17,27 @@ export class NumberInput {
     this.label = document.createElement("label");
     this.label.className = "inputLine";
     this.label.textContent = label;
+    this.label.tabIndex = 0;
+    this.label.setAttribute("role", "button");
+    this.label.setAttribute("aria-pressed", parameter.lockRandomization ? "true" : "false");
+    this.label.setAttribute("aria-label", `Lock randomization for ${label}`);
+
+    const toggleLock = () => {
+      this.param.lockRandomization = !this.param.lockRandomization;
+      this.label.setAttribute("aria-pressed", this.param.lockRandomization ? "true" : "false");
+      this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
+    };
+
+    this.label.addEventListener("click", (event) => {
+      if (event.ctrlKey) return;
+      toggleLock();
+    }, false);
+    this.label.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleLock();
+      }
+    }, false);
     this.div.appendChild(this.label);
 
     this.container = document.createElement("div");
@@ -25,9 +46,9 @@ export class NumberInput {
 
     this.range = document.createElement("input");
     this.range.type = "range";
-    this.range.ariaLabel = label + " Range Input";
+    this.range.ariaLabel = `${label} Range Input`;
     this.range.ariaDescription
-      = "The value of this slider is synchronized to the next spin button. Slider usually provides more human friendly value scaling. For example, decibel for amplitude, MIDI note number for frequency, and so on. Slider is intuitive, but not so precise.";
+      = "The value of this slider is synchronized to the next spin button. Press Escape or 'r' to reset to default.";
     this.range.min = this.param.scale.minUi;
     this.range.max = this.param.scale.maxUi;
     this.range.step = this.param.step;
@@ -37,9 +58,9 @@ export class NumberInput {
 
     this.number = document.createElement("input");
     this.number.type = "number";
-    this.range.ariaLabel = label + " Number Input";
-    this.range.ariaDescription
-      = "The value of this spin button is synchronized to the previous slider. Spin button usually provides control for raw DSP values. Spin button is precise, but might be unintuitive.";
+    this.number.ariaLabel = `${label} Number Input`;
+    this.number.ariaDescription
+      = "The value of this spin button is synchronized to the previous slider. Press Escape to reset to default.";
     this.number.min = this.param.minDisplay;
     this.number.max = this.param.maxDisplay;
     this.number.step = this.param.step === "any" ? 0.01 : this.param.step;
@@ -54,16 +75,27 @@ export class NumberInput {
       }
     }, false);
 
-    this.label.addEventListener("pointerdown", (event) => {
-      if (event.ctrlKey) return;
-      this.param.lockRandomization = !this.param.lockRandomization;
-      this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
-    }, false);
     this.range.addEventListener("input", (event) => this.onInputRange(event), false);
     this.number.addEventListener("change", (event) => this.onInputNumber(event), false);
+
+    this.number.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        this.reset();
+      }
+    }, false);
+
+    this.range.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" || event.key === "r") {
+        event.preventDefault();
+        this.reset();
+      }
+    }, false);
   }
 
   refresh() {
+    this.label.setAttribute("aria-pressed", this.param.lockRandomization ? "true" : "false");
+    this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
     this.range.value = this.param.ui;
     this.number.value = this.param.display;
   }

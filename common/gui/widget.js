@@ -143,6 +143,14 @@ export function playControl(
   pc.buttonExport = Button(pc.divRecipeControl, "Export", exportRecipeFunc);
   pc.buttonImport = Button(pc.divRecipeControl, "Import", importRecipeFunc);
 
+  // Global playback shortcut.
+  window.addEventListener("keydown", (event) => {
+    if (event.code === "F8" || event.code === "Numpad0") {
+      event.preventDefault();
+      playFunc(event);
+    }
+  });
+
   return pc;
 }
 
@@ -150,6 +158,9 @@ export class RecipeExportDialog {
   constructor(parent, confirmFunc) {
     this.dialog = document.createElement("dialog");
     this.dialog.classList.add("recipeExport");
+    this.dialog.setAttribute("aria-modal", "true");
+    this.dialog.setAttribute("aria-labelledby", "recipeExportHeading");
+    this.dialog.setAttribute("aria-describedby", "recipeExportDescription");
     this.dialog.addEventListener("click", (ev) => {
       const rect = ev.target.getBoundingClientRect();
       const clickedInDialog = rect.top <= ev.clientY && ev.clientY <= rect.bottom
@@ -158,38 +169,43 @@ export class RecipeExportDialog {
     });
     parent.appendChild(this.dialog);
 
-    this.heading = heading(this.dialog, 2, "Export Recipe", null, null);
+    heading(this.dialog, 2, "Export Recipe", "recipeExportHeading");
 
-    this.divAuthor = div(this.dialog, null, "dialogTextInputLine");
-    this.labelAuthor = createGenericElement("label", this.divAuthor, null, null);
-    this.labelAuthor.textContent = "Author";
-    this.textInputAuthor = createGenericElement("input", this.divAuthor, null, null);
-    this.textInputAuthor.type = "text";
-    this.textInputAuthor.spellcheck = false;
+    const createInput = (label, id) => {
+      const line = div(this.dialog, null, "dialogTextInputLine");
+      const lbl = createGenericElement("label", line);
+      lbl.textContent = label;
+      lbl.htmlFor = id;
+      const input = createGenericElement("input", line, id);
+      input.type = "text";
+      input.spellcheck = false;
+      input.ariaLabel = label;
+      return input;
+    };
 
-    this.divRecipe = div(this.dialog, null, "dialogTextInputLine");
-    this.labelRecipe = createGenericElement("label", this.divRecipe, null, null);
-    this.labelRecipe.textContent = "Recipe";
-    this.textInputRecipe = createGenericElement("input", this.divRecipe, null, null);
-    this.textInputRecipe.type = "text";
-    this.textInputRecipe.spellcheck = false;
+    this.textInputAuthor = createInput("Author", "recipeExportAuthor");
+    // Connects description to initial focus so screen readers announce it on open
+    this.textInputAuthor.setAttribute("aria-describedby", "recipeExportDescription");
+    this.textInputRecipe = createInput("Recipe", "recipeExportRecipe");
 
-    this.divConfirm = div(this.dialog, null, "dialogConfirmButtonLine");
-    this.buttonExport = Button(this.divConfirm, "Save", (ev) => {
+    const divConfirm = div(this.dialog, null, "dialogConfirmButtonLine");
+    Button(divConfirm, "Save", (ev) => {
       confirmFunc(ev);
       this.dialog.close();
     });
-    this.divConfirmCenterPad = div(this.divConfirm, null, "dialogConfirmCenterPad");
-    this.buttonCancel = Button(this.divConfirm, "Cancel", () => { this.dialog.close(); });
+    div(divConfirm, null, "dialogConfirmCenterPad");
+    Button(divConfirm, "Cancel", () => { this.dialog.close(); });
 
-    this.divDescription = div(this.dialog, null, "dialogDescription");
-    this.pDescriptionFormat = paragraph(this.divDescription, null, null);
-    this.pDescriptionFormat.textContent = 'The recipe will be displayed as "Author - Recipe".';
-    this.pDescriptionAuthor = paragraph(this.divDescription, null, "pDialogBottomMost");
-    this.pDescriptionAuthor.textContent = 'Set unique "Author" to avoid name conflict.';
+    const divDescription = div(this.dialog, "recipeExportDescription", "dialogDescription");
+    paragraph(divDescription).textContent = 'The recipe will be displayed as "Author - Recipe".';
+    paragraph(divDescription, null, "pDialogBottomMost").textContent
+      = 'Set unique "Author" to avoid name conflict.';
   }
 
-  open() { this.dialog.showModal(); }
+  open() {
+    this.dialog.showModal();
+    this.textInputAuthor.focus();
+  }
 
   get author() { return this.textInputAuthor.value; }
   get recipeName() { return this.textInputRecipe.value; }
@@ -201,6 +217,9 @@ export class RecipeImportDialog {
 
     this.dialog = document.createElement("dialog");
     this.dialog.classList.add("recipeImport");
+    this.dialog.setAttribute("aria-modal", "true");
+    this.dialog.setAttribute("aria-labelledby", "recipeImportHeading");
+    this.dialog.setAttribute("aria-describedby", "RecipeImportDragAndDropArea");
     this.dialog.addEventListener("click", (ev) => {
       const rect = ev.target.getBoundingClientRect();
       const clickedInDialog = rect.top <= ev.clientY && ev.clientY <= rect.bottom
@@ -209,7 +228,7 @@ export class RecipeImportDialog {
     });
     parent.appendChild(this.dialog);
 
-    this.heading = heading(this.dialog, 2, "Import Recipe", null, null);
+    this.heading = heading(this.dialog, 2, "Import Recipe", "recipeImportHeading", null);
 
     this.divDragAndDropArea = div(this.dialog, "RecipeImportDragAndDropArea", null);
     this.divDragAndDropArea.addEventListener("drop", (e) => this.#onDropFile(e));
@@ -220,10 +239,12 @@ export class RecipeImportDialog {
 
     this.divInputContainer = div(this.dialog, null, "RecipeImportInputContainer");
 
-    this.inputFile = createGenericElement("input", this.divInputContainer, null, null);
+    this.inputFile
+      = createGenericElement("input", this.divInputContainer, "recipeImportFileInput", null);
     this.inputFile.type = "file";
     this.inputFile.accept = ".json,application/json";
     this.inputFile.multiple = true;
+    this.inputFile.ariaLabel = "Choose JSON files";
     this.inputFile.addEventListener("change", (e) => this.#onInputFileChange(e));
   }
 

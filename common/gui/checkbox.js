@@ -13,6 +13,24 @@ export class CheckBoxLine {
     this.label = document.createElement("label");
     this.label.className = "checkBoxLine";
     this.label.textContent = label;
+    this.label.tabIndex = 0;
+    this.label.setAttribute("role", "button");
+    this.label.setAttribute("aria-pressed", parameter.lockRandomization ? "true" : "false");
+    this.label.setAttribute("aria-label", `Lock randomization for ${label}`);
+
+    const toggleLock = () => {
+      this.param.lockRandomization = !this.param.lockRandomization;
+      this.label.setAttribute("aria-pressed", this.param.lockRandomization ? "true" : "false");
+      this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
+    };
+
+    this.label.addEventListener("click", () => toggleLock(), false);
+    this.label.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleLock();
+      }
+    }, false);
     this.div.appendChild(this.label);
 
     this.items = items;
@@ -26,14 +44,11 @@ export class CheckBoxLine {
       this.param.defaultUi,
       (state) => this.onClick(state),
     );
-
-    this.label.addEventListener("pointerdown", (event) => {
-      this.param.lockRandomization = !this.param.lockRandomization;
-      this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
-    }, false);
   }
 
   refresh() {
+    this.label.setAttribute("aria-pressed", this.param.lockRandomization ? "true" : "false");
+    this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
     this.button.button.value = this.items[this.param.ui];
     this.button.button.ariaLabel = this.items[this.param.ui];
     this.button.setState(this.param.ui);

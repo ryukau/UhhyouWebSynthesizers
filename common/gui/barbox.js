@@ -19,7 +19,7 @@ export class BarBox {
   #indexRange;
   #barWidth;
 
-  /*
+  /**
   `parameters` is a list of `widget.Parameter`.
   */
   constructor(parent, label, width, height, parameters, onInputFunc) {
@@ -34,17 +34,47 @@ export class BarBox {
     this.divContainer.classList.add("barboxContainer");
     parent.appendChild(this.divContainer);
 
+    this.liveRegion = document.createElement("span");
+    this.liveRegion.classList.add("sr-only");
+    this.liveRegion.setAttribute("role", "status");
+    this.liveRegion.setAttribute("aria-live", "polite");
+    this.liveRegion.setAttribute("aria-atomic", "true");
+    Object.assign(this.liveRegion.style, {
+      position: "absolute",
+      width: "1px",
+      height: "1px",
+      padding: "0",
+      margin: "-1px",
+      overflow: "hidden",
+      clip: "rect(0, 0, 0, 0)",
+      whiteSpace: "nowrap",
+      border: "0",
+    });
+    this.divContainer.appendChild(this.liveRegion);
+
     this.label = document.createElement("label");
     this.label.classList.add("barbox");
     this.label.textContent = label;
-    this.label.addEventListener("pointerdown", (event) => {
-      if (this.param.length <= 0) return;
+    this.label.tabIndex = 0;
+    this.label.setAttribute("role", "button");
+    const isLocked = this.param[0]?.lockRandomization ?? false;
+    this.label.setAttribute("aria-pressed", isLocked ? "true" : "false");
+    this.label.setAttribute("aria-label", `Lock randomization for ${label}`);
 
-      // Change the all the states from a single source for consistency.
+    const toggleLock = () => {
+      if (this.param.length <= 0) return;
       const newState = !this.param[0].lockRandomization;
       for (let prm of this.param) prm.lockRandomization = newState;
-
+      this.label.setAttribute("aria-pressed", newState ? "true" : "false");
       this.label.style.color = newState ? palette.inactive : "unset";
+    };
+
+    this.label.addEventListener("click", () => toggleLock(), false);
+    this.label.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleLock();
+      }
     }, false);
     this.divContainer.appendChild(this.label);
 
@@ -63,7 +93,7 @@ export class BarBox {
     this.inputIndex.ariaDescription
       = "Select index of bar box control. Each index corresponds to a value in an array. The value can be set at the next element.";
     this.inputIndex.type = "number";
-    this.inputIndex.min = 0; // TODO: Add offset.
+    this.inputIndex.min = 0;
     this.inputIndex.max = parameters.length - 1;
     this.inputIndex.step = 1;
     this.inputIndex.value = 0;
@@ -96,9 +126,10 @@ export class BarBox {
     this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
-    this.canvas.ariaLabel = `${label}, canvas`;
+    this.canvas.setAttribute("role", "group");
+    this.canvas.ariaLabel = `${label}, bar editor`;
     this.canvas.ariaDescription
-      = "Keyboard shortcuts are available. 'R' to fully randomize. 'T' to slightly randomize.";
+      = "Use Left and Right arrows to select index, Up and Down to modify value. 'r' to randomize, 't' to slightly randomize.";
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
@@ -110,9 +141,9 @@ export class BarBox {
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
-    this.canvas.addEventListener("contextmenu", (e) => {
-      e.preventDefault(); // Prevent browser context menu on right click.
-    }, false);
+    this.canvas.addEventListener("focus", () => this.draw(), false);
+    this.canvas.addEventListener("blur", () => this.draw(), false);
+    this.canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); }, false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -134,7 +165,34 @@ export class BarBox {
     this.draw();
   }
 
+  #announce(text) {
+    if (!this.liveRegion) return;
+    this.liveRegion.textContent = this.liveRegion.textContent === text ? `${text}\u00A0` : text;
+  }
+
+  #formatValue(index) {
+    if (index < 0 || index >= this.param.length) return "0.00000";
+    const val = this.param[index]?.display ?? this.param[index]?.dsp ?? 0;
+    return typeof val === "number" ? val.toFixed(5) : String(val);
+  }
+
+  #announceBarSelected(index) {
+    this.#announce(`Index ${index + this.indexOffset} selected: ${this.#formatValue(index)}`);
+  }
+
+  #announceBarMoved(index, type) {
+    if (type === "reset") {
+      this.#announce(`Index ${index + this.indexOffset} reset: ${this.#formatValue(index)}`);
+    } else {
+      this.#announce(`Index ${index + this.indexOffset}: ${this.#formatValue(index)}`);
+    }
+  }
+
   refresh() {
+    const isLocked = this.param[0]?.lockRandomization ?? false;
+    this.label.setAttribute("aria-pressed", isLocked ? "true" : "false");
+    this.label.style.color = isLocked ? palette.inactive : "unset";
+
     let index = parseInt(this.inputIndex.value);
     if (isNaN(index)) index = 0;
     index = clamp(index, 0, this.param.length - 1);
@@ -154,6 +212,7 @@ export class BarBox {
     index = clamp(index, 0, this.param.length - 1);
     this.inputIndex.value = index;
     this.inputValue.value = this.param[index].dsp;
+    this.draw();
   }
 
   #onValueInput(event) {
@@ -252,12 +311,20 @@ export class BarBox {
           `#${index + this.indexOffset}: ${this.param[index].display.toFixed(5)}`, width / 2,
           height / 2);
       }
-    } else {
-      // // Parameter name.
-      // this.context.font = `24px ${palette.fontFamily}`;
-      // this.context.fillStyle = palette.overlay;
-      // this.context.textAlign = "center";
-      // this.context.fillText(this.label, width / 2, height / 2);
+    } else if (document.activeElement === this.canvas) {
+      let index = parseInt(this.inputIndex.value);
+      if (!isNaN(index) && index >= this.#indexL && index < this.#indexR) {
+        this.context.fillStyle = palette.overlayHighlight;
+        this.context.fillRect(
+          (index - this.#indexL) * this.#sliderWidth, 0, this.#sliderWidth, height);
+
+        this.context.font = `24px ${palette.fontFamily}`;
+        this.context.fillStyle = palette.overlay;
+        this.context.textAlign = "center";
+        this.context.fillText(
+          `#${index + this.indexOffset}: ${this.param[index].display.toFixed(5)}`, width / 2,
+          height / 2);
+      }
     }
 
     // Zero line.
@@ -305,14 +372,30 @@ export class BarBox {
     this.draw();
 
     this.canvas.setPointerCapture(event.pointerId);
+
+    const index = parseInt(this.inputIndex.value);
+    if (!isNaN(index) && index >= 0 && index < this.param.length) {
+      if (event.ctrlKey) {
+        this.#announceBarMoved(index, "reset");
+      } else {
+        this.#announceBarSelected(index);
+      }
+    }
   }
 
   onPointerUp(event) {
+    const wasDragging = this.#mouseButton >= 0;
     this.#mouseButton = -1;
     this.#anchor = null;
     this.canvas.releasePointerCapture(event.pointerId);
     this.onInputFunc();
     this.draw();
+    if (wasDragging) {
+      const index = parseInt(this.inputIndex.value);
+      if (!isNaN(index) && index >= 0 && index < this.param.length) {
+        this.#announceBarMoved(index);
+      }
+    }
   }
 
   onPointerMove(event) {
@@ -324,10 +407,7 @@ export class BarBox {
     }
 
     this.#setValueFromLine(this.#anchor, this.#mousePosition, event);
-    if (this.#mouseButton === 0) { // Left button.
-      this.#anchor = this.#mousePosition;
-    } else if (this.#mouseButton === 2) { // Right button
-    }
+    if (this.#mouseButton === 0) { this.#anchor = this.#mousePosition; }
     this.draw();
   }
 
@@ -345,7 +425,7 @@ export class BarBox {
   }
 
   onWheel(event) {
-    event.preventDefault(); // Prevent page scrolling.
+    event.preventDefault();
 
     if (event.deltaY == 0) return;
 
@@ -355,23 +435,73 @@ export class BarBox {
     const amount = event.deltaY > 0 ? -1 : 1;
     const sensi = event.shiftKey ? this.altScrollSensitivity : this.scrollSensitivity;
     this.#setValueAt(index, this.param[index].normalized + sensi * amount);
+    this.#setInputElement(index);
 
     this.onInputFunc();
     this.draw();
+    this.#announceBarMoved(index);
   }
 
   onKeyDown(event) {
-    if (event.key === "r") {
+    let index = parseInt(this.inputIndex.value);
+    if (isNaN(index)) index = 0;
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      index = clamp(index - 1, 0, this.param.length - 1);
+      this.#setInputElement(index);
+      this.draw();
+      this.#announceBarSelected(index);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      index = clamp(index + 1, 0, this.param.length - 1);
+      this.#setInputElement(index);
+      this.draw();
+      this.#announceBarSelected(index);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      this.#setInputElement(0);
+      this.draw();
+      this.#announceBarSelected(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      this.#setInputElement(this.param.length - 1);
+      this.draw();
+      this.#announceBarSelected(this.param.length - 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      const delta = event.shiftKey ? 0.001 : 0.01;
+      this.#setValueAt(index, clamp(this.param[index].normalized + delta, 0, 1));
+      this.#setInputElement(index);
+      this.onInputFunc();
+      this.draw();
+      this.#announceBarMoved(index);
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      const delta = event.shiftKey ? 0.001 : 0.01;
+      this.#setValueAt(index, clamp(this.param[index].normalized - delta, 0, 1));
+      this.#setInputElement(index);
+      this.onInputFunc();
+      this.draw();
+      this.#announceBarMoved(index);
+    } else if (event.key === "r") {
       for (let i = 0; i < this.param.length; ++i) this.#setValueAt(i, Math.random());
+      this.#setInputElement(index);
+      this.onInputFunc();
+      this.draw();
+      this.#announce(
+        `Randomized all values. Index ${index + this.indexOffset}: ${this.#formatValue(index)}`);
     } else if (event.key === "t") {
       for (let i = 0; i < this.param.length; ++i) {
         const rand = 0.02 * (Math.random() - 0.5);
         this.#setValueAt(i, rand + this.param[i].normalized);
       }
+      this.#setInputElement(index);
+      this.onInputFunc();
+      this.draw();
+      this.#announce(`Slightly randomized all values. Index ${index + this.indexOffset}: ${
+        this.#formatValue(index)}`);
     }
-
-    this.onInputFunc();
-    this.draw();
   }
 
   #getMousePosition(event) {
@@ -406,13 +536,9 @@ export class BarBox {
     this.param[index].resetToDefault();
   }
 
-  /*
-  TODO: Test.
-  */
   #snap(value) {
     if (this.snapValue.length <= 0) return value;
 
-    // `Array.findLast()` can be used, but it's too early to adapt. (2022-09-16)
     let idx = 0;
     for (; idx < this.snapValue.length; ++idx) {
       if (this.snapValue[idx] < value) continue;
@@ -444,7 +570,7 @@ export class BarBox {
     const cursorIndex = right;
     if (left >= this.param.length || right >= this.param.length) return;
 
-    if (left === right) { // p0 and p1 are in a same bar.
+    if (left === right) {
       this.#setValueFromPosition(event, this.#anchor);
       return;
     }
@@ -464,14 +590,13 @@ export class BarBox {
     const valR = 1 - p1.y / height;
     this.#setValueAt(right, isSnapping ? this.#snap(valR) : valR);
 
-    // In between.
     const xL = this.#sliderWidth * (left + 1);
     const xR = this.#sliderWidth * right;
 
     let p0x = p0.x;
     let p1x = p1.x;
 
-    if (Math.abs(p0x - p1x) <= Number.EPSILON) { // Avoid 0 division on slope.
+    if (Math.abs(p0x - p1x) <= Number.EPSILON) {
       p0x = xL;
       p1x = xR;
     }

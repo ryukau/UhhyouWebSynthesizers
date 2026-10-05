@@ -3,7 +3,7 @@
 
 import {palette} from "./palette.js";
 
-/*
+/**
 Display single channel waveform.
 */
 export class WaveView {
@@ -22,15 +22,38 @@ export class WaveView {
     this.div.className = "canvasMargin";
     parent.appendChild(this.div);
 
+    this.liveRegion = document.createElement("span");
+    this.liveRegion.classList.add("sr-only");
+    this.liveRegion.setAttribute("role", "status");
+    this.liveRegion.setAttribute("aria-live", "polite");
+    this.liveRegion.setAttribute("aria-atomic", "true");
+    Object.assign(this.liveRegion.style, {
+      position: "absolute",
+      width: "1px",
+      height: "1px",
+      padding: "0",
+      margin: "-1px",
+      overflow: "hidden",
+      clip: "rect(0, 0, 0, 0)",
+      whiteSpace: "nowrap",
+      border: "0",
+    });
+    this.div.appendChild(this.liveRegion);
+
     this.canvas = document.createElement("canvas");
     this.canvas.width = width;
     this.canvas.height = height;
+    this.canvas.tabIndex = 0;
+    this.canvas.ariaLabel = "Waveform display, canvas";
+    this.canvas.ariaDescription
+      = "Arrow keys to scroll horizontally. +/- to zoom in and out. Home/End to jump to boundaries.";
     this.canvas.style.cursor = "grab";
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.canvas.addEventListener("pointerdown", (e) => this.onPointerDown(e), false);
     this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
     this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
+    this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
     this.div.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -48,6 +71,12 @@ export class WaveView {
       .addEventListener?.("change", () => this.draw());
 
     this.set(data);
+  }
+
+  #announce(text) {
+    if (!this.liveRegion) return;
+    // Alternate invisible character to ensure screen readers re-announce identical strings.
+    this.liveRegion.textContent = this.liveRegion.textContent === text ? `${text}\u00A0` : text;
   }
 
   #formatDb(db) {
@@ -110,6 +139,12 @@ export class WaveView {
     }
 
     this.draw();
+
+    if (this.#data && this.#data.length > 0) {
+      let msg = `Waveform loaded: ${this.#data.length} samples`;
+      if (this.#peakText) { msg += `, peak ${this.#peakText}`; }
+      this.#announce(msg);
+    }
   }
 
   onPointerDown(event) {
@@ -120,8 +155,12 @@ export class WaveView {
   }
 
   onPointerUp(event) {
+    const wasDragging = this.#isMouseDown;
     this.#isMouseDown = false;
     this.canvas.style.cursor = "grab";
+    if (wasDragging && this.#data?.length > 0) {
+      this.#announce(`Offset ${this.#offset} of ${this.#data.length}`);
+    }
   }
 
   onPointerMove(event) {
@@ -148,11 +187,53 @@ export class WaveView {
   }
 
   onWheel(event) {
-    event.preventDefault(); // Prevent page scrolling.
+    event.preventDefault();
     if (event.ctrlKey || event.altKey) {
       this.scroll(event);
     } else {
       this.zoom(event);
+    }
+  }
+
+  onKeyDown(event) {
+    if (this.#length === 0 || this.#data === null) return;
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      let dx = Math.max(1, Math.floor(this.#length / 8));
+      this.#offset = Math.max(0, this.#offset - dx);
+      this.draw();
+      this.#announce(
+        this.#offset === 0 ? `Start of waveform: offset 0 of ${this.#data.length}`
+                           : `Offset ${this.#offset} of ${this.#data.length}`);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      let dx = Math.max(1, Math.floor(this.#length / 8));
+      let maxOffset = Math.max(0, this.#data.length - this.#length);
+      this.#offset = Math.min(maxOffset, this.#offset + dx);
+      this.draw();
+      this.#announce(
+        this.#offset === maxOffset
+          ? `End of waveform: offset ${this.#offset} of ${this.#data.length}`
+          : `Offset ${this.#offset} of ${this.#data.length}`);
+    } else if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      this.zoom({offsetX: this.canvas.width / 2, deltaY: -1});
+      this.#announce(`Zoomed in: ${this.#length} samples visible, offset ${this.#offset}`);
+    } else if (event.key === "-" || event.key === "_") {
+      event.preventDefault();
+      this.zoom({offsetX: this.canvas.width / 2, deltaY: 1});
+      this.#announce(`Zoomed out: ${this.#length} samples visible, offset ${this.#offset}`);
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      this.#offset = 0;
+      this.draw();
+      this.#announce(`Start of waveform: offset 0 of ${this.#data.length}`);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      this.#offset = Math.max(0, this.#data.length - this.#length);
+      this.draw();
+      this.#announce(`End of waveform: offset ${this.#offset} of ${this.#data.length}`);
     }
   }
 
@@ -164,7 +245,6 @@ export class WaveView {
       this.#offset -= dx;
     }
 
-    // Clamp offset.
     let maxOffset = this.#data.length - this.#length - 1;
     this.#offset = Math.max(0, Math.min(this.#offset, maxOffset));
 
@@ -183,7 +263,6 @@ export class WaveView {
     }
     this.#offset += xOffset * (previous - this.#length);
 
-    // Adjust length.
     this.#length = Math.floor(this.#length);
     if (this.#length > this.#data.length) {
       this.#length = this.#data.length;
@@ -191,7 +270,6 @@ export class WaveView {
       this.#length = 16;
     }
 
-    // Adjust offset.
     this.#offset = Math.floor(this.#offset);
     if (this.#offset < 0) {
       this.#offset = 0;
@@ -224,7 +302,7 @@ export class WaveView {
     this.context.textAlign = "right";
     this.context.fillText(this.#peakText, width, fontSize + 1);
     if (this.#displayRms) { this.context.fillText(this.#rmsPeakText, width, (fontSize + 1) * 2); }
-    this.context.textAlign = "left"; // Restore default alignment.
+    this.context.textAlign = "left";
   }
 
   drawAxes(y0) {

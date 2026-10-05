@@ -80,13 +80,37 @@ export class EqualizerXYPad {
     this.divContainer.classList.add("equalizerContainer");
     parent.appendChild(this.divContainer);
 
+    this.liveRegion = document.createElement("span");
+    this.liveRegion.classList.add("sr-only");
+    this.liveRegion.setAttribute("role", "status");
+    this.liveRegion.setAttribute("aria-live", "polite");
+    this.liveRegion.setAttribute("aria-atomic", "true");
+    Object.assign(this.liveRegion.style, {
+      position: "absolute",
+      width: "1px",
+      height: "1px",
+      padding: "0",
+      margin: "-1px",
+      overflow: "hidden",
+      clip: "rect(0, 0, 0, 0)",
+      whiteSpace: "nowrap",
+      border: "0",
+    });
+    this.divContainer.appendChild(this.liveRegion);
+
     this.label = document.createElement("label");
     this.label.classList.add("equalizer");
     this.label.textContent = label;
-    this.label.addEventListener("pointerdown", (event) => {
+    this.label.tabIndex = 0;
+    this.label.setAttribute("role", "button");
+    const firstParam = Array.isArray(this.param[0]) ? this.param[0][0] : this.param[0];
+    this.label.setAttribute("aria-pressed", firstParam?.lockRandomization ? "true" : "false");
+    this.label.setAttribute("aria-label", `Lock randomization for ${label}`);
+
+    const toggleLock = () => {
       if (this.param.length <= 0) return;
-      const firstParam = Array.isArray(this.param[0]) ? this.param[0][0] : this.param[0];
-      const newState = !firstParam.lockRandomization;
+      const fp = Array.isArray(this.param[0]) ? this.param[0][0] : this.param[0];
+      const newState = !fp.lockRandomization;
       for (let prm of this.param) {
         if (Array.isArray(prm)) {
           for (let p of prm) p.lockRandomization = newState;
@@ -94,7 +118,16 @@ export class EqualizerXYPad {
           prm.lockRandomization = newState;
         }
       }
+      this.label.setAttribute("aria-pressed", newState ? "true" : "false");
       this.label.style.color = newState ? palette.inactive : "unset";
+    };
+
+    this.label.addEventListener("click", () => toggleLock(), false);
+    this.label.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleLock();
+      }
     }, false);
     this.divContainer.appendChild(this.label);
 
@@ -105,7 +138,8 @@ export class EqualizerXYPad {
     this.canvas = document.createElement("canvas");
     this.canvas.classList.add("envelopeView");
     this.canvas.ariaLabel = `${label}, canvas`;
-    this.canvas.ariaDescription = "Equalizer frequency response and control points editor.";
+    this.canvas.ariaDescription
+      = "Press [ and ], or 1 to 9 to switch active band. ArrowLeft/Right to adjust cutoff. ArrowUp/Down to adjust Q. PageUp/PageDown or +/- to adjust gain.";
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;
@@ -114,6 +148,9 @@ export class EqualizerXYPad {
     this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
+    this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
+    this.canvas.addEventListener("focus", () => this.draw(), false);
+    this.canvas.addEventListener("blur", () => this.draw(), false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -199,6 +236,60 @@ export class EqualizerXYPad {
       .addEventListener?.("change", () => this.draw());
 
     this.refresh();
+  }
+
+  #announce(text) {
+    if (!this.liveRegion) return;
+    this.liveRegion.textContent = this.liveRegion.textContent === text ? `${text}\u00A0` : text;
+  }
+
+  #getBandLabel(index) {
+    const sc = this.#section[index];
+    if (!sc) return `${index + 1}`;
+    const badge = filterTypeBadges[sc.type] ?? "";
+    return this.customLabels?.[index] ?? (badge ? `${index + 1} (${badge})` : `${index + 1}`);
+  }
+
+  #getBandDescription(index) {
+    const sc = this.#section[index];
+    if (!sc) return "";
+    const hz = sc.cutoff * this.#sampleRate;
+    const hzStr = `${hz < 100 ? hz.toFixed(1) : Math.round(hz)} Hz`;
+    const parts = [`Cutoff ${hzStr}`];
+    if (!noQTypes.includes(sc.type)) { parts.push(`Q ${sc.Q.toFixed(2)}`); }
+    if (!noGainTypes.includes(sc.type)) {
+      const sign = sc.gainDB > 0 ? "+" : "";
+      parts.push(`Gain ${sign}${sc.gainDB.toFixed(1)} dB`);
+    }
+    return parts.join(", ");
+  }
+
+  #announceBandSelected(index) {
+    if (this.#section.length === 0) return;
+    const desc = this.#getBandDescription(index);
+    this.#announce(`Control point ${this.#getBandLabel(index)} selected: ${desc}`);
+  }
+
+  #announceBandMoved(index, paramType) {
+    const sc = this.#section[index];
+    if (!sc) return;
+    const label = this.#getBandLabel(index);
+    if (paramType === "Cutoff") {
+      const hz = sc.cutoff * this.#sampleRate;
+      const hzStr = `${hz < 100 ? hz.toFixed(1) : Math.round(hz)} Hz`;
+      this.#announce(`Control point ${label}: Cutoff ${hzStr}`);
+    } else if (paramType === "Q") {
+      this.#announce(`Control point ${label}: Q ${sc.Q.toFixed(2)}`);
+    } else if (paramType === "Gain") {
+      const sign = sc.gainDB > 0 ? "+" : "";
+      this.#announce(`Control point ${label}: Gain ${sign}${sc.gainDB.toFixed(1)} dB`);
+    } else if (paramType === "reset") {
+      const desc = this.#getBandDescription(index);
+      this.#announce(`Control point ${label} reset: ${desc}`);
+    } else {
+      const desc = this.#getBandDescription(index);
+      this.#announce(`Control point ${label}: ${desc}`);
+    }
   }
 
   toMessage() {
@@ -289,6 +380,11 @@ export class EqualizerXYPad {
   }
 
   refresh() {
+    const fp = Array.isArray(this.param[0]) ? this.param[0][0] : this.param[0];
+    const isLocked = fp?.lockRandomization ?? false;
+    this.label.setAttribute("aria-pressed", isLocked ? "true" : "false");
+    this.label.style.color = isLocked ? palette.inactive : "unset";
+
     const maxX = Math.min(this.canvas.width, this.#nyquistX);
     for (let index = 0; index < this.param.length; ++index) {
       if (index >= this.#section.length) break;
@@ -387,8 +483,11 @@ export class EqualizerXYPad {
       }
       this.#refreshInternal(this.#grabbedPoint);
       if (event.ctrlKey) {
+        this.#announceBandMoved(this.#grabbedPoint, "reset");
         this.#grabbedPoint = -1;
         this.canvas.style.cursor = "grab";
+      } else {
+        this.#announceBandSelected(this.#grabbedPoint);
       }
     } else {
       this.canvas.style.cursor = "default";
@@ -426,12 +525,15 @@ export class EqualizerXYPad {
   }
 
   onPointerUp(event) {
+    const wasDragging = this.#isMouseDown && this.#grabbedPoint >= 0;
+    const movedIndex = this.#grabbedPoint;
     this.canvas.releasePointerCapture(event.pointerId);
     this.#isMouseDown = false;
     this.#grabbedPoint = -1;
     this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
     this.canvas.style.cursor = this.#focusedPoint >= 0 ? "grab" : "default";
     this.onChangeFunc();
+    if (wasDragging && movedIndex >= 0) { this.#announceBandMoved(movedIndex); }
   }
 
   onPointerLeave(event) {
@@ -459,6 +561,86 @@ export class EqualizerXYPad {
     this.#refreshInternal(this.#detailIndex);
     this.draw();
     this.onChangeFunc();
+    this.#announceBandMoved(this.#detailIndex, "Q");
+  }
+
+  onKeyDown(event) {
+    if (this.#section.length === 0) return;
+
+    if (event.key === "[") {
+      event.preventDefault();
+      this.#detailIndex = (this.#detailIndex - 1 + this.#section.length) % this.#section.length;
+      this.#refreshInternal(this.#detailIndex);
+      this.draw();
+      this.#announceBandSelected(this.#detailIndex);
+      return;
+    } else if (event.key === "]") {
+      event.preventDefault();
+      this.#detailIndex = (this.#detailIndex + 1) % this.#section.length;
+      this.#refreshInternal(this.#detailIndex);
+      this.draw();
+      this.#announceBandSelected(this.#detailIndex);
+      return;
+    } else if (event.key >= "1" && event.key <= "9") {
+      const index = Number(event.key) - 1;
+      if (index < this.#section.length) {
+        event.preventDefault();
+        this.#detailIndex = index;
+        this.#refreshInternal(this.#detailIndex);
+        this.draw();
+        this.#announceBandSelected(this.#detailIndex);
+        return;
+      }
+    }
+
+    const sc = this.#section[this.#detailIndex];
+    let changed = false;
+    let paramType = "";
+
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!noQTypes.includes(sc.type)) {
+        const amount = event.key === "ArrowUp" ? 1 : -1;
+        const sensi = event.shiftKey ? 0.02 : 0.1;
+        let Q = sc.Q * Math.exp(amount * sensi);
+        sc.Q = clamp(Q, this.scaleQ.minDsp, this.scaleQ.maxDsp);
+        changed = true;
+        paramType = "Q";
+      }
+    } else if (
+      event.key === "PageUp" || event.key === "PageDown" || event.key === "+" || event.key === "="
+      || event.key === "-" || event.key === "_")
+    {
+      event.preventDefault();
+      if (!noGainTypes.includes(sc.type)) {
+        const isUp = event.key === "PageUp" || event.key === "+" || event.key === "=";
+        const step = event.shiftKey ? 0.2 : 1.0;
+        sc.gainDB = clamp(sc.gainDB + (isUp ? step : -step), this.bottomDB, this.topDB);
+        sc.y = clamp(this.mapDbToY(sc.gainDB), 0, this.canvas.height);
+        changed = true;
+        paramType = "Gain";
+      }
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      const factor = event.shiftKey ? 1.01 : 1.05;
+      let hz = sc.cutoff * this.#sampleRate;
+      hz = event.key === "ArrowRight" ? hz * factor : hz / factor;
+      const minHz = this.scaleCutoffHz ? this.scaleCutoffHz.minDsp : 20;
+      const maxHz = Math.min(
+        this.scaleCutoffHz ? this.scaleCutoffHz.maxDsp : 20000, 0.49999 * this.#sampleRate);
+      hz = clamp(hz, minHz, maxHz);
+      sc.cutoff = hz / this.#sampleRate;
+      sc.x = clamp(this.mapHzToX(hz), 0, Math.min(this.canvas.width, this.#nyquistX));
+      changed = true;
+      paramType = "Cutoff";
+    }
+
+    if (changed) {
+      this.#refreshInternal(this.#detailIndex);
+      this.onChangeFunc();
+      this.draw();
+      this.#announceBandMoved(this.#detailIndex, paramType);
+    }
   }
 
   draw() {
@@ -568,7 +750,7 @@ export class EqualizerXYPad {
       const tickBox = getFreqBox(tick);
       return (
         box.left < tickBox.right + margin && box.right + margin > tickBox.left
-        && box.top < tickBox.bottom + margin && box.bottom + margin > tickBox.top);
+        && box.top < tickBox.bottom + margin && box.bottom > tickBox.top);
     });
 
     // Existing frequency ticks (10^n Hz)
@@ -740,9 +922,12 @@ export class EqualizerXYPad {
     }
 
     // Control Points
+    const isCanvasFocused = document.activeElement === this.canvas;
     for (let idx = 0; idx < this.#section.length; ++idx) {
       const sc = this.#section[idx];
-      this.context.fillStyle = this.#focusedPoint === idx ? palette.accent : palette.overlay;
+      const isPointFocused = (this.#focusedPoint === idx)
+        || (this.#focusedPoint < 0 && isCanvasFocused && this.#detailIndex === idx);
+      this.context.fillStyle = isPointFocused ? palette.accent : palette.overlay;
       this.context.beginPath();
       this.context.ellipse(sc.x, sc.y, this.#controlRadius, this.#controlRadius, 0, 0, 2 * Math.PI);
       this.context.fill();

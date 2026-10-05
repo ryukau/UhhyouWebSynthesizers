@@ -6,14 +6,13 @@ import {palette} from "./palette.js";
 export function option(parent, label, id, className) {
   console.assert(typeof label === "string", "label must be string.", new Error());
 
-  if (typeof id === "string") element.id = id;
-  if (typeof className === "string") element.className = className;
-
-  let option = document.createElement("option");
-  option.textContent = label;
-  option.value = label;
-  parent.appendChild(option);
-  return option;
+  let opt = document.createElement("option");
+  if (typeof id === "string") opt.id = id;
+  if (typeof className === "string") opt.className = className;
+  opt.textContent = label;
+  opt.value = label;
+  parent.appendChild(opt);
+  return opt;
 }
 
 export function select(parent, label, id, className, items, defaultValue, onChangeFunc) {
@@ -28,8 +27,7 @@ export function select(parent, label, id, className, items, defaultValue, onChan
 
   select.value = defaultValue;
   console.assert(
-    select.selectedIndex >= 0, "defaultValue doesn't exist in provided items",
-    new Error());
+    select.selectedIndex >= 0, "defaultValue doesn't exist in provided items", new Error());
 
   return select;
 }
@@ -42,17 +40,29 @@ export class ComboBoxLine {
     this.div = document.createElement("div");
     this.div.className = "inputLine";
     parent.appendChild(this.div);
-    if (typeof label === 'string' || label instanceof String) {
+    if (typeof label === "string" || label instanceof String) {
       this.label = document.createElement("label");
       this.label.className = "inputLine";
       this.label.textContent = label;
-      this.div.appendChild(this.label);
+      this.label.tabIndex = 0;
+      this.label.setAttribute("role", "button");
+      this.label.setAttribute("aria-pressed", parameter.lockRandomization ? "true" : "false");
+      this.label.setAttribute("aria-label", `Lock randomization for ${label}`);
 
-      this.label.addEventListener("pointerdown", (event) => {
+      const toggleLock = () => {
         this.param.lockRandomization = !this.param.lockRandomization;
-        this.label.style.color
-          = this.param.lockRandomization ? palette.inactive : "unset";
+        this.label.setAttribute("aria-pressed", this.param.lockRandomization ? "true" : "false");
+        this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
+      };
+
+      this.label.addEventListener("click", () => toggleLock(), false);
+      this.label.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggleLock();
+        }
       }, false);
+      this.div.appendChild(this.label);
     }
 
     this.container = document.createElement("div");
@@ -74,7 +84,13 @@ export class ComboBoxLine {
 
   get value() { return this.select.value; }
 
-  refresh() { this.select.value = this.options[this.param.ui].value; }
+  refresh() {
+    if (this.label) {
+      this.label.setAttribute("aria-pressed", this.param.lockRandomization ? "true" : "false");
+      this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
+    }
+    this.select.value = this.options[this.param.ui].value;
+  }
 
   random() {
     const index = Math.floor(Math.random() * this.options.length);

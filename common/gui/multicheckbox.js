@@ -1,6 +1,8 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {clamp} from "../util.js";
+
 import {palette} from "./palette.js";
 
 export class MultiCheckBoxVertical {
@@ -21,14 +23,26 @@ export class MultiCheckBoxVertical {
     this.label = document.createElement("label");
     this.label.classList.add("barbox");
     this.label.textContent = label;
-    this.label.addEventListener("pointerdown", (event) => {
-      if (this.param.length <= 0) return;
+    this.label.tabIndex = 0;
+    this.label.setAttribute("role", "button");
+    const isLocked = this.param[0]?.lockRandomization ?? false;
+    this.label.setAttribute("aria-pressed", isLocked ? "true" : "false");
+    this.label.setAttribute("aria-label", `Lock randomization for ${label}`);
 
-      // Change the all the states from a single source for consistency.
+    const toggleLock = () => {
+      if (this.param.length <= 0) return;
       const newState = !this.param[0].lockRandomization;
       for (let prm of this.param) prm.lockRandomization = newState;
-
+      this.label.setAttribute("aria-pressed", newState ? "true" : "false");
       this.label.style.color = newState ? palette.inactive : "unset";
+    };
+
+    this.label.addEventListener("click", () => toggleLock(), false);
+    this.label.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleLock();
+      }
     }, false);
     this.divContainer.appendChild(this.label);
 
@@ -37,6 +51,8 @@ export class MultiCheckBoxVertical {
     this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.ariaLabel = `${label}, multicheckbox`;
+    this.canvas.ariaDescription = "Use Up/Down arrows to navigate items. Space or Enter to toggle.";
     this.canvas.width = width;
     this.canvas.height = (valueNames.length + 1) * this.labelHeight;
     this.canvas.tabIndex = 0;
@@ -45,6 +61,15 @@ export class MultiCheckBoxVertical {
     this.canvas.addEventListener("pointerup", (e) => this.onPointerUp(e), false);
     this.canvas.addEventListener("pointermove", (e) => this.onPointerMove(e), false);
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
+    this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
+    this.canvas.addEventListener("focus", () => {
+      if (this.#paramIndex < 0) this.#paramIndex = 0;
+      this.draw();
+    }, false);
+    this.canvas.addEventListener("blur", () => {
+      this.#paramIndex = -1;
+      this.draw();
+    }, false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
@@ -98,7 +123,12 @@ export class MultiCheckBoxVertical {
     return 0 <= index && index < this.param.length ? index : -1;
   }
 
-  refresh() { this.draw(); }
+  refresh() {
+    const isLocked = this.param[0]?.lockRandomization ?? false;
+    this.label.setAttribute("aria-pressed", isLocked ? "true" : "false");
+    this.label.style.color = isLocked ? palette.inactive : "unset";
+    this.draw();
+  }
 
   onPointerDown(event) {
     this.#isMouseDown = true;
@@ -140,5 +170,33 @@ export class MultiCheckBoxVertical {
       this.onChangeFunc();
     }
     this.draw();
+  }
+
+  onKeyDown(event) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      this.#paramIndex = clamp(this.#paramIndex + 1, 0, this.param.length - 1);
+      this.draw();
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      this.#paramIndex = clamp(this.#paramIndex - 1, 0, this.param.length - 1);
+      this.draw();
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      this.#paramIndex = 0;
+      this.draw();
+    } else if (event.key === "End") {
+      event.preventDefault();
+      this.#paramIndex = this.param.length - 1;
+      this.draw();
+    } else if (event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      if (this.#paramIndex >= 0 && this.#paramIndex < this.param.length) {
+        const val = this.param[this.#paramIndex].normalized <= Number.EPSILON ? 1 : 0;
+        this.param[this.#paramIndex].normalized = val;
+        this.onChangeFunc();
+        this.draw();
+      }
+    }
   }
 }

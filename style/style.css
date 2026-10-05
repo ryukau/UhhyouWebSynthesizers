@@ -66,6 +66,27 @@
   }
 }
 
+/* Focus rings. */
+:focus-visible {
+  outline: auto !important;
+}
+
+canvas:focus-visible,
+label.tabRadioLabel:focus-within,
+div.audioLoaderDragAndDropArea:focus-visible {
+  outline: auto !important;
+  outline-offset: 2px;
+}
+
+label[role="button"] {
+  cursor: pointer;
+}
+
+label[role="button"]:focus-visible {
+  outline: auto !important;
+  outline-offset: 1px;
+}
+
 html {
   height: 100%;
 }
