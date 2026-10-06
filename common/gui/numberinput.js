@@ -5,6 +5,19 @@ import {clamp} from "../util.js";
 
 import {palette} from "./palette.js";
 
+// Ensure -Infinity placeholder matches active text styling.
+if (typeof document !== "undefined" && !document.getElementById("numberInputPlaceholderStyle")) {
+  const style = document.createElement("style");
+  style.id = "numberInputPlaceholderStyle";
+  style.textContent = `
+    input[type="number"].numberInputNumber::placeholder {
+      color: var(--color-text-main, inherit);
+      opacity: 1;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export class NumberInput {
   constructor(parent, label, parameter, onInputFunc) {
     this.param = parameter;
@@ -61,12 +74,13 @@ export class NumberInput {
     this.number.ariaLabel = `${label} Number Input`;
     this.number.ariaDescription
       = "The value of this spin button is synchronized to the previous slider. Press Escape to reset to default.";
-    this.number.min = this.param.minDisplay;
+    this.number.min = this.param.displayDsp ? this.param.scale.minDsp : this.param.scale.minUi;
     this.number.max = this.param.maxDisplay;
     this.number.step = this.param.step === "any" ? 0.01 : this.param.step;
-    this.number.value = this.param.display;
     this.number.className = "numberInputNumber";
     this.container.appendChild(this.number);
+
+    this.#updateDisplay();
 
     this.div.addEventListener("pointerdown", (event) => {
       if (event.ctrlKey) {
@@ -93,11 +107,26 @@ export class NumberInput {
     }, false);
   }
 
+  #updateDisplay() {
+    const isNegInf = this.param.display === -Infinity;
+    if (isNegInf) {
+      this.number.value = "";
+      this.number.placeholder = "-Infinity";
+      this.number.setAttribute("aria-valuenow", "-Infinity");
+      this.number.setAttribute("aria-valuetext", "-Infinity");
+    } else {
+      this.number.placeholder = "";
+      this.number.value = this.param.display;
+      this.number.setAttribute("aria-valuenow", this.param.display);
+      this.number.removeAttribute("aria-valuetext");
+    }
+    this.range.value = Math.max(this.param.scale.minUi, this.param.ui);
+  }
+
   refresh() {
     this.label.setAttribute("aria-pressed", this.param.lockRandomization ? "true" : "false");
     this.label.style.color = this.param.lockRandomization ? palette.inactive : "unset";
-    this.range.value = this.param.ui;
-    this.number.value = this.param.display;
+    this.#updateDisplay();
   }
 
   reset() {
@@ -110,18 +139,45 @@ export class NumberInput {
     let value = event.target.valueAsNumber;
     if (isNaN(value)) value = this.param.defaultUi;
     value = clamp(value, this.param.scale.minUi, this.param.scale.maxUi);
-    this.param.ui = value;
-    this.number.value = this.param.display;
-    this.onInputFunc(value);
+    if (this.param.scale.minToZero && value <= this.param.scale.minUi) {
+      this.param.ui = -Infinity;
+    } else {
+      this.param.ui = value;
+    }
+    this.#updateDisplay();
+    this.onInputFunc(this.param.display);
   }
 
   onInputNumber(event) {
+    const wasNegInf = this.param.display === -Infinity;
     let value = event.target.valueAsNumber;
-    if (isNaN(value)) value = this.param.defaultDisplay;
-    value = clamp(value, this.param.minDisplay, this.param.maxDisplay);
+    const rawText = event.target.value.trim();
+
+    if (isNaN(value)) {
+      if (rawText === "" || rawText === "-Infinity" || rawText === "-inf") {
+        value = this.param.scale.minToZero ? (this.param.displayDsp ? 0 : -Infinity)
+                                           : this.param.defaultDisplay;
+      } else {
+        value = this.param.defaultDisplay;
+      }
+    } else {
+      const step = this.param.step === "any" ? 0.01 : this.param.step;
+      const minFinite = this.param.displayDsp ? this.param.scale.minDsp : this.param.scale.minUi;
+
+      if (wasNegInf && value <= minFinite) {
+        value = minFinite + step;
+      } else if (this.param.scale.minToZero) {
+        if (this.param.displayDsp && value <= this.param.scale.minDsp) {
+          value = 0;
+        } else if (!this.param.displayDsp && value <= this.param.scale.minUi) {
+          value = -Infinity;
+        }
+      }
+      value = clamp(value, this.param.minDisplay, this.param.maxDisplay);
+    }
+
     this.param.display = value;
-    this.number.value = value;
-    this.range.value = this.param.ui;
-    this.onInputFunc(value);
+    this.#updateDisplay();
+    this.onInputFunc(this.param.display);
   }
 }

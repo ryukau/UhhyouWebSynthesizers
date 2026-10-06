@@ -61,10 +61,13 @@ export class Parameter {
     this.#raw = util.clamp(x, this.scale.minDsp, this.scale.maxDsp);
   }
 
-  get normalized() { return (this.ui - this.scale.minUi) / (this.scale.maxUi - this.scale.minUi); }
+  get normalized() {
+    if (this.ui <= this.scale.minUi) return 0;
+    return (this.ui - this.scale.minUi) / (this.scale.maxUi - this.scale.minUi);
+  }
   set normalized(x) {
     if (this.#guardWrite()) { return; }
-    this.ui = this.scale.minUi + (this.scale.maxUi - this.scale.minUi) * util.clamp(x, 0, 1);
+    this.ui = this.normalizedToUi(x);
   }
 
   get display() { return this.displayDsp ? this.dsp : this.ui; }
@@ -73,17 +76,19 @@ export class Parameter {
     this.displayDsp ? (this.dsp = x) : (this.ui = x);
   }
   get defaultDispaly() { return this.displayDsp ? this.defaultDsp : this.defaultUi; }
-  get minDisplay() { return this.displayDsp ? this.scale.minDsp : this.scale.minUi; }
+  get minDisplay() {
+    if (this.displayDsp) return this.scale.minDsp;
+    return this.scale.minToZero ? -Infinity : this.scale.minUi;
+  }
   get maxDisplay() { return this.displayDsp ? this.scale.maxDsp : this.scale.maxUi; }
 
-  uiToDsp(x) { return this.scale.toDsp(x); }
-  dspToUi(x) { return this.scale.toUi(x); }
-
   uiToNormalized(x) {
-    if (this.scale.maxUi === this.scale.minUi) return this.scale.minUi;
+    if (x <= this.scale.minUi) return 0;
+    if (this.scale.maxUi === this.scale.minUi) return 0;
     return (x - this.scale.minUi) / (this.scale.maxUi - this.scale.minUi);
   }
   normalizedToUi(x) {
+    if (x <= 0 && this.scale.minToZero) return -Infinity;
     return this.scale.minUi + (this.scale.maxUi - this.scale.minUi) * util.clamp(x, 0, 1);
   }
 
@@ -168,7 +173,10 @@ export class DecibelScale {
     return util.dbToAmp(dB);
   }
 
-  toUi(amplitude) { return util.clamp(util.ampToDB(amplitude), this.minDB, this.maxDB); }
+  toUi(amplitude) {
+    if (this.minToZero && amplitude <= this.minAmp) return -Infinity;
+    return util.clamp(util.ampToDB(amplitude), this.minDB, this.maxDB);
+  }
 }
 
 // Decibel in UI, amplitude in DSP. `offset` is in amplitude.
@@ -185,6 +193,8 @@ export class NegativeDecibelScale {
     this.offset = offset;
   }
 
+  get minToZero() { return this.scale.minToZero; }
+
   get minUi() { return -this.scale.maxDB; }
   get maxUi() { return -this.scale.minDB; }
 
@@ -192,7 +202,10 @@ export class NegativeDecibelScale {
   get maxDsp() { return this.offset - this.scale.minAmp; }
 
   toDsp(negativeDB) { return this.offset - this.offset * this.scale.toDsp(-negativeDB); }
-  toUi(amplitude) { return 1 - this.scale.toUi(this.offset - amplitude); }
+  toUi(amplitude) {
+    const raw = this.scale.toUi(this.offset - amplitude);
+    return Number.isFinite(raw) ? 1 - raw : -Infinity;
+  }
 }
 
 // DecibelScale with negative values when normalized value is below 0.5.
@@ -406,6 +419,7 @@ export class MidiPitchScale {
   }
 
   toUi(frequency) {
+    if (this.minToZero && frequency <= this.minHz) return -Infinity;
     return util.clamp(util.freqToMidiPitch(frequency), this.minPitch, this.maxPitch);
   }
 }
@@ -500,26 +514,22 @@ function parameterToObject(prm, fullRange) {
   {
     let info = {};
     if (typeof prm.comment === "string" && prm.comment.length > 0) { info.comment = prm.comment; }
-    info.min = prm.minDisplay;
+    info.min = prm.minDisplay === -Infinity ? "-Infinity" : prm.minDisplay;
     info.max = prm.maxDisplay;
     obj.info = info;
   }
 
   {
     let random = {};
-    if (fullRange) {
-      random.min = prm.minDisplay;
-      random.max = prm.maxDisplay;
-    } else {
-      random.min = prm.display;
-      random.max = prm.display;
-    }
-    random.type = "display"; // Add more type as required.
+    const val = fullRange ? prm.minDisplay : prm.display;
+    random.min = val === -Infinity ? "-Infinity" : val;
+    random.max = prm.maxDisplay;
+    random.type = "display";
     obj.random = random;
   }
 
   return obj;
-};
+}
 
 function addRecipeRecursion(recipeName, key, parameter, randomInfo) {
   if (Array.isArray(parameter) && !Array.isArray(randomInfo)) {
@@ -646,7 +656,10 @@ class Randomizer {
     // `d*` for display value, `n*` for normalized value.
     let dMin = rnd.min;
     let dMax = rnd.max;
-    if (!Number.isFinite(dMin) || !Number.isFinite(dMax)) return () => {};
+    if (dMin === "-Infinity" || dMin === null) dMin = -Infinity;
+    if (dMax === "-Infinity" || dMax === null) dMax = -Infinity;
+    if (dMin !== -Infinity && !Number.isFinite(dMin)) return () => {};
+    if (dMax !== -Infinity && !Number.isFinite(dMax)) return () => {};
     if (dMin === dMax) return (prm) => { prm.display = dMin; };
     if (dMin > dMax) [dMin, dMax] = [dMax, dMin];
 
@@ -668,7 +681,6 @@ function applyLocalRecipe(parameter, recipe) {
   for (const [key, prm] of Object.entries(parameter)) {
     if (recipe.hasOwnProperty(key)) {
       if (Array.isArray(prm)) {
-        // This is a bad hack.
         if (!prm[0].lockRandomization) recipe[key](prm);
       } else {
         prm.randomize(recipe[key]);

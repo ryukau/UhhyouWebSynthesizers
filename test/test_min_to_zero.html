@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Tests: minToZero 0 (DSP) and -Infinity (UI)</title>
+  <link rel="stylesheet" href="../style/style.css">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    h1,
+    h2 {
+      margin-top: 1.5rem;
+    }
+
+    .summary {
+      font-weight: bold;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary.pass {
+      background: #e6f4ea;
+      color: #137333;
+    }
+
+    .summary.fail {
+      background: #fce8e6;
+      color: #c5221f;
+    }
+
+    .testSuite {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .suiteTitle {
+      background: #f8f9fa;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .testItem {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 1rem;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9rem;
+    }
+
+    .testItem:last-child {
+      border-bottom: none;
+    }
+
+    .testItem.pass .badge {
+      color: #137333;
+      font-weight: 600;
+    }
+
+    .testItem.fail .badge {
+      color: #c5221f;
+      font-weight: 600;
+    }
+
+    .testItem.fail {
+      background: #fff5f5;
+    }
+
+    .errorMsg {
+      color: #c5221f;
+      font-family: monospace;
+      font-size: 0.85rem;
+      padding: 0.2rem 1rem 0.5rem;
+    }
+
+    .sandboxArea {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+
+    .liveState {
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Test Suite: <code>minToZero</code> Displays 0 (DSP) / -Infinity (UI)</h1>
+  <div id="testSummary" class="summary">Running tests...</div>
+  <div id="testContainer"></div>
+
+  <h2>Interactive Verification Sandbox</h2>
+  <div class="sandboxArea">
+    <p>
+      Use the controls below to verify that <code>&lt;input type="number"&gt;</code> shows
+      <code>-Infinity</code> (UI mode) via placeholder or <code>0</code> (DSP mode), and that native
+      spin buttons on hover are preserved and functional.
+    </p>
+
+    <h3>1. UI Decibel Parameter (<code>displayDsp = false</code>)</h3>
+    <div id="uiInputContainer"></div>
+    <div id="uiStateDisplay" class="liveState"></div>
+
+    <h3>2. DSP Amplitude Parameter (<code>displayDsp = true</code>)</h3>
+    <div id="dspInputContainer"></div>
+    <div id="dspStateDisplay" class="liveState"></div>
+  </div>
+
+  <script type="module">
+    import * as util from "../common/util.js";
+    import * as parameter from "../common/parameter.js";
+    import { NumberInput } from "../common/gui/numberinput.js";
+
+    // --- Simple Test Runner ---
+    class TestRunner {
+      constructor(container, summaryElement) {
+        this.container = container;
+        this.summary = summaryElement;
+        this.total = 0;
+        this.passed = 0;
+        this.failed = 0;
+      }
+
+      suite(name, fn) {
+        const suiteEl = document.createElement("div");
+        suiteEl.className = "testSuite";
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "suiteTitle";
+        titleEl.textContent = name;
+        suiteEl.appendChild(titleEl);
+
+        const runner = {
+          assert: (condition, msg) => {
+            this.total++;
+            const item = document.createElement("div");
+            item.className = `testItem ${condition ? "pass" : "fail"}`;
+            item.innerHTML = `<span>${msg}</span><span class="badge">${condition ? "PASS" : "FAIL"}</span>`;
+            suiteEl.appendChild(item);
+
+            if (condition) {
+              this.passed++;
+            } else {
+              this.failed++;
+              const err = document.createElement("div");
+              err.className = "errorMsg";
+              err.textContent = `Assertion failed: ${msg}`;
+              suiteEl.appendChild(err);
+            }
+          },
+          assertEqual: (actual, expected, msg) => {
+            const passed = Object.is(actual, expected);
+            runner.assert(passed, `${msg} (expected: ${String(expected)}, got: ${String(actual)})`);
+          }
+        };
+
+        try {
+          fn(runner);
+        } catch (e) {
+          const err = document.createElement("div");
+          err.className = "errorMsg";
+          err.textContent = `Unhandled exception in suite: ${e.message}\n${e.stack}`;
+          suiteEl.appendChild(err);
+        }
+
+        this.container.appendChild(suiteEl);
+        this.updateSummary();
+      }
+
+      updateSummary() {
+        if (this.failed === 0) {
+          this.summary.className = "summary pass";
+          this.summary.textContent = `All ${this.total} tests passed!`;
+        } else {
+          this.summary.className = "summary fail";
+          this.summary.textContent = `${this.failed} of ${this.total} tests failed.`;
+        }
+      }
+    }
+
+    const runner = new TestRunner(
+      document.getElementById("testContainer"),
+      document.getElementById("testSummary"),
+    );
+
+    // ==========================================
+    // Suite 1: DecibelScale
+    // ==========================================
+    runner.suite("DecibelScale with minToZero", (t) => {
+      const scale = new parameter.DecibelScale(-60, 0, true);
+
+      t.assertEqual(scale.minUi, -60, "scale.minUi retains finite lower bound for sliders");
+      t.assertEqual(scale.maxUi, 0, "scale.maxUi returns 0");
+      t.assertEqual(scale.minDsp, 0, "scale.minDsp returns 0 when minToZero is true");
+      t.assertEqual(scale.toDsp(-60), 0, "toDsp(-60) maps to 0");
+      t.assertEqual(scale.toDsp(-Infinity), 0, "toDsp(-Infinity) maps to 0");
+      t.assertEqual(scale.toUi(0), -Infinity, "toUi(0) returns -Infinity");
+      t.assertEqual(String(scale.toUi(0)), "-Infinity", "String(toUi(0)) yields native '-Infinity'");
+      t.assertEqual(scale.toUi(0).toFixed(5), "-Infinity", "toUi(0).toFixed(5) natively yields '-Infinity'");
+
+      // Test regular values
+      t.assert(Math.abs(scale.toDsp(0) - 1.0) < 1e-6, "toDsp(0 dB) maps to 1.0");
+      t.assert(Math.abs(scale.toUi(1.0) - 0.0) < 1e-6, "toUi(1.0) maps to 0 dB");
+    });
+
+    runner.suite("DecibelScale with minToZero: false", (t) => {
+      const scale = new parameter.DecibelScale(-60, 0, false);
+      t.assert(scale.minDsp > 0, "scale.minDsp is strictly positive when minToZero is false");
+      t.assertEqual(scale.toUi(0), -60, "toUi(0) clamps to minDB when minToZero is false");
+    });
+
+    // ==========================================
+    // Suite 2: Relatives (MidiPitchScale & NegativeDecibelScale)
+    // ==========================================
+    runner.suite("MidiPitchScale with minToZero", (t) => {
+      const midi = new parameter.MidiPitchScale(0, 127, true);
+      t.assertEqual(midi.minDsp, 0, "minDsp is 0 Hz");
+      t.assertEqual(midi.toDsp(0), 0, "toDsp(0) is 0 Hz");
+      t.assertEqual(midi.toDsp(-Infinity), 0, "toDsp(-Infinity) is 0 Hz");
+      t.assertEqual(midi.toUi(0), -Infinity, "toUi(0 Hz) yields -Infinity pitch");
+      t.assert(Math.abs(midi.toUi(440) - 69) < 1e-6, "toUi(440 Hz) is MIDI pitch 69");
+    });
+
+    runner.suite("NegativeDecibelScale with minToZero", (t) => {
+      const negScale = new parameter.NegativeDecibelScale(-60, 0, 1.0, true);
+      t.assertEqual(negScale.minToZero, true, "minToZero property exposed");
+      t.assertEqual(negScale.toUi(1.0), -Infinity, "toUi(offset) returns -Infinity at max attenuation");
+    });
+
+    // ==========================================
+    // Suite 3: Parameter in UI Mode (displayDsp = false)
+    // ==========================================
+    runner.suite("Parameter: UI Mode (displayDsp: false)", (t) => {
+      const scale = new parameter.DecibelScale(-60, 0, true);
+      const prm = new parameter.Parameter(1.0, scale, false);
+
+      t.assertEqual(prm.minDisplay, -Infinity, "minDisplay is -Infinity");
+
+      // Set normalized to minimum
+      prm.normalized = 0;
+      t.assertEqual(prm.dsp, 0, "prm.dsp is 0 at normalized = 0");
+      t.assertEqual(prm.ui, -Infinity, "prm.ui is -Infinity at normalized = 0");
+      t.assertEqual(prm.display, -Infinity, "prm.display is -Infinity");
+      t.assertEqual(prm.normalized, 0, "prm.normalized returns 0 cleanly");
+
+      // Coordinate mappings
+      t.assertEqual(prm.uiToNormalized(-Infinity), 0, "uiToNormalized(-Infinity) is 0");
+      t.assertEqual(prm.normalizedToUi(0), -Infinity, "normalizedToUi(0) is -Infinity");
+      t.assertEqual(prm.displayToNormalized(-Infinity), 0, "displayToNormalized(-Infinity) is 0");
+      t.assertEqual(prm.normalizedToDisplay(0), -Infinity, "normalizedToDisplay(0) is -Infinity");
+
+      // Setting display directly
+      prm.display = -Infinity;
+      t.assertEqual(prm.dsp, 0, "Setting display = -Infinity yields dsp = 0");
+    });
+
+    // ==========================================
+    // Suite 4: Parameter in DSP Mode (displayDsp = true)
+    // ==========================================
+    runner.suite("Parameter: DSP Mode (displayDsp: true)", (t) => {
+      const scale = new parameter.DecibelScale(-60, 40, true);
+      const prm = new parameter.Parameter(0.002, scale, true);
+
+      t.assertEqual(prm.minDisplay, 0, "minDisplay is 0 in DSP mode");
+
+      prm.normalized = 0;
+      t.assertEqual(prm.dsp, 0, "prm.dsp is 0 at normalized = 0");
+      t.assertEqual(prm.ui, -Infinity, "prm.ui is -Infinity at normalized = 0");
+      t.assertEqual(prm.display, 0, "prm.display is 0 in DSP mode");
+      t.assertEqual(prm.normalized, 0, "prm.normalized returns 0 cleanly");
+
+      t.assertEqual(prm.dspToNormalized(0), 0, "dspToNormalized(0) is 0");
+      t.assertEqual(prm.normalizedToDsp(0), 0, "normalizedToDsp(0) is 0");
+      t.assertEqual(prm.displayToNormalized(0), 0, "displayToNormalized(0) is 0");
+      t.assertEqual(prm.normalizedToDisplay(0), 0, "normalizedToDisplay(0) is 0");
+    });
+
+    // ==========================================
+    // Suite 5: Serialization and Randomizer
+    // ==========================================
+    runner.suite("Serialization & Randomizer", (t) => {
+      const scale = new parameter.DecibelScale(-40, 0, true);
+      const prm = new parameter.Parameter(0, scale, false);
+      prm.normalized = 0;
+
+      const obj = parameter.dumpJsonObject({ testParam: prm }, 1, { fullRange: false });
+      t.assertEqual(obj.parameters.testParam.random.min, "-Infinity", "Serializes -Infinity as '-Infinity'");
+
+      const recipe = {
+        meta: { author: "test", recipeName: "infTest", version: 1 },
+        parameters: {
+          testParam: {
+            info: { min: "-Infinity", max: 0 },
+            random: { min: "-Infinity", max: 0, type: "display" }
+          }
+        }
+      };
+
+      const book = new Map();
+      parameter.addRecipe({ testParam: prm }, book, recipe);
+      const randomizer = book.get("test - infTest");
+      t.assert(randomizer !== undefined, "Recipe loaded successfully with '-Infinity'");
+
+      // Test that randomizing does not produce NaN or break
+      randomizer.randomize({ testParam: prm });
+      t.assert(!Number.isNaN(prm.normalized), "Randomized normalized value is not NaN");
+      t.assert(prm.normalized >= 0 && prm.normalized <= 1, "Randomized normalized value in [0, 1]");
+    });
+
+    // ==========================================
+    // Suite 6: NumberInput DOM & Input Type Preservation
+    // ==========================================
+    runner.suite("NumberInput Component Behavior", (t) => {
+      const fixtureDiv = document.createElement("div");
+      document.body.appendChild(fixtureDiv);
+
+      const scale = new parameter.DecibelScale(-40, 0, true);
+      const prm = new parameter.Parameter(1.0, scale, false);
+      let inputCalls = 0;
+
+      const numberInput = new NumberInput(fixtureDiv, "Test Gain", prm, () => {
+        inputCalls++;
+      });
+
+      // 1. Verify input element type is strictly "number"
+      t.assertEqual(numberInput.number.type, "number", "numberInput.number.type remains 'number'");
+
+      // 2. Drag slider to minimum
+      numberInput.range.value = -40;
+      numberInput.range.dispatchEvent(new Event("input"));
+
+      t.assertEqual(prm.ui, -Infinity, "Slider at min sets prm.ui to -Infinity");
+      t.assertEqual(prm.dsp, 0, "Slider at min sets prm.dsp to 0");
+      t.assertEqual(numberInput.number.value, "", "number input .value is empty string when at -Infinity");
+      t.assertEqual(numberInput.number.placeholder, "-Infinity", "number input placeholder shows '-Infinity'");
+      t.assertEqual(numberInput.number.getAttribute("aria-valuenow"), "-Infinity", "aria-valuenow is '-Infinity'");
+
+      // 3. User types a finite number
+      numberInput.number.value = "-20";
+      numberInput.number.dispatchEvent(new Event("change"));
+      t.assertEqual(prm.ui, -20, "Typing '-20' sets prm.ui to -20");
+      t.assertEqual(numberInput.number.placeholder, "", "Placeholder is cleared when finite");
+      t.assertEqual(numberInput.range.value, "-20", "Slider updates to -20");
+
+      // 4. User clears input (empty string) to snap back to -Infinity
+      numberInput.number.value = "";
+      numberInput.number.dispatchEvent(new Event("change"));
+      t.assertEqual(prm.ui, -Infinity, "Empty input snaps to -Infinity when minToZero is true");
+      t.assertEqual(numberInput.number.placeholder, "-Infinity", "Placeholder restored to '-Infinity'");
+
+      // Clean up
+      document.body.removeChild(fixtureDiv);
+    });
+
+    // ==========================================
+    // Live Interactive Sandbox Setup
+    // ==========================================
+    const setupSandbox = () => {
+      // 1. UI Decibel Parameter
+      const uiScale = new parameter.DecibelScale(-40, 0, true);
+      const uiPrm = new parameter.Parameter(1.0, uiScale, false);
+      const uiContainer = document.getElementById("uiInputContainer");
+      const uiStateDisplay = document.getElementById("uiStateDisplay");
+
+      const updateUiDisplay = () => {
+        uiStateDisplay.textContent =
+          `display:     ${uiPrm.display}\n` +
+          `ui:          ${uiPrm.ui}\n` +
+          `dsp:         ${uiPrm.dsp}\n` +
+          `normalized:  ${uiPrm.normalized.toFixed(4)}\n` +
+          `input.type:  "${uiInput.number.type}"\n` +
+          `input.value: "${uiInput.number.value}"\n` +
+          `placeholder: "${uiInput.number.placeholder}"`;
+      };
+
+      const uiInput = new NumberInput(uiContainer, "Chord Gain [dB]", uiPrm, updateUiDisplay);
+      updateUiDisplay();
+
+      // 2. DSP Amplitude Parameter
+      const dspScale = new parameter.DecibelScale(-60, 40, true);
+      const dspPrm = new parameter.Parameter(0.002, dspScale, true);
+      const dspContainer = document.getElementById("dspInputContainer");
+      const dspStateDisplay = document.getElementById("dspStateDisplay");
+
+      const updateDspDisplay = () => {
+        dspStateDisplay.textContent =
+          `display:     ${dspPrm.display}\n` +
+          `ui:          ${dspPrm.ui}\n` +
+          `dsp:         ${dspPrm.dsp}\n` +
+          `normalized:  ${dspPrm.normalized.toFixed(4)}\n` +
+          `input.type:  "${dspInput.number.type}"\n` +
+          `input.value: "${dspInput.number.value}"\n` +
+          `placeholder: "${dspInput.number.placeholder}"`;
+      };
+
+      const dspInput = new NumberInput(dspContainer, "Fade In [s]", dspPrm, updateDspDisplay);
+      updateDspDisplay();
+    };
+
+    setupSandbox();
+  </script>
+</body>
+
+</html>
