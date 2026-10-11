@@ -3,7 +3,7 @@
 
 import * as util from "./util.js";
 
-export class Audio {
+export class Audio extends EventTarget {
   #source;
   #gain;
   #startTime = 0;
@@ -12,6 +12,7 @@ export class Audio {
   #fadeOutDuration = 0.01;
 
   constructor(channels, rendererPath, renderStatusElement, onRenderFinish) {
+    super();
     this.audioContext = new AudioContext();
     this.wave = new Wave(channels);
     this.#rendererPath = rendererPath;
@@ -97,6 +98,7 @@ export class Audio {
     if (this.renderStatusElement !== undefined) {
       this.renderStatusElement.textContent = "⚠ Rendering ⚠";
     }
+    this.dispatchEvent(new CustomEvent("renderstart"));
 
     for (let ch = 0; ch < this.wave.channels; ++ch) {
       if (this.workers[ch].isRunning) {
@@ -157,7 +159,8 @@ export class Audio {
 
     this.#cachedBuffer = null;
 
-    this.onRenderFinish(this.wave);
+    if (typeof this.onRenderFinish === "function") { this.onRenderFinish(this.wave); }
+    this.dispatchEvent(new CustomEvent("renderfinish", {detail: this.wave}));
 
     if (this.renderStatusElement !== undefined) {
       this.renderStatusElement.textContent = "Rendering finished. ✓";

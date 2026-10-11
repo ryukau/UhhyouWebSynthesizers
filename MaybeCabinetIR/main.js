@@ -74,15 +74,6 @@ function createEqualizerParameters(filterType, cutoffHz, Q, gainDB) {
   ];
 }
 
-const audio = new wave.Audio(
-  1,
-  "./renderer.js",
-  undefined,
-  (wave) => {
-    for (let i = 0; i < waveView.length; ++i) { waveView[i].set(wave.data[i], wave.peakValue); }
-  },
-);
-
 const param = {
   renderSamples: new parameter.Parameter(2 ** 15, scales.renderSamples, true),
   fadeIn: new parameter.Parameter(0, scales.renderSamples, true),
@@ -104,6 +95,8 @@ const param = {
 const recipeBook = parameter.addLocalRecipes(localRecipeBook);
 await parameter.loadJson(param, recipeBook, []);
 
+const audio = new wave.Audio(1, "./renderer.js");
+
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
@@ -121,6 +114,13 @@ const waveView = [
     false,
     ),
 ];
+
+audio.addEventListener("renderfinish", (event) => {{
+  const wave = event.detail;
+  for (let i = 0; i < waveView.length; ++i) {{
+    waveView[i].set(wave.data[i], wave.peakValue);
+  }}
+}});
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
