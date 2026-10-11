@@ -1,6 +1,9 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {Parameter} from "../parameter.js";
+import {generateWidgetId} from "../util.js";
+
 import {palette} from "./palette.js";
 
 export function option(parent, label, id, className) {
@@ -34,14 +37,17 @@ export function select(parent, label, id, className, items, defaultValue, onChan
 
 export class ComboBoxLine {
   constructor(parent, label, parameter, onChangeFunc) {
+    this.id = generateWidgetId("comboBox", label);
     this.param = parameter;
     this.onChangeFunc = onChangeFunc;
 
     this.div = document.createElement("div");
+    this.div.id = `${this.id}-container`;
     this.div.className = "inputLine";
     parent.appendChild(this.div);
     if (typeof label === "string" || label instanceof String) {
       this.label = document.createElement("label");
+      this.label.id = `${this.id}-label`;
       this.label.className = "inputLine";
       this.label.textContent = label;
       this.label.tabIndex = 0;
@@ -72,12 +78,13 @@ export class ComboBoxLine {
     this.select = select(
       this.container,
       label,
-      undefined,
+      `${this.id}-select`,
       "inputLine",
       this.param.scale.items,
       this.param.scale.items[this.param.defaultUi],
       (e) => this.onChange(e),
     );
+    if (this.label) { this.select.setAttribute("aria-labelledby", `${this.id}-label`); }
 
     this.options = Array.from(this.select.children);
   }
@@ -99,6 +106,7 @@ export class ComboBoxLine {
 
   onChange(event) {
     this.param.ui = this.param.scale.items.indexOf(event.target.value);
+    Parameter.history?.push(`Select: ${this.label?.textContent || "Option"}`);
     this.onChangeFunc();
   }
 }

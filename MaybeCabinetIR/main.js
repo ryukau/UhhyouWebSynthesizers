@@ -11,13 +11,13 @@ import * as wave from "../common/wave.js";
 const version = 0;
 
 function randomEq(prm, lowHz, highHz, lowQ, highQ, lowDB, highDB) {
-  const cutoffHz = prm[0];
+  const cutoffHz = prm[1];
   cutoffHz.dsp = util.exponentialMap(Math.random(), lowHz, highHz);
 
-  const Q = prm[1];
+  const Q = prm[2];
   Q.dsp = util.exponentialMap(Math.random(), lowQ, highQ);
 
-  const gain = prm[2];
+  const gain = prm[3];
   gain.ui = util.uniformFloatMap(Math.random(), lowDB, highDB);
 }
 
@@ -47,8 +47,27 @@ function render() {
   );
 }
 
-function createEqulizerParameters(cutoffHz, Q, gainDB) {
+const scales = {
+  renderSamples: new parameter.IntScale(0, 2 ** 16),
+  seed: new parameter.IntScale(0, 2 ** 32),
+
+  cutoffHz: new parameter.DecibelScale(util.ampToDB(10), util.ampToDB(30000), false),
+  Q: new parameter.DecibelScale(util.ampToDB(0.01), util.ampToDB(100), false),
+  gain: new parameter.DecibelScale(-60, 60, true),
+  eqFilterType: new parameter.MenuItemScale(Object.values(sosFilterType)),
+};
+
+function createEqualizerParameters(filterType, cutoffHz, Q, gainDB) {
+  const typeIndex = scales.eqFilterType.items.indexOf(filterType);
+  if (typeIndex < 0) {
+    console.warn(
+      `createEqualizerParameters: Unknown filterType "${filterType}". Available types:`,
+      scales.eqFilterType.items,
+    );
+  }
   return [
+    new parameter.Parameter(
+      typeIndex >= 0 ? typeIndex : 0, scales.eqFilterType, false, "filter-type"),
     new parameter.Parameter(cutoffHz, scales.cutoffHz, true, "cutoff-Hz"),
     new parameter.Parameter(Q, scales.Q, true, "Q"),
     new parameter.Parameter(util.dbToAmp(gainDB), scales.gain, false, "gain-dB"),
@@ -64,15 +83,6 @@ const audio = new wave.Audio(
   },
 );
 
-const scales = {
-  renderSamples: new parameter.IntScale(0, 2 ** 16),
-  seed: new parameter.IntScale(0, 2 ** 32),
-
-  cutoffHz: new parameter.DecibelScale(util.ampToDB(10), util.ampToDB(30000), false),
-  Q: new parameter.DecibelScale(util.ampToDB(0.01), util.ampToDB(100), false),
-  gain: new parameter.DecibelScale(-60, 60, true),
-};
-
 const param = {
   renderSamples: new parameter.Parameter(2 ** 15, scales.renderSamples, true),
   fadeIn: new parameter.Parameter(0, scales.renderSamples, true),
@@ -81,14 +91,12 @@ const param = {
   sourceLowpassCutoffHz: new parameter.Parameter(4000, scales.cutoffHz, true),
   sourceLowpassQ: new parameter.Parameter(1, scales.Q, true),
 
-  dcHighpass: createEqulizerParameters(20, Math.SQRT1_2, 0),
-  nyquistLowpass: createEqulizerParameters(7000, Math.SQRT1_2, 0),
+  dcHighpass: createEqualizerParameters(sosFilterType.hp2mt, 20, Math.SQRT1_2, 0),
+  nyquistLowpass: createEqualizerParameters(sosFilterType.lp2bq, 7000, Math.SQRT1_2, 0),
 
-  peak1: createEqulizerParameters(120, Math.SQRT1_2, 30),
-  peak2: createEqulizerParameters(500, 10, -60),
-  peak3: createEqulizerParameters(1500, 3 * Math.SQRT1_2, 20),
-  // peak4: createEqulizerParameters(200, Math.SQRT1_2, 0),
-  // peak5: createEqulizerParameters(3000, Math.SQRT1_2, 0),
+  peak1: createEqualizerParameters(sosFilterType.pk2mt, 120, Math.SQRT1_2, 30),
+  peak2: createEqualizerParameters(sosFilterType.pk2mt, 500, 10, -60),
+  peak3: createEqualizerParameters(sosFilterType.pk2mt, 1500, 3 * Math.SQRT1_2, 20),
 
   seed: new parameter.Parameter(0, scales.seed),
 };
@@ -125,9 +133,16 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
   if (recipeName) {
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
-    recipeBook.get(recipeName).randomize(param);
-    render();
-    widget.refresh(ui);
+    const runImport = () => {
+      recipeBook.get(recipeName).randomize(param);
+      render();
+      widget.refresh(ui);
+    };
+    if (playControl.historyManager) {
+      playControl.historyManager.transaction(`Import: ${recipeName}`, runImport);
+    } else {
+      runImport();
+    }
   }
 });
 
@@ -151,6 +166,11 @@ const playControl = widget.playControl(
   },
   (ev) => { recipeExportDialog.open(); },
   (ev) => { recipeImportDialog.open(); },
+  param,
+  () => {
+    widget.refresh(ui);
+    render();
+  },
 );
 
 const detailRender = widget.details(divLeft, "Render");
@@ -169,14 +189,7 @@ const ui = {
   sourceLowpassQ: new widget.NumberInput(detailSource, "LP Q", param.sourceLowpassQ, render),
 
   eq: new widget.EqualizerXYPad(
-    detailGainPeak,
-    audio.audioContext.sampleRate,
-    4 * uiSize.waveViewWidth,
-    4 * uiSize.waveViewHeight,
-    "Peaking Filters",
-    scales.cutoffHz,
-    scales.Q,
-    scales.gain,
+    detailGainPeak, "Peaking Filters", 4 * uiSize.waveViewWidth, 4 * uiSize.waveViewHeight,
     [
       param.dcHighpass,
       param.nyquistLowpass,
@@ -184,18 +197,10 @@ const ui = {
       param.peak2,
       param.peak3,
     ],
-    render,
-    {
-      filterTypes: [
-        sosFilterType.hp2mt,
-        sosFilterType.lp2bq,
-        sosFilterType.pk2mt,
-        sosFilterType.pk2mt,
-        sosFilterType.pk2mt,
-      ],
+    render, {
+      sampleRate: audio.audioContext.sampleRate,
       autoGain: "none",
-    },
-    ),
+    }),
 };
 
 render();

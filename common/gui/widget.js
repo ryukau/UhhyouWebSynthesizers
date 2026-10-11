@@ -1,6 +1,9 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {HistoryManager} from "../parameter.js";
+import {generateWidgetId} from "../util.js";
+
 import {option, select} from "./combobox.js";
 import {ToggleButton} from "./togglebutton.js";
 
@@ -32,6 +35,7 @@ export function Button(parent, label, onClickFunc) {
   element.type = "button";
   element.value = label;
   element.ariaLabel = label;
+  element.id = generateWidgetId("btn", label);
   element.addEventListener("click", (event) => onClickFunc(event), false);
   parent.appendChild(element);
   return element;
@@ -117,8 +121,27 @@ export function playControl(
   pushRecipeFunc,
   exportRecipeFunc,
   importRecipeFunc,
+  param = null,
+  onRestore = null,
 ) {
   const pc = {};
+
+  if (param) {
+    pc.historyManager = new HistoryManager(param, {
+      onRestore: (state) => {
+        if (onRestore) onRestore(state);
+      },
+    });
+  }
+
+  const handleRandomize = (event) => {
+    if (pc.historyManager) {
+      const recipeName = pc.selectRandom.value;
+      pc.historyManager.transaction(`Randomize: ${recipeName}`, () => { randomizeFunc(event); });
+    } else {
+      randomizeFunc(event);
+    }
+  };
 
   pc.divPlayControl = div(parent, null, "playControl");
 
@@ -126,25 +149,86 @@ export function playControl(
   const defaultRandom = randomizeRecipes.includes(defaultName) ? defaultName : randomizeRecipes[0];
   pc.selectRandom = select(
     pc.divPlayControl, "Randomize Recipe", "randomRecipe", undefined, randomizeRecipes,
-    defaultRandom, randomizeFunc);
-  pc.buttonRandom = Button(pc.divPlayControl, "Random", randomizeFunc);
-  pc.buttonRandom.id = "randomRecipe";
+    defaultRandom, handleRandomize);
+  pc.buttonRandom = Button(pc.divPlayControl, "Random", handleRandomize);
+  pc.buttonRandom.id = "btnRandom";
 
   pc.spanPlayControlFiller = span(pc.divPlayControl, "playControlFiller", undefined);
 
   pc.buttonPlay = Button(pc.divPlayControl, "Play", playFunc);
+  pc.buttonPlay.id = "btnPlay";
   pc.buttonStop = Button(pc.divPlayControl, "Stop", stopFunc);
+  pc.buttonStop.id = "btnStop";
   pc.buttonSave = Button(pc.divPlayControl, "Save", saveFunc);
+  pc.buttonSave.id = "btnSave";
   pc.togglebuttonQuickSave
-    = new ToggleButton(pc.divPlayControl, "QuickSave", undefined, undefined, 0, quickSaveFunc);
+    = new ToggleButton(pc.divPlayControl, "QuickSave", "btnQuickSave", undefined, 0, quickSaveFunc);
 
   pc.divRecipeControl = div(parent, null, "playControl");
   pc.buttonPush = Button(pc.divRecipeControl, "Push", pushRecipeFunc);
+  pc.buttonPush.id = "btnPush";
   pc.buttonExport = Button(pc.divRecipeControl, "Export", exportRecipeFunc);
+  pc.buttonExport.id = "btnExport";
   pc.buttonImport = Button(pc.divRecipeControl, "Import", importRecipeFunc);
+  pc.buttonImport.id = "btnImport";
 
-  // Global playback shortcut.
+  // Placed after pc.buttonImport
+  if (pc.historyManager) {
+    pc.buttonUndo = Button(pc.divRecipeControl, "Undo", () => pc.historyManager.undo());
+    pc.buttonUndo.id = "btnUndo";
+
+    pc.buttonRedo = Button(pc.divRecipeControl, "Redo", () => pc.historyManager.redo());
+    pc.buttonRedo.id = "btnRedo";
+
+    pc.selectHistory = document.createElement("select");
+    pc.selectHistory.id = "historyMenu";
+    pc.selectHistory.ariaLabel = "Action History";
+    pc.selectHistory.addEventListener(
+      "change", (e) => { pc.historyManager.jumpTo(parseInt(e.target.value, 10)); });
+    pc.divRecipeControl.appendChild(pc.selectHistory);
+
+    const updateHistoryUI = () => {
+      pc.buttonUndo.disabled = !pc.historyManager.canUndo;
+      pc.buttonRedo.disabled = !pc.historyManager.canRedo;
+
+      pc.selectHistory.innerHTML = "";
+      pc.historyManager.entries.forEach((entry, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        const prefix = idx === pc.historyManager.currentIndex ? "● " : "   ";
+        opt.textContent = `${prefix}${idx}: ${entry.label}`;
+        if (idx === pc.historyManager.currentIndex) opt.selected = true;
+        pc.selectHistory.appendChild(opt);
+      });
+    };
+
+    pc.historyManager.setOnUpdate(updateHistoryUI);
+    updateHistoryUI();
+  }
+
+  // Global playback and undo/redo shortcut.
   window.addEventListener("keydown", (event) => {
+    const targetTag = event.target.tagName?.toLowerCase();
+    if (targetTag === "input" && (event.target.type === "text" || event.target.type === "number")) {
+      return;
+    }
+
+    if (pc.historyManager) {
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const modKey = isMac ? event.metaKey : event.ctrlKey;
+
+      if (modKey && !event.shiftKey && event.code === "KeyZ") {
+        event.preventDefault();
+        pc.historyManager.undo();
+      } else if (
+        (modKey && event.shiftKey && event.code === "KeyZ")
+        || (modKey && !isMac && event.code === "KeyY"))
+      {
+        event.preventDefault();
+        pc.historyManager.redo();
+      }
+    }
+
     if (event.code === "F8" || event.code === "Numpad0") {
       event.preventDefault();
       playFunc(event);

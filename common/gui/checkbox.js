@@ -1,16 +1,23 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {Parameter} from "../parameter.js";
+import {generateWidgetId} from "../util.js";
+
 import {palette} from "./palette.js";
 import {ToggleButton} from "./togglebutton.js";
 
 export class CheckBoxLine {
   constructor(parent, label, items, parameter, onClickFunc) {
+    this.id = generateWidgetId("checkBox", label);
+
     this.div = document.createElement("div");
+    this.div.id = `${this.id}-container`;
     this.div.className = "checkBoxLine";
     parent.appendChild(this.div);
 
     this.label = document.createElement("label");
+    this.label.id = `${this.id}-label`;
     this.label.className = "checkBoxLine";
     this.label.textContent = label;
     this.label.tabIndex = 0;
@@ -39,11 +46,12 @@ export class CheckBoxLine {
     this.button = new ToggleButton(
       this.div,
       this.items[this.param.defaultUi],
-      undefined,
+      `${this.id}-button`,
       "checkBoxLine",
       this.param.defaultUi,
       (state) => this.onClick(state),
     );
+    this.button.button.setAttribute("aria-labelledby", `${this.id}-label`);
   }
 
   refresh() {
@@ -58,6 +66,7 @@ export class CheckBoxLine {
     this.param.ui = state;
     this.button.button.value = this.items[this.param.ui];
     this.button.button.ariaLabel = this.items[this.param.ui];
+    Parameter.history?.push(`Toggle: ${this.label?.textContent || "CheckBox"}`);
     this.onClickFunc(state);
   }
 }

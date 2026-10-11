@@ -204,6 +204,15 @@ const param = {
 const recipeBook = parameter.addLocalRecipes(localRecipeBook);
 await parameter.loadJson(param, recipeBook, []);
 
+const audio = new wave.Audio(
+  2,
+  "./renderer.js",
+  undefined,
+  (wave) => {
+    for (let i = 0; i < waveView.length; ++i) { waveView[i].set(wave.data[i], wave.peakValue); }
+  },
+);
+
 // Add controls.
 const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
@@ -219,15 +228,6 @@ const waveView = [
   new widget.WaveView(
     divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
-
-const audio = new wave.Audio(
-  2,
-  "./renderer.js",
-  undefined,
-  (wave) => {
-    for (let i = 0; i < waveView.length; ++i) { waveView[i].set(wave.data[i], wave.peakValue); }
-  },
-);
 for (let i = 0; i < waveView.length; ++i) waveView[i].set(audio.wave.data[i]);
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
@@ -241,9 +241,16 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
   if (recipeName) {
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
-    recipeBook.get(recipeName).randomize(param);
-    render();
-    widget.refresh(ui);
+    const runImport = () => {
+      recipeBook.get(recipeName).randomize(param);
+      render();
+      widget.refresh(ui);
+    };
+    if (playControl.historyManager) {
+      playControl.historyManager.transaction(`Import: ${recipeName}`, runImport);
+    } else {
+      runImport();
+    }
   }
 });
 
@@ -267,6 +274,12 @@ const playControl = widget.playControl(
   },
   (ev) => { recipeExportDialog.open(); },
   (ev) => { recipeImportDialog.open(); },
+  param,
+  () => {
+    onMatrixSizeChanged(param.matrixSize.dsp);
+    widget.refresh(ui);
+    render();
+  },
 );
 
 const createDetailInBlock = (name) => {

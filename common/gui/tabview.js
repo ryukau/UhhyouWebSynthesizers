@@ -1,6 +1,8 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {generateWidgetId} from "../util.js";
+
 export class TabView {
   /**
   ```
@@ -14,19 +16,23 @@ export class TabView {
   ```
   */
   constructor(parent, radioButtonName, contentFuncs) {
+    this.id = generateWidgetId("tabView", radioButtonName);
     this.radioButtonName = radioButtonName;
 
     this.div = document.createElement("div");
+    this.div.id = `${this.id}-container`;
     this.div.className = "tabViewContainer";
     parent.appendChild(this.div);
 
     this.buttonRegion = document.createElement("div");
+    this.buttonRegion.id = `${this.id}-tablist`;
     this.buttonRegion.className = "tabViewButtonRegion";
     this.buttonRegion.setAttribute("role", "tablist");
     this.buttonRegion.setAttribute("aria-label", radioButtonName);
     this.div.appendChild(this.buttonRegion);
 
     this.contentRegion = document.createElement("div");
+    this.contentRegion.id = `${this.id}-content`;
     this.contentRegion.className = "tabViewContentRegion";
     this.div.appendChild(this.contentRegion);
 
@@ -46,8 +52,8 @@ export class TabView {
     tab.tabInfo = contentFunc(tab.contentDiv);
 
     const tabIndex = tab.tabInfo.index;
-    const tabId = `${this.radioButtonName}-tab-${tabIndex}`;
-    const panelId = `${this.radioButtonName}-panel-${tabIndex}`;
+    const tabId = `${this.id}-tab-${tabIndex}`;
+    const panelId = `${this.id}-panel-${tabIndex}`;
 
     tab.contentDiv.setAttribute("role", "tabpanel");
     tab.contentDiv.setAttribute("id", panelId);
@@ -84,6 +90,7 @@ export class TabView {
     this.buttonRegion.appendChild(tab.label);
 
     tab.radio = document.createElement("input");
+    tab.radio.id = `${this.id}-radio-${tabIndex}`;
     tab.radio.type = "radio";
     tab.radio.name = this.radioButtonName;
     tab.radio.value = tab.tabInfo.index;

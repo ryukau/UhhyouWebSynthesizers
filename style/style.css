@@ -496,6 +496,11 @@ input[type="number"]:hover {
   appearance: auto;
 }
 
+input[type="number"].numberInputNumber::placeholder {
+  color: var(--color-text-main, inherit);
+  opacity: 1;
+}
+
 /* ComboBox */
 select {
   background: var(--color-input-background);
@@ -582,7 +587,7 @@ div.barboxContainer > div.inputLine:hover {
   box-shadow: none;
 }
 
-label.barbox {
+div.barboxContainer > label.barbox {
   display: inline-block;
   width: 100%;
   box-sizing: border-box;
@@ -591,6 +596,7 @@ label.barbox {
   cursor: pointer;
 }
 
+div.barboxContainer > div.inputLine > label.barbox,
 span.barbox {
   margin: 0 var(--margin) 0 0;
   padding-left: var(--margin);

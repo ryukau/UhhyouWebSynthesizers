@@ -1,7 +1,8 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {clamp, computePolynomial} from "../util.js";
+import {HistoryManager, Parameter} from "../parameter.js";
+import {clamp, computePolynomial, generateWidgetId} from "../util.js";
 
 import {palette} from "./palette.js";
 
@@ -74,15 +75,20 @@ export class WaveformXYPad {
     width,
     height,
     polyOrder,
+    waveform,
     onChangeFunc,
   ) {
     console.assert(polyOrder > 0, "BarBox parameter is empty.", new Error());
 
+    this.id = generateWidgetId("waveformXYPad", label);
+
     this.divContainer = document.createElement("div");
+    this.divContainer.id = `${this.id}-container`;
     this.divContainer.classList.add("equalizerContainer");
     parent.appendChild(this.divContainer);
 
     this.liveRegion = document.createElement("span");
+    this.liveRegion.id = `${this.id}-live`;
     this.liveRegion.classList.add("sr-only");
     this.liveRegion.setAttribute("role", "status");
     this.liveRegion.setAttribute("aria-live", "polite");
@@ -101,6 +107,7 @@ export class WaveformXYPad {
     this.divContainer.appendChild(this.liveRegion);
 
     this.label = document.createElement("label");
+    this.label.id = `${this.id}-label`;
     this.label.classList.add("barbox");
     this.label.textContent = label;
     this.label.tabIndex = 0;
@@ -128,6 +135,9 @@ export class WaveformXYPad {
     this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.id = `${this.id}-canvas`;
+    this.canvas.setAttribute("aria-labelledby", `${this.id}-label`);
+    this.canvas.setAttribute("aria-controls", `${this.id}-live`);
     this.canvas.classList.add("envelopeView");
     this.canvas.setAttribute("role", "application");
     this.canvas.ariaLabel = `${label}, canvas`;
@@ -158,6 +168,7 @@ export class WaveformXYPad {
     this.divContainer.appendChild(this.divNormalizedView);
 
     this.normalizedView = document.createElement("canvas");
+    this.normalizedView.id = `${this.id}-canvas-normalized`;
     this.normalizedView.classList.add("envelopeView");
     this.normalizedView.ariaLabel = `${label}, normalized view`;
     this.normalizedView.ariaDescription = "";
@@ -170,12 +181,20 @@ export class WaveformXYPad {
     this.onChangeFunc = onChangeFunc;
 
     this.#controlPoints = new Array(polyOrder - 2);
-    this.setControlPoints();
+    this.setControlPoints(waveform);
 
     this.#coefficients = new Array(this.#controlPoints.length + 2).fill(0);
 
     window.matchMedia?.("(prefers-color-scheme: dark)")
       .addEventListener?.("change", () => this.draw());
+
+    HistoryManager.registerCustom(this.id, {
+      get: () => this.getControlPoints(),
+      set: (data) => {
+        this.setControlPointsData(data);
+        this.onChangeFunc();
+      },
+    });
 
     this.#updateCoefficients();
     this.refresh();
@@ -202,6 +221,15 @@ export class WaveformXYPad {
   #announcePointMoved(index) {
     const {x, y} = this.#getPointCoordinates(index);
     this.#announce(`Control point ${index + 1}: X ${x}, Y ${y}`);
+  }
+
+  getControlPoints() { return structuredClone(this.#controlPoints); }
+
+  setControlPointsData(points) {
+    if (!Array.isArray(points)) return;
+    this.#controlPoints = structuredClone(points);
+    this.#updateCoefficients();
+    this.refresh();
   }
 
   setControlPoints(waveform) {
@@ -395,6 +423,7 @@ export class WaveformXYPad {
     if (this.#grabbedPoint >= 0) {
       this.#detailIndex = this.#grabbedPoint;
       this.#focusedPoint = this.#grabbedPoint;
+      Parameter.history?.beginGesture(`Edit: ${this.label?.textContent || "Waveform"}`);
       this.#announcePointSelected(this.#grabbedPoint);
     }
     this.draw();
@@ -439,7 +468,10 @@ export class WaveformXYPad {
     this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
     this.canvas.style.cursor = this.#focusedPoint >= 0 ? "grab" : "default";
     this.onChangeFunc();
-    if (wasDragging && movedIndex >= 0) { this.#announcePointMoved(movedIndex); }
+    if (wasDragging) {
+      Parameter.history?.endGesture();
+      if (movedIndex >= 0) { this.#announcePointMoved(movedIndex); }
+    }
   }
 
   onPointerLeave(event) {
@@ -498,42 +530,41 @@ export class WaveformXYPad {
           break;
         }
         this.#updateCoefficients();
+        Parameter.history?.push(`Key Move: ${this.label?.textContent || "Waveform"}`);
         this.onChangeFunc();
         this.draw();
         this.#announcePointMoved(ptIndex);
       }
       return;
     } else if (event.key === "r") {
-      this.randomize();
+      const applyRandom = () => this.randomize();
+      if (Parameter.history) {
+        Parameter.history.transaction(
+          `Randomize: ${this.label?.textContent || "Waveform"}`, applyRandom);
+      } else {
+        applyRandom();
+      }
       this.draw();
       this.#announce(this.#lockRandomization ? "Randomization locked" : "Randomized");
-    } else if (event.key === "1") {
-      this.setControlPoints("sine");
-      this.#announce("Preset: Sine");
-    } else if (event.key === "2") {
-      this.setControlPoints("fmA");
-      this.#announce("Preset: FM A");
-    } else if (event.key === "3") {
-      this.setControlPoints("fmB");
-      this.#announce("Preset: FM B");
-    } else if (event.key === "4") {
-      this.setControlPoints("sawtooth");
-      this.#announce("Preset: Sawtooth");
-    } else if (event.key === "5") {
-      this.setControlPoints("triangle");
-      this.#announce("Preset: Triangle");
-    } else if (event.key === "6") {
-      this.setControlPoints("trapezoid");
-      this.#announce("Preset: Trapezoid");
-    } else if (event.key === "7") {
-      this.setControlPoints("alternate");
-      this.#announce("Preset: Alternate");
-    } else if (event.key === "8") {
-      this.setControlPoints("pulse");
-      this.#announce("Preset: Pulse");
-    } else if (event.key === "9") {
-      this.setControlPoints("chirp");
-      this.#announce("Preset: Chirp");
+    } else if (event.key >= "1" && event.key <= "9") {
+      const presets = {
+        "1": {name: "Sine", func: () => this.setControlPoints("sine")},
+        "2": {name: "FM A", func: () => this.setControlPoints("fmA")},
+        "3": {name: "FM B", func: () => this.setControlPoints("fmB")},
+        "4": {name: "Sawtooth", func: () => this.setControlPoints("sawtooth")},
+        "5": {name: "Triangle", func: () => this.setControlPoints("triangle")},
+        "6": {name: "Trapezoid", func: () => this.setControlPoints("trapezoid")},
+        "7": {name: "Alternate", func: () => this.setControlPoints("alternate")},
+        "8": {name: "Pulse", func: () => this.setControlPoints("pulse")},
+        "9": {name: "Chirp", func: () => this.setControlPoints("chirp")},
+      };
+      const preset = presets[event.key];
+      if (Parameter.history) {
+        Parameter.history.transaction(`Preset: ${preset.name}`, preset.func);
+      } else {
+        preset.func();
+      }
+      this.#announce(`Preset: ${preset.name}`);
     } else {
       return;
     }

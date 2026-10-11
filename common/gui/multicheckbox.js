@@ -1,7 +1,8 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {clamp} from "../util.js";
+import {Parameter} from "../parameter.js";
+import {clamp, generateWidgetId} from "../util.js";
 
 import {palette} from "./palette.js";
 
@@ -11,16 +12,19 @@ export class MultiCheckBoxVertical {
   #paintValue = 0;
 
   constructor(parent, label, valueNames, width, parameters, onChangeFunc) {
+    this.id = generateWidgetId("multiCheckBox", label);
     this.valueNames = valueNames;
     this.onChangeFunc = onChangeFunc;
     this.labelHeight = 2 * palette.fontSize;
     this.param = parameters;
 
     this.divContainer = document.createElement("div");
+    this.divContainer.id = `${this.id}-container`;
     this.divContainer.classList.add("barboxContainer");
     parent.appendChild(this.divContainer);
 
     this.label = document.createElement("label");
+    this.label.id = `${this.id}-label`;
     this.label.classList.add("barbox");
     this.label.textContent = label;
     this.label.tabIndex = 0;
@@ -51,6 +55,8 @@ export class MultiCheckBoxVertical {
     this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.id = `${this.id}-canvas`;
+    this.canvas.setAttribute("aria-labelledby", `${this.id}-label`);
     this.canvas.ariaLabel = `${label}, multicheckbox`;
     this.canvas.ariaDescription = "Use Up/Down arrows to navigate items. Space or Enter to toggle.";
     this.canvas.width = width;
@@ -132,6 +138,7 @@ export class MultiCheckBoxVertical {
 
   onPointerDown(event) {
     this.#isMouseDown = true;
+    Parameter.history?.beginGesture(`Edit: ${this.label.textContent || "MultiCheckBox"}`);
 
     const mouse = this.#getMousePosition(event);
     this.#paramIndex = this.#getIndexFromPoint(mouse);
@@ -157,6 +164,7 @@ export class MultiCheckBoxVertical {
 
   onPointerUp(event) {
     this.#isMouseDown = false;
+    Parameter.history?.endGesture();
     const mouse = this.#getMousePosition(event);
     this.canvas.style.cursor = this.#getIndexFromPoint(mouse) >= 0 ? "pointer" : "default";
     this.onChangeFunc();
@@ -167,6 +175,7 @@ export class MultiCheckBoxVertical {
     this.canvas.style.cursor = "default";
     if (this.#isMouseDown) {
       this.#isMouseDown = false;
+      Parameter.history?.endGesture();
       this.onChangeFunc();
     }
     this.draw();

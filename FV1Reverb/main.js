@@ -135,9 +135,16 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
   if (recipeName) {
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
-    recipeBook.get(recipeName).randomize(param);
-    render();
-    widget.refresh(ui);
+    const runImport = () => {
+      recipeBook.get(recipeName).randomize(param);
+      render();
+      widget.refresh(ui);
+    };
+    if (playControl.historyManager) {
+      playControl.historyManager.transaction(`Import: ${recipeName}`, runImport);
+    } else {
+      runImport();
+    }
   }
 });
 
@@ -161,6 +168,12 @@ const playControl = widget.playControl(
   },
   (ev) => { recipeExportDialog.open(); },
   (ev) => { recipeImportDialog.open(); },
+  param,
+  () => {
+    onDelayNumberChanged();
+    widget.refresh(ui);
+    render();
+  },
 );
 
 const detailTips = widget.details(divLeft, "Tips");

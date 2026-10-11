@@ -1,7 +1,8 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {clamp} from "../util.js";
+import {Parameter} from "../parameter.js";
+import {clamp, generateWidgetId} from "../util.js";
 
 import {palette} from "./palette.js";
 
@@ -25,16 +26,19 @@ export class BarBox {
   constructor(parent, label, width, height, parameters, onInputFunc) {
     console.assert(parameters.length > 0, "BarBox parameter is empty.", new Error());
 
+    this.id = generateWidgetId("barBox", label);
     this.label = label;
     this.param = parameters;
     this.onInputFunc = onInputFunc;
     this.snapValue = [];
 
     this.divContainer = document.createElement("div");
+    this.divContainer.id = `${this.id}-container`;
     this.divContainer.classList.add("barboxContainer");
     parent.appendChild(this.divContainer);
 
     this.liveRegion = document.createElement("span");
+    this.liveRegion.id = `${this.id}-live`;
     this.liveRegion.classList.add("sr-only");
     this.liveRegion.setAttribute("role", "status");
     this.liveRegion.setAttribute("aria-live", "polite");
@@ -53,6 +57,7 @@ export class BarBox {
     this.divContainer.appendChild(this.liveRegion);
 
     this.label = document.createElement("label");
+    this.label.id = `${this.id}-label`;
     this.label.classList.add("barbox");
     this.label.textContent = label;
     this.label.tabIndex = 0;
@@ -82,12 +87,16 @@ export class BarBox {
     this.divInputLine.className = "inputLine";
     this.divContainer.appendChild(this.divInputLine);
 
-    this.divIndexLabel = document.createElement("span");
+    this.divIndexLabel = document.createElement("label");
+    this.divIndexLabel.id = `${this.id}-index-label`;
+    this.divIndexLabel.htmlFor = `${this.id}-index`;
     this.divIndexLabel.classList.add("barbox");
     this.divIndexLabel.textContent = "Index";
     this.divInputLine.appendChild(this.divIndexLabel);
 
     this.inputIndex = document.createElement("input");
+    this.inputIndex.id = `${this.id}-index`;
+    this.inputIndex.setAttribute("aria-labelledby", `${this.id}-label ${this.id}-index-label`);
     this.inputIndex.classList.add("barbox");
     this.inputIndex.ariaLabel = label + ", index selector";
     this.inputIndex.ariaDescription
@@ -99,12 +108,16 @@ export class BarBox {
     this.inputIndex.value = 0;
     this.divInputLine.appendChild(this.inputIndex);
 
-    this.divValueLabel = document.createElement("span");
+    this.divValueLabel = document.createElement("label");
+    this.divValueLabel.id = `${this.id}-value-label`;
+    this.divValueLabel.htmlFor = `${this.id}-value`;
     this.divValueLabel.classList.add("barbox");
     this.divValueLabel.textContent = "Value";
     this.divInputLine.appendChild(this.divValueLabel);
 
     this.inputValue = document.createElement("input");
+    this.inputValue.id = `${this.id}-value`;
+    this.inputValue.setAttribute("aria-labelledby", `${this.id}-label ${this.id}-value-label`);
     this.inputValue.classList.add("barbox");
     this.inputValue.ariaLabel = label + ", value input";
     this.inputValue.ariaDescription
@@ -126,6 +139,9 @@ export class BarBox {
     this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.id = `${this.id}-canvas`;
+    this.canvas.setAttribute("aria-labelledby", `${this.id}-label`);
+    this.canvas.setAttribute("aria-controls", `${this.id}-live`);
     this.canvas.setAttribute("role", "group");
     this.canvas.ariaLabel = `${label}, bar editor`;
     this.canvas.ariaDescription
@@ -141,8 +157,12 @@ export class BarBox {
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
+    this.canvas.addEventListener("keyup", (e) => this.onKeyUp(e), false);
     this.canvas.addEventListener("focus", () => this.draw(), false);
-    this.canvas.addEventListener("blur", () => this.draw(), false);
+    this.canvas.addEventListener("blur", () => {
+      Parameter.history?.endGesture();
+      this.draw();
+    }, false);
     this.canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); }, false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
@@ -223,6 +243,9 @@ export class BarBox {
     if (isNaN(val)) return;
     this.param[index].dsp = val;
     this.draw();
+    if (event.type === "change") {
+      Parameter.history?.push(`Input: ${this.label.textContent || "BarBox"}`);
+    }
     this.onInputFunc();
   }
 
@@ -362,6 +385,8 @@ export class BarBox {
     event.preventDefault();
     this.canvas.focus();
 
+    Parameter.history?.beginGesture(`Edit: ${this.label.textContent || "BarBox"}`);
+
     this.#mouseButton = event.button;
 
     this.#mousePosition = this.#getMousePosition(event);
@@ -391,6 +416,7 @@ export class BarBox {
     this.onInputFunc();
     this.draw();
     if (wasDragging) {
+      Parameter.history?.endGesture();
       const index = parseInt(this.inputIndex.value);
       if (!isNaN(index) && index >= 0 && index < this.param.length) {
         this.#announceBarMoved(index);
@@ -437,6 +463,8 @@ export class BarBox {
     this.#setValueAt(index, this.param[index].normalized + sensi * amount);
     this.#setInputElement(index);
 
+    Parameter.history?.push(`Wheel: ${this.label.textContent || "BarBox"}`);
+
     this.onInputFunc();
     this.draw();
     this.#announceBarMoved(index);
@@ -445,6 +473,8 @@ export class BarBox {
   onKeyDown(event) {
     let index = parseInt(this.inputIndex.value);
     if (isNaN(index)) index = 0;
+
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") { Parameter.history?.endGesture(); }
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
@@ -470,6 +500,7 @@ export class BarBox {
       this.#announceBarSelected(this.param.length - 1);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
+      Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "BarBox"}`);
       const delta = event.shiftKey ? 0.001 : 0.01;
       this.#setValueAt(index, clamp(this.param[index].normalized + delta, 0, 1));
       this.#setInputElement(index);
@@ -478,6 +509,7 @@ export class BarBox {
       this.#announceBarMoved(index);
     } else if (event.key === "ArrowDown") {
       event.preventDefault();
+      Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "BarBox"}`);
       const delta = event.shiftKey ? 0.001 : 0.01;
       this.#setValueAt(index, clamp(this.param[index].normalized - delta, 0, 1));
       this.#setInputElement(index);
@@ -485,23 +517,32 @@ export class BarBox {
       this.draw();
       this.#announceBarMoved(index);
     } else if (event.key === "r") {
-      for (let i = 0; i < this.param.length; ++i) this.#setValueAt(i, Math.random());
+      Parameter.history?.transaction(`Randomize: ${this.label.textContent || "BarBox"}`, () => {
+        for (let i = 0; i < this.param.length; ++i) this.#setValueAt(i, Math.random());
+      });
       this.#setInputElement(index);
       this.onInputFunc();
       this.draw();
       this.#announce(
         `Randomized all values. Index ${index + this.indexOffset}: ${this.#formatValue(index)}`);
     } else if (event.key === "t") {
-      for (let i = 0; i < this.param.length; ++i) {
-        const rand = 0.02 * (Math.random() - 0.5);
-        this.#setValueAt(i, rand + this.param[i].normalized);
-      }
+      Parameter.history?.transaction(
+        `Slight Randomize: ${this.label.textContent || "BarBox"}`, () => {
+          for (let i = 0; i < this.param.length; ++i) {
+            const rand = 0.02 * (Math.random() - 0.5);
+            this.#setValueAt(i, rand + this.param[i].normalized);
+          }
+        });
       this.#setInputElement(index);
       this.onInputFunc();
       this.draw();
       this.#announce(`Slightly randomized all values. Index ${index + this.indexOffset}: ${
         this.#formatValue(index)}`);
     }
+  }
+
+  onKeyUp(event) {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") { Parameter.history?.endGesture(); }
   }
 
   #getMousePosition(event) {

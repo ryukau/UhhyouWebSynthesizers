@@ -16,6 +16,7 @@ the ground truth of current state.
 */
 export class Parameter {
   static isRandomizing = false;
+  static history = null;
   #raw; // DSP value.
 
   constructor(defaultDsp, scale, displayDsp = false, comment = "") {
@@ -700,4 +701,216 @@ export function addLocalRecipes(localRecipeBook, recipeBook = new Map()) {
     recipeBook.set(` - ${key}`, {randomize: (param) => applyLocalRecipe(param, recipe)});
   }
   return sortMapInPlace(recipeBook);
+}
+
+/**
+ * Recursively captures all .dsp values as well as registered custom widget states.
+ */
+export function captureState(paramTree) {
+  const snapshot = (node) => {
+    if (Array.isArray(node)) return node.map(snapshot);
+    if (node instanceof Parameter) return node.dsp;
+    if (node !== null && typeof node === "object") {
+      const dest = {};
+      for (const key of Object.keys(node)) { dest[key] = snapshot(node[key]); }
+      return dest;
+    }
+    return node;
+  };
+
+  const paramState = snapshot(paramTree);
+  if (HistoryManager.customProviders && HistoryManager.customProviders.size > 0) {
+    const customState = {};
+    for (const [id, provider] of HistoryManager.customProviders) {
+      customState[id] = provider.get();
+    }
+    return {__param: paramState, __custom: customState};
+  }
+  return paramState;
+}
+
+/**
+ * Recursively restores .dsp values and registered custom widget states.
+ */
+export function restoreState(paramTree, stateTree) {
+  const restore = (node, state) => {
+    if (state === undefined) return;
+    if (Array.isArray(node) && Array.isArray(state)) {
+      for (let i = 0; i < Math.min(node.length, state.length); ++i) { restore(node[i], state[i]); }
+    } else if (node instanceof Parameter) {
+      node.dsp = state;
+    } else if (node !== null && typeof node === "object" && typeof state === "object") {
+      for (const key of Object.keys(state)) {
+        if (key in node) restore(node[key], state[key]);
+      }
+    }
+  };
+
+  const isCompound = stateTree && typeof stateTree === "object" && "__param" in stateTree;
+  const paramData = isCompound ? stateTree.__param : stateTree;
+  const customData = isCompound ? stateTree.__custom : (stateTree?.__custom ?? {});
+
+  restore(paramTree, paramData);
+
+  if (HistoryManager.customProviders) {
+    for (const [id, provider] of HistoryManager.customProviders) {
+      if (customData && id in customData) {
+        provider.set(customData[id]);
+      } else if (provider.initialState !== undefined) {
+        // Fallback to initial state if snapshot predates this widget's creation
+        provider.set(provider.initialState);
+      }
+    }
+  }
+}
+
+/**
+ * Fast deep equality check for captured states to avoid redundant history entries.
+ */
+export function isStateEqual(a, b) {
+  if (a === b) return true;
+  if (typeof a !== typeof b || a === null || b === null) return false;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; ++i) {
+      if (!isStateEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  if (typeof a === "object" && typeof b === "object") {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+      if (!isStateEqual(a[key], b[key])) return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+export class HistoryManager {
+  static customProviders = new Map();
+  #param;
+  #entries = [];
+  #currentIndex = -1;
+  #maxEntries;
+  #onRestore;
+  #onUpdate;
+  #gestureSnapshot = null;
+  #gestureLabel = null;
+
+  static registerCustom(id, provider) {
+    provider.initialState = provider.get();
+    HistoryManager.customProviders.set(id, provider);
+  }
+
+  constructor(param, options = {}) {
+    this.#param = param;
+    this.#maxEntries = options.maxEntries ?? 10000;
+    this.#onRestore = options.onRestore ?? (() => {});
+    this.#onUpdate = options.onUpdate ?? (() => {});
+
+    Parameter.history = this;
+    this.recordInitial("Initial State");
+  }
+
+  get canUndo() { return this.#currentIndex > 0; }
+  get canRedo() { return this.#currentIndex < this.#entries.length - 1; }
+  get currentIndex() { return this.#currentIndex; }
+  get entries() { return this.#entries; }
+
+  recordInitial(label = "Initial State") {
+    const state = captureState(this.#param);
+    this.#entries = [{label, state}];
+    this.#currentIndex = 0;
+    this.#onUpdate();
+  }
+
+  push(label) {
+    const newState = captureState(this.#param);
+    const current = this.#entries[this.#currentIndex]?.state;
+    if (current && isStateEqual(current, newState)) return;
+
+    if (this.#currentIndex < this.#entries.length - 1) {
+      this.#entries = this.#entries.slice(0, this.#currentIndex + 1);
+    }
+
+    this.#entries.push({label, state: newState});
+    if (this.#entries.length > this.#maxEntries) {
+      this.#entries.shift();
+    } else {
+      this.#currentIndex++;
+    }
+    this.#onUpdate();
+  }
+
+  transaction(label, actionFunc) {
+    const beforeState = captureState(this.#param);
+    actionFunc();
+    const afterState = captureState(this.#param);
+
+    if (isStateEqual(beforeState, afterState)) return;
+
+    if (this.#currentIndex < this.#entries.length - 1) {
+      this.#entries = this.#entries.slice(0, this.#currentIndex + 1);
+    }
+
+    this.#entries.push({label, state: afterState});
+    if (this.#entries.length > this.#maxEntries) {
+      this.#entries.shift();
+    } else {
+      this.#currentIndex++;
+    }
+    this.#onUpdate();
+  }
+
+  beginGesture(label) {
+    if (this.#gestureSnapshot === null) {
+      this.#gestureSnapshot = captureState(this.#param);
+      this.#gestureLabel = label;
+    }
+  }
+
+  endGesture() {
+    if (!this.#gestureSnapshot) return;
+    const afterState = captureState(this.#param);
+
+    if (!isStateEqual(this.#gestureSnapshot, afterState)) {
+      if (this.#currentIndex < this.#entries.length - 1) {
+        this.#entries = this.#entries.slice(0, this.#currentIndex + 1);
+      }
+      this.#entries.push({label: this.#gestureLabel, state: afterState});
+      if (this.#entries.length > this.#maxEntries) {
+        this.#entries.shift();
+      } else {
+        this.#currentIndex++;
+      }
+      this.#onUpdate();
+    }
+
+    this.#gestureSnapshot = null;
+    this.#gestureLabel = null;
+  }
+
+  undo() {
+    if (!this.canUndo) return;
+    this.jumpTo(this.#currentIndex - 1);
+  }
+
+  redo() {
+    if (!this.canRedo) return;
+    this.jumpTo(this.#currentIndex + 1);
+  }
+
+  jumpTo(index) {
+    if (index < 0 || index >= this.#entries.length || index === this.#currentIndex) return;
+    this.#currentIndex = index;
+    restoreState(this.#param, this.#entries[index].state);
+    this.#onRestore(this.#entries[index].state);
+    this.#onUpdate();
+  }
+
+  setOnRestore(callback) { this.#onRestore = callback; }
+  setOnUpdate(callback) { this.#onUpdate = callback; }
 }

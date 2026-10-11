@@ -1,6 +1,8 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import {generateWidgetId} from "../util.js";
+
 import {palette} from "./palette.js";
 
 /**
@@ -18,11 +20,15 @@ export class WaveView {
   #displayRms = false; // For debugging.
 
   constructor(parent, width, height, data, autoScale) {
+    this.id = generateWidgetId("waveView");
+
     this.div = document.createElement("div");
+    this.div.id = `${this.id}-container`;
     this.div.className = "canvasMargin";
     parent.appendChild(this.div);
 
     this.liveRegion = document.createElement("span");
+    this.liveRegion.id = `${this.id}-live`;
     this.liveRegion.classList.add("sr-only");
     this.liveRegion.setAttribute("role", "status");
     this.liveRegion.setAttribute("aria-live", "polite");
@@ -41,6 +47,8 @@ export class WaveView {
     this.div.appendChild(this.liveRegion);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.id = `${this.id}-canvas`;
+    this.canvas.setAttribute("aria-controls", `${this.id}-live`);
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.tabIndex = 0;

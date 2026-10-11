@@ -1,0 +1,2235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Undo / Redo Test Suite - Pluck2</title>
+  <link rel="stylesheet" href="../style/style.css">
+  <link rel="icon" type="image/svg+xml" href="../style/favicon/favicon.svg">
+  <style>
+    :root {
+      --test-pass: #28a745;
+      --test-fail: #dc3545;
+      --test-skip: #ffc107;
+      --test-card-bg: var(--color-input-background, #fff);
+    }
+
+    body {
+      padding: 1rem 2rem 4rem 2rem;
+      max-width: 1560px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    .testNavTabs {
+      display: flex;
+      gap: 8px;
+      margin: 1.5rem 0;
+      border-bottom: 2px solid var(--color-border-mid);
+      padding-bottom: 8px;
+    }
+
+    .testTabButton {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: var(--font-weight-strong, bold);
+      border: 1px solid var(--color-border-dark);
+      border-radius: var(--border-radius-mid);
+      background: var(--color-input-background);
+      color: var(--color-text-main);
+      cursor: pointer;
+    }
+
+    .testTabButton.activeTab {
+      background: var(--color-accent);
+      color: #fff;
+      border-color: var(--color-accent);
+    }
+
+    .testSection {
+      display: none;
+    }
+
+    .testSection.activeSection {
+      display: block;
+    }
+
+    /* Automated Test Runner Styles */
+    .runnerHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--color-shaded);
+      padding: 12px 18px;
+      border-radius: var(--border-radius-mid);
+      border: 1px solid var(--color-border-light);
+      margin-bottom: 1.5rem;
+    }
+
+    .statsGroup {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      align-items: center;
+    }
+
+    .statItem {
+      display: flex;
+      gap: 6px;
+    }
+
+    .statBadge {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .badgeTotal {
+      background: var(--color-accent);
+    }
+
+    .badgePass {
+      background: var(--test-pass);
+    }
+
+    .badgeFail {
+      background: var(--test-fail);
+    }
+
+    .runnerControls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .suiteCard {
+      background: var(--test-card-bg);
+      border: 1px solid var(--color-border-mid);
+      border-radius: var(--border-radius-mid);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .suiteHeader {
+      padding: 10px 14px;
+      background: var(--color-shaded);
+      border-bottom: 1px solid var(--color-border-light);
+      font-weight: var(--font-weight-strong, bold);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .testList {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .testItem {
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--color-border-light);
+      font-family: var(--monospace);
+      font-size: 12px;
+    }
+
+    .testItem:last-child {
+      border-bottom: none;
+    }
+
+    .testStatus {
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 10px;
+    }
+
+    .statusPass {
+      color: var(--test-pass);
+    }
+
+    .statusFail {
+      color: var(--test-fail);
+      background: rgba(220, 53, 69, 0.1);
+    }
+
+    .testErrorMsg {
+      margin-top: 6px;
+      color: var(--test-fail);
+      white-space: pre-wrap;
+      font-size: 11px;
+    }
+
+    /* Manual Testing Side-by-Side Layout */
+    .manualLayout {
+      display: grid;
+      grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .instructionsContainer {
+      background: var(--color-shaded);
+      padding: 16px;
+      border-radius: var(--border-radius-mid);
+      border: 1px solid var(--color-border-light);
+      position: sticky;
+      top: 1rem;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      box-sizing: border-box;
+      scrollbar-width: thin;
+    }
+
+    .instructionsHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .checklistProgress {
+      font-size: 11px;
+      color: var(--color-text-dim);
+      background: var(--color-input-background, #fff);
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--color-border-light);
+    }
+
+    .instructionStep {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: var(--border-radius-small, 4px);
+      border: 1px solid transparent;
+      border-bottom: 1px solid var(--color-border-light);
+      transition: background 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .instructionStep:hover {
+      background: var(--color-input-background, rgba(255, 255, 255, 0.6));
+      border-color: var(--color-border-mid);
+    }
+
+    .instructionStep:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .stepHeader {
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .stepHeader label {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .stepExpected {
+      color: var(--color-text-dim);
+      font-size: 11px;
+      margin-left: 24px;
+      line-height: 1.45;
+    }
+
+    /* Manual test playground styles */
+    .playgroundLayout {
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) 320px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .historyToolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--color-shaded);
+      padding: 10px 14px;
+      border-radius: var(--border-radius-mid);
+      border: 1px solid var(--color-border-mid);
+      margin-bottom: 16px;
+      position: sticky;
+      top: 1rem;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .historyToolbar select {
+      flex: 1;
+      height: 2.2em;
+    }
+
+    .historyBadge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: var(--color-highlight);
+      font-weight: bold;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .stateInspector {
+      background: var(--color-shaded);
+      border: 1px solid var(--color-border-mid);
+      border-radius: var(--border-radius-mid);
+      padding: 12px;
+      font-family: var(--monospace);
+      font-size: 11px;
+      position: sticky;
+      top: 1rem;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      box-sizing: border-box;
+      scrollbar-width: thin;
+    }
+
+    .stateInspector pre {
+      margin: 8px 0;
+      background: var(--color-input-background);
+      padding: 8px;
+      border-radius: var(--border-radius-small);
+      border: 1px solid var(--color-border-light);
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .eventLog {
+      max-height: 240px;
+      overflow-y: auto;
+      background: var(--color-input-background);
+      border: 1px solid var(--color-border-light);
+      border-radius: var(--border-radius-small);
+      padding: 6px;
+      list-style: none;
+      margin: 6px 0 0 0;
+    }
+
+    .eventLog li {
+      padding: 3px 6px;
+      border-bottom: 1px dashed var(--color-border-light);
+      font-size: 11px;
+    }
+
+    .eventLog li:last-child {
+      border-bottom: none;
+    }
+
+    .eventLog .timestamp {
+      color: var(--color-text-dim);
+      margin-right: 6px;
+    }
+
+    /* Responsive Adaptations */
+    @media (max-width: 1320px) {
+      .playgroundLayout {
+        grid-template-columns: 1fr;
+      }
+
+      .stateInspector {
+        position: static;
+        max-height: none;
+        margin-top: 16px;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .manualLayout {
+        grid-template-columns: 1fr;
+      }
+
+      .instructionsContainer {
+        position: static;
+        max-height: 440px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Undo / Redo Test Suite</h1>
+  <p style="text-align: center; color: var(--color-text-dim);">
+    Comprehensive automated unit/integration tests and interactive manual testing for the synthesizer undo/redo architecture.
+  </p>
+
+  <!-- Navigation Tabs -->
+  <div class="testNavTabs">
+    <button class="testTabButton activeTab" id="tabBtnAutomated">Automated Tests</button>
+    <button class="testTabButton" id="tabBtnManual">Manual Testing Playground &amp; Instructions</button>
+  </div>
+
+  <!-- SECTION 1: Automated Tests -->
+  <section class="testSection activeSection" id="sectionAutomated">
+    <div class="runnerHeader">
+      <div class="statsGroup">
+        <div class="statItem">Total: <span class="statBadge badgeTotal" id="statTotal">0</span></div>
+        <div class="statItem">Passed: <span class="statBadge badgePass" id="statPass">0</span></div>
+        <div class="statItem">Failed: <span class="statBadge badgeFail" id="statFail">0</span></div>
+        <div class="statItem" style="color: var(--color-text-dim);">Duration: <span id="statDuration">0ms</span></div>
+      </div>
+      <div class="runnerControls">
+        <input type="button" value="Run Automated Tests" id="btnRunTests">
+        <input type="button" value="Filter: Failed Only" id="btnFilterFailed">
+      </div>
+    </div>
+
+    <div id="testResultsContainer"></div>
+  </section>
+
+  <!-- SECTION 2: Manual Testing -->
+  <section class="testSection" id="sectionManual">
+    <div class="manualLayout">
+      <!-- Left Column: Sticky Scrollable Checklist -->
+      <div class="instructionsContainer">
+        <div class="instructionsHeader">
+          <h3 style="margin: 0; text-align: left;">Manual Verification Checklist</h3>
+          <span class="checklistProgress" id="checklistProgress">0 / 13 completed</span>
+        </div>
+        <p style="color: var(--color-text-dim); font-size: 12px; margin: 6px 0 14px 0;">
+          Click any step to highlight and jump to its widget. Perform interactions and verify that undo/redo states behave correctly.
+        </p>
+
+        <div class="instructionStep" data-target="manualNumberInputContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM1">
+            <label for="checkM1">1. NumberInput Slider: Edit &amp; Undo/Redo</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Drag the "Length [s]" slider.<br>
+            <strong>Expected:</strong> Undo activates. History shows <code>Input: Length [s]</code>. Undo restores original value; Redo re-applies it.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualNumberInputContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM2">
+            <label for="checkM2">2. NumberInput: Gesture Coalescing</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Continuously drag "Length [s]" back and forth before releasing pointer.<br>
+            <strong>Expected:</strong> Only <em>one</em> history entry is recorded upon pointer release.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualNumberInputContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM3">
+            <label for="checkM3">3. NumberInput: Ctrl+Click Reset</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Ctrl+Click "Length [s]" line or press 'r' on the range input.<br>
+            <strong>Expected:</strong> Value resets to default with <code>Reset: Length [s]</code> recorded. Undo restores custom value.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualToggleContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM4">
+            <label for="checkM4">4. ToggleButton &amp; ComboBox Integration</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Click "Stereo Noise" toggle, then change "Pulse Type" dropdown.<br>
+            <strong>Expected:</strong> Two discrete history steps recorded. Clicking Undo twice reverts dropdown and toggle styles.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualBarBoxContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM5">
+            <label for="checkM5">5. BarBox: Drag &amp; Randomize</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Drag across FF Comb bars to draw a ramp. Next, focus canvas and press 'r'.<br>
+            <strong>Expected:</strong> Drag produces 1 gesture entry. 'r' commits <code>Randomize: FF Comb Gain [dB]</code>. Undoing reverts the array in 1 step.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualChordContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM6">
+            <label for="checkM6">6. Guitar Chord Voicing: Fret Edit &amp; Randomize</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Click string 1 fret 3, then press 'r' with chord canvas focused.<br>
+            <strong>Expected:</strong> Records <code>Chord Edit</code> and <code>Chord: [Name]</code>. Undoing reverts frets, mutes, chord label, and symbols.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="liveHistorySelect">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM7">
+            <label for="checkM7">7. History Jump &amp; Branch Replacement</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Select index 0 "Initial State" from History dropdown. Verify controls restore, then modify any parameter.<br>
+            <strong>Expected:</strong> Controls jump directly to that point. New parameter edit prunes future redo history and branches forward.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="liveBtnUndo">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM8">
+            <label for="checkM8">8. Global Keyboard Shortcuts</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Press <kbd>Ctrl+Z</kbd> (<kbd>Cmd+Z</kbd> on Mac) to undo. Press <kbd>Ctrl+Y</kbd> or <kbd>Ctrl+Shift+Z</kbd> to redo.<br>
+            <strong>Expected:</strong> Hotkeys trigger undo/redo immediately, except inside numeric or text inputs.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualCheckBoxContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM9">
+            <label for="checkM9">9. CheckBoxLine: Toggle &amp; Undo/Redo</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Click "Distortion Enable" button.<br>
+            <strong>Expected:</strong> Toggles Bypass/Active with <code>Toggle: Distortion Enable</code>. Undo reverts state and label; redo restores it.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualBezierContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM10">
+            <label for="checkM10">10. BezierEnvelopeView: Drag &amp; Randomize</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Drag either control point on Bezier canvas, or trigger randomize.<br>
+            <strong>Expected:</strong> Drag commits <code>Edit: Bezier Envelope</code>. Randomize commits <code>Randomize: Bezier Envelope</code>. Undo restores points and curve.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualEqualizerContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM11">
+            <label for="checkM11">11. EqualizerXYPad: Drag, Wheel Q &amp; Reset</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Drag band 2 (peaking filter); scroll mouse wheel over band 2 for Q; Ctrl+Click band 2 to reset.<br>
+            <strong>Expected:</strong> Commits <code>Edit: EQ Response</code>, <code>Wheel Q: EQ Response</code>, and <code>Reset Band: EQ Response</code>. Undo restores all values.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualMultiCheckContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM12">
+            <label for="checkM12">12. MultiCheckBoxVertical: Toggle &amp; Drag Painting</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Click or drag pointer across "Additive Harmonics" checkboxes.<br>
+            <strong>Expected:</strong> Coalesced <code>Edit: Additive Harmonics</code> recorded. Undo restores all harmonic toggle states simultaneously.
+          </div>
+        </div>
+
+        <div class="instructionStep" data-target="manualWaveformContainer">
+          <div class="stepHeader">
+            <input type="checkbox" id="checkM13">
+            <label for="checkM13">13. WaveformXYPad: Presets, Randomize &amp; Drag</label>
+          </div>
+          <div class="stepExpected">
+            <strong>Action:</strong> Focus Waveform canvas and press keys 1–9 for presets, 'r' to randomize, or drag control points.<br>
+            <strong>Expected:</strong> Records <code>Preset: [Name]</code>, <code>Randomize: Waveform Shaper</code>, and <code>Edit: Waveform Shaper</code>. Undo/redo restores points accurately.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Playground & Live Inspector -->
+      <div class="playgroundLayout">
+        <div>
+          <!-- Sticky History Toolbar -->
+          <div class="historyToolbar">
+            <input type="button" value="Undo" id="liveBtnUndo" title="Ctrl+Z / Cmd+Z">
+            <input type="button" value="Redo" id="liveBtnRedo" title="Ctrl+Y / Ctrl+Shift+Z">
+            <select id="liveHistorySelect" aria-label="Action History Menu"></select>
+            <span class="historyBadge" id="liveHistoryBadge">Index: 0</span>
+            <input type="button" value="Reset Initial" id="liveBtnResetInitial">
+          </div>
+
+          <!-- Interactive Widgets -->
+          <div id="manualWidgetsContainer" class="controlBlock" style="max-width: 100%;">
+            <div id="manualNumberInputContainer"></div>
+            <div id="manualToggleContainer"></div>
+            <div id="manualCheckBoxContainer"></div>
+            <div id="manualComboContainer"></div>
+            <div id="manualBarBoxContainer" style="margin-top: 10px;"></div>
+            <div id="manualBezierContainer" style="margin-top: 10px;"></div>
+            <div id="manualEqualizerContainer" style="margin-top: 10px;"></div>
+            <div id="manualMultiCheckContainer" style="margin-top: 10px;"></div>
+            <div id="manualWaveformContainer" style="margin-top: 10px;"></div>
+            <div id="manualChordContainer" style="margin-top: 10px;"></div>
+          </div>
+        </div>
+
+        <!-- Sticky Inspector Pane -->
+        <div>
+          <div class="stateInspector">
+            <h4 style="margin: 0 0 6px 0; text-align: left;">Live Parameter State</h4>
+            <pre id="liveStateDisplay">{ ... }</pre>
+
+            <h4 style="margin: 12px 0 6px 0; text-align: left;">Recent History Log</h4>
+            <ul class="eventLog" id="liveEventLog">
+              <li><em>No events recorded yet.</em></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEST RUNNER & APPLICATION LOGIC -->
+  <script type="module">
+    import * as parameter from "../common/parameter.js";
+    import { Parameter, HistoryManager, captureState, restoreState, isStateEqual } from "../common/parameter.js";
+    import * as widget from "../common/gui/widget.js";
+    import * as util from "../common/util.js";
+    import { GuitarChordSelector } from "../Pluck2/guitarchordselector.js";
+
+    // -------------------------------------------------------------
+    // Mini Assertion & Test Framework
+    // -------------------------------------------------------------
+    class Expectation {
+      constructor(actual) {
+        this.actual = actual;
+      }
+
+      get not() {
+        return {
+          toBe: (expected) => {
+            if (this.actual === expected) {
+              throw new Error(`Expected value not to be ${JSON.stringify(expected)}`);
+            }
+          },
+          toEqual: (expected) => {
+            if (isStateEqual(this.actual, expected)) {
+              throw new Error(`Expected value not to equal ${JSON.stringify(expected)}`);
+            }
+          },
+        };
+      }
+
+      toBe(expected) {
+        if (this.actual !== expected) {
+          throw new Error(`Expected ${JSON.stringify(expected)}, but received ${JSON.stringify(this.actual)}`);
+        }
+      }
+
+      toEqual(expected) {
+        if (!isStateEqual(this.actual, expected)) {
+          throw new Error(`Expected deep equality:\nExpected: ${JSON.stringify(expected)}\nActual:   ${JSON.stringify(this.actual)}`);
+        }
+      }
+
+      toBeCloseTo(expected, delta = 1e-4) {
+        if (Math.abs(this.actual - expected) > delta) {
+          throw new Error(`Expected ${this.actual} to be close to ${expected} (within ${delta})`);
+        }
+      }
+
+      toBeTruthy() {
+        if (!this.actual) {
+          throw new Error(`Expected truthy value, but received ${JSON.stringify(this.actual)}`);
+        }
+      }
+
+      toBeFalsy() {
+        if (this.actual) {
+          throw new Error(`Expected falsy value, but received ${JSON.stringify(this.actual)}`);
+        }
+      }
+
+      toBeDefined() {
+        if (this.actual === undefined) {
+          throw new Error("Expected value to be defined, but received undefined");
+        }
+      }
+
+      toMatch(pattern) {
+        const matches = pattern instanceof RegExp
+          ? pattern.test(String(this.actual))
+          : String(this.actual).includes(String(pattern));
+        if (!matches) {
+          throw new Error(`Expected "${this.actual}" to match ${pattern}`);
+        }
+      }
+
+      toBeNull() {
+        if (this.actual !== null) {
+          throw new Error(`Expected null, but received ${JSON.stringify(this.actual)}`);
+        }
+      }
+
+      toThrow(expectedMessageSubstr = null) {
+        let threw = false;
+        let thrownError = null;
+        try {
+          this.actual();
+        } catch (e) {
+          threw = true;
+          thrownError = e;
+        }
+        if (!threw) {
+          throw new Error("Expected function to throw an error, but it executed without throwing.");
+        }
+        if (expectedMessageSubstr && !thrownError.message.includes(expectedMessageSubstr)) {
+          throw new Error(`Expected error message to contain "${expectedMessageSubstr}", but received "${thrownError.message}"`);
+        }
+      }
+    }
+
+    function expect(actual) {
+      return new Expectation(actual);
+    }
+
+    const testSuites = [];
+    let currentSuite = null;
+
+    function describe(suiteName, fn) {
+      const suite = { name: suiteName, tests: [] };
+      testSuites.push(suite);
+      currentSuite = suite;
+      fn();
+      currentSuite = null;
+    }
+
+    function it(testName, fn) {
+      if (!currentSuite) throw new Error("it() must be called inside describe()");
+      currentSuite.tests.push({ name: testName, fn });
+    }
+
+    function createMockParameters() {
+      const scales = {
+        linear: new parameter.LinearScale(0, 10),
+        decibel: new parameter.DecibelScale(-40, 20, false),
+        boolean: new parameter.IntScale(0, 1),
+        menu: new parameter.MenuItemScale(["Lowpass", "Highpass", "Bandpass"]),
+        chordFret: new parameter.IntScale(0, 5),
+        chordMute: new parameter.IntScale(0, 1),
+        chordGain: new parameter.DecibelScale(-40, 0, true),
+        chordPick: new parameter.LinearScale(0.0, 0.5),
+        chordDelay: new parameter.LinearScale(0.0, 0.2),
+        chordFb: new parameter.SymmetricLogScale(1e-2, 1),
+        chordLp: new parameter.LinearScale(0, 96),
+        chordBass: new parameter.MidiPitchScale(-24, 140, false),
+        chordTuning: new parameter.MenuItemScale(["12-TET", "Harmonic Series"]),
+      };
+
+      return {
+        scalarA: new parameter.Parameter(2.5, scales.linear, false),
+        scalarB: new parameter.Parameter(1.0, scales.decibel, false),
+        flagToggle: new parameter.Parameter(0, scales.boolean),
+        checkboxParam: new parameter.Parameter(0, scales.boolean),
+        modeCombo: new parameter.Parameter(1, scales.menu),
+        arrayParams: [
+          new parameter.Parameter(0.1, scales.linear, false),
+          new parameter.Parameter(0.2, scales.linear, false),
+          new parameter.Parameter(0.3, scales.linear, false),
+        ],
+        bezierParams: [
+          new parameter.Parameter(0.25, new parameter.LinearScale(0, 1), false),
+          new parameter.Parameter(0.75, new parameter.LinearScale(0, 1), false),
+          new parameter.Parameter(0.75, new parameter.LinearScale(0, 1), false),
+          new parameter.Parameter(0.25, new parameter.LinearScale(0, 1), false),
+        ],
+        eqParams: [
+          [
+            new parameter.Parameter(0, new parameter.MenuItemScale(["hp2bq", "pk2bq", "lp2bq"])),
+            new parameter.Parameter(200, new parameter.LinearScale(20, 20000), false),
+            new parameter.Parameter(0.707, new parameter.LinearScale(0.1, 10), false),
+            new parameter.Parameter(1.0, new parameter.DecibelScale(-24, 24, false), false),
+          ],
+          [
+            new parameter.Parameter(1, new parameter.MenuItemScale(["hp2bq", "pk2bq", "lp2bq"])),
+            new parameter.Parameter(1000, new parameter.LinearScale(20, 20000), false),
+            new parameter.Parameter(1.5, new parameter.LinearScale(0.1, 10), false),
+            new parameter.Parameter(1.0, new parameter.DecibelScale(-24, 24, false), false),
+          ],
+          [
+            new parameter.Parameter(2, new parameter.MenuItemScale(["hp2bq", "pk2bq", "lp2bq"])),
+            new parameter.Parameter(5000, new parameter.LinearScale(20, 20000), false),
+            new parameter.Parameter(0.707, new parameter.LinearScale(0.1, 10), false),
+            new parameter.Parameter(1.0, new parameter.DecibelScale(-24, 24, false), false),
+          ],
+        ],
+        multiCheckParams: [
+          new parameter.Parameter(0, scales.boolean),
+          new parameter.Parameter(1, scales.boolean),
+          new parameter.Parameter(0, scales.boolean),
+          new parameter.Parameter(1, scales.boolean),
+        ],
+        chordBass: new parameter.Parameter(util.midiPitchToFreq(40), scales.chordBass, false),
+        chordTuning: new parameter.Parameter(0, scales.chordTuning),
+        chordFrets: [0, 2, 2, 1, 0, 0].map(v => new parameter.Parameter(v, scales.chordFret, false)),
+        chordMutes: [0, 0, 0, 0, 0, 0].map(v => new parameter.Parameter(v, scales.chordMute, false)),
+        chordGains: [1, 1, 1, 1, 1, 1].map(v => new parameter.Parameter(v, scales.chordGain, false)),
+        chordPickPositions: [0.2, 0.2, 0.2, 0.2, 0.2, 0.2].map(v => new parameter.Parameter(v, scales.chordPick, false)),
+        chordDelays: [0.0, 0.008, 0.016, 0.024, 0.032, 0.040].map(v => new parameter.Parameter(v, scales.chordDelay, false)),
+        chordFeedbacks: [0.95, 0.95, 0.95, 0.95, 0.95, 0.95].map(v => new parameter.Parameter(v, scales.chordFb, false)),
+        chordLpCutoffs: [72, 72, 72, 72, 72, 72].map(v => new parameter.Parameter(v, scales.chordLp, false)),
+      };
+    }
+
+    // -------------------------------------------------------------
+    // AUTOMATED TEST DEFINITIONS
+    // -------------------------------------------------------------
+    describe("Suite 1: HistoryManager - Core State Tracking & Initial State", () => {
+      it("should record initial state and set currentIndex to 0", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+        expect(history.currentIndex).toBe(0);
+        expect(history.entries.length).toBe(1);
+        expect(history.entries[0].label).toBe("Initial State");
+      });
+
+      it("should initialize canUndo=false and canRedo=false", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+        expect(history.canUndo).toBeFalsy();
+        expect(history.canRedo).toBeFalsy();
+      });
+
+      it("should push new states, increment currentIndex, and update undo/redo status", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        params.scalarA.dsp = 5.0;
+        history.push("Change scalarA");
+
+        expect(history.currentIndex).toBe(1);
+        expect(history.entries.length).toBe(2);
+        expect(history.canUndo).toBeTruthy();
+        expect(history.canRedo).toBeFalsy();
+        expect(history.entries[1].label).toBe("Change scalarA");
+      });
+
+      it("should deduplicate pushes when state has not changed", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        history.push("Redundant push 1");
+        history.push("Redundant push 2");
+
+        expect(history.entries.length).toBe(1);
+        expect(history.currentIndex).toBe(0);
+      });
+
+      it("should notify onUpdate callback when state is pushed", () => {
+        const params = createMockParameters();
+        let updateCount = 0;
+        const history = new HistoryManager(params);
+        history.setOnUpdate(() => { updateCount++; });
+
+        params.scalarA.dsp = 6.0;
+        history.push("Edit scalarA");
+        expect(updateCount).toBe(1);
+      });
+    });
+
+    describe("Suite 2: HistoryManager - Undo, Redo, Branching & JumpTo", () => {
+      it("should undo single change, restore parameters, and update status", () => {
+        const params = createMockParameters();
+        const initialVal = params.scalarA.dsp;
+        const history = new HistoryManager(params);
+
+        params.scalarA.dsp = 8.0;
+        history.push("Set scalarA to 8.0");
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(initialVal);
+        expect(history.currentIndex).toBe(0);
+        expect(history.canUndo).toBeFalsy();
+        expect(history.canRedo).toBeTruthy();
+      });
+
+      it("should redo reverted change and restore future state", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        params.scalarA.dsp = 8.0;
+        history.push("Set scalarA to 8.0");
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+
+        history.redo();
+        expect(params.scalarA.dsp).toBeCloseTo(8.0);
+        expect(history.currentIndex).toBe(1);
+        expect(history.canUndo).toBeTruthy();
+        expect(history.canRedo).toBeFalsy();
+      });
+
+      it("should execute multi-step undo and redo sequences correctly", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        params.scalarA.dsp = 3.0; history.push("Step 1");
+        params.scalarA.dsp = 4.0; history.push("Step 2");
+        params.scalarA.dsp = 5.0; history.push("Step 3");
+
+        expect(history.currentIndex).toBe(3);
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(4.0);
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(3.0);
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+
+        expect(history.canUndo).toBeFalsy();
+        history.undo();
+        expect(history.currentIndex).toBe(0);
+
+        history.redo();
+        expect(params.scalarA.dsp).toBeCloseTo(3.0);
+        history.redo();
+        expect(params.scalarA.dsp).toBeCloseTo(4.0);
+        history.redo();
+        expect(params.scalarA.dsp).toBeCloseTo(5.0);
+        expect(history.canRedo).toBeFalsy();
+        history.redo();
+        expect(history.currentIndex).toBe(3);
+      });
+
+      it("should jumpTo arbitrary valid history index", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        params.scalarA.dsp = 3.0; history.push("Step 1");
+        params.scalarA.dsp = 4.0; history.push("Step 2");
+        params.scalarA.dsp = 5.0; history.push("Step 3");
+
+        history.jumpTo(1);
+        expect(params.scalarA.dsp).toBeCloseTo(3.0);
+        expect(history.currentIndex).toBe(1);
+
+        history.jumpTo(3);
+        expect(params.scalarA.dsp).toBeCloseTo(5.0);
+        expect(history.currentIndex).toBe(3);
+
+        history.jumpTo(-1);
+        expect(history.currentIndex).toBe(3);
+        history.jumpTo(99);
+        expect(history.currentIndex).toBe(3);
+      });
+
+      it("should truncate future redo stack on new push after undo (history branching)", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        params.scalarA.dsp = 3.0; history.push("Step 1");
+        params.scalarA.dsp = 4.0; history.push("Step 2");
+        params.scalarA.dsp = 5.0; history.push("Step 3");
+
+        history.undo();
+        history.undo();
+        expect(history.currentIndex).toBe(1);
+        expect(history.entries.length).toBe(4);
+
+        params.scalarB.dsp = 15.0;
+        history.push("Branched Step");
+
+        expect(history.entries.length).toBe(3);
+        expect(history.currentIndex).toBe(2);
+        expect(history.entries[2].label).toBe("Branched Step");
+        expect(history.canRedo).toBeFalsy();
+      });
+
+      it("should invoke onRestore callback when jumping or undoing", () => {
+        const params = createMockParameters();
+        let restorePayload = null;
+        const history = new HistoryManager(params);
+        history.setOnRestore((state) => { restorePayload = state; });
+
+        params.scalarA.dsp = 7.7;
+        history.push("Edit");
+
+        history.undo();
+        expect(restorePayload).toBeDefined();
+        const val = restorePayload.__param ? restorePayload.__param.scalarA : restorePayload.scalarA;
+        expect(val).toBeCloseTo(2.5);
+      });
+    });
+
+    describe("Suite 3: HistoryManager - Capacity Limits & Sliding Window", () => {
+      it("should respect maxEntries limit and discard oldest history", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params, { maxEntries: 3 });
+
+        params.scalarA.dsp = 1.0; history.push("P1");
+        params.scalarA.dsp = 2.0; history.push("P2");
+        params.scalarA.dsp = 3.0; history.push("P3");
+
+        expect(history.entries.length).toBe(3);
+        expect(history.entries.map(e => e.label)).toEqual(["P1", "P2", "P3"]);
+        expect(history.currentIndex).toBe(2);
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(2.0);
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(1.0);
+        expect(history.canUndo).toBeFalsy();
+      });
+    });
+
+    describe("Suite 4: HistoryManager - Transactions & Gesture Coalescing", () => {
+      it("should collapse multiple mutations into 1 entry via transaction()", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        history.transaction("Multi-field transaction", () => {
+          params.scalarA.dsp = 9.0;
+          params.scalarB.dsp = 12.0;
+          params.flagToggle.dsp = 1;
+        });
+
+        expect(history.entries.length).toBe(2);
+        expect(history.entries[1].label).toBe("Multi-field transaction");
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+        expect(params.scalarB.dsp).toBeCloseTo(1.0);
+        expect(params.flagToggle.dsp).toBe(0);
+      });
+
+      it("should not record transaction if no net change occurred", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        history.transaction("No-op transaction", () => {
+          params.scalarA.dsp = 9.0;
+          params.scalarA.dsp = 2.5;
+        });
+
+        expect(history.entries.length).toBe(1);
+      });
+
+      it("should coalesce continuous gesture events into a single entry", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        history.beginGesture("Drag Gesture");
+        params.scalarA.dsp = 3.0;
+        params.scalarA.dsp = 4.0;
+        params.scalarA.dsp = 7.5;
+        history.endGesture();
+
+        expect(history.entries.length).toBe(2);
+        expect(history.entries[1].label).toBe("Drag Gesture");
+        expect(params.scalarA.dsp).toBeCloseTo(7.5);
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+      });
+
+      it("should ignore gesture ending with no net state change", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        history.beginGesture("Empty Gesture");
+        history.endGesture();
+
+        expect(history.entries.length).toBe(1);
+      });
+
+      it("should preserve original snapshot on redundant beginGesture()", () => {
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        history.beginGesture("First Gesture Tag");
+        params.scalarA.dsp = 4.0;
+        history.beginGesture("Second Tag (redundant)");
+        params.scalarA.dsp = 8.0;
+        history.endGesture();
+
+        expect(history.entries.length).toBe(2);
+        expect(history.entries[1].label).toBe("First Gesture Tag");
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+      });
+    });
+
+    describe("Suite 5: State Serialization - Capture, Restore & Deep Equality", () => {
+      it("should accurately capture and restore scalar parameters", () => {
+        const params = createMockParameters();
+        const snap = captureState(params);
+
+        params.scalarA.dsp = 9.9;
+        restoreState(params, snap);
+
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+      });
+
+      it("should accurately capture and restore arrays of parameters", () => {
+        const params = createMockParameters();
+        const snap = captureState(params);
+
+        params.arrayParams[0].dsp = 0.99;
+        params.arrayParams[2].dsp = 0.88;
+        restoreState(params, snap);
+
+        expect(params.arrayParams[0].dsp).toBeCloseTo(0.1);
+        expect(params.arrayParams[2].dsp).toBeCloseTo(0.3);
+      });
+
+      it("should correctly evaluate isStateEqual", () => {
+        expect(isStateEqual(1, 1)).toBeTruthy();
+        expect(isStateEqual(1, 2)).toBeFalsy();
+        expect(isStateEqual([1, 2, 3], [1, 2, 3])).toBeTruthy();
+        expect(isStateEqual([1, 2], [1, 2, 3])).toBeFalsy();
+        expect(isStateEqual({ a: 1, b: [2] }, { a: 1, b: [2] })).toBeTruthy();
+        expect(isStateEqual({ a: 1 }, { a: 2 })).toBeFalsy();
+        expect(isStateEqual({ a: 1 }, { b: 1 })).toBeFalsy();
+      });
+
+      it("should capture, restore, and reset custom providers", () => {
+        const params = createMockParameters();
+        let customState = { points: [10, 20] };
+
+        HistoryManager.customProviders.clear();
+        HistoryManager.registerCustom("testWidget", {
+          get: () => structuredClone(customState),
+          set: (v) => { customState = structuredClone(v); },
+        });
+
+        const history = new HistoryManager(params);
+
+        customState = { points: [50, 60] };
+        history.push("Custom Edit");
+
+        history.undo();
+        expect(customState).toEqual({ points: [10, 20] });
+
+        history.redo();
+        expect(customState).toEqual({ points: [50, 60] });
+
+        HistoryManager.customProviders.clear();
+      });
+    });
+
+    describe("Suite 6: Widget Integration (Automated UI Sim)", () => {
+      it("should integrate with NumberInput: input and reset", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const numberInput = new widget.NumberInput(container, "Test Length", params.scalarA, () => { });
+        const rangeEl = container.querySelector('input[type="range"]');
+
+        rangeEl.value = "7.5";
+        rangeEl.dispatchEvent(new Event("input", { bubbles: true }));
+
+        expect(params.scalarA.dsp).toBeCloseTo(7.5);
+        expect(history.canUndo).toBeTruthy();
+
+        history.undo();
+        numberInput.refresh();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+        expect(parseFloat(rangeEl.value)).toBeCloseTo(2.5);
+
+        rangeEl.value = "6.0";
+        rangeEl.dispatchEvent(new Event("input", { bubbles: true }));
+        expect(history.entries.at(-1).label).toBe("Input: Test Length");
+
+        numberInput.reset();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+        expect(history.entries.at(-1).label).toBe("Reset: Test Length");
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(6.0);
+
+        container.remove();
+      });
+
+      it("should integrate with ToggleButtonLine: click toggle and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const toggle = new widget.ToggleButtonLine(container, ["Off", "On"], params.flagToggle, () => { });
+        const btn = container.querySelector('input[type="button"]');
+
+        expect(params.flagToggle.dsp).toBe(0);
+        btn.click();
+        expect(params.flagToggle.dsp).toBe(1);
+        expect(history.canUndo).toBeTruthy();
+
+        history.undo();
+        toggle.refresh();
+        expect(params.flagToggle.dsp).toBe(0);
+        expect(btn.value).toBe("Off");
+
+        container.remove();
+      });
+
+      it("should integrate with CheckBoxLine: click toggle and undo/redo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const checkbox = new widget.CheckBoxLine(container, "Distortion Enable", ["Bypass", "Active"], params.checkboxParam, () => { });
+        const btn = checkbox.button.button;
+
+        expect(params.checkboxParam.dsp).toBe(0);
+        expect(btn.value).toBe("Bypass");
+
+        btn.click();
+        expect(params.checkboxParam.dsp).toBe(1);
+        expect(btn.value).toBe("Active");
+        expect(history.canUndo).toBeTruthy();
+        expect(history.entries.at(-1).label).toBe("Toggle: Distortion Enable");
+
+        history.undo();
+        checkbox.refresh();
+        expect(params.checkboxParam.dsp).toBe(0);
+        expect(btn.value).toBe("Bypass");
+
+        history.redo();
+        checkbox.refresh();
+        expect(params.checkboxParam.dsp).toBe(1);
+        expect(btn.value).toBe("Active");
+
+        container.remove();
+      });
+
+      it("should integrate with ComboBoxLine: selection change and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const combo = new widget.ComboBoxLine(container, "Filter Type", params.modeCombo, () => { });
+        const selectEl = container.querySelector("select");
+
+        selectEl.value = "Bandpass";
+        selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+
+        expect(params.modeCombo.dsp).toBe(2);
+        expect(history.canUndo).toBeTruthy();
+        expect(history.entries.at(-1).label).toBe("Select: Filter Type");
+
+        history.undo();
+        combo.refresh();
+        expect(params.modeCombo.dsp).toBe(1);
+        expect(selectEl.value).toBe("Highpass");
+
+        container.remove();
+      });
+
+      it("should integrate with BarBox: drag gesture and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const barBox = new widget.BarBox(container, "Gains", 300, 100, params.arrayParams, () => { });
+        barBox.canvas.setPointerCapture = () => { };
+        barBox.canvas.releasePointerCapture = () => { };
+
+        barBox.canvas.dispatchEvent(new PointerEvent("pointerdown", { clientX: 20, clientY: 20, button: 0, bubbles: true }));
+        barBox.canvas.dispatchEvent(new PointerEvent("pointermove", { clientX: 100, clientY: 40, button: 0, bubbles: true }));
+        barBox.canvas.dispatchEvent(new PointerEvent("pointerup", { clientX: 100, clientY: 40, button: 0, bubbles: true }));
+
+        expect(history.entries.length).toBe(2);
+        expect(history.entries[1].label).toBe("Edit: Gains");
+
+        history.undo();
+        expect(params.arrayParams[0].dsp).toBeCloseTo(0.1);
+
+        container.remove();
+      });
+
+      it("should integrate with BarBox: key randomize, wheel, and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const barBox = new widget.BarBox(container, "Gains", 300, 100, params.arrayParams, () => { });
+        barBox.canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 300, height: 100 });
+        const beforeVals = params.arrayParams.map(p => p.dsp);
+
+        barBox.canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
+        expect(history.entries.at(-1).label).toBe("Randomize: Gains");
+
+        history.undo();
+        barBox.refresh();
+        expect(params.arrayParams.map(p => p.dsp)).toEqual(beforeVals);
+
+        barBox.canvas.dispatchEvent(new WheelEvent("wheel", { clientX: 20, clientY: 50, deltaY: -100, bubbles: true }));
+        expect(history.entries.at(-1).label).toBe("Wheel: Gains");
+
+        history.undo();
+        barBox.refresh();
+        expect(params.arrayParams.map(p => p.dsp)).toEqual(beforeVals);
+
+        container.remove();
+      });
+
+      it("should integrate with BezierEnvelopeView: drag gesture and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const bezier = new widget.BezierEnvelopeView(container, 200, 100, params.bezierParams, "Attack Curve", () => { });
+        bezier.canvas.setPointerCapture = () => { };
+        bezier.canvas.releasePointerCapture = () => { };
+        bezier.canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 100 });
+
+        const initialP0X = params.bezierParams[0].dsp;
+        const initialP0Y = params.bezierParams[1].dsp;
+        const targetX = initialP0X * 200;
+        const targetY = initialP0Y * 100;
+
+        bezier.canvas.dispatchEvent(new PointerEvent("pointerdown", { clientX: targetX, clientY: targetY, pointerId: 1, bubbles: true }));
+        bezier.canvas.dispatchEvent(new PointerEvent("pointermove", { clientX: targetX + 20, clientY: targetY + 20, movementX: 20, movementY: 20, pointerId: 1, bubbles: true }));
+        bezier.canvas.dispatchEvent(new PointerEvent("pointerup", { clientX: targetX + 20, clientY: targetY + 20, pointerId: 1, bubbles: true }));
+
+        expect(history.entries.at(-1).label).toBe("Edit: Attack Curve");
+        expect(params.bezierParams[0].dsp).toBeCloseTo((targetX + 20) / 200);
+
+        history.undo();
+        bezier.refresh();
+        expect(params.bezierParams[0].dsp).toBeCloseTo(initialP0X);
+        expect(params.bezierParams[1].dsp).toBeCloseTo(initialP0Y);
+
+        container.remove();
+      });
+
+      it("should integrate with BezierEnvelopeView: randomize transaction and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const bezier = new widget.BezierEnvelopeView(container, 200, 100, params.bezierParams, "Attack Curve", () => { });
+        const beforeVals = params.bezierParams.map(p => p.dsp);
+
+        bezier.random();
+        expect(history.entries.at(-1).label).toBe("Randomize: Attack Curve");
+
+        history.undo();
+        bezier.refresh();
+        expect(params.bezierParams.map(p => p.dsp)).toEqual(beforeVals);
+
+        container.remove();
+      });
+
+      it("should integrate with EqualizerXYPad: drag band gesture and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const eq = new widget.EqualizerXYPad(container, "EQ Response", 300, 150, params.eqParams, () => { }, { filterTypes: ["hp2bq", "pk2bq", "lp2bq"] });
+        eq.canvas.setPointerCapture = () => { };
+        eq.canvas.releasePointerCapture = () => { };
+        eq.canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 300, height: 150 });
+
+        const initialCutoff = params.eqParams[1][1].dsp;
+        const initialGain = params.eqParams[1][3].ui;
+
+        const targetX = eq.mapHzToX(initialCutoff);
+        const targetY = eq.mapDbToY(initialGain);
+
+        eq.canvas.dispatchEvent(new PointerEvent("pointerdown", { clientX: targetX, clientY: targetY, pointerId: 1, button: 0, bubbles: true }));
+        eq.canvas.dispatchEvent(new PointerEvent("pointermove", { clientX: targetX + 30, clientY: targetY - 20, movementX: 30, movementY: -20, pointerId: 1, bubbles: true }));
+        eq.canvas.dispatchEvent(new PointerEvent("pointerup", { clientX: targetX + 30, clientY: targetY - 20, pointerId: 1, bubbles: true }));
+
+        expect(history.entries.at(-1).label).toBe("Edit: EQ Response");
+        expect(params.eqParams[1][1].dsp).not.toBe(initialCutoff);
+
+        history.undo();
+        eq.refresh();
+        expect(params.eqParams[1][1].dsp).toBeCloseTo(initialCutoff);
+        expect(params.eqParams[1][3].ui).toBeCloseTo(initialGain);
+
+        container.remove();
+      });
+
+      it("should integrate with EqualizerXYPad: wheel Q adjustment and Ctrl+Click band reset", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const eq = new widget.EqualizerXYPad(container, "EQ Response", 300, 150, params.eqParams, () => { }, { filterTypes: ["hp2bq", "pk2bq", "lp2bq"] });
+        eq.canvas.setPointerCapture = () => { };
+        eq.canvas.releasePointerCapture = () => { };
+        eq.canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 300, height: 150 });
+
+        const initialQ = params.eqParams[1][2].dsp;
+        const targetX = eq.mapHzToX(params.eqParams[1][1].dsp);
+        const targetY = eq.mapDbToY(params.eqParams[1][3].ui);
+
+        // Consecutive wheel events modify Q under an active gesture
+        eq.canvas.dispatchEvent(new WheelEvent("wheel", { clientX: targetX, clientY: targetY, deltaY: 100, bubbles: true }));
+        eq.canvas.dispatchEvent(new WheelEvent("wheel", { clientX: targetX, clientY: targetY, deltaY: 100, bubbles: true }));
+        const adjustedQ = params.eqParams[1][2].dsp;
+        expect(adjustedQ).not.toBe(initialQ);
+
+        // Cursor moving out / non-wheel event concludes the wheel gesture and records 1 entry
+        eq.canvas.dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+        expect(history.entries.at(-1).label).toBe("Wheel Q: EQ Response");
+        expect(history.entries.length).toBe(2);
+
+        // Ctrl+Click resets band
+        eq.canvas.dispatchEvent(new PointerEvent("pointerdown", { clientX: targetX, clientY: targetY, ctrlKey: true, pointerId: 1, button: 0, bubbles: true }));
+        expect(history.entries.at(-1).label).toBe("Reset Band: EQ Response");
+        expect(params.eqParams[1][2].dsp).toBeCloseTo(initialQ);
+
+        // Undo band reset restores wheel-adjusted Q
+        history.undo();
+        eq.refresh();
+        expect(params.eqParams[1][2].dsp).toBeCloseTo(adjustedQ);
+
+        // Undo wheel gesture restores initial Q
+        history.undo();
+        eq.refresh();
+        expect(params.eqParams[1][2].dsp).toBeCloseTo(initialQ);
+
+        container.remove();
+      });
+
+      it("should integrate with EqualizerXYPad: key edit gesture coalescing and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const eq = new widget.EqualizerXYPad(container, "EQ Response", 300, 150, params.eqParams, () => { }, { filterTypes: ["hp2bq", "pk2bq", "lp2bq"] });
+        const initialCutoff = params.eqParams[1][1].dsp;
+
+        // Select band 2 (index 1)
+        eq.canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "2", bubbles: true }));
+
+        // Repeated keydowns (auto-repeat) followed by keyup
+        eq.canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+        eq.canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+        eq.canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+        eq.canvas.dispatchEvent(new KeyboardEvent("keyup", { key: "ArrowRight", bubbles: true }));
+
+        expect(history.entries.length).toBe(2);
+        expect(history.entries.at(-1).label).toBe("Key Edit: EQ Response");
+        expect(params.eqParams[1][1].dsp).not.toBe(initialCutoff);
+
+        history.undo();
+        eq.refresh();
+        expect(params.eqParams[1][1].dsp).toBeCloseTo(initialCutoff);
+
+        container.remove();
+      });
+
+      it("should integrate with MultiCheckBoxVertical: toggle gesture and undo/redo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const multiCheck = new widget.MultiCheckBoxVertical(container, "Additive Harmonics", ["H1", "H2", "H3", "H4"], 200, params.multiCheckParams, () => { });
+        multiCheck.canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 120 });
+
+        expect(params.multiCheckParams[0].dsp).toBe(0);
+
+        const targetY = multiCheck.labelHeight;
+        multiCheck.canvas.dispatchEvent(new PointerEvent("pointerdown", { clientX: 20, clientY: targetY, bubbles: true }));
+        multiCheck.canvas.dispatchEvent(new PointerEvent("pointerup", { clientX: 20, clientY: targetY, bubbles: true }));
+
+        expect(history.entries.at(-1).label).toBe("Edit: Additive Harmonics");
+        expect(params.multiCheckParams[0].dsp).toBe(1);
+
+        history.undo();
+        multiCheck.refresh();
+        expect(params.multiCheckParams[0].dsp).toBe(0);
+
+        history.redo();
+        multiCheck.refresh();
+        expect(params.multiCheckParams[0].dsp).toBe(1);
+
+        container.remove();
+      });
+
+      it("should integrate with WaveformXYPad: custom provider presets, keys, and undo/redo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const waveform = new widget.WaveformXYPad(container, "Waveform Shaper", 300, 150, 6, "sine", () => { });
+        const initialPoints = waveform.getControlPoints();
+
+        waveform.canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "4", bubbles: true }));
+        expect(history.entries.at(-1).label).toBe("Preset: Sawtooth");
+        expect(isStateEqual(waveform.getControlPoints(), initialPoints)).toBeFalsy();
+
+        history.undo();
+        expect(isStateEqual(waveform.getControlPoints(), initialPoints)).toBeTruthy();
+
+        history.redo();
+        expect(isStateEqual(waveform.getControlPoints(), initialPoints)).toBeFalsy();
+
+        waveform.canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
+        expect(history.entries.at(-1).label).toBe("Randomize: Waveform Shaper");
+
+        const randPoints = waveform.getControlPoints();
+        history.undo();
+        expect(isStateEqual(waveform.getControlPoints(), randPoints)).toBeFalsy();
+
+        waveform.canvas.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }));
+        expect(history.entries.at(-1).label).toBe("Key Move: Waveform Shaper");
+
+        history.undo();
+
+        container.remove();
+      });
+
+      it("should integrate with WaveformXYPad: drag gesture and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const waveform = new widget.WaveformXYPad(container, "Waveform Shaper", 300, 150, 6, "sine", () => { });
+        waveform.canvas.setPointerCapture = () => { };
+        waveform.canvas.releasePointerCapture = () => { };
+        waveform.canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 300, height: 150 });
+
+        const initialPoints = waveform.getControlPoints();
+        const pt0 = initialPoints[0];
+
+        waveform.canvas.dispatchEvent(new PointerEvent("pointerdown", { clientX: pt0.x, clientY: pt0.y, pointerId: 1, button: 0, bubbles: true }));
+        waveform.canvas.dispatchEvent(new PointerEvent("pointermove", { clientX: pt0.x + 15, clientY: pt0.y + 15, movementX: 15, movementY: 15, pointerId: 1, bubbles: true }));
+        waveform.canvas.dispatchEvent(new PointerEvent("pointerup", { clientX: pt0.x + 15, clientY: pt0.y + 15, pointerId: 1, bubbles: true }));
+
+        expect(history.entries.at(-1).label).toBe("Edit: Waveform Shaper");
+        expect(isStateEqual(waveform.getControlPoints(), initialPoints)).toBeFalsy();
+
+        history.undo();
+        expect(isStateEqual(waveform.getControlPoints(), initialPoints)).toBeTruthy();
+
+        container.remove();
+      });
+
+      it("should integrate with TabView: refresh child widgets across tabs on undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        let tabInputA = null;
+        let tabToggleB = null;
+
+        const tabView = new widget.TabView(container, "TestTabs", [
+          (parent) => {
+            tabInputA = new widget.NumberInput(parent, "Param A", params.scalarA, () => { });
+            return { index: 0, label: "Tab 1", widgets: { tabInputA } };
+          },
+          (parent) => {
+            tabToggleB = new widget.ToggleButtonLine(parent, ["Off", "On"], params.flagToggle, () => { });
+            return { index: 1, label: "Tab 2", widgets: { tabToggleB } };
+          },
+        ]);
+
+        params.scalarA.dsp = 8.5;
+        history.push("Edit Param A in Tab 1");
+
+        tabView.selectTab(1);
+        tabToggleB.button.button.click();
+        expect(params.flagToggle.dsp).toBe(1);
+
+        history.undo();
+        tabView.refresh();
+        expect(params.flagToggle.dsp).toBe(0);
+
+        history.undo();
+        tabView.refresh();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+
+        container.remove();
+      });
+
+      it("should integrate with GuitarChordSelector: fret edit and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const chordSelector = new GuitarChordSelector(container, "Guitar Chord", {
+          bass: params.chordBass,
+          tuning: params.chordTuning,
+          frets: params.chordFrets,
+          mutes: params.chordMutes,
+          gains: params.chordGains,
+          pickPositions: params.chordPickPositions,
+          delays: params.chordDelays,
+          feedbacks: params.chordFeedbacks,
+          lpCutoffs: params.chordLpCutoffs,
+        }, () => { });
+
+        chordSelector.canvas.focus = () => { };
+        chordSelector.canvas.setPointerCapture = () => { };
+        chordSelector.canvas.releasePointerCapture = () => { };
+
+        const initialFret0 = params.chordFrets[0].dsp;
+        const targetX = chordSelector.getStringX(0);
+        const targetY = chordSelector.getFretY(3) - chordSelector.fretHeight * 0.5;
+        const canvasRect = chordSelector.canvas.getBoundingClientRect();
+
+        chordSelector.canvas.dispatchEvent(new PointerEvent("pointerdown", {
+          clientX: canvasRect.left + targetX,
+          clientY: canvasRect.top + targetY,
+          button: 0,
+          bubbles: true
+        }));
+        chordSelector.canvas.dispatchEvent(new PointerEvent("pointerup", { button: 0, bubbles: true }));
+
+        expect(params.chordFrets[0].dsp).toBe(3);
+        expect(history.entries.at(-1).label).toBe("Chord Edit");
+
+        history.undo();
+        chordSelector.refresh();
+        expect(params.chordFrets[0].dsp).toBe(initialFret0);
+
+        container.remove();
+      });
+
+      it("should integrate with GuitarChordSelector: chord transaction undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const chordSelector = new GuitarChordSelector(container, "Guitar Chord", {
+          bass: params.chordBass,
+          tuning: params.chordTuning,
+          frets: params.chordFrets,
+          mutes: params.chordMutes,
+          gains: params.chordGains,
+          pickPositions: params.chordPickPositions,
+          delays: params.chordDelays,
+          feedbacks: params.chordFeedbacks,
+          lpCutoffs: params.chordLpCutoffs,
+        }, () => { });
+
+        const beforeFrets = params.chordFrets.map(f => f.dsp);
+
+        history.transaction("Chord: D minor", () => {
+          params.chordFrets[0].dsp = 1;
+          params.chordFrets[1].dsp = 3;
+          params.chordFrets[2].dsp = 2;
+          chordSelector.updateChordDisplay();
+        });
+
+        expect(history.entries.at(-1).label).toBe("Chord: D minor");
+
+        history.undo();
+        chordSelector.refresh();
+        expect(params.chordFrets.map(f => f.dsp)).toEqual(beforeFrets);
+
+        container.remove();
+      });
+
+      it("should synchronize playControl UI buttons and history dropdown", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+
+        const pc = widget.playControl(
+          container,
+          () => { }, () => { }, () => { }, () => { },
+          () => { }, ["Default"], () => { }, () => { }, () => { },
+          params
+        );
+
+        expect(pc.buttonUndo.disabled).toBeTruthy();
+        expect(pc.buttonRedo.disabled).toBeTruthy();
+
+        params.scalarA.dsp = 8.0;
+        pc.historyManager.push("Edit Scalar");
+
+        expect(pc.buttonUndo.disabled).toBeFalsy();
+        expect(pc.buttonRedo.disabled).toBeTruthy();
+        expect(pc.selectHistory.children.length).toBe(2);
+
+        pc.buttonUndo.click();
+        expect(pc.buttonUndo.disabled).toBeTruthy();
+        expect(pc.buttonRedo.disabled).toBeFalsy();
+
+        container.remove();
+      });
+
+      it("should respond to global keyboard shortcuts (Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z)", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+
+        const pc = widget.playControl(
+          container,
+          () => { }, () => { }, () => { }, () => { },
+          () => { }, ["Default"], () => { }, () => { }, () => { },
+          params
+        );
+
+        params.scalarA.dsp = 9.9;
+        pc.historyManager.push("Step For Shortcut");
+
+        expect(pc.historyManager.currentIndex).toBe(1);
+
+        window.dispatchEvent(new KeyboardEvent("keydown", {
+          code: "KeyZ",
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        }));
+
+        expect(pc.historyManager.currentIndex).toBe(0);
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+
+        window.dispatchEvent(new KeyboardEvent("keydown", {
+          code: "KeyY",
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        }));
+
+        expect(pc.historyManager.currentIndex).toBe(1);
+        expect(params.scalarA.dsp).toBeCloseTo(9.9);
+
+        container.remove();
+      });
+
+      it("should coalesce continuous slider dragging into a single history entry", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const numberInput = new widget.NumberInput(container, "Drag Test", params.scalarA, () => { });
+        const rangeEl = container.querySelector('input[type="range"]');
+
+        rangeEl.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+
+        rangeEl.value = "3.0";
+        rangeEl.dispatchEvent(new Event("input", { bubbles: true }));
+
+        rangeEl.value = "4.5";
+        rangeEl.dispatchEvent(new Event("input", { bubbles: true }));
+
+        rangeEl.value = "7.2";
+        rangeEl.dispatchEvent(new Event("input", { bubbles: true }));
+
+        rangeEl.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+        rangeEl.dispatchEvent(new Event("change", { bubbles: true }));
+
+        expect(history.entries.length).toBe(2);
+        expect(history.entries[1].label).toBe("Slider: Drag Test");
+        expect(params.scalarA.dsp).toBeCloseTo(7.2);
+
+        history.undo();
+        expect(params.scalarA.dsp).toBeCloseTo(2.5);
+
+        container.remove();
+      });
+
+      it("should integrate with GuitarChordSelector: randomizeChord transaction and undo", () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const params = createMockParameters();
+        const history = new HistoryManager(params);
+
+        const chordSelector = new GuitarChordSelector(container, "Guitar Chord", {
+          bass: params.chordBass,
+          tuning: params.chordTuning,
+          frets: params.chordFrets,
+          mutes: params.chordMutes,
+          gains: params.chordGains,
+          pickPositions: params.chordPickPositions,
+          delays: params.chordDelays,
+          feedbacks: params.chordFeedbacks,
+          lpCutoffs: params.chordLpCutoffs,
+        }, () => { });
+
+        const beforeFrets = params.chordFrets.map(f => f.dsp);
+
+        chordSelector.randomizeChord();
+
+        expect(history.entries.length).toBe(2);
+        expect(history.entries[1].label).toMatch(/^Chord: /);
+
+        history.undo();
+        chordSelector.refresh();
+        expect(params.chordFrets.map(f => f.dsp)).toEqual(beforeFrets);
+
+        container.remove();
+      });
+    });
+
+    // -------------------------------------------------------------
+    // AUTOMATED TEST RUNNER CONTROLLER
+    // -------------------------------------------------------------
+    const resultsContainer = document.getElementById("testResultsContainer");
+    const statTotal = document.getElementById("statTotal");
+    const statPass = document.getElementById("statPass");
+    const statFail = document.getElementById("statFail");
+    const statDuration = document.getElementById("statDuration");
+    const btnRunTests = document.getElementById("btnRunTests");
+    const btnFilterFailed = document.getElementById("btnFilterFailed");
+
+    let filterFailedOnly = false;
+
+    async function runAllTests() {
+      resultsContainer.innerHTML = "";
+      let total = 0;
+      let passed = 0;
+      let failed = 0;
+      const startTime = performance.now();
+
+      for (const suite of testSuites) {
+        const suiteCard = document.createElement("div");
+        suiteCard.className = "suiteCard";
+
+        const suiteHeader = document.createElement("div");
+        suiteHeader.className = "suiteHeader";
+        suiteHeader.innerHTML = `<span>${suite.name}</span><span class="suiteBadge"></span>`;
+        suiteCard.appendChild(suiteHeader);
+
+        const testList = document.createElement("ul");
+        testList.className = "testList";
+        suiteCard.appendChild(testList);
+
+        let suitePass = 0;
+        let suiteFail = 0;
+
+        for (const test of suite.tests) {
+          total++;
+          const testItem = document.createElement("li");
+          testItem.className = "testItem";
+
+          try {
+            HistoryManager.customProviders.clear();
+            await test.fn();
+            passed++;
+            suitePass++;
+            testItem.innerHTML = `
+              <div>
+                <span class="testStatus statusPass">[PASS]</span>
+                <span>${test.name}</span>
+              </div>
+            `;
+          } catch (err) {
+            failed++;
+            suiteFail++;
+            testItem.innerHTML = `
+              <div>
+                <span class="testStatus statusFail">[FAIL]</span>
+                <span>${test.name}</span>
+                <div class="testErrorMsg">${err.message}\n${err.stack || ""}</div>
+              </div>
+            `;
+          }
+
+          if (filterFailedOnly && !testItem.querySelector(".statusFail")) {
+            testItem.style.display = "none";
+          }
+          testList.appendChild(testItem);
+        }
+
+        const badge = suiteHeader.querySelector(".suiteBadge");
+        badge.innerHTML = `<span style="color: var(--test-pass)">${suitePass} P</span> / <span style="color: var(--test-fail)">${suiteFail} F</span>`;
+
+        suiteHeader.addEventListener("click", () => {
+          testList.style.display = testList.style.display === "none" ? "block" : "none";
+        });
+
+        resultsContainer.appendChild(suiteCard);
+      }
+
+      const elapsed = Math.round(performance.now() - startTime);
+      statTotal.textContent = total;
+      statPass.textContent = passed;
+      statFail.textContent = failed;
+      statDuration.textContent = `${elapsed}ms`;
+
+      if (liveHistory && manualWaveform) {
+        HistoryManager.registerCustom(manualWaveform.id, {
+          get: () => manualWaveform.getControlPoints(),
+          set: (data) => {
+            manualWaveform.setControlPointsData(data);
+            manualWaveform.onChangeFunc();
+          },
+        });
+        Parameter.history = liveHistory;
+        updateToolbarUI();
+        updateInspector();
+      }
+    }
+
+    btnRunTests.addEventListener("click", runAllTests);
+
+    btnFilterFailed.addEventListener("click", () => {
+      filterFailedOnly = !filterFailedOnly;
+      btnFilterFailed.value = filterFailedOnly ? "Filter: Show All" : "Filter: Failed Only";
+      document.querySelectorAll(".testItem").forEach(item => {
+        if (filterFailedOnly && !item.querySelector(".statusFail")) {
+          item.style.display = "none";
+        } else {
+          item.style.display = "flex";
+        }
+      });
+    });
+
+    // -------------------------------------------------------------
+    // INTERACTIVE MANUAL TESTING PLAYGROUND INITIALIZATION
+    // -------------------------------------------------------------
+    const liveBtnUndo = document.getElementById("liveBtnUndo");
+    const liveBtnRedo = document.getElementById("liveBtnRedo");
+    const liveHistorySelect = document.getElementById("liveHistorySelect");
+    const liveHistoryBadge = document.getElementById("liveHistoryBadge");
+    const liveBtnResetInitial = document.getElementById("liveBtnResetInitial");
+    const liveStateDisplay = document.getElementById("liveStateDisplay");
+    const liveEventLog = document.getElementById("liveEventLog");
+    const checklistProgress = document.getElementById("checklistProgress");
+
+    const manualParams = createMockParameters();
+    let manualNumberInput = null;
+    let manualToggle = null;
+    let manualCheckBox = null;
+    let manualCombo = null;
+    let manualBarBox = null;
+    let manualBezier = null;
+    let manualEqualizer = null;
+    let manualMultiCheck = null;
+    let manualWaveform = null;
+    let manualChordSelector = null;
+    let liveHistory = null;
+
+    function logEvent(label) {
+      if (!liveEventLog) return;
+      if (liveEventLog.children[0]?.tagName === "EM") {
+        liveEventLog.innerHTML = "";
+      }
+      const li = document.createElement("li");
+      const time = new Date().toLocaleTimeString();
+      li.innerHTML = `<span class="timestamp">[${time}]</span> ${label}`;
+      liveEventLog.prepend(li);
+    }
+
+    function updateToolbarUI() {
+      if (!liveHistory || !liveBtnUndo || !liveBtnRedo || !liveHistoryBadge || !liveHistorySelect) {
+        return;
+      }
+      liveBtnUndo.disabled = !liveHistory.canUndo;
+      liveBtnRedo.disabled = !liveHistory.canRedo;
+      liveHistoryBadge.textContent = `Index: ${liveHistory.currentIndex} / ${Math.max(0, liveHistory.entries.length - 1)}`;
+
+      liveHistorySelect.innerHTML = "";
+      liveHistory.entries.forEach((e, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        const prefix = idx === liveHistory.currentIndex ? "● " : "   ";
+        opt.textContent = `${prefix}${idx}: ${e.label}`;
+        if (idx === liveHistory.currentIndex) opt.selected = true;
+        liveHistorySelect.appendChild(opt);
+      });
+    }
+
+    function updateInspector() {
+      if (!liveStateDisplay) return;
+      const stateObj = {
+        Length_s: parseFloat(manualParams.scalarA.dsp.toFixed(3)),
+        Stereo_Noise: manualParams.flagToggle.dsp === 1 ? "ON" : "OFF",
+        Distortion: manualParams.checkboxParam.dsp === 1 ? "Active" : "Bypass",
+        Pulse_Type: manualParams.modeCombo.scale.items[manualParams.modeCombo.dsp],
+        FF_Comb_Gains: manualParams.arrayParams.map(p => parseFloat(p.dsp.toFixed(2))),
+        Bezier_Points: manualParams.bezierParams.map(p => parseFloat(p.dsp.toFixed(2))),
+        EQ_Bands: manualParams.eqParams.map(b => ({
+          Cutoff_Hz: Math.round(b[1].dsp),
+          Q: parseFloat(b[2].dsp.toFixed(2)),
+          Gain_dB: parseFloat(b[3].ui.toFixed(1)),
+        })),
+        Harmonics: manualParams.multiCheckParams.map(p => p.dsp),
+        Chord_Frets: manualParams.chordFrets.map(f => f.dsp),
+        Chord_Mutes: manualParams.chordMutes.map(m => m.dsp),
+      };
+      liveStateDisplay.textContent = JSON.stringify(stateObj, null, 2);
+    }
+
+    function updateProgress() {
+      const allCheckboxes = document.querySelectorAll('.instructionStep input[type="checkbox"]');
+      const checkedBoxes = document.querySelectorAll('.instructionStep input[type="checkbox"]:checked');
+      if (checklistProgress) {
+        checklistProgress.textContent = `${checkedBoxes.length} / ${allCheckboxes.length} completed`;
+        checklistProgress.style.color = (checkedBoxes.length === allCheckboxes.length && allCheckboxes.length > 0)
+          ? "var(--test-pass)"
+          : "var(--color-text-dim)";
+      }
+    }
+
+    function refreshAllManualWidgets() {
+      manualNumberInput?.refresh();
+      manualToggle?.refresh();
+      manualCheckBox?.refresh();
+      manualCombo?.refresh();
+      manualBarBox?.refresh();
+      manualBezier?.refresh();
+      manualEqualizer?.refresh();
+      manualMultiCheck?.refresh();
+      manualWaveform?.refresh();
+      manualChordSelector?.refresh();
+    }
+
+    liveHistory = new HistoryManager(manualParams);
+
+    liveHistory.setOnRestore(() => {
+      refreshAllManualWidgets();
+      updateInspector();
+    });
+
+    liveHistory.setOnUpdate(() => {
+      updateToolbarUI();
+      updateInspector();
+    });
+
+    manualNumberInput = new widget.NumberInput(
+      document.getElementById("manualNumberInputContainer"),
+      "Length [s]",
+      manualParams.scalarA,
+      () => {
+        updateInspector();
+        logEvent(`NumberInput changed: ${manualParams.scalarA.dsp.toFixed(2)}`);
+      }
+    );
+
+    manualToggle = new widget.ToggleButtonLine(
+      document.getElementById("manualToggleContainer"),
+      ["Stereo Noise Off", "Stereo Noise On"],
+      manualParams.flagToggle,
+      () => {
+        updateInspector();
+        logEvent(`Toggle changed: ${manualParams.flagToggle.dsp}`);
+      }
+    );
+
+    manualCheckBox = new widget.CheckBoxLine(
+      document.getElementById("manualCheckBoxContainer"),
+      "Distortion Enable",
+      ["Bypass", "Active"],
+      manualParams.checkboxParam,
+      (state) => {
+        updateInspector();
+        logEvent(`CheckBox changed: ${state === 1 ? "Active" : "Bypass"}`);
+      }
+    );
+
+    manualCombo = new widget.ComboBoxLine(
+      document.getElementById("manualComboContainer"),
+      "Pulse Type",
+      manualParams.modeCombo,
+      () => {
+        updateInspector();
+        logEvent(`ComboBox changed: ${manualParams.modeCombo.scale.items[manualParams.modeCombo.dsp]}`);
+      }
+    );
+
+    manualBarBox = new widget.BarBox(
+      document.getElementById("manualBarBoxContainer"),
+      "FF Comb Gain [dB]",
+      360,
+      120,
+      manualParams.arrayParams,
+      () => {
+        updateInspector();
+        logEvent("BarBox modified");
+      }
+    );
+
+    manualBezier = new widget.BezierEnvelopeView(
+      document.getElementById("manualBezierContainer"),
+      360,
+      120,
+      manualParams.bezierParams,
+      "Bezier Envelope",
+      () => {
+        updateInspector();
+        logEvent("Bezier Envelope modified");
+      }
+    );
+
+    manualEqualizer = new widget.EqualizerXYPad(
+      document.getElementById("manualEqualizerContainer"),
+      "EQ Response",
+      360,
+      140,
+      manualParams.eqParams,
+      () => {
+        updateInspector();
+        logEvent("Equalizer modified");
+      },
+      { filterTypes: ["hp2bq", "pk2bq", "lp2bq"] }
+    );
+
+    manualMultiCheck = new widget.MultiCheckBoxVertical(
+      document.getElementById("manualMultiCheckContainer"),
+      "Additive Harmonics",
+      ["Harmonic 1", "Harmonic 2", "Harmonic 3", "Harmonic 4"],
+      360,
+      manualParams.multiCheckParams,
+      () => {
+        updateInspector();
+        logEvent("MultiCheckBox modified");
+      }
+    );
+
+    manualWaveform = new widget.WaveformXYPad(
+      document.getElementById("manualWaveformContainer"),
+      "Waveform Shaper",
+      360,
+      120,
+      6,
+      "sine",
+      () => {
+        updateInspector();
+        logEvent("Waveform Shaper modified");
+      }
+    );
+
+    manualChordSelector = new GuitarChordSelector(
+      document.getElementById("manualChordContainer"),
+      "Guitar Voicing & Strum",
+      {
+        bass: manualParams.chordBass,
+        tuning: manualParams.chordTuning,
+        frets: manualParams.chordFrets,
+        mutes: manualParams.chordMutes,
+        gains: manualParams.chordGains,
+        pickPositions: manualParams.chordPickPositions,
+        delays: manualParams.chordDelays,
+        feedbacks: manualParams.chordFeedbacks,
+        lpCutoffs: manualParams.chordLpCutoffs,
+      },
+      () => {
+        updateInspector();
+        logEvent("Guitar Chord modified");
+      },
+      360,
+      200
+    );
+
+    liveHistory.recordInitial("Initial State");
+
+    liveBtnUndo.addEventListener("click", () => {
+      liveHistory.undo();
+      logEvent(`Undo -> jumped to ${liveHistory.currentIndex}`);
+    });
+
+    liveBtnRedo.addEventListener("click", () => {
+      liveHistory.redo();
+      logEvent(`Redo -> jumped to ${liveHistory.currentIndex}`);
+    });
+
+    liveHistorySelect.addEventListener("change", (e) => {
+      const idx = parseInt(e.target.value, 10);
+      liveHistory.jumpTo(idx);
+      logEvent(`Jumped to index ${idx}`);
+    });
+
+    liveBtnResetInitial.addEventListener("click", () => {
+      liveHistory.jumpTo(0);
+      logEvent("Reset to initial state");
+    });
+
+    // Step-to-Widget quick jump listener
+    document.querySelectorAll(".instructionStep").forEach(step => {
+      step.addEventListener("click", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "LABEL") return;
+        const targetId = step.dataset.target;
+        if (!targetId) return;
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          targetEl.style.transition = "outline 0.3s ease";
+          targetEl.style.outline = "2px solid var(--color-accent, #007bff)";
+          setTimeout(() => { targetEl.style.outline = ""; }, 1200);
+        }
+      });
+    });
+
+    document.querySelectorAll('.instructionStep input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener("change", updateProgress);
+    });
+
+    window.addEventListener("keydown", (e) => {
+      const targetTag = e.target.tagName?.toLowerCase();
+      if (targetTag === "input" && (e.target.type === "text" || e.target.type === "number")) {
+        return;
+      }
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+
+      if (mod && !e.shiftKey && e.code === "KeyZ") {
+        e.preventDefault();
+        liveHistory.undo();
+        logEvent(`Hotkey Undo (Ctrl+Z) -> index ${liveHistory.currentIndex}`);
+      } else if ((mod && e.shiftKey && e.code === "KeyZ") || (mod && !isMac && e.code === "KeyY")) {
+        e.preventDefault();
+        liveHistory.redo();
+        logEvent(`Hotkey Redo -> index ${liveHistory.currentIndex}`);
+      }
+    });
+
+    const tabBtnAutomated = document.getElementById("tabBtnAutomated");
+    const tabBtnManual = document.getElementById("tabBtnManual");
+    const sectionAutomated = document.getElementById("sectionAutomated");
+    const sectionManual = document.getElementById("sectionManual");
+
+    tabBtnAutomated.addEventListener("click", () => {
+      tabBtnAutomated.classList.add("activeTab");
+      tabBtnManual.classList.remove("activeTab");
+      sectionAutomated.classList.add("activeSection");
+      sectionManual.classList.remove("activeSection");
+    });
+
+    tabBtnManual.addEventListener("click", () => {
+      tabBtnManual.classList.add("activeTab");
+      tabBtnAutomated.classList.remove("activeTab");
+      sectionManual.classList.add("activeSection");
+      sectionAutomated.classList.remove("activeSection");
+      Parameter.history = liveHistory;
+      updateToolbarUI();
+      updateInspector();
+      manualBarBox?.draw();
+      manualBezier?.draw();
+      manualEqualizer?.draw();
+      manualMultiCheck?.draw();
+      manualWaveform?.draw();
+      manualChordSelector?.draw();
+    });
+
+    window.addEventListener("load", () => {
+      updateToolbarUI();
+      updateInspector();
+      updateProgress();
+      runAllTests();
+    });
+  </script>
+</body>
+
+</html>

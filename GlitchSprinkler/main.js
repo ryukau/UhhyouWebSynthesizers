@@ -157,9 +157,16 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
   if (recipeName) {
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
-    recipeBook.get(recipeName).randomize(param);
-    render();
-    widget.refresh(ui);
+    const runImport = () => {
+      recipeBook.get(recipeName).randomize(param);
+      render();
+      widget.refresh(ui);
+    };
+    if (playControl.historyManager) {
+      playControl.historyManager.transaction(`Import: ${recipeName}`, runImport);
+    } else {
+      runImport();
+    }
   }
 });
 
@@ -184,6 +191,11 @@ const playControl = widget.playControl(
   },
   (ev) => { recipeExportDialog.open(); },
   (ev) => { recipeImportDialog.open(); },
+  param,
+  () => {
+    widget.refresh(ui);
+    render();
+  },
 );
 
 const detailRender = widget.details(divLeft, "Render");
@@ -204,7 +216,7 @@ const ui = {
     new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
   waveform: new widget.WaveformXYPad(
-    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13, render),
+    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13, "sine", render),
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   frequencyHz: new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
   oscOctave: new widget.NumberInput(detailOsc, "Octave", param.oscOctave, render),

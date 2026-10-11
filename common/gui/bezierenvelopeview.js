@@ -1,7 +1,8 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {clamp} from "../util.js";
+import {Parameter} from "../parameter.js";
+import {clamp, generateWidgetId} from "../util.js";
 
 import {palette} from "./palette.js";
 
@@ -12,14 +13,17 @@ export class BezierEnvelopeView {
   #focused = false;
 
   constructor(parent, width, height, bezierParameters, label, onChangeFunc) {
+    this.id = generateWidgetId("bezierEnvelope", label);
     this.param = bezierParameters;
     this.onChangeFunc = onChangeFunc;
 
     this.divContainer = document.createElement("div");
+    this.divContainer.id = `${this.id}-container`;
     this.divContainer.classList.add("bezierEnvelopeContainer");
     parent.appendChild(this.divContainer);
 
     this.liveRegion = document.createElement("span");
+    this.liveRegion.id = `${this.id}-live`;
     this.liveRegion.classList.add("sr-only");
     this.liveRegion.setAttribute("role", "status");
     this.liveRegion.setAttribute("aria-live", "polite");
@@ -38,6 +42,7 @@ export class BezierEnvelopeView {
     this.divContainer.appendChild(this.liveRegion);
 
     this.label = document.createElement("label");
+    this.label.id = `${this.id}-label`;
     this.label.textContent = label;
     this.label.tabIndex = 0;
     this.label.setAttribute("role", "button");
@@ -67,6 +72,9 @@ export class BezierEnvelopeView {
     this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.id = `${this.id}-canvas`;
+    this.canvas.setAttribute("aria-labelledby", `${this.id}-label`);
+    this.canvas.setAttribute("aria-controls", `${this.id}-live`);
     this.canvas.classList.add("envelopeView");
     this.canvas.ariaLabel = `${label}, canvas`;
     this.canvas.ariaDescription
@@ -79,6 +87,7 @@ export class BezierEnvelopeView {
     this.canvas.addEventListener("pointerup", (event) => this.onPointerUp(event), false);
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("keydown", (event) => this.onKeyDown(event), false);
+    this.canvas.addEventListener("keyup", (event) => this.onKeyUp(event), false);
     this.canvas.addEventListener("focus", () => this.onFocus(), false);
     this.canvas.addEventListener("blur", () => this.onBlur(), false);
     this.divCanvasMargin.appendChild(this.canvas);
@@ -151,14 +160,34 @@ export class BezierEnvelopeView {
   }
 
   onPointerDown(event) {
-    this.#grabbed = this.grabPoint(this.#getMousePosition(event));
-    if (this.#grabbed !== null) {
-      this.#selectedPointIndex = this.points.indexOf(this.#grabbed);
-      this.canvas.setPointerCapture(event.pointerId);
-      this.canvas.style.cursor = "grabbing";
+    const targetPoint = this.grabPoint(this.#getMousePosition(event));
+    if (targetPoint === null) return;
+
+    this.#selectedPointIndex = this.points.indexOf(targetPoint);
+
+    // Ctrl + Mouse Down or Ctrl + Touch: reset control point to default.
+    if (event.ctrlKey) {
+      event.preventDefault();
+      const px = this.param?.[this.#selectedPointIndex * 2];
+      const py = this.param?.[this.#selectedPointIndex * 2 + 1];
+      px?.resetToDefault?.();
+      py?.resetToDefault?.();
+      if (px) this.points[this.#selectedPointIndex].x = px.dsp * this.canvas.width;
+      if (py) this.points[this.#selectedPointIndex].y = py.dsp * this.canvas.height;
+      this.#updateParameter();
+      Parameter.history?.push(`Reset: ${this.label.textContent || "Bezier Envelope"}`);
+      this.onChangeFunc();
       this.draw();
-      this.#announcePointSelected(this.#selectedPointIndex);
+      this.#announcePointMoved(this.#selectedPointIndex);
+      return;
     }
+
+    this.#grabbed = targetPoint;
+    Parameter.history?.beginGesture(`Edit: ${this.label.textContent || "Bezier Envelope"}`);
+    this.canvas.setPointerCapture(event.pointerId);
+    this.canvas.style.cursor = "grabbing";
+    this.draw();
+    this.#announcePointSelected(this.#selectedPointIndex);
   }
 
   onPointerMove(event) {
@@ -179,13 +208,18 @@ export class BezierEnvelopeView {
   onPointerUp(event) {
     const wasDragging = this.#grabbed !== null;
     const movedIndex = this.#selectedPointIndex;
-    this.canvas.releasePointerCapture(event.pointerId);
+    if (this.canvas.hasPointerCapture?.(event.pointerId)) {
+      this.canvas.releasePointerCapture(event.pointerId);
+    }
     this.#grabbed = null;
     this.#highlighted = this.grabPoint(this.#getMousePosition(event));
     this.canvas.style.cursor = this.#highlighted !== null ? "grab" : "default";
     this.onChangeFunc();
     this.draw();
-    if (wasDragging) { this.#announcePointMoved(movedIndex); }
+    if (wasDragging) {
+      Parameter.history?.endGesture();
+      this.#announcePointMoved(movedIndex);
+    }
   }
 
   onPointerLeave(event) {
@@ -201,12 +235,17 @@ export class BezierEnvelopeView {
   }
 
   onBlur() {
+    Parameter.history?.endGesture();
     this.#focused = false;
     this.draw();
   }
 
   onKeyDown(event) {
     if (!this.points || this.points.length === 0) return;
+
+    const isArrowKey = event.key === "ArrowLeft" || event.key === "ArrowRight"
+      || event.key === "ArrowUp" || event.key === "ArrowDown";
+    if (!isArrowKey) { Parameter.history?.endGesture(); }
 
     let handled = false;
     let selectedChanged = false;
@@ -215,6 +254,9 @@ export class BezierEnvelopeView {
     const activePoint = this.points[this.#selectedPointIndex];
 
     switch (event.key) {
+      case "r":
+        this.random();
+        break;
       case "[":
         this.#selectedPointIndex
           = (this.#selectedPointIndex - 1 + this.points.length) % this.points.length;
@@ -256,21 +298,25 @@ export class BezierEnvelopeView {
         selectedChanged = true;
         break;
       case "ArrowLeft":
+        Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "Bezier Envelope"}`);
         activePoint.x = clamp(activePoint.x - step, 0, this.canvas.width);
         handled = true;
         moved = true;
         break;
       case "ArrowRight":
+        Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "Bezier Envelope"}`);
         activePoint.x = clamp(activePoint.x + step, 0, this.canvas.width);
         handled = true;
         moved = true;
         break;
       case "ArrowUp":
+        Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "Bezier Envelope"}`);
         activePoint.y = clamp(activePoint.y - step, 0, this.canvas.height);
         handled = true;
         moved = true;
         break;
       case "ArrowDown":
+        Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "Bezier Envelope"}`);
         activePoint.y = clamp(activePoint.y + step, 0, this.canvas.height);
         handled = true;
         moved = true;
@@ -287,6 +333,15 @@ export class BezierEnvelopeView {
       } else if (selectedChanged) {
         this.#announcePointSelected(this.#selectedPointIndex);
       }
+    }
+  }
+
+  onKeyUp(event) {
+    if (
+      event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "ArrowUp"
+      || event.key === "ArrowDown")
+    {
+      Parameter.history?.endGesture();
     }
   }
 
@@ -308,12 +363,21 @@ export class BezierEnvelopeView {
 
   random() {
     if (this.param[0]?.lockRandomization) { return; }
-    for (let point of this.points) {
-      point.x = this.canvas.width * Math.random();
-      point.y = this.canvas.height * Math.random();
+    const doRandom = () => {
+      for (let point of this.points) {
+        point.x = this.canvas.width * Math.random();
+        point.y = this.canvas.height * Math.random();
+      }
+      this.#updateParameter();
+      this.draw();
+    };
+
+    if (Parameter.history) {
+      Parameter.history.transaction(
+        `Randomize: ${this.label.textContent || "Bezier Envelope"}`, doRandom);
+    } else {
+      doRandom();
     }
-    this.#updateParameter();
-    this.draw();
   }
 
   draw() {

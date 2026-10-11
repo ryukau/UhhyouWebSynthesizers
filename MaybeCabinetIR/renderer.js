@@ -90,9 +90,9 @@ onmessage = async (event) => {
   let ir = fftHelper.c2r(spectrum);
   ir = rotate(ir, Math.floor(ir.length / 2));
 
-  const peaking = prm => sosMatchedPeak(prm[0] / pv.sampleRate, prm[1], prm[2]);
-  const lowpass = prm => sosBiquadLowpass(prm[0] / pv.sampleRate, prm[1], prm[2]);
-  const highpass = prm => sosMatchedHighpass(prm[0] / pv.sampleRate, prm[1], prm[2]);
+  const peaking = prm => sosMatchedPeak(prm[1] / pv.sampleRate, prm[2], prm[3]);
+  const lowpass = prm => sosBiquadLowpass(prm[1] / pv.sampleRate, prm[2], prm[3]);
+  const highpass = prm => sosMatchedHighpass(prm[1] / pv.sampleRate, prm[2], prm[3]);
 
   sos = [];
   sos.push(peaking(pv.peak1));

@@ -6,7 +6,8 @@ import {ComboBoxLine} from "../common/gui/combobox.js";
 import {NumberInput} from "../common/gui/numberinput.js";
 import {palette, uiSize} from "../common/gui/palette.js";
 import {TabView} from "../common/gui/tabview.js";
-import {clamp, midiPitchToFreq} from "../common/util.js";
+import {Parameter} from "../common/parameter.js";
+import {clamp, generateWidgetId, midiPitchToFreq} from "../common/util.js";
 
 import {
   calculateStringPitch,
@@ -210,6 +211,7 @@ export class GuitarChordSelector {
     width = uiSize.barboxWidth,
     height = uiSize.barboxWidth * 0.6,
   ) {
+    this.id = generateWidgetId("chordSelector", label);
     GuitarChordSelector.#injectCSS();
 
     this.label = label;
@@ -353,11 +355,13 @@ export class GuitarChordSelector {
 
   #buildDOM(parent) {
     this.container = document.createElement("div");
+    this.container.id = `${this.id}-container`;
     this.container.className = "chordSelectorContainer";
     parent.appendChild(this.container);
 
     if (this.label) {
       this.labelElement = document.createElement("label");
+      this.labelElement.id = `${this.id}-label`;
       this.labelElement.className = "chordSelectorLabel";
       this.labelElement.textContent = this.label;
       this.labelElement.style.display = "block";
@@ -404,6 +408,7 @@ export class GuitarChordSelector {
     this.#buildTagToolbar(this.container);
 
     this.chordDisplay = document.createElement("div");
+    this.chordDisplay.id = `${this.id}-chordDisplay`;
     this.chordDisplay.className = "chordDisplay";
     this.chordDisplay.style.margin = "4px var(--margin, 6px)";
     this.chordDisplay.style.padding = "4px 8px";
@@ -415,10 +420,12 @@ export class GuitarChordSelector {
     this.chordDisplay.style.gap = "6px";
 
     this.chordNameElement = document.createElement("span");
+    this.chordNameElement.id = `${this.id}-chordName`;
     this.chordNameElement.textContent = "--";
     this.chordDisplay.appendChild(this.chordNameElement);
 
     this.chordNotesElement = document.createElement("span");
+    this.chordNotesElement.id = `${this.id}-chordNotes`;
     this.chordNotesElement.className = "chordNotes";
     this.chordNotesElement.style.color = "var(--color-text-dim)";
     this.chordDisplay.appendChild(this.chordNotesElement);
@@ -431,6 +438,8 @@ export class GuitarChordSelector {
     this.container.appendChild(canvasWrap);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.id = `${this.id}-canvas`;
+    if (this.labelElement) { this.canvas.setAttribute("aria-labelledby", `${this.id}-label`); }
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.canvas.tabIndex = 0;
@@ -522,18 +531,21 @@ export class GuitarChordSelector {
 
   #buildTagToolbar(parent) {
     this.tagContainer = document.createElement("div");
+    this.tagContainer.id = `${this.id}-tagContainer`;
     this.tagContainer.className = "chordRandomTags";
 
     const header = document.createElement("div");
     header.className = "chordRandomTagsHeader";
 
     this.tagStatusLabel = document.createElement("span");
+    this.tagStatusLabel.id = `${this.id}-tagStatus`;
     header.appendChild(this.tagStatusLabel);
 
     const actions = document.createElement("div");
     actions.className = "chordRandomTagsActions";
 
     const btnAll = document.createElement("input");
+    btnAll.id = `${this.id}-tagAll`;
     btnAll.type = "button";
     btnAll.value = "All";
     btnAll.addEventListener("click", () => {
@@ -542,6 +554,7 @@ export class GuitarChordSelector {
     });
 
     const btnNone = document.createElement("input");
+    btnNone.id = `${this.id}-tagNone`;
     btnNone.type = "button";
     btnNone.value = "None";
     btnNone.addEventListener("click", () => {
@@ -550,6 +563,7 @@ export class GuitarChordSelector {
     });
 
     this.btnFixRoot = document.createElement("input");
+    this.btnFixRoot.id = `${this.id}-tagFixRoot`;
     this.btnFixRoot.type = "button";
     this.btnFixRoot.value = "Fix Root";
     this.btnFixRoot.title = "Fix root note on chord randomization";
@@ -570,6 +584,7 @@ export class GuitarChordSelector {
     this.tagButtons = new Map();
     for (const tag of RANDOMIZATION_TAGS) {
       const btn = document.createElement("input");
+      btn.id = `${this.id}-tag-${tag.id}`;
       btn.type = "button";
       btn.value = tag.label;
 
@@ -651,6 +666,7 @@ export class GuitarChordSelector {
   }
 
   #onPointerDown(event) {
+    Parameter.history?.beginGesture("Chord Edit");
     this.isDragging = true;
     this.canvas.focus();
     this.canvas.setPointerCapture(event.pointerId);
@@ -684,6 +700,7 @@ export class GuitarChordSelector {
       this.canvas.releasePointerCapture(event.pointerId);
     } catch (_) {}
     this.draw();
+    Parameter.history?.endGesture();
   }
 
   #interpolateTrajectory(p0, p1, ctrlKey) {
@@ -778,14 +795,21 @@ export class GuitarChordSelector {
     const chord = pool[Math.floor(Math.random() * pool.length)];
     if (!chord) return;
 
-    for (let s = 0; s < this.numStrings; ++s) {
-      this.params.frets[s].dsp = chord.frets[s];
-      this.params.mutes[s].dsp = chord.mutes[s];
-    }
+    const applyChord = () => {
+      for (let s = 0; s < this.numStrings; ++s) {
+        this.params.frets[s].dsp = chord.frets[s];
+        this.params.mutes[s].dsp = chord.mutes[s];
+      }
+      this.updateChordDisplay();
+      this.draw();
+      this.#updateDspAndNotify();
+    };
 
-    this.updateChordDisplay();
-    this.draw();
-    this.#updateDspAndNotify();
+    if (Parameter.history) {
+      Parameter.history.transaction(`Chord: ${chord.name}`, applyChord);
+    } else {
+      applyChord();
+    }
   }
 
   refresh() {

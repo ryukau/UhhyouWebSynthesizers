@@ -6,7 +6,8 @@ import {
   getSosGain,
   selectSosFilter,
 } from "../dsp/sos.js";
-import {clamp, dbToAmp} from "../util.js";
+import {Parameter} from "../parameter.js";
+import {clamp, dbToAmp, generateWidgetId} from "../util.js";
 
 import {palette} from "./palette.js";
 
@@ -57,8 +58,10 @@ export class EqualizerXYPad {
   #focusedPoint = -1;
   #grabbedPoint = -1;
   #nyquistX;
+  #wheelPoint = -1;
 
   constructor(parent, label, width, height, parameters, onChangeFunc, options = {}) {
+    this.id = generateWidgetId("equalizer", label);
     this.param = parameters;
     this.onChangeFunc = onChangeFunc;
 
@@ -77,10 +80,12 @@ export class EqualizerXYPad {
     this.customLabels = options.sectionLabels ?? null;
 
     this.divContainer = document.createElement("div");
+    this.divContainer.id = `${this.id}-container`;
     this.divContainer.classList.add("equalizerContainer");
     parent.appendChild(this.divContainer);
 
     this.liveRegion = document.createElement("span");
+    this.liveRegion.id = `${this.id}-live`;
     this.liveRegion.classList.add("sr-only");
     this.liveRegion.setAttribute("role", "status");
     this.liveRegion.setAttribute("aria-live", "polite");
@@ -99,6 +104,7 @@ export class EqualizerXYPad {
     this.divContainer.appendChild(this.liveRegion);
 
     this.label = document.createElement("label");
+    this.label.id = `${this.id}-label`;
     this.label.classList.add("equalizer");
     this.label.textContent = label;
     this.label.tabIndex = 0;
@@ -136,6 +142,9 @@ export class EqualizerXYPad {
     this.divContainer.appendChild(this.divCanvasMargin);
 
     this.canvas = document.createElement("canvas");
+    this.canvas.id = `${this.id}-canvas`;
+    this.canvas.setAttribute("aria-labelledby", `${this.id}-label`);
+    this.canvas.setAttribute("aria-controls", `${this.id}-live`);
     this.canvas.classList.add("envelopeView");
     this.canvas.ariaLabel = `${label}, canvas`;
     this.canvas.ariaDescription
@@ -149,17 +158,23 @@ export class EqualizerXYPad {
     this.canvas.addEventListener("pointerleave", (e) => this.onPointerLeave(e), false);
     this.canvas.addEventListener("wheel", (e) => this.onWheel(e), false);
     this.canvas.addEventListener("keydown", (e) => this.onKeyDown(e), false);
+    this.canvas.addEventListener("keyup", (e) => this.onKeyUp(e), false);
     this.canvas.addEventListener("focus", () => this.draw(), false);
-    this.canvas.addEventListener("blur", () => this.draw(), false);
+    this.canvas.addEventListener("blur", () => {
+      this.#endWheelGesture();
+      Parameter.history?.endGesture();
+      this.draw();
+    }, false);
     this.divCanvasMargin.appendChild(this.canvas);
     this.context = this.canvas.getContext("2d");
 
     this.indexInputContainer = document.createElement("div");
     this.indexInputContainer.classList.add("equalizerInputLine");
     this.divContainer.appendChild(this.indexInputContainer);
-    this.spanIndex = this.#addSpan("Index");
+    this.spanIndex = this.#addSpan("Index", `${this.id}-index`, `${this.id}-index-label`);
     this.indexInputContainer.appendChild(this.spanIndex);
-    this.inputIndex = this.#addInput("Index", "Index of equalizer control point.");
+    this.inputIndex
+      = this.#addInput(`${this.id}-index`, "Index", "Index of equalizer control point.");
     this.inputIndex.min = 0;
     this.inputIndex.max = Math.max(0, this.param.length - 1);
     this.inputIndex.step = 1;
@@ -169,9 +184,11 @@ export class EqualizerXYPad {
     this.cutoffInputContainer = document.createElement("div");
     this.cutoffInputContainer.classList.add("equalizerInputLine");
     this.divContainer.appendChild(this.cutoffInputContainer);
-    this.spanCutoffHz = this.#addSpan("Cutoff [Hz]");
+    this.spanCutoffHz
+      = this.#addSpan("Cutoff [Hz]", `${this.id}-cutoff`, `${this.id}-cutoff-label`);
     this.cutoffInputContainer.appendChild(this.spanCutoffHz);
-    this.inputCutoffHz = this.#addInput("Cutoff Hz", "Cutoff frequency in Hz.");
+    this.inputCutoffHz
+      = this.#addInput(`${this.id}-cutoff`, "Cutoff Hz", "Cutoff frequency in Hz.");
     this.inputCutoffHz.min = this.scaleCutoffHz ? this.scaleCutoffHz.minDsp : 20;
     this.inputCutoffHz.max = this.scaleCutoffHz ? this.scaleCutoffHz.maxDsp : 20000;
     this.inputCutoffHz.step = "any";
@@ -181,9 +198,9 @@ export class EqualizerXYPad {
     this.qInputContainer = document.createElement("div");
     this.qInputContainer.classList.add("equalizerInputLine");
     this.divContainer.appendChild(this.qInputContainer);
-    this.spanQ = this.#addSpan("Q");
+    this.spanQ = this.#addSpan("Q", `${this.id}-q`, `${this.id}-q-label`);
     this.qInputContainer.appendChild(this.spanQ);
-    this.inputQ = this.#addInput("Q", "Q factor of equalizer section.");
+    this.inputQ = this.#addInput(`${this.id}-q`, "Q", "Q factor of equalizer section.");
     this.inputQ.min = this.scaleQ ? this.scaleQ.minDsp : 0.1;
     this.inputQ.max = this.scaleQ ? this.scaleQ.maxDsp : 50;
     this.inputQ.step = "any";
@@ -193,9 +210,9 @@ export class EqualizerXYPad {
     this.gainInputContainer = document.createElement("div");
     this.gainInputContainer.classList.add("equalizerInputLine");
     this.divContainer.appendChild(this.gainInputContainer);
-    this.spanGainDB = this.#addSpan("Gain [dB]");
+    this.spanGainDB = this.#addSpan("Gain [dB]", `${this.id}-gain`, `${this.id}-gain-label`);
     this.gainInputContainer.appendChild(this.spanGainDB);
-    this.inputGainDB = this.#addInput("Gain dB", "Gain in decibels.");
+    this.inputGainDB = this.#addInput(`${this.id}-gain`, "Gain dB", "Gain in decibels.");
     this.inputGainDB.min = this.scaleGain ? this.scaleGain.minUi : -60;
     this.inputGainDB.max = this.scaleGain ? this.scaleGain.maxUi : 60;
     this.inputGainDB.step = "any";
@@ -308,16 +325,19 @@ export class EqualizerXYPad {
     this.refresh();
   }
 
-  #addSpan(label) {
-    let span = document.createElement("span");
+  #addSpan(label, forId, id) {
+    let span = document.createElement("label");
+    span.id = id;
+    span.htmlFor = forId;
     span.classList.add("equalizer");
     span.textContent = label;
     span.style.textAlign = "left";
     return span;
   }
 
-  #addInput(label, description) {
+  #addInput(id, label, description) {
     let input = document.createElement("input");
+    input.id = id;
     input.classList.add("equalizer");
     input.ariaLabel = label + ", value input";
     input.ariaDescription = description;
@@ -326,6 +346,7 @@ export class EqualizerXYPad {
   }
 
   #inputCallback(event) {
+    this.#endWheelGesture();
     this.#detailIndex = clamp(Math.floor(this.inputIndex.value), 0, this.#section.length - 1);
 
     const maxX = Math.min(this.canvas.width, this.#nyquistX);
@@ -458,6 +479,7 @@ export class EqualizerXYPad {
   }
 
   onPointerDown(event) {
+    this.#endWheelGesture();
     this.canvas.setPointerCapture(event.pointerId);
     this.#isMouseDown = true;
 
@@ -479,9 +501,13 @@ export class EqualizerXYPad {
         sc.x = clamp(this.mapHzToX(sc.cutoff * this.#sampleRate), 0, maxX);
         sc.y = clamp(this.mapDbToY(0), 0, this.canvas.height);
 
+        this.#refreshInternal(this.#grabbedPoint);
+        Parameter.history?.push(`Reset Band: ${this.label.textContent || "Equalizer"}`);
         this.onChangeFunc();
+      } else {
+        Parameter.history?.beginGesture(`Edit: ${this.label.textContent || "Equalizer"}`);
+        this.#refreshInternal(this.#grabbedPoint);
       }
-      this.#refreshInternal(this.#grabbedPoint);
       if (event.ctrlKey) {
         this.#announceBandMoved(this.#grabbedPoint, "reset");
         this.#grabbedPoint = -1;
@@ -501,6 +527,11 @@ export class EqualizerXYPad {
       let prevFocused = this.#focusedPoint;
       this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
       this.canvas.style.cursor = this.#focusedPoint >= 0 ? "grab" : "default";
+
+      if (this.#wheelPoint >= 0 && this.#focusedPoint !== this.#wheelPoint) {
+        this.#endWheelGesture();
+      }
+
       if (prevFocused === this.#focusedPoint) return;
       if (this.#focusedPoint >= 0) this.#detailIndex = this.#focusedPoint;
     } else {
@@ -533,10 +564,14 @@ export class EqualizerXYPad {
     this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
     this.canvas.style.cursor = this.#focusedPoint >= 0 ? "grab" : "default";
     this.onChangeFunc();
-    if (wasDragging && movedIndex >= 0) { this.#announceBandMoved(movedIndex); }
+    if (wasDragging) {
+      Parameter.history?.endGesture();
+      if (movedIndex >= 0) { this.#announceBandMoved(movedIndex); }
+    }
   }
 
   onPointerLeave(event) {
+    this.#endWheelGesture();
     if (!this.#isMouseDown) {
       this.#focusedPoint = -1;
       this.canvas.style.cursor = "default";
@@ -544,12 +579,29 @@ export class EqualizerXYPad {
     this.draw();
   }
 
+  #endWheelGesture() {
+    if (this.#wheelPoint < 0) return;
+    this.#wheelPoint = -1;
+    Parameter.history?.endGesture();
+  }
+
   onWheel(event) {
     event.preventDefault();
     if (event.deltaY === 0) return;
 
     this.#focusedPoint = this.#hitTest(this.#getMousePosition(event));
-    if (this.#focusedPoint < 0) return;
+    if (this.#focusedPoint < 0) {
+      this.#endWheelGesture();
+      return;
+    }
+
+    if (this.#wheelPoint >= 0 && this.#wheelPoint !== this.#focusedPoint) {
+      this.#endWheelGesture();
+    }
+    if (this.#wheelPoint < 0) {
+      this.#wheelPoint = this.#focusedPoint;
+      Parameter.history?.beginGesture(`Wheel Q: ${this.label.textContent || "Equalizer"}`);
+    }
 
     this.#detailIndex = this.#focusedPoint;
 
@@ -564,8 +616,18 @@ export class EqualizerXYPad {
     this.#announceBandMoved(this.#detailIndex, "Q");
   }
 
+  #isModifyKey(key) {
+    return (
+      key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight"
+      || key === "PageUp" || key === "PageDown" || key === "+" || key === "=" || key === "-"
+      || key === "_");
+  }
+
   onKeyDown(event) {
     if (this.#section.length === 0) return;
+
+    this.#endWheelGesture();
+    if (!this.#isModifyKey(event.key)) { Parameter.history?.endGesture(); }
 
     if (event.key === "[") {
       event.preventDefault();
@@ -600,6 +662,7 @@ export class EqualizerXYPad {
     if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault();
       if (!noQTypes.includes(sc.type)) {
+        Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "Equalizer"}`);
         const amount = event.key === "ArrowUp" ? 1 : -1;
         const sensi = event.shiftKey ? 0.02 : 0.1;
         let Q = sc.Q * Math.exp(amount * sensi);
@@ -613,6 +676,7 @@ export class EqualizerXYPad {
     {
       event.preventDefault();
       if (!noGainTypes.includes(sc.type)) {
+        Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "Equalizer"}`);
         const isUp = event.key === "PageUp" || event.key === "+" || event.key === "=";
         const step = event.shiftKey ? 0.2 : 1.0;
         sc.gainDB = clamp(sc.gainDB + (isUp ? step : -step), this.bottomDB, this.topDB);
@@ -622,6 +686,7 @@ export class EqualizerXYPad {
       }
     } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
+      Parameter.history?.beginGesture(`Key Edit: ${this.label.textContent || "Equalizer"}`);
       const factor = event.shiftKey ? 1.01 : 1.05;
       let hz = sc.cutoff * this.#sampleRate;
       hz = event.key === "ArrowRight" ? hz * factor : hz / factor;
@@ -641,6 +706,10 @@ export class EqualizerXYPad {
       this.draw();
       this.#announceBandMoved(this.#detailIndex, paramType);
     }
+  }
+
+  onKeyUp(event) {
+    if (this.#isModifyKey(event.key)) { Parameter.history?.endGesture(); }
   }
 
   draw() {

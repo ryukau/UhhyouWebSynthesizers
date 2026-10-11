@@ -174,7 +174,6 @@ export function randomUniformInt(low, high, rng = Math.random) {
  * @returns {number} Log-uniformly distributed float in [low, high).
  */
 export function randomLoguniform(low, high, rng = Math.random) {
-  // 1. Parameter Validation
   if (typeof low !== 'number' || typeof high !== 'number') {
     throw new TypeError('low and high must be numbers.');
   }
@@ -191,7 +190,6 @@ export function randomLoguniform(low, high, rng = Math.random) {
 
   if (low === high) { return low; }
 
-  // 2. Geometric Interval Splitting
   // Threshold changed to Math.E (~2.718) to guarantee step sizes <= 1 ULP.
   let currentLow = low;
   let currentHigh = high;
@@ -212,7 +210,6 @@ export function randomLoguniform(low, high, rng = Math.random) {
     }
   }
 
-  // 3. Base-Case Sampling with Rejection Guard
   const ratio = currentHigh / currentLow;
   let val;
 
@@ -451,3 +448,19 @@ export function getTimeStamp() {
   const tzMinute = `${Math.abs(tzOffsetMinute) % 60}`.padStart(2, "0");
   return `${localTime}${tzSign}${tzHour}${tzMinute}`;
 }
+
+const widgetIdCounters = new Map();
+
+export function generateWidgetId(prefix = "widget", label = "") {
+  let descriptor = "";
+  if (typeof label === "string" && label.length > 0) {
+    const words = label.match(/[a-zA-Z0-9]+/g);
+    if (words) { descriptor = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(""); }
+  }
+  const base = `${prefix}${descriptor}`;
+  const count = widgetIdCounters.get(base) ?? 0;
+  widgetIdCounters.set(base, count + 1);
+  return `${base}_${count}`;
+}
+
+export function resetWidgetIdCounters() { widgetIdCounters.clear(); }

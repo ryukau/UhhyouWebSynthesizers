@@ -1,33 +1,26 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {clamp} from "../util.js";
+import {Parameter} from "../parameter.js";
+import {clamp, generateWidgetId} from "../util.js";
 
 import {palette} from "./palette.js";
 
-// Ensure -Infinity placeholder matches active text styling.
-if (typeof document !== "undefined" && !document.getElementById("numberInputPlaceholderStyle")) {
-  const style = document.createElement("style");
-  style.id = "numberInputPlaceholderStyle";
-  style.textContent = `
-    input[type="number"].numberInputNumber::placeholder {
-      color: var(--color-text-main, inherit);
-      opacity: 1;
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 export class NumberInput {
+  #isDragging = false;
+
   constructor(parent, label, parameter, onInputFunc) {
+    this.id = generateWidgetId("numberInput", label);
     this.param = parameter;
     this.onInputFunc = onInputFunc;
 
     this.div = document.createElement("div");
+    this.div.id = `${this.id}-container`;
     this.div.className = "inputLine";
     parent.appendChild(this.div);
 
     this.label = document.createElement("label");
+    this.label.id = `${this.id}-label`;
     this.label.className = "inputLine";
     this.label.textContent = label;
     this.label.tabIndex = 0;
@@ -58,6 +51,8 @@ export class NumberInput {
     this.div.appendChild(this.container);
 
     this.range = document.createElement("input");
+    this.range.id = `${this.id}-range`;
+    this.range.setAttribute("aria-labelledby", `${this.id}-label`);
     this.range.type = "range";
     this.range.ariaLabel = `${label} Range Input`;
     this.range.ariaDescription
@@ -70,6 +65,8 @@ export class NumberInput {
     this.container.appendChild(this.range);
 
     this.number = document.createElement("input");
+    this.number.id = `${this.id}-number`;
+    this.number.setAttribute("aria-labelledby", `${this.id}-label`);
     this.number.type = "number";
     this.number.ariaLabel = `${label} Number Input`;
     this.number.ariaDescription
@@ -89,18 +86,31 @@ export class NumberInput {
       }
     }, false);
 
+    const endSliderGesture = () => {
+      if (this.#isDragging) {
+        this.#isDragging = false;
+        Parameter.history?.endGesture();
+      }
+    };
+    this.range.addEventListener("change", endSliderGesture, false);
+    this.range.addEventListener("pointerup", endSliderGesture, false);
+    this.range.addEventListener("pointercancel", endSliderGesture, false);
     this.range.addEventListener("input", (event) => this.onInputRange(event), false);
-    this.number.addEventListener("change", (event) => this.onInputNumber(event), false);
-
-    this.number.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
+    this.range.addEventListener("pointerdown", (event) => {
+      if (event.ctrlKey) { return; }
+      this.#isDragging = true;
+      Parameter.history?.beginGesture(`Slider: ${this.label.textContent || label}`);
+    }, false);
+    this.range.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" || event.key === "r") {
         event.preventDefault();
         this.reset();
       }
     }, false);
 
-    this.range.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" || event.key === "r") {
+    this.number.addEventListener("change", (event) => this.onInputNumber(event), false);
+    this.number.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
         event.preventDefault();
         this.reset();
       }
@@ -132,6 +142,7 @@ export class NumberInput {
   reset() {
     this.param.resetToDefault();
     this.refresh();
+    Parameter.history?.push(`Reset: ${this.label.textContent}`);
     this.onInputFunc(this.param.display);
   }
 
@@ -145,6 +156,10 @@ export class NumberInput {
       this.param.ui = value;
     }
     this.#updateDisplay();
+
+    // If dragging with pointer, gesture coalescing handles history at pointerup/change
+    if (!this.#isDragging) { Parameter.history?.push(`Input: ${this.label.textContent}`); }
+
     this.onInputFunc(this.param.display);
   }
 
@@ -178,6 +193,7 @@ export class NumberInput {
 
     this.param.display = value;
     this.#updateDisplay();
+    Parameter.history?.push(`Input: ${this.label.textContent}`);
     this.onInputFunc(this.param.display);
   }
 }
