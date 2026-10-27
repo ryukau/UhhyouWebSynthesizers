@@ -1,7 +1,7 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {HistoryManager, Parameter} from "../parameter.js";
+import {LinearScale, Parameter} from "../parameter.js";
 import {clamp, computePolynomial, generateWidgetId} from "../util.js";
 
 import {palette} from "./palette.js";
@@ -58,6 +58,66 @@ function solve(A, b, size) {
   return x;
 }
 
+function getWaveformPoint(ratio, idx, waveform) {
+  const triangle = (t) => {
+    t += 0.75;
+    t -= Math.floor(t);
+    return Math.abs(2 * t - 1);
+  };
+
+  let x = ratio;
+  let y = 0.5;
+
+  if (waveform === "sawtooth") {
+    x = ratio;
+    y = ratio;
+  } else if (waveform === "pulse") {
+    x = ratio;
+    y = idx <= 0 ? 0 : 0.5;
+  } else if (waveform === "triangle") {
+    x = ratio;
+    y = triangle(ratio);
+  } else if (waveform === "trapezoid") {
+    x = ratio;
+    y = clamp(1.5 * triangle(ratio) - 0.25, 0, 1);
+  } else if (waveform === "fmA") {
+    x = ratio;
+    y = (Math.sin(2 * Math.PI * ratio + 4 * Math.sin(2 * Math.PI * ratio)) + 1) * 0.5;
+  } else if (waveform === "fmB") {
+    x = ratio;
+    y = (Math.sin(2 * Math.PI * ratio + Math.sin(2 * Math.PI * ratio)) + 1) * 0.5;
+  } else if (waveform === "alternate") {
+    x = ratio;
+    y = idx % 2;
+  } else if (waveform === "chirp") {
+    x = 10 ** (-2 * ratio);
+    y = idx % 2;
+  } else {
+    // "sine" or default
+    x = ratio;
+    y = (Math.sin(2 * Math.PI * ratio) + 1) * 0.5;
+  }
+
+  return {x, y};
+}
+
+export function createWaveformParameters(polyOrder, defaultWaveform = "sawtooth") {
+  const nPoints = Math.max(1, polyOrder - 2);
+  const scale = new LinearScale(0, 1);
+  const pts = new Array(nPoints);
+
+  for (let idx = 0; idx < nPoints; ++idx) {
+    const ratio = (idx + 1) / (nPoints + 1);
+    const {x, y} = getWaveformPoint(ratio, idx, defaultWaveform);
+    pts[idx] = [
+      new Parameter(x, scale, true),
+      new Parameter(y, scale, true),
+    ];
+  }
+
+  return pts;
+}
+
 export class WaveformXYPad {
   #isMouseDown = false;
   #controlRadius = 8;
@@ -67,20 +127,33 @@ export class WaveformXYPad {
   #grabbedPoint = -1;
   #coefficients;
   #normalizeGain = 1;
-  #lockRandomization = false;
 
   constructor(
     parent,
     label,
     width,
     height,
-    polyOrder,
-    waveform,
-    onChangeFunc,
+    parameters,
+    onChangeFuncOrWaveform,
+    maybeOnChangeFunc,
   ) {
-    console.assert(polyOrder > 0, "BarBox parameter is empty.", new Error());
-
     this.id = generateWidgetId("waveformXYPad", label);
+
+    // Support both parameter-array widget signature and legacy (polyOrder, waveform, onChangeFunc).
+    if (typeof parameters === "number") {
+      const polyOrder = parameters;
+      const defaultWaveform
+        = typeof onChangeFuncOrWaveform === "string" ? onChangeFuncOrWaveform : "sawtooth";
+      this.onChangeFunc = typeof maybeOnChangeFunc === "function" ? maybeOnChangeFunc : (() => {});
+      this.param = createWaveformParameters(polyOrder, defaultWaveform);
+    } else {
+      this.param = parameters;
+      this.onChangeFunc
+        = typeof onChangeFuncOrWaveform === "function" ? onChangeFuncOrWaveform : (() => {});
+    }
+
+    console.assert(
+      this.param && this.param.length > 0, "WaveformXYPad parameter is empty.", new Error());
 
     this.divContainer = document.createElement("div");
     this.divContainer.id = `${this.id}-container`;
@@ -112,13 +185,22 @@ export class WaveformXYPad {
     this.label.textContent = label;
     this.label.tabIndex = 0;
     this.label.setAttribute("role", "button");
-    this.label.setAttribute("aria-pressed", this.#lockRandomization ? "true" : "false");
+    this.label.setAttribute("aria-pressed", this.isLocked ? "true" : "false");
     this.label.setAttribute("aria-label", `Lock randomization for ${label}`);
 
     const toggleLock = () => {
-      this.#lockRandomization = !this.#lockRandomization;
-      this.label.setAttribute("aria-pressed", this.#lockRandomization ? "true" : "false");
-      this.label.style.color = this.#lockRandomization ? palette.inactive : "unset";
+      if (!this.param || this.param.length === 0) return;
+      const newState = !this.isLocked;
+      const setLock = (node) => {
+        if (Array.isArray(node)) {
+          node.forEach(setLock);
+        } else if (node instanceof Parameter) {
+          node.lockRandomization = newState;
+        }
+      };
+      setLock(this.param);
+      this.label.setAttribute("aria-pressed", newState ? "true" : "false");
+      this.label.style.color = newState ? palette.inactive : "unset";
     };
 
     this.label.addEventListener("click", () => toggleLock(), false);
@@ -178,26 +260,30 @@ export class WaveformXYPad {
     this.divNormalizedView.appendChild(this.normalizedView);
     this.nvCtx = this.normalizedView.getContext("2d");
 
-    this.onChangeFunc = onChangeFunc;
-
-    this.#controlPoints = new Array(polyOrder - 2);
-    this.setControlPoints(waveform);
+    this.#controlPoints = new Array(this.param.length);
+    for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
+      const p = this.param[idx];
+      const xNorm = Array.isArray(p) ? p[0].dsp : (idx + 1) / (this.#controlPoints.length + 1);
+      const yNorm = Array.isArray(p) ? p[1].dsp : p.dsp;
+      this.#controlPoints[idx] = {
+        x: clamp(xNorm * width, 1, width - 1),
+        y: clamp(yNorm * height, 0, height),
+      };
+    }
 
     this.#coefficients = new Array(this.#controlPoints.length + 2).fill(0);
 
     window.matchMedia?.("(prefers-color-scheme: dark)")
       .addEventListener?.("change", () => this.draw());
 
-    HistoryManager.registerCustom(this.id, {
-      get: () => this.getControlPoints(),
-      set: (data) => {
-        this.setControlPointsData(data);
-        this.onChangeFunc();
-      },
-    });
-
     this.#updateCoefficients();
     this.refresh();
+  }
+
+  get isLocked() {
+    if (!this.param || this.param.length === 0) return false;
+    const fp = Array.isArray(this.param[0]) ? this.param[0][0] : this.param[0];
+    return fp?.lockRandomization ?? false;
   }
 
   #announce(text) {
@@ -223,86 +309,78 @@ export class WaveformXYPad {
     this.#announce(`Control point ${index + 1}: X ${x}, Y ${y}`);
   }
 
+  #updateParameters() {
+    if (!this.param) return;
+    for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
+      if (idx >= this.param.length) break;
+      const pt = this.#controlPoints[idx];
+      const p = this.param[idx];
+      const xNorm = this.canvas.width > 0 ? pt.x / this.canvas.width : 0;
+      const yNorm = this.canvas.height > 0 ? pt.y / this.canvas.height : 0;
+      if (Array.isArray(p)) {
+        p[0].dsp = xNorm;
+        p[1].dsp = yNorm;
+      } else if (p instanceof Parameter) {
+        p.dsp = yNorm;
+      }
+    }
+  }
+
   getControlPoints() { return structuredClone(this.#controlPoints); }
 
   setControlPointsData(points) {
     if (!Array.isArray(points)) return;
     this.#controlPoints = structuredClone(points);
+    this.#updateParameters();
     this.#updateCoefficients();
-    this.refresh();
+    this.draw();
   }
 
   setControlPoints(waveform) {
-    const triangle = (t) => {
-      t += 0.75;
-      t -= Math.floor(t);
-      return Math.abs(2 * t - 1);
-    };
-
     for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
       const ratio = (idx + 1) / (this.#controlPoints.length + 1);
-
-      if (waveform === "sawtooth") {
-        this.#controlPoints[idx] = {
-          x: ratio * this.canvas.width,
-          y: ratio * this.canvas.height,
-        };
-      } else if (waveform === "pulse") {
-        this.#controlPoints[idx] = {
-          x: ratio * this.canvas.width,
-          y: idx <= 0 ? 0 : this.canvas.height / 2,
-        };
-      } else if (waveform === "triangle") {
-        this.#controlPoints[idx] = {
-          x: ratio * this.canvas.width,
-          y: triangle(ratio) * this.canvas.height,
-        };
-      } else if (waveform === "trapezoid") {
-        this.#controlPoints[idx] = {
-          x: ratio * this.canvas.width,
-          y: clamp(1.5 * triangle(ratio) - 0.25, 0, 1) * this.canvas.height,
-        };
-      } else if (waveform === "fmA") {
-        this.#controlPoints[idx] = {
-          x: ratio * this.canvas.width,
-          y: (Math.sin(2 * Math.PI * ratio + 4 * Math.sin(2 * Math.PI * ratio)) + 1)
-            * this.canvas.height / 2,
-        };
-      } else if (waveform === "fmB") {
-        this.#controlPoints[idx] = {
-          x: ratio * this.canvas.width,
-          y: (Math.sin(2 * Math.PI * ratio + Math.sin(2 * Math.PI * ratio)) + 1)
-            * this.canvas.height / 2,
-        };
-      } else if (waveform === "alternate") {
-        this.#controlPoints[idx] = {
-          x: ratio * this.canvas.width,
-          y: (idx % 2) * this.canvas.height,
-        };
-      } else if (waveform === "chirp") {
-        this.#controlPoints[idx] = {
-          x: 10 ** (-2 * ratio) * this.canvas.width,
-          y: (idx % 2) * this.canvas.height,
-        };
-      } else {
-        this.#controlPoints[idx] = {
-          x: ratio * this.canvas.width,
-          y: (Math.sin(2 * Math.PI * ratio) + 1) * this.canvas.height / 2,
-        };
-      }
+      const ptNorm = getWaveformPoint(ratio, idx, waveform);
+      this.#controlPoints[idx] = {
+        x: ptNorm.x * this.canvas.width,
+        y: ptNorm.y * this.canvas.height,
+      };
     }
 
+    this.#updateParameters();
     this.#updateCoefficients();
     this.refresh();
   }
 
+  #updateFromParam() {
+    if (!this.param || !this.#controlPoints) return;
+    for (let idx = 0; idx < this.#controlPoints.length; ++idx) {
+      if (idx >= this.param.length) break;
+      const p = this.param[idx];
+      let xNorm, yNorm;
+      if (Array.isArray(p)) {
+        xNorm = p[0].dsp;
+        yNorm = p[1].dsp;
+      } else if (p instanceof Parameter) {
+        xNorm = (idx + 1) / (this.#controlPoints.length + 1);
+        yNorm = p.dsp;
+      }
+      this.#controlPoints[idx] = {
+        x: clamp(xNorm * this.canvas.width, 1, this.canvas.width - 1),
+        y: clamp(yNorm * this.canvas.height, 0, this.canvas.height),
+      };
+    }
+    this.#updateCoefficients();
+  }
+
   refresh() {
-    this.label.setAttribute("aria-pressed", this.#lockRandomization ? "true" : "false");
-    this.label.style.color = this.#lockRandomization ? palette.inactive : "unset";
+    this.label.setAttribute("aria-pressed", this.isLocked ? "true" : "false");
+    this.label.style.color = this.isLocked ? palette.inactive : "unset";
+    this.#updateFromParam();
     this.draw();
   }
 
   coefficients(normalize = true) {
+    this.#updateFromParam(); // Always ensure coefficients match current this.param
     let co = structuredClone(this.#coefficients);
     if (!normalize) return co;
 
@@ -315,6 +393,13 @@ export class WaveformXYPad {
 
     let ctrlPoints = structuredClone(this.#controlPoints);
     ctrlPoints.sort((p, q) => p.x - q.x);
+
+    // Prevent duplicate x coordinates from making matrix A singular
+    for (let i = 1; i < ctrlPoints.length; ++i) {
+      if (ctrlPoints[i].x <= ctrlPoints[i - 1].x) {
+        ctrlPoints[i].x = ctrlPoints[i - 1].x + Math.sqrt(Number.EPSILON);
+      }
+    }
 
     let b = new Array(size).fill(0);
     let polyX = new Array(size).fill(0);
@@ -377,7 +462,7 @@ export class WaveformXYPad {
       if (iter >= 53) peaks.push(getPeakPoint(xM));
     }
 
-    let maxPeak = peaks[0].y;
+    let maxPeak = peaks[0]?.y ?? 0;
     for (let i = 1; i < peaks.length; ++i) {
       if (maxPeak < peaks[i].y) maxPeak = peaks[i].y;
     }
@@ -401,7 +486,7 @@ export class WaveformXYPad {
   }
 
   randomize() {
-    if (this.#lockRandomization) return;
+    if (this.isLocked) return;
 
     const length = this.#controlPoints.length;
     for (let idx = 0; idx < length; ++idx) {
@@ -409,7 +494,9 @@ export class WaveformXYPad {
       pt.x = 0.5 * (1 - Math.cos(Math.PI * (idx + 1) / (length + 1))) * this.canvas.width;
       pt.y = Math.random() * this.canvas.height;
     }
+    this.#updateParameters();
     this.#updateCoefficients();
+    this.draw();
   }
 
   onPointerDown(event) {
@@ -454,6 +541,7 @@ export class WaveformXYPad {
         break;
       }
 
+      this.#updateParameters();
       this.#updateCoefficients();
     }
     this.draw();
@@ -529,6 +617,7 @@ export class WaveformXYPad {
           pt.x += 0.1;
           break;
         }
+        this.#updateParameters();
         this.#updateCoefficients();
         Parameter.history?.push(`Key Move: ${this.label?.textContent || "Waveform"}`);
         this.onChangeFunc();
@@ -545,7 +634,7 @@ export class WaveformXYPad {
         applyRandom();
       }
       this.draw();
-      this.#announce(this.#lockRandomization ? "Randomization locked" : "Randomized");
+      this.#announce(this.isLocked ? "Randomization locked" : "Randomized");
     } else if (event.key >= "1" && event.key <= "9") {
       const presets = {
         "1": {name: "Sine", func: () => this.setControlPoints("sine")},

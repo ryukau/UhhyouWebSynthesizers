@@ -752,9 +752,11 @@ div#RecipeImportDragAndDropArea {
 div#RecipeImportDragAndDropArea > span {
   color: var(--color-text-dim);
   font-size: 4rem;
+  pointer-events: none;
 }
 
-div#RecipeImportDragAndDropArea:hover {
+div#RecipeImportDragAndDropArea:hover,
+div#RecipeImportDragAndDropArea.dragover {
   background: var(--color-highlight);
   box-shadow: inset 8px 8px 16px var(--color-shadow-main);
 }

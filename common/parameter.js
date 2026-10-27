@@ -199,13 +199,14 @@ export class NegativeDecibelScale {
   get minUi() { return -this.scale.maxDB; }
   get maxUi() { return -this.scale.minDB; }
 
-  get minDsp() { return this.offset - this.scale.maxAmp; }
-  get maxDsp() { return this.offset - this.scale.minAmp; }
+  get minDsp() { return this.offset - this.offset * this.scale.maxAmp; }
+  get maxDsp() { return this.offset - this.offset * this.scale.minAmp; }
 
   toDsp(negativeDB) { return this.offset - this.offset * this.scale.toDsp(-negativeDB); }
   toUi(amplitude) {
-    const raw = this.scale.toUi(this.offset - amplitude);
-    return Number.isFinite(raw) ? 1 - raw : -Infinity;
+    const raw = this.scale.toUi((this.offset - amplitude) / this.offset);
+    if (!Number.isFinite(raw)) { return raw === -Infinity ? Infinity : -Infinity; }
+    return raw === 0 ? 0 : -raw;
   }
 }
 
@@ -461,7 +462,7 @@ number and document the change somewhere. No need to be semver.
 `fullRange` is used to dump full randomization recipe. This is only used to make first
 recipe.json which will be copied to make other recipes.
 */
-export function dumpJsonObject(param, version, options) {
+export function dumpJsonObject(param, version, options = {}) {
   // Handle options.
   const fullRange = options.fullRange === true;
   const author = options.author !== undefined ? `${options.author}` : "";
@@ -485,7 +486,7 @@ export function dumpJsonObject(param, version, options) {
   return data;
 }
 
-export function dumpJsonString(param, version, options) {
+export function dumpJsonString(param, version, options = {}) {
   return JSON.stringify(dumpJsonObject(param, version, options));
 }
 
@@ -554,7 +555,9 @@ function addRecipeRecursion(recipeName, key, parameter, randomInfo) {
 }
 
 export function addRecipe(parameters, recipeBook, newRecipe) {
-  const name = `${newRecipe.meta.author} - ${newRecipe.meta.recipeName}`;
+  const author = newRecipe.meta?.author ?? "";
+  const recipeName = newRecipe.meta?.recipeName ?? "WAV Import";
+  const name = `${author} - ${recipeName}`;
   if (recipeBook.has(name)) {
     console.warn(`Recipe "${name}" is overwritten. Set unique author and name.`);
   }
@@ -626,7 +629,7 @@ export async function loadJson(parameters, recipeBook, recipeJsonPaths) {
 class FullRandomizer {
   constructor(recipe) { this.recipe = recipe; }
 
-  randomize(parameters) {
+  #apply(parameters, action) {
     const recursion = (prm, rnd) => {
       if (Array.isArray(prm) ^ Array.isArray(rnd)) {
         console.warn("Array length mismatch.", prm, rnd, new Error());
@@ -635,38 +638,50 @@ class FullRandomizer {
       if (Array.isArray(prm) && Array.isArray(rnd)) {
         for (let i = 0; i < prm.length; ++i) recursion(prm[i], rnd[i]);
         return;
-      };
-      prm.randomize(rnd.randomFunc);
+      }
+      if (prm) action(prm, rnd);
     };
-    for (let [key, randomizer] of this.recipe) recursion(parameters[key], randomizer);
+    for (const [key, randomizer] of this.recipe) recursion(parameters[key], randomizer);
   }
+
+  randomize(parameters) { this.#apply(parameters, (prm, rnd) => prm.randomize(rnd.randomFunc)); }
+  setParameters(parameters) { this.#apply(parameters, (prm, rnd) => rnd.setFunc(prm)); }
 }
 
 class Randomizer {
   // `key` isn't necessary but convenient to debug recursion.
   constructor(key, parameter, randomInfo) {
     this.key = key;
-    this.randomFunc = this.#getRandomFunc(parameter, randomInfo);
+    const {setFunc, randomFunc} = this.#createFuncs(parameter, randomInfo);
+    this.setFunc = setFunc;
+    this.randomFunc = randomFunc;
   }
 
-  #getRandomFunc(parameter, randomInfo) {
-    const rnd = randomInfo.random;
-    if (rnd.type === "bypass") return () => {};
+  #parseDisplayValue(val) {
+    if (val === "-Infinity" || val === null) return -Infinity;
+    return Number.isFinite(val) ? val : undefined;
+  }
 
-    // The rest is a branch for `rnd.type === "display"`.
-    // `d*` for display value, `n*` for normalized value.
-    let dMin = rnd.min;
-    let dMax = rnd.max;
-    if (dMin === "-Infinity" || dMin === null) dMin = -Infinity;
-    if (dMax === "-Infinity" || dMax === null) dMax = -Infinity;
-    if (dMin !== -Infinity && !Number.isFinite(dMin)) return () => {};
-    if (dMax !== -Infinity && !Number.isFinite(dMax)) return () => {};
-    if (dMin === dMax) return (prm) => { prm.display = dMin; };
+  #createFuncs(parameter, randomInfo) {
+    const noop = () => {};
+    const rnd = randomInfo.random;
+    if (!parameter || rnd.type === "bypass") return {setFunc: noop, randomFunc: noop};
+
+    let dMin = this.#parseDisplayValue(rnd.min);
+    if (dMin === undefined) return {setFunc: noop, randomFunc: noop};
+
+    const baseVal = dMin;
+    const setFunc = (prm) => { prm.display = baseVal; };
+
+    let dMax = this.#parseDisplayValue(rnd.max);
+    if (dMax === undefined) return {setFunc, randomFunc: noop};
+    if (dMin === dMax) return {setFunc, randomFunc: setFunc};
     if (dMin > dMax) [dMin, dMax] = [dMax, dMin];
 
     const nMin = parameter.displayToNormalized(dMin);
     const nDiff = parameter.displayToNormalized(dMax) - nMin;
-    return (prm) => { prm.normalized = nMin + nDiff * Math.random(); };
+    const randomFunc = (prm) => { prm.normalized = nMin + nDiff * Math.random(); };
+    return {setFunc, randomFunc};
   }
 }
 
@@ -682,12 +697,20 @@ function applyLocalRecipe(parameter, recipe) {
   for (const [key, prm] of Object.entries(parameter)) {
     if (recipe.hasOwnProperty(key)) {
       if (Array.isArray(prm)) {
-        if (!prm[0].lockRandomization) recipe[key](prm);
+        const first = Array.isArray(prm[0]) ? prm[0][0] : prm[0];
+        if (!first?.lockRandomization) recipe[key](prm);
       } else {
         prm.randomize(recipe[key]);
       }
     } else if (Array.isArray(prm)) {
-      prm.forEach(item => item.randomize((x) => { x.normalized = Math.random(); }));
+      const randomizeRecursion = (item) => {
+        if (Array.isArray(item)) {
+          item.forEach(randomizeRecursion);
+        } else if (item instanceof Parameter) {
+          item.randomize((x) => { x.normalized = Math.random(); });
+        }
+      };
+      prm.forEach(randomizeRecursion);
     } else if (prm.scale instanceof MenuItemScale) {
       // Do nothing if randomization is not specified in `recipe`.
     } else {

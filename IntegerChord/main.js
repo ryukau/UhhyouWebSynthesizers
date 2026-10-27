@@ -12,64 +12,59 @@ import * as menuitems from "./menuitems.js";
 
 const version = 4;
 
+const randomUniform
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
+const randomInt
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformInt(low, high)));
+const randomLoguniform
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomLoguniform(low, high)));
+const randomLogInt
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomLoguniformInt(low, high)));
+const randomFull = (prm) => prm.randomize((p) => (p.normalized = Math.random()));
+
 const localRecipeBook = {
-  "Default": {
-    renderDuration: () => {},
-    fadeIn: () => {},
-    fadeOut: () => {},
-    noteDecayT60: () => {},
-    stereoMerge: () => {},
-    dcHighpassHz: () => {},
-    overSample: () => {},
-    sampleRateScaler: () => {},
+  "Default": (param) => {
+    ui.waveform.randomize();
 
-    limiterEnable: () => {},
-    limiterThreshold: () => {},
-    limiterAttackSeconds: () => {},
+    randomFull(param.seed);
+    randomFull(param.fmIndex);
+    randomFull(param.saturationGain);
+    randomFull(param.oscPolySineMix);
+    randomFull(param.oscSineDecaySeconds);
+    randomFull(param.oscSinePitch);
 
-    nUnison: () => {},
-    unisonDetuneCent: () => {},
-    unisonPhaseSpread: () => {},
-    unisonDetuneType: () => {},
+    randomFull(param.filterResonance);
+    randomFull(param.filterCutoffOctave);
+    randomFull(param.filterCutoffDecayT60);
+    randomFull(param.filterCutoffDecayCurve);
+    randomFull(param.filterCutoffKeyFollow);
 
-    frequencyHz: () => {},
-    oscOctave: () => {},
-    // oscSinePitch: () => {},
-    oscSinePitchMod: () => {},
+    randomFull(param.chordMaxOctave);
+    randomFull(param.chordPhaseOffset);
+    randomFull(param.chordRandomStartSeconds);
 
-    useFilter: () => {},
-    filterType: (prm) => {/*prm.normalized = Math.random();*/},
-    filterCascade: () => {},
-    // filterResonance: () => {},
-    // filterCutoffOctave: () => {},
-    // filterRiseOctave: () => {},
-    // filterCutoffDecayT60: () => {},
-    // filterCutoffKeyFollow: () => {},
+    const presetScales = [
+      [0, 4, 8, 9, 18, 20, 24],  // [0, 2, 4, 5, 7, 9, 11].
+      [0, 5, 7, 9, 18, 20, 22],  // [0, 2, 3, 5, 7, 9, 10].
+      [0, 1, 7, 9, 18, 19, 22],  // [0, 1, 3, 5, 7, 8, 10].
+      [0, 4, 8, 10, 18, 20, 24], // [0, 2, 4, 6, 7, 9, 11].
+      [0, 4, 8, 9, 18, 20, 21],  // [0, 2, 4, 5, 7, 9, 10].
+      [0, 5, 7, 9, 18, 19, 22],  // [0, 2, 3, 5, 7, 8, 10].
+      [0, 1, 7, 9, 14, 19, 22],  // [0, 1, 3, 5, 6, 8, 10].
+    ];
+    let chord = presetScales[Math.floor(Math.random() * presetScales.length)];
 
-    chordPitchStackUp: () => {},
-    chordGainSlope: () => {},
-    chordNotes: (prm) => {
-      const presetScales = [
-        [0, 4, 8, 9, 18, 20, 24],  // [0, 2, 4, 5, 7, 9, 11].
-        [0, 5, 7, 9, 18, 20, 22],  // [0, 2, 3, 5, 7, 9, 10].
-        [0, 1, 7, 9, 18, 19, 22],  // [0, 1, 3, 5, 7, 8, 10].
-        [0, 4, 8, 10, 18, 20, 24], // [0, 2, 4, 6, 7, 9, 11].
-        [0, 4, 8, 9, 18, 20, 21],  // [0, 2, 4, 5, 7, 9, 10].
-        [0, 5, 7, 9, 18, 19, 22],  // [0, 2, 3, 5, 7, 8, 10].
-        [0, 1, 7, 9, 14, 19, 22],  // [0, 1, 3, 5, 6, 8, 10].
-      ];
-      let chord = presetScales[Math.floor(Math.random() * presetScales.length)];
+    // `nRemove` must be a separate variable. `chord.length` changes in the loop below.
+    const targetLength = Math.floor(Math.random() * chord.length) + 1;
+    const nRemove = chord.length - targetLength;
+    for (let i = 0; i < nRemove; ++i) {
+      const removeIndex = Math.floor(Math.random() * chord.length);
+      chord.splice(removeIndex, 1);
+    }
 
-      // `nRemove` must be a separate variable. `chord.length` changes in the loop below.
-      const targetLength = Math.floor(Math.random() * chord.length) + 1;
-      const nRemove = chord.length - targetLength;
-      for (let i = 0; i < nRemove; ++i) {
-        const removeIndex = Math.floor(Math.random() * chord.length);
-        chord.splice(removeIndex, 1);
-      }
-
-      for (let idx = 0; idx < prm.length; ++idx) { prm[idx].dsp = chord.includes(idx) ? 1 : 0; }
-    },
+    for (let idx = 0; idx < param.chordNotes.length; ++idx) {
+      param.chordNotes[idx].dsp = chord.includes(idx) ? 1 : 0;
+    }
   },
 };
 
@@ -157,6 +152,7 @@ const param = {
   unisonDetuneCent: new parameter.Parameter(20, scales.unisonDetuneCent, true),
   unisonDetuneType: new parameter.Parameter(0, scales.unisonDetuneType, true),
 
+  waveform: widget.createWaveformParameters(23, "sawtooth"),
   seed: new parameter.Parameter(0, scales.seed, true),
   frequencyHz: new parameter.Parameter(40, scales.frequencyHz, true),
   oscOctave: new parameter.Parameter(0, scales.oscOctave, true),
@@ -236,12 +232,14 @@ const waveView = [
     divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
-audio.addEventListener("renderfinish", (event) => {{
-  const wave = event.detail;
-  for (let i = 0; i < waveView.length; ++i) {{
-    waveView[i].set(wave.data[i], wave.peakValue);
-  }}
-}});
+audio.addEventListener("renderfinish", (event) => {
+  {
+    const wave = event.detail;
+    for (let i = 0; i < waveView.length; ++i) {
+      { waveView[i].set(wave.data[i], wave.peakValue); }
+    }
+  }
+});
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
@@ -255,7 +253,7 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
     const runImport = () => {
-      recipeBook.get(recipeName).randomize(param);
+      recipeBook.get(recipeName).setParameters(param);
       render();
       widget.refresh(ui);
     };
@@ -271,11 +269,14 @@ const playControl = widget.playControl(
   divLeft,
   (ev) => { audio.play(getSampleRateScaler()); },
   (ev) => { audio.stop(); },
-  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {
+    audio.save(
+      false, [], getSampleRateScaler(),
+      parameter.dumpJsonString(param, version, {recipeName: util.getTimeStamp()}));
+  },
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);
-    ui.waveform.randomize(); // Specific to this synth.
     render();
     widget.refresh(ui);
   },
@@ -332,7 +333,7 @@ const ui = {
     new widget.ComboBoxLine(detailUnison, "Detune Type", param.unisonDetuneType, render),
 
   waveform: new widget.WaveformXYPad(
-    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 23, "sawtooth",
+    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, param.waveform,
     render),
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   frequencyHz: new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),

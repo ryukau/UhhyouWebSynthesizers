@@ -11,27 +11,29 @@ import * as menuitems from "./menuitems.js";
 
 const version = 1;
 
+const randomUniform
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
+const randomInt
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformInt(low, high)));
+const randomLoguniform
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomLoguniform(low, high)));
+const randomLogInt
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomLoguniformInt(low, high)));
+const randomFull = (prm) => prm.randomize((p) => (p.normalized = Math.random()));
+
 const localRecipeBook = {
-  "Default": {
-    renderDurationBeat: () => {},
-    tempoBpm: () => {},
-    fadeIn: () => {},
-    fadeOut: () => {},
-    decayTo: () => {},
-    overSample: () => {},
-    sampleRateScaler: () => {},
-    oscOctave: () => {},
-    oscSync: () => {},
-    frequencyHz: () => {},
-    pitchScale: () => {},
-    equalTemperament: () => {},
-    pitchDriftCent: () => {},
-    arpeggioDecayTo: () => {},
-    arpeggioRestChance: () => {},
-    enableProgression: () => {},
-    resetArpeggio: () => {},
-    progressionDuration: () => {},
-    chordChance: () => {},
+  "Default": (param) => {
+    ui.waveform.randomize();
+
+    randomFull(param.seed);
+    randomFull(param.fmIndex);
+
+    randomFull(param.arpeggioDurationVariation);
+    randomFull(param.pitchVariation);
+    randomFull(param.pitchOctaveWrap);
+
+    randomFull(param.chordNoteCount);
+    randomFull(param.chordMaxOvertone);
   },
 };
 
@@ -91,6 +93,7 @@ const param = {
   overSample: new parameter.Parameter(0, scales.overSample),
   sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
 
+  waveform: widget.createWaveformParameters(13, "sine"),
   seed: new parameter.Parameter(0, scales.seed, true),
   frequencyHz: new parameter.Parameter(160, scales.frequencyHz, true),
   oscOctave: new parameter.Parameter(0, scales.oscOctave, true),
@@ -140,12 +143,14 @@ const waveView = [
     divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
-audio.addEventListener("renderfinish", (event) => {{
-  const wave = event.detail;
-  for (let i = 0; i < waveView.length; ++i) {{
-    waveView[i].set(wave.data[i], wave.peakValue);
-  }}
-}});
+audio.addEventListener("renderfinish", (event) => {
+  {
+    const wave = event.detail;
+    for (let i = 0; i < waveView.length; ++i) {
+      { waveView[i].set(wave.data[i], wave.peakValue); }
+    }
+  }
+});
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
@@ -159,7 +164,7 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
     const runImport = () => {
-      recipeBook.get(recipeName).randomize(param);
+      recipeBook.get(recipeName).setParameters(param);
       render();
       widget.refresh(ui);
     };
@@ -175,11 +180,14 @@ const playControl = widget.playControl(
   divLeft,
   (ev) => { audio.play(getSampleRateScaler()); },
   (ev) => { audio.stop(); },
-  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {
+    audio.save(
+      false, [], getSampleRateScaler(),
+      parameter.dumpJsonString(param, version, {recipeName: util.getTimeStamp()}));
+  },
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);
-    ui.waveform.randomize(); // Specific to this synth.
     render();
     widget.refresh(ui);
   },
@@ -217,7 +225,8 @@ const ui = {
     new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
 
   waveform: new widget.WaveformXYPad(
-    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13, "sine", render),
+    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, param.waveform,
+    render),
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   frequencyHz: new widget.NumberInput(detailOsc, "Frequency [Hz]", param.frequencyHz, render),
   oscOctave: new widget.NumberInput(detailOsc, "Octave", param.oscOctave, render),

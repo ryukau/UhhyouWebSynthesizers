@@ -5,7 +5,7 @@
 There's a bug that `sampleRateScaler` affects duration and octave.
 */
 
-import {constructIntJustScale, justIntonationTable} from "../common/dsp/tuning.js"
+import {constructIntJustScale, justIntonationTable} from "../common/dsp/tuning.js";
 import {palette, uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
@@ -16,36 +16,33 @@ import * as menuitems from "./menuitems.js";
 
 const version = 2;
 
+const randomUniform
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
+const randomInt
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformInt(low, high)));
+const randomLoguniform
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomLoguniform(low, high)));
+const randomLogInt
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomLoguniformInt(low, high)));
+const randomFull = (prm) => prm.randomize((p) => (p.normalized = Math.random()));
+
 const localRecipeBook = {
-  "Default": {
-    durationSecondPerSection: () => {},
-    octaveStart: () => {},
-    octaveRange: () => {},
-    basePeriod: () => {},
-    overSample: () => {},
-    sampleRateScaler: () => {},
-    addSpace: () => {},
-    removeDirectCurrent: () => {},
-    normalizePerSection: () => {},
+  "Default": (param) => {
+    ui.waveform.randomize();
 
-    limiterEnable: () => {},
-    limiterThreshold: () => {},
-    limiterAttackSeconds: () => {},
+    randomFull(param.seed);
+    randomFull(param.fmIndex);
+    randomFull(param.fmUpdateCycle);
+    randomFull(param.saturationGain);
 
-    oscSync: () => {},
-    fmDecay: () => {},
+    randomFull(param.filterResonance);
+    randomFull(param.filterCutoffOctave);
+    randomFull(param.filterCutoffDecayTo);
+    randomFull(param.filterCutoffDecayCurve);
+    randomFull(param.filterCutoffKeyFollow);
 
-    filterType: (prm) => {/*prm.normalized = Math.random();*/},
-    filterCascade: () => {},
-    // filterResonance: () => {},
-    // filterCutoffOctave: () => {},
-    // filterRiseOctave: () => {},
-    // filterCutoffDecayTo: () => {},
-    // filterCutoffKeyFollow: () => {},
-
-    arpeggioDecayTo: () => {},
-    chordGainSlope: () => {},
-    arpeggioNotes: () => {},
+    randomFull(param.chordNotePerSection);
+    randomFull(param.chordMaxOctave);
   },
 };
 
@@ -123,6 +120,7 @@ const param = {
   limiterThreshold: new parameter.Parameter(1, scales.limiterThreshold, false),
   limiterAttackSeconds: new parameter.Parameter(0.01, scales.limiterAttackSeconds, true),
 
+  waveform: widget.createWaveformParameters(13, "sine"),
   seed: new parameter.Parameter(0, scales.seed, true),
   oscSync: new parameter.Parameter(0, scales.oscSync, true),
   fmIndex: new parameter.Parameter(0, scales.fmIndex, true),
@@ -201,12 +199,10 @@ const waveView = [
     divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
-audio.addEventListener("renderfinish", (event) => {{
+audio.addEventListener("renderfinish", (event) => {
   const wave = event.detail;
-  for (let i = 0; i < waveView.length; ++i) {{
-    waveView[i].set(wave.data[i], wave.peakValue);
-  }}
-}});
+  for (let i = 0; i < waveView.length; ++i) { waveView[i].set(wave.data[i], wave.peakValue); }
+});
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
@@ -220,7 +216,7 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
     const runImport = () => {
-      recipeBook.get(recipeName).randomize(param);
+      recipeBook.get(recipeName).setParameters(param);
       render();
       widget.refresh(ui);
     };
@@ -249,15 +245,16 @@ const playControl = widget.playControl(
       cue[idx] = {
         start: idx * noteDuration,
         end: Math.min((idx + 1) * noteDuration - bytesPerFrame, lastFrameByte),
-      }
+      };
     }
 
-    audio.save(false, cue, getSampleRateScaler());
+    audio.save(
+      false, cue, getSampleRateScaler(),
+      parameter.dumpJsonString(param, version, {recipeName: util.getTimeStamp()}));
   },
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);
-    ui.waveform.randomize(); // Specific to this synth.
     render();
     widget.refresh(ui);
   },
@@ -311,7 +308,8 @@ const ui = {
     new widget.NumberInput(detailLimiter, "Attack [s]", param.limiterAttackSeconds, render),
 
   waveform: new widget.WaveformXYPad(
-    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, 13, "sine", render),
+    detailOsc, "Waveform", 2 * uiSize.waveViewWidth, 2 * uiSize.waveViewHeight, param.waveform,
+    render),
   seed: new widget.NumberInput(detailOsc, "Seed", param.seed, render),
   oscSync: new widget.NumberInput(detailOsc, "Sync.", param.oscSync, render),
   fmIndex: new widget.NumberInput(detailOsc, "FM Index", param.fmIndex, render),

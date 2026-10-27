@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parameter Import/Export & WAVE Metadata Test Suite</title>
+  <style>
+    :root {
+      --bg: #1e1e24;
+      --card-bg: #282830;
+      --border: #3f3f4a;
+      --text: #e2e2e8;
+      --text-muted: #8c8c9a;
+      --pass: #2ec4b6;
+      --fail: #e71d36;
+      --code-bg: #141418;
+      --accent: #4ea8de;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      padding: 2rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .summary-bar {
+      display: flex;
+      gap: 1.5rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      align-items: center;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .stat-value.pass {
+      color: var(--pass);
+    }
+
+    .stat-value.fail {
+      color: var(--fail);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6rem 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: auto;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover {
+      opacity: 0.85;
+    }
+
+    .suite {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .suite-header {
+      padding: 0.75rem 1.25rem;
+      background: #22222a;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .test-case {
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .test-case:last-child {
+      border-bottom: none;
+    }
+
+    .test-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.pass {
+      background: rgba(46, 196, 182, 0.15);
+      color: var(--pass);
+    }
+
+    .badge.fail {
+      background: rgba(231, 29, 54, 0.15);
+      color: var(--fail);
+    }
+
+    .test-name {
+      font-size: 0.95rem;
+    }
+
+    .test-error {
+      background: var(--code-bg);
+      color: #ff8b94;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-family: monospace;
+      margin-top: 0.4rem;
+      white-space: pre-wrap;
+    }
+
+    .dropzone {
+      margin-top: 2rem;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .dropzone:hover {
+      border-color: var(--accent);
+    }
+
+    #fileInput {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Automated Parameter Import & Export Test Suite</h1>
+      <p class="subtitle">Validates JSON serialization, RIFF/WAVE ICMT chunk embedding, and deterministic parameter reconstruction via <code>setParameters()</code>.</p>
+    </header>
+
+    <div class="summary-bar">
+      <div class="stat">
+        <span class="stat-label">Total</span>
+        <span class="stat-value" id="statTotal">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Passed</span>
+        <span class="stat-value pass" id="statPass">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Failed</span>
+        <span class="stat-value fail" id="statFail">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Elapsed</span>
+        <span class="stat-value" id="statTime">-</span>
+      </div>
+      <button class="btn" id="btnRerun">Re-run Tests</button>
+    </div>
+
+    <div id="testOutput"></div>
+
+    <div class="dropzone" id="dropzone">
+      <strong>Drop saved .wav or .json file here</strong> to inspect & verify embedded preset metadata
+      <input type="file" id="fileInput" accept=".wav,.json">
+      <div id="manualInspectOutput" style="margin-top: 0.75rem; font-family: monospace; font-size: 0.85rem; text-align: left;"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as parameter from "../common/parameter.js";
+    import * as util from "../common/util.js";
+    import * as wave from "../common/wave.js";
+
+    // --- Micro Test Runner Framework ---
+    class TestRunner {
+      constructor() {
+        this.suites = [];
+        this.currentSuite = null;
+      }
+
+      describe(title, fn) {
+        this.currentSuite = { title, tests: [] };
+        this.suites.push(this.currentSuite);
+        fn();
+      }
+
+      test(name, fn) {
+        this.currentSuite.tests.push({ name, fn });
+      }
+
+      async run() {
+        let total = 0, passed = 0, failed = 0;
+        const results = [];
+        const t0 = performance.now();
+
+        for (const suite of this.suites) {
+          const suiteRes = { title: suite.title, tests: [] };
+          for (const t of suite.tests) {
+            total++;
+            try {
+              await t.fn();
+              passed++;
+              suiteRes.tests.push({ name: t.name, status: "PASS" });
+            } catch (err) {
+              failed++;
+              suiteRes.tests.push({ name: t.name, status: "FAIL", error: err.message || String(err) });
+            }
+          }
+          results.push(suiteRes);
+        }
+
+        const t1 = performance.now();
+        return { total, passed, failed, duration: (t1 - t0).toFixed(1), results };
+      }
+    }
+
+    // --- Custom Assertions ---
+    function assert(cond, msg = "Assertion failed") {
+      if (!cond) throw new Error(msg);
+    }
+    function assertEqual(actual, expected, msg = "") {
+      if (actual !== expected) {
+        throw new Error(`${msg ? msg + " - " : ""}Expected [${expected}], received [${actual}]`);
+      }
+    }
+    function assertClose(actual, expected, eps = 1e-5, msg = "") {
+      if (Math.abs(actual - expected) > eps) {
+        throw new Error(`${msg ? msg + " - " : ""}Expected ~[${expected}] (eps=${eps}), received [${actual}]`);
+      }
+    }
+
+    // --- Build Test Suites ---
+    const runner = new TestRunner();
+
+    // 1. JSON Export & Import (Scalar & Array parameters)
+    runner.describe("1. JSON Parameter Dump & Reconstruction", () => {
+      runner.test("Exports parameter tree to standard JSON with meta & parameters", () => {
+        const scales = {
+          gain: new parameter.LinearScale(0, 1),
+          pitch: new parameter.IntScale(20, 100),
+        };
+        const params = {
+          gain: new parameter.Parameter(0.75, scales.gain, false, "Master gain"),
+          pitch: new parameter.Parameter(48, scales.pitch, true),
+        };
+
+        const jsonStr = parameter.dumpJsonString(params, 1, {
+          author: "UnitTester",
+          recipeName: "CustomPreset",
+        });
+        const parsed = JSON.parse(jsonStr);
+
+        assertEqual(parsed.meta.author, "UnitTester");
+        assertEqual(parsed.meta.recipeName, "CustomPreset");
+        assertEqual(parsed.meta.version, 1);
+        assertEqual(parsed.parameters.gain.info.comment, "Master gain");
+        assertEqual(parsed.parameters.gain.random.min, 0.75);
+        assertEqual(parsed.parameters.pitch.random.min, 48);
+      });
+
+      runner.test("Round-trip restore: setParameters() deterministically restores modified scalars", () => {
+        const scales = {
+          linear: new parameter.LinearScale(0, 100),
+          decibel: new parameter.DecibelScale(-40, 20, false),
+        };
+        const params = {
+          linear: new parameter.Parameter(50, scales.linear),
+          decibel: new parameter.Parameter(util.dbToAmp(6), scales.decibel),
+        };
+
+        // Mutate to target values
+        params.linear.dsp = 88.5;
+        params.decibel.dsp = util.dbToAmp(-12);
+
+        const exported = parameter.dumpJsonObject(params, 1, { recipeName: "SavedState" });
+
+        // Scramble current state
+        params.linear.dsp = 10;
+        params.decibel.dsp = util.dbToAmp(0);
+
+        // Load into recipe book and apply
+        const recipeBook = new Map();
+        const recipeName = parameter.addRecipe(params, recipeBook, exported);
+        assert(recipeBook.has(recipeName), "Recipe registered in recipeBook");
+
+        recipeBook.get(recipeName).setParameters(params);
+
+        assertClose(params.linear.dsp, 88.5, 1e-4, "Linear parameter restored");
+        assertClose(params.decibel.ui, -12, 1e-4, "Decibel parameter restored in UI");
+        assertClose(params.decibel.dsp, util.dbToAmp(-12), 1e-4, "Decibel parameter restored in DSP");
+      });
+
+      runner.test("Round-trip restore: Array parameters (e.g. EQ, Pickup Taps)", () => {
+        const scale = new parameter.LinearScale(0, 1);
+        const params = {
+          taps: [
+            new parameter.Parameter(0.1, scale),
+            new parameter.Parameter(0.2, scale),
+            new parameter.Parameter(0.3, scale),
+          ],
+        };
+
+        params.taps[0].dsp = 0.95;
+        params.taps[1].dsp = 0.42;
+        params.taps[2].dsp = 0.11;
+
+        const exported = parameter.dumpJsonObject(params, 1, { recipeName: "ArrayPreset" });
+
+        // Scramble
+        params.taps.forEach(p => p.dsp = 0);
+
+        const recipeBook = new Map();
+        const name = parameter.addRecipe(params, recipeBook, exported);
+        recipeBook.get(name).setParameters(params);
+
+        assertClose(params.taps[0].dsp, 0.95, 1e-4);
+        assertClose(params.taps[1].dsp, 0.42, 1e-4);
+        assertClose(params.taps[2].dsp, 0.11, 1e-4);
+      });
+    });
+
+    // 2. Scale Types & Edge Cases
+    runner.describe("2. Scale Types & Special Values (-Infinity, Negative DB)", () => {
+      runner.test("DecibelScale with minToZero=true correctly preserves -Infinity", () => {
+        const scale = new parameter.DecibelScale(-60, 0, true);
+        const params = { cut: new parameter.Parameter(0, scale) }; // 0 amp = -Infinity dB
+
+        const exported = parameter.dumpJsonObject(params, 1, { recipeName: "ZeroAmp" });
+        assertEqual(exported.parameters.cut.random.min, "-Infinity");
+
+        // Set to non-zero, then restore
+        params.cut.dsp = 0.5;
+        const recipeBook = new Map();
+        const name = parameter.addRecipe(params, recipeBook, exported);
+        recipeBook.get(name).setParameters(params);
+
+        assertEqual(params.cut.dsp, 0, "DSP restored to 0 amp");
+        assertEqual(params.cut.ui, -Infinity, "UI restored to -Infinity dB");
+      });
+
+      runner.test("IntScale preserves integer bounds and steps", () => {
+        const scale = new parameter.IntScale(1, 16);
+        const params = { count: new parameter.Parameter(4, scale) };
+        params.count.dsp = 13;
+
+        const exported = parameter.dumpJsonObject(params, 1);
+        params.count.dsp = 1;
+
+        const recipeBook = new Map();
+        const name = parameter.addRecipe(params, recipeBook, exported);
+        recipeBook.get(name).setParameters(params);
+
+        assertEqual(params.count.dsp, 13);
+      });
+
+      runner.test("MidiPitchScale converts and restores note frequencies accurately", () => {
+        const scale = new parameter.MidiPitchScale(0, 127, false);
+        const params = { note: new parameter.Parameter(util.midiPitchToFreq(69), scale) }; // A4 = 440 Hz
+
+        params.note.ui = 60; // C4
+
+        const exported = parameter.dumpJsonObject(params, 1);
+        params.note.ui = 40;
+
+        const recipeBook = new Map();
+        const name = parameter.addRecipe(params, recipeBook, exported);
+        recipeBook.get(name).setParameters(params);
+
+        assertClose(params.note.ui, 60, 1e-3, "MIDI Pitch restored");
+        assertClose(params.note.dsp, util.midiPitchToFreq(60), 1e-3, "Hz restored");
+      });
+
+      runner.test("NegativeDecibelScale and SymmetricLogScale handle inverted & bipolar ranges", () => {
+        const negScale = new parameter.NegativeDecibelScale(-60, 0, 1, true);
+        const symScale = new parameter.SymmetricLogScale(1e-2, 1);
+
+        const params = {
+          feedback: new parameter.Parameter(0.95, negScale),
+          bipolar: new parameter.Parameter(-0.5, symScale),
+        };
+
+        const exported = parameter.dumpJsonObject(params, 1);
+        params.feedback.dsp = 0.2;
+        params.bipolar.dsp = 0.5;
+
+        const recipeBook = new Map();
+        const name = parameter.addRecipe(params, recipeBook, exported);
+        recipeBook.get(name).setParameters(params);
+
+        assertClose(params.feedback.dsp, 0.95, 1e-4, "NegativeDecibel restored");
+        assertClose(params.bipolar.dsp, -0.5, 1e-4, "SymmetricLog negative restored");
+      });
+    });
+
+    // 3. WAVE Header ICMT Chunk Embedding and Extraction
+    runner.describe("3. WAVE RIFF Chunk Embedding & Extraction (Wave.fileHeader & extractJson)", () => {
+      runner.test("Round-trip: Wave.extractJson() extracts identical JSON string from fileHeader", () => {
+        const jsonPayload = JSON.stringify({
+          meta: { author: "WavAuthor", recipeName: "WavPreset", version: 1 },
+          parameters: { gain: { random: { min: 0.85, max: 0.85, type: "display" } } }
+        });
+
+        const dummyBufferSize = 256;
+        const header = wave.Wave.fileHeader(48000, 2, dummyBufferSize, false, [], jsonPayload);
+
+        // Build full WAV buffer (header + zero-filled audio bytes)
+        const fullWav = new Uint8Array(header.length + dummyBufferSize);
+        fullWav.set(header, 0);
+
+        const extracted = wave.Wave.extractJson(fullWav);
+        assertEqual(extracted, jsonPayload, "Extracted JSON exactly matches embedded JSON");
+
+        const parsed = JSON.parse(extracted);
+        assertEqual(parsed.meta.recipeName, "WavPreset");
+      });
+
+      runner.test("RIFF Word-Alignment: Handles odd-length and even-length JSON payload padding", () => {
+        const oddPayload = '{"odd":true,"val":123}';     // 22 chars -> 23 bytes with null -> 1 pad byte
+        const evenPayload = '{"even":true,"val":1234}';   // 23 chars -> 24 bytes with null -> 0 pad byte
+
+        for (const payload of [oddPayload, evenPayload]) {
+          const header = wave.Wave.fileHeader(44100, 1, 128, false, [], payload);
+          const wav = new Uint8Array(header.length + 128);
+          wav.set(header, 0);
+
+          const extracted = wave.Wave.extractJson(wav);
+          assertEqual(extracted, payload, `Payload with length ${payload.length} extracted cleanly`);
+        }
+      });
+
+      runner.test("Returns null gracefully on WAV without ICMT chunk or non-WAV buffer", () => {
+        // Standard header without JSON
+        const noJsonHeader = wave.Wave.fileHeader(48000, 2, 64, false, [], "");
+        assertEqual(wave.Wave.extractJson(noJsonHeader), null, "WAV without JSON returns null");
+
+        // Non-WAV / Corrupted buffer
+        const nonWav = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04]);
+        assertEqual(wave.Wave.extractJson(nonWav), null, "Non-WAV buffer returns null");
+      });
+    });
+
+    // 4. End-to-End Workflow Verification
+    runner.describe("4. End-to-End Workflow: Audio Save -> WAV -> File Load -> setParameters()", () => {
+      runner.test("Simulates save() with metadata -> extract -> addRecipe -> setParameters()", () => {
+        const scales = {
+          rate: new parameter.MenuItemScale(["44100", "48000", "96000"]),
+          cutoff: new parameter.LinearScale(20, 20000),
+          taps: new parameter.IntScale(1, 8),
+        };
+
+        const synthParams = {
+          sampleRateScaler: new parameter.Parameter(1, scales.rate),
+          cutoff: new parameter.Parameter(3500, scales.cutoff),
+          taps: new parameter.Parameter(6, scales.taps),
+        };
+
+        const version = 1;
+
+        // 1. Synth saves audio: audio.save(...) generates metadata string
+        const jsonDump = parameter.dumpJsonString(synthParams, version, {
+          recipeName: "E2E_Test_" + util.getTimeStamp(),
+        });
+
+        // 2. Synthesize dummy WAV with embedded JSON
+        const dummyAudio = new wave.Wave(2);
+        dummyAudio.data[0] = [0.1, 0.2, -0.3];
+        dummyAudio.data[1] = [-0.1, 0.4, 0.0];
+        const audioBuffer = wave.Wave.toBuffer(dummyAudio);
+        const header = wave.Wave.fileHeader(48000, 2, audioBuffer.length, false, [], jsonDump);
+        const completeWav = new Uint8Array(header.length + audioBuffer.length);
+        completeWav.set(header, 0);
+        completeWav.set(audioBuffer, header.length);
+
+        // 3. User modifies parameters on UI
+        synthParams.cutoff.dsp = 120;
+        synthParams.taps.dsp = 2;
+
+        // 4. User imports WAV file via RecipeImportDialog
+        const extractedJsonText = wave.Wave.extractJson(completeWav);
+        assert(extractedJsonText !== null, "Extracted JSON from WAV");
+        const recipeData = JSON.parse(extractedJsonText);
+
+        const recipeBook = new Map();
+        const importedRecipeName = parameter.addRecipe(synthParams, recipeBook, recipeData);
+        assert(importedRecipeName.includes("E2E_Test_"));
+
+        // 5. runImport() executes recipeBook.get(recipeName).setParameters(param)
+        recipeBook.get(importedRecipeName).setParameters(synthParams);
+
+        // 6. Assert all parameters have snapped back to the saved state
+        assertEqual(synthParams.cutoff.dsp, 3500, "Cutoff restored to 3500 Hz");
+        assertEqual(synthParams.taps.dsp, 6, "Taps restored to 6");
+      });
+
+      runner.test("setParameters() deterministically restores fixed baseVal even if recipe defines a range", () => {
+        const scale = new parameter.LinearScale(0, 100);
+        const params = { val: new parameter.Parameter(50, scale) };
+
+        // Construct recipe with a range (dMin != dMax)
+        const rangeRecipe = {
+          meta: { author: "Tester", recipeName: "RangeRecipe", version: 1 },
+          parameters: {
+            val: {
+              info: { min: 0, max: 100 },
+              random: { min: 42, max: 99, type: "display" }
+            }
+          }
+        };
+
+        const recipeBook = new Map();
+        const name = parameter.addRecipe(params, recipeBook, rangeRecipe);
+
+        // setParameters should always set dMin (baseVal = 42)
+        recipeBook.get(name).setParameters(params);
+        assertEqual(params.val.dsp, 42, "setParameters set exactly dMin (42)");
+
+        // Running it again guarantees identical deterministic result
+        params.val.dsp = 0;
+        recipeBook.get(name).setParameters(params);
+        assertEqual(params.val.dsp, 42, "setParameters is strictly deterministic");
+      });
+    });
+
+    // --- UI Render Logic ---
+    async function executeTests() {
+      const output = document.getElementById("testOutput");
+      output.innerHTML = "";
+
+      const res = await runner.run();
+
+      document.getElementById("statTotal").textContent = res.total;
+      document.getElementById("statPass").textContent = res.passed;
+      document.getElementById("statFail").textContent = res.failed;
+      document.getElementById("statTime").textContent = `${res.duration}ms`;
+
+      for (const suite of res.results) {
+        const suiteEl = document.createElement("div");
+        suiteEl.className = "suite";
+
+        const header = document.createElement("div");
+        header.className = "suite-header";
+        header.textContent = suite.title;
+        suiteEl.appendChild(header);
+
+        for (const test of suite.tests) {
+          const testEl = document.createElement("div");
+          testEl.className = "test-case";
+
+          const row = document.createElement("div");
+          row.className = "test-row";
+
+          const badge = document.createElement("span");
+          badge.className = `badge ${test.status.toLowerCase()}`;
+          badge.textContent = test.status;
+          row.appendChild(badge);
+
+          const name = document.createElement("span");
+          name.className = "test-name";
+          name.textContent = test.name;
+          row.appendChild(name);
+
+          testEl.appendChild(row);
+
+          if (test.error) {
+            const errEl = document.createElement("div");
+            errEl.className = "test-error";
+            errEl.textContent = test.error;
+            testEl.appendChild(errEl);
+          }
+
+          suiteEl.appendChild(testEl);
+        }
+
+        output.appendChild(suiteEl);
+      }
+    }
+
+    document.getElementById("btnRerun").addEventListener("click", executeTests);
+    window.addEventListener("DOMContentLoaded", executeTests);
+
+    // --- Interactive Drag & Drop Inspector for Manual Verification ---
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const inspectOutput = document.getElementById("manualInspectOutput");
+
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.style.borderColor = "var(--pass)"; });
+    dropzone.addEventListener("dragleave", () => { dropzone.style.borderColor = "var(--border)"; });
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = "var(--border)";
+      if (e.dataTransfer.files.length) handleInspectFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length) handleInspectFile(e.target.files[0]);
+    });
+
+    async function handleInspectFile(file) {
+      inspectOutput.textContent = `Reading ${file.name}...`;
+      const isWav = file.name.toLowerCase().endsWith(".wav");
+
+      try {
+        let jsonText = null;
+        if (isWav) {
+          const buf = await file.arrayBuffer();
+          jsonText = wave.Wave.extractJson(buf);
+          if (!jsonText) {
+            inspectOutput.innerHTML = `<span style="color:var(--fail)">✗ No ICMT metadata chunk found in WAV file.</span>`;
+            return;
+          }
+        } else {
+          jsonText = await file.text();
+        }
+
+        const parsed = JSON.parse(jsonText);
+        inspectOutput.innerHTML = `
+          <div style="color:var(--pass); margin-bottom: 0.5rem;">✓ Valid Recipe Found:</div>
+          <div><strong>Author:</strong> ${parsed.meta?.author || "(None)"}</div>
+          <div><strong>Recipe:</strong> ${parsed.meta?.recipeName || "(None)"}</div>
+          <div><strong>Version:</strong> ${parsed.meta?.version ?? "N/A"}</div>
+          <div><strong>Parameters Count:</strong> ${Object.keys(parsed.parameters || {}).length}</div>
+        `;
+      } catch (err) {
+        inspectOutput.innerHTML = `<span style="color:var(--fail)">✗ Parse error: ${err.message}</span>`;
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -3,6 +3,7 @@
 
 import {HistoryManager} from "../parameter.js";
 import {generateWidgetId} from "../util.js";
+import {Wave} from "../wave.js";
 
 import {option, select} from "./combobox.js";
 import {ToggleButton} from "./togglebutton.js";
@@ -17,7 +18,7 @@ export {MultiCheckBoxVertical} from "./multicheckbox.js";
 export {NumberInput} from "./numberinput.js";
 export {TabView} from "./tabview.js";
 export {ToggleButton, ToggleButtonLine} from "./togglebutton.js";
-export {WaveformXYPad} from "./waveformxypad.js";
+export {createWaveformParameters, WaveformXYPad} from "./waveformxypad.js";
 export {WaveView} from "./waveview.js";
 
 export function refresh(ui) {
@@ -316,42 +317,71 @@ export class RecipeImportDialog {
 
     this.divDragAndDropArea = div(this.dialog, "RecipeImportDragAndDropArea", null);
     this.divDragAndDropArea.addEventListener("drop", (e) => this.#onDropFile(e));
-    this.divDragAndDropArea.addEventListener("dragover", (e) => e.preventDefault());
+    this.divDragAndDropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      this.divDragAndDropArea.classList.add("dragover");
+    });
+    this.divDragAndDropArea.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      this.divDragAndDropArea.classList.add("dragover");
+    });
+    this.divDragAndDropArea.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      this.divDragAndDropArea.classList.remove("dragover");
+    });
 
     this.spanDragAndDropArea = span(this.divDragAndDropArea, null, null);
-    this.spanDragAndDropArea.textContent = "Drag & Drop .json Here";
+    this.spanDragAndDropArea.textContent = "Drag & Drop .json, .wav Here";
 
     this.divInputContainer = div(this.dialog, null, "RecipeImportInputContainer");
 
     this.inputFile
       = createGenericElement("input", this.divInputContainer, "recipeImportFileInput", null);
     this.inputFile.type = "file";
-    this.inputFile.accept = ".json,application/json";
+    this.inputFile.accept = ".json,application/json,.wav,audio/wav";
     this.inputFile.multiple = true;
-    this.inputFile.ariaLabel = "Choose JSON files";
+    this.inputFile.ariaLabel = "Choose JSON or WAV files";
     this.inputFile.addEventListener("change", (e) => this.#onInputFileChange(e));
   }
 
   open() { this.dialog.showModal(); }
+  loadFromFile(file) { this.#readFile(file); }
 
-  #readRecipeJsonFile(file) {
+  #readFile(file) {
+    const isWav = file.name.toLowerCase().endsWith(".wav") || file.type.includes("wav");
     const reader = new FileReader();
-    reader.addEventListener("load", (ev) => { this.onLoadFunc(ev, JSON.parse(reader.result)); });
+
+    reader.addEventListener("load", (ev) => {
+      try {
+        const text = isWav ? Wave.extractJson(reader.result) : reader.result;
+        if (text) {
+          this.onLoadFunc(ev, JSON.parse(text));
+        } else {
+          console.warn(`No recipe metadata found in ${file.name}.`);
+        }
+      } catch (err) { console.error(`Failed to parse ${file.name}`, err); }
+    });
     reader.addEventListener(
-      "error", (ev) => { console.error(`Failed to load ${file.name}`, new Error(reader.error)); });
+      "error", () => { console.error(`Failed to load ${file.name}`, reader.error); });
     reader.addEventListener(
-      "abort", (ev) => { console.warn(`Aborted to load ${file.name}.`, new Error(reader.error)); });
-    reader.readAsText(file, "utf-8");
+      "abort", () => { console.warn(`Aborted to load ${file.name}.`, reader.error); });
+
+    if (isWav) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file, "utf-8");
+    }
   }
 
   #onInputFileChange(event) {
-    for (const file of this.inputFile.files) this.#readRecipeJsonFile(file);
+    for (const file of this.inputFile.files) this.#readFile(file);
     this.dialog.close();
   }
 
   #onDropFile(event) {
     event.preventDefault();
-    for (const file of event.dataTransfer.files) this.#readRecipeJsonFile(file);
+    this.divDragAndDropArea.classList.remove("dragover");
+    for (const file of event.dataTransfer.files) this.#readFile(file);
     this.dialog.close();
   }
 }

@@ -235,7 +235,7 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
     const runImport = () => {
-      recipeBook.get(recipeName).randomize(param);
+      recipeBook.get(recipeName).setParameters(param);
       render();
       widget.refresh(ui);
     };
@@ -251,7 +251,11 @@ const playControl = widget.playControl(
   divLeft,
   (ev) => { audio.play(getSampleRateScaler()); },
   (ev) => { audio.stop(); },
-  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {
+    audio.save(
+      false, [], getSampleRateScaler(),
+      parameter.dumpJsonString(param, version, {recipeName: util.getTimeStamp()}));
+  },
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);

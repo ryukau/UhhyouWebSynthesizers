@@ -10,6 +10,7 @@ export class Audio extends EventTarget {
   #cachedBuffer = null;
   #rendererPath;
   #fadeOutDuration = 0.01;
+  json = null;
 
   constructor(channels, rendererPath, renderStatusElement, onRenderFinish) {
     super();
@@ -72,10 +73,10 @@ export class Audio extends EventTarget {
     this.#gain = undefined;
   }
 
-  save(loop = false, cue = [], upFold = 1) {
+  save(loop = false, cue = [], upFold = 1, json = null) {
     const buffer = Wave.toBuffer(this.wave, this.wave.channels);
     const header = Wave.fileHeader(
-      upFold * this.audioContext.sampleRate, this.wave.channels, buffer.length, loop, cue);
+      upFold * this.audioContext.sampleRate, this.wave.channels, buffer.length, loop, cue, json);
 
     const blob = new Blob([header, buffer], {type: "application/octet-stream"});
     const url = window.URL.createObjectURL(blob);
@@ -323,7 +324,7 @@ export class Wave {
     }
   }
 
-  static fileHeader(sampleRate, channels, bufferLengthBytes, loop = false, cue = false) {
+  static fileHeader(sampleRate, channels, bufferLengthBytes, loop = false, cue = false, json = "") {
     /*
     References:
     https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
@@ -356,7 +357,22 @@ export class Wave {
     const cueChunkSize = cue.length >= 1 ? 8 + 4 + 24 * cue.length : 0;
     const smplChunkSize = loop.length >= 1 ? 8 + 36 + 24 * loop.length : 0;
 
-    let riffChunkSize = 50 + cueChunkSize + smplChunkSize;
+    // Embed JSON to LIST INFO ICMT chunk.
+    const jsonBytes
+      = (typeof json === "string" && json.length > 0) ? new TextEncoder().encode(json) : null;
+    let listChunkTotalSize = 0;
+    let icmtSize = 0;
+    let icmtPad = 0;
+    let listSize = 0;
+    if (jsonBytes) {
+      icmtSize = jsonBytes.length + 1; // ZSTR includes null terminator
+      icmtPad = icmtSize % 2;          // 2-byte word alignment padding
+      listSize
+        = 4 + 8 + icmtSize + icmtPad;    // 'INFO' (4) + 'ICMT' (4) + size (4) + string + null + pad
+      listChunkTotalSize = 8 + listSize; // 'LIST' (4) + size (4) + listSize
+    }
+
+    let riffChunkSize = 50 + cueChunkSize + smplChunkSize + listChunkTotalSize;
 
     let cueId = 0;
 
@@ -410,6 +426,18 @@ export class Wave {
       }
     }
 
+    if (jsonBytes) {
+      header.push(
+        ascii("LIST"),
+        u32(listSize),
+        ascii("INFO"),
+        ascii("ICMT"),
+        u32(icmtSize),
+        jsonBytes,
+        new Uint8Array(1 + icmtPad), // 1 null-terminator byte (0x00) + optional pad byte (0x00)
+      );
+    }
+
     header.push(ascii("data"), u32(bufferLengthBytes));
 
     return this.#concatTypedArray(header);
@@ -436,5 +464,63 @@ export class Wave {
       for (let j = 0; j < channels; ++j) f32[ic + j] = wave.data[j][i];
     }
     return new Uint8Array(f32.buffer);
+  }
+
+  /**
+   * Extracts embedded JSON metadata from a WAV ArrayBuffer or Uint8Array.
+   * Looks for a LIST -> INFO -> ICMT chunk (or fallback 'json' chunk).
+   *
+   * @param {ArrayBuffer | Uint8Array} wavBuffer
+   * @returns {string | null} Decoded JSON string or null if not found.
+   */
+  static extractJson(wavBuffer) {
+    const bytes = wavBuffer instanceof Uint8Array ? wavBuffer : new Uint8Array(wavBuffer);
+    if (bytes.length < 12) return null;
+
+    const ascii
+      = (offset, length) => String.fromCharCode(...bytes.subarray(offset, offset + length));
+    const u32 = (offset) => (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16)
+                             | (bytes[offset + 3] << 24))
+      >>> 0;
+
+    if (ascii(0, 4) !== "RIFF" || ascii(8, 4) !== "WAVE") return null;
+
+    let offset = 12;
+    while (offset + 8 <= bytes.length) {
+      const chunkId = ascii(offset, 4);
+      const chunkSize = u32(offset + 4);
+      offset += 8;
+
+      if (chunkId === "LIST") {
+        const listEnd = Math.min(offset + chunkSize, bytes.length);
+
+        if (offset + 4 <= listEnd && ascii(offset, 4) === "INFO") {
+          let subOffset = offset + 4;
+
+          while (subOffset + 8 <= listEnd) {
+            const subId = ascii(subOffset, 4);
+            const subSize = u32(subOffset + 4);
+            subOffset += 8;
+
+            if (subId === "ICMT") {
+              const textEnd = Math.min(subOffset + subSize, listEnd);
+              let textBytes = bytes.subarray(subOffset, textEnd);
+
+              // Strip trailing null characters.
+              while (textBytes.length > 0 && textBytes[textBytes.length - 1] === 0) {
+                textBytes = textBytes.subarray(0, textBytes.length - 1);
+              }
+
+              return new TextDecoder().decode(textBytes);
+            }
+
+            subOffset += subSize + (subSize % 2 === 1 ? 1 : 0); // Word alignment padding.
+          }
+        }
+      }
+      offset += chunkSize + (chunkSize % 2 === 1 ? 1 : 0); // Word alignment padding.
+    }
+
+    return null;
   }
 }
