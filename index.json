@@ -9,6 +9,15 @@
       "summary": {"ja": "",             "en": ""           },
       "list"   : [
         {
+          "href"       : "./FuzzyString/synth.html",
+          "name"       : "FuzzyString",
+          "tag"        : {"ja": "撥弦", "en": "String"},
+          "description": {
+            "ja": "2 つのディレイをカップリングした弦モデルに基づくシンセサイザ。変調をかけると弦ではない音が出る。",
+            "en": "A string synthesizer using 2 coupled delays. The modulation changes the sound to something other than a string."
+          }
+        },
+        {
           "href"       : "./Pluck2/synth.html",
           "name"       : "Pluck2",
           "tag"        : {"ja": "ギター", "en": "Guitar"},
@@ -17,7 +26,7 @@
         {
           "href"       : "./BassString/synth.html",
           "name"       : "BassString",
-          "tag"        : {"ja": "Bass", "en": "Bass"},
+          "tag"        : {"ja": "ベース", "en": "Bass"},
           "description": {
             "ja": "コントラバス (double bass) のスラップ奏法に似せたシンセサイザ。",
             "en": "Imitation of double bass slap."
