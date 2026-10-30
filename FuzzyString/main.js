@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const randomUniform
   = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
@@ -56,6 +56,9 @@ function randomizeDefault(param) {
   randomUniform(param.subCoupling, 0.0, 0.3);
   randomUniform(param.subBridgeCoupling, 0.0, 0.2);
   randomUniform(param.subMix, 0.0, 0.5);
+
+  randomLoguniform(param.unisonDetune, 1, 2400);
+  randomUniform(param.unisonSpread, 0.5, 1.0);
 }
 
 const localRecipeBook = {
@@ -77,6 +80,11 @@ const scales = {
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
   sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
   dcHighpassCutoffRelative: new parameter.LinearScale(-60, 60),
+
+  nUnison: new parameter.IntScale(1, 16),
+  unisonDetune: new parameter.LinearScale(0, 2400),
+  unisonSpread: new parameter.LinearScale(0.0, 1.0),
+  unisonDelay: new parameter.DecibelScale(-60, -20, true),
 
   excitationGain: new parameter.DecibelScale(-40, 20, false),
 
@@ -129,6 +137,13 @@ const param = {
   overSample: new parameter.Parameter(0, scales.overSample),
   sampleRateScaler: new parameter.Parameter(3, scales.sampleRateScaler),
   integerPitch: new parameter.Parameter(0, scales.boolean),
+
+  nUnison: new parameter.Parameter(1, scales.nUnison, true),
+  unisonDetune: new parameter.Parameter(10, scales.unisonDetune, true),
+  unisonSpread: new parameter.Parameter(1.0, scales.unisonSpread, false),
+  unisonDelay: new parameter.Parameter(0.0, scales.unisonDelay, true),
+  unisonMonoSub: new parameter.Parameter(0, scales.boolean),
+  unisonStereoNoise: new parameter.Parameter(1, scales.boolean),
 
   excitationGain: new parameter.Parameter(1, scales.excitationGain, false),
   pickPosition: new parameter.Parameter(0.2, scales.pickPosition, false),
@@ -271,6 +286,7 @@ const playControl = widget.playControl(
 
 const detailRender = widget.details(divLeft, "Render");
 const detailPitch = widget.details(divLeft, "Pitch");
+const detailUnison = widget.details(divLeft, "Unison");
 const detailExcitation = widget.details(divMid, "Excitation");
 const detailMainPath = widget.details(divRight, "Main Path");
 const detailSubPath = widget.details(divRight, "Sub Path");
@@ -289,6 +305,15 @@ const ui = {
     detailRender, ["Integer Pitch Off", "Integer Pitch On"], param.integerPitch, render),
 
   tensionMod: new widget.NumberInput(detailPitch, "Tension Mod", param.tensionMod, render),
+
+  nUnison: new widget.NumberInput(detailUnison, "nUnison", param.nUnison, render),
+  unisonDetune: new widget.NumberInput(detailUnison, "Detune [cent]", param.unisonDetune, render),
+  unisonSpread: new widget.NumberInput(detailUnison, "Stereo Spread", param.unisonSpread, render),
+  unisonDelay: new widget.NumberInput(detailUnison, "Attack Delay [s]", param.unisonDelay, render),
+  unisonMonoSub: new widget.ToggleButtonLine(
+    detailUnison, ["Mono Sub Off", "Mono Sub On"], param.unisonMonoSub, render),
+  unisonStereoNoise: new widget.ToggleButtonLine(
+    detailUnison, ["Stereo Noise Off", "Stereo Noise On"], param.unisonStereoNoise, render),
 
   excitationGain:
     new widget.NumberInput(detailExcitation, "Gain [dB]", param.excitationGain, render),
