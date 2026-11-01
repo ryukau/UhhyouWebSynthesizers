@@ -43,7 +43,7 @@ export class SineAdaa1 {
   reset() { this.#x1 = 0.0; }
 
   process(input) {
-    const y = adaa.sineAdaa1(this.#x1, input);
+    const y = sineAdaa1(this.#x1, input);
     this.#x1 = input;
     return y;
   }

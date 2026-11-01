@@ -1,8 +1,8 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
+import * as adaa from "../common/dsp/adaa/adaa.js";
 import {downSampleIIR} from "../common/dsp/multirate.js";
-import * as saturator from "../common/dsp/saturator.js"
 import {SVF, SVFBell, SVFHighShelf} from "../common/dsp/svf.js";
 import * as util from "../common/util.js";
 import BasicLimiter from "../common/wasm/basiclimiter.js";
@@ -88,8 +88,7 @@ function process(upRate, pv, dsp) {
   const peakAmp = dsp.limiter.processPeakHold(Math.abs(sig));
   const linear = peakAmp > 1 ? 1 / peakAmp : 1;
   const saturated = peakAmp >= Number.EPSILON ? Math.tanh(peakAmp) / peakAmp : 1;
-  sig = dsp.limiter.applyGain(
-    sig, peakAmp, util.lerp(linear, saturated, pv.limiterSaturationMix));
+  sig = dsp.limiter.applyGain(sig, peakAmp, util.lerp(linear, saturated, pv.limiterSaturationMix));
 
   if (pv.distortionSwitch) sig = dsp.distortion.process(pv.distortionGain * sig);
 
@@ -123,7 +122,7 @@ onmessage = async (event) => {
 
     limiter: new basiclimiter.Limiter(),
 
-    distortion: new saturator.SaturatorAdaa1(saturator.adaaTypes[pv.distortionType]),
+    distortion: adaa.instantiateAdaa(menuitems.saturatorAdaa1Items[pv.distortionType], 1),
   };
 
   // Modulator.
@@ -141,8 +140,7 @@ onmessage = async (event) => {
 
   // Limiter.
   dsp.limiter.resize(upRate);
-  dsp.limiter.prepare(
-    upRate, pv.limiterAttack, pv.limiterSustain, pv.limiterRelease, 1, 0);
+  dsp.limiter.prepare(upRate, pv.limiterAttack, pv.limiterSustain, pv.limiterRelease, 1, 0);
   const latency = upFold * dsp.limiter.latency(upFold);
   for (let i = 0; i < latency; ++i) process(upRate, pv, dsp);
 

@@ -1,7 +1,6 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import * as saturator from "../common/dsp/saturator.js"
 import {palette, uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
@@ -10,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
 
 const localRecipeBook = {
   "All": {
@@ -83,7 +82,7 @@ const scales = {
   eqGain: new parameter.DecibelScale(0, 40, false),
   eqFeedback: new parameter.DecibelScale(0, 60, true),
 
-  distortionType: new parameter.MenuItemScale(saturator.adaaTypes),
+  distortionType: new parameter.MenuItemScale(menuitems.saturatorAdaa1Items),
   distortionGain: new parameter.DecibelScale(0, 60, false),
 };
 
@@ -125,7 +124,7 @@ const param = {
   eqFeedback: new parameter.Parameter(0, scales.eqFeedback, true),
 
   distortionSwitch: new parameter.Parameter(0, scales.boolean),
-  distortionType: new parameter.Parameter(0, scales.distortionType, true),
+  distortionType: new parameter.Parameter(3, scales.distortionType, true),
   distortionGain: new parameter.Parameter(1, scales.distortionGain, false),
 };
 
@@ -152,12 +151,10 @@ const waveView = [
     divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
-audio.addEventListener("renderfinish", (event) => {{
+audio.addEventListener("renderfinish", (event) => {
   const wave = event.detail;
-  for (let i = 0; i < waveView.length; ++i) {{
-    waveView[i].set(wave.data[i], wave.peakValue);
-  }}
-}});
+  for (let i = 0; i < waveView.length; ++i) { waveView[i].set(wave.data[i], wave.peakValue); }
+});
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
