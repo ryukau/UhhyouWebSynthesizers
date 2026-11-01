@@ -146,6 +146,41 @@ export class LinearScale {
   toUi(dspValue) { return dspValue; }
 }
 
+export class LogScale {
+  constructor(min, max, minToZero = false) {
+    console.assert(Number.isFinite(min) && min > 0, "min must be positive.", new Error());
+    console.assert(Number.isFinite(max) && max > min, "max must be greater than min.", new Error());
+    console.assert(typeof minToZero === "boolean", "minToZero must be boolean.", new Error());
+
+    this.minToZero = minToZero;
+    this.min = min;
+    this.max = max;
+
+    this.minExp = Math.log(min);
+    this.diffExp = Math.log(max) - this.minExp;
+  }
+
+  get minUi() { return 0; }
+  get maxUi() { return 1; }
+
+  get minDsp() { return this.minToZero ? 0 : this.min; }
+  get maxDsp() { return this.max; }
+
+  toDsp(uiValue) {
+    if (this.minToZero && uiValue <= 0) return 0;
+    if (uiValue <= 0) return this.min;
+    if (uiValue >= 1) return this.max;
+    return util.clamp(Math.exp(uiValue * this.diffExp + this.minExp), this.min, this.max);
+  }
+
+  toUi(dspValue) {
+    if (this.minToZero && dspValue <= 0) return 0;
+    if (dspValue <= this.min) return 0;
+    if (dspValue >= this.max) return 1;
+    return (Math.log(dspValue) - this.minExp) / this.diffExp;
+  }
+}
+
 // Decibel in UI, amplitude in DSP.
 export class DecibelScale {
   constructor(minDB, maxDB, minToZero) {
