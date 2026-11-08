@@ -91,8 +91,8 @@ const param = {
   fadeIn: new parameter.Parameter(0.001, scales.fade, true),
   fadeOut: new parameter.Parameter(0.1, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
-  overSample: new parameter.Parameter(2, scales.overSample),
-  sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
+  overSample: new parameter.Parameter(0, scales.overSample),
+  sampleRateScaler: new parameter.Parameter(2, scales.sampleRateScaler),
   seed: new parameter.Parameter(0, scales.seed),
 
   limiterAttack: new parameter.Parameter(4 / 3000, scales.limiterAttack, true),
