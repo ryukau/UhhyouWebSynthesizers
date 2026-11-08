@@ -41,7 +41,7 @@ export class BiasedSaturatorAdaa {
    * @param {number} gain      - Pre-saturation input gain.
    * @param {number} bias      - Static DC bias offset added before saturation.
    * @param {number} dryMix    - Dry signal mix ratio.
-   * @param {number} scale     - Post-saturation scaling factor (e.g. 0.37).
+   * @param {number} scale     - Post-saturation scaling factor.
    */
   constructor(saturator, gain, bias, dryMix, scale) {
     if (saturator === undefined) {

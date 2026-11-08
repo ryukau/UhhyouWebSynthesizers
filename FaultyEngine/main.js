@@ -1,7 +1,6 @@
 // Copyright Takamitsu Endo (ryukau@gmail.com)
 // SPDX-License-Identifier: Apache-2.0
 
-import {AudioFileManager} from "../common/audiofile.js";
 import {uiSize} from "../common/gui/palette.js";
 import * as widget from "../common/gui/widget.js";
 import * as parameter from "../common/parameter.js";
@@ -10,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 2;
+const version = 4;
 
 const randomUniform
   = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
@@ -24,202 +23,141 @@ const randomFull = (prm) => prm.randomize((p) => (p.normalized = Math.random()))
 
 const localRecipeBook = {
   "Default": (param) => {
-    if (Math.random() < 0.5) param.feedback.dsp = -param.feedback.dsp;
-
-    randomInt(param.excitationType, 0, 2);
-    randomUniform(param.excitationShape, 0.0, 1.0);
-    randomUniform(
-      param.lpCutoffRelative, param.lpCutoffRelative.scale.minDsp,
-      param.lpCutoffRelative.scale.maxDsp);
-
-    randomUniform(param.excitationMix, 0.0, 1.0);
+    randomLoguniform(param.excitationGain, 1.0, 10.0);
     randomFull(param.noiseSeed);
-    randomLoguniform(param.noiseDecay, 0.05, 2);
+    randomLoguniform(param.noiseDecay, 0.001, 0.1);
     randomInt(param.noiseFilterType, 0, menuitems.noiseFilterItems.length - 1);
     randomUniform(param.noiseFilterQ, 0.5, 10.0);
     randomUniform(param.noiseFilterCutoffStart, 0, 96);
     randomUniform(param.noiseFilterCutoffEnd, -24, 48);
 
-    const maxFFCombTapsLog2p1 = 1 + Math.round(Math.log2(scales.ffCombTaps.maxDsp));
-    param.ffCombTaps.dsp = 2 ** Math.floor(Math.random() * maxFFCombTapsLog2p1);
-    for (const p of param.ffCombPoint) randomUniform(p, 0.01, 0.99);
-    for (const p of param.ffCombGain) randomFull(p);
-
-    randomInt(param.phaserStage, 2, 32);
-    randomUniform(param.phaserMix, 0.2, 1.0);
-    randomUniform(param.phaserFeedback, -0.85, 0.85);
-    randomUniform(param.phaserAllpassSpread, 0.0, 1.5);
-    randomLoguniform(param.phaserAllpassCenterHz, 40.0, 3000.0);
-    randomUniform(param.phaserModAmount, 0.1, 8.0);
-    randomLoguniform(param.phaserModLowpassHz, 200.0, 8000.0);
-
-    randomUniform(param.buzzerGain, -0.8, 0.8);
-    randomUniform(param.buzzerFeedback, -0.8, 0.8);
-    for (const p of param.buzzerDelaySeconds) randomFull(p);
-  },
-  "Slap Bass": (param) => {
-    param.bypassFretCollision.dsp = 0;
-    param.notePitch.dsp = util.midiPitchToFreq(28); // E1
-    param.feedback.dsp = 0.97;
-    param.renderDuration.dsp = 1.2;
-
-    param.excitationType.dsp = Math.random() < 0.6 ? 3 : 4; // Thumb Slap or Finger Pop
-    randomUniform(param.excitationShape, 0.2, 0.7);
-    randomUniform(param.excitationMix, 0.1, 0.4);
-
-    randomFull(param.noiseSeed);
-    randomLoguniform(param.noiseDecay, 0.05, 0.5);
-    randomUniform(param.noiseFilterCutoffStart, 24, 84);
-    randomUniform(param.noiseFilterCutoffEnd, -12, 36);
-
-    randomUniform(param.fretAction, 0.005, 0.35);
+    randomUniform(param.fretAction, 0.001, 0.1);
     randomUniform(param.fretRestitution, 0.5, 0.9);
-    randomInt(param.fretCount, 16, 24);
+    randomInt(param.segments, 16, 24);
+    randomInt(param.segmentInterval, 0, menuitems.segmentIntervalItems.length - 1);
     randomUniform(param.slapPosition, 0.65, 0.85);
     randomUniform(param.pickupPosition, 0.7, 0.95);
     randomUniform(param.tensionMod, 0.01, 0.1);
 
-    const maxFFCombTapsLog2p1 = 1 + Math.round(Math.log2(scales.ffCombTaps.maxDsp));
-    param.ffCombTaps.dsp = 2 ** Math.floor(Math.random() * maxFFCombTapsLog2p1);
-    for (const p of param.ffCombPoint) randomUniform(p, 0.01, 0.99);
-    for (const p of param.ffCombGain) randomFull(p);
+    randomUniform(param.buzzBiasedAdaaGain, 1.0, 10.0);
+    randomUniform(param.buzzBiasedAdaaBias, -4.0, 4.0);
+    randomUniform(param.buzzBiasedAdaaDryMix, 0.0, 0.8);
+    randomUniform(param.buzzBiasedAdaaScale, 0.1, 1.0);
 
-    randomUniform(param.buzzerGain, 0.2, 0.8);
-    randomUniform(param.buzzerFeedback, 0.2, 0.98);
-    for (const p of param.buzzerDelaySeconds) randomInt(p, 16, 512);
+    randomInt(param.nDelay, 1, scales.nDelay.maxDsp);
+    randomUniform(param.buzzerGain, 0.8, 0.99);
+    randomUniform(param.buzzerFeedback, -0.8, 0.8);
+    randomInt(param.buzzerFeedbackSign, 0, menuitems.buzzerFeedbackSignItems.length - 1);
+    for (const p of param.buzzerDelaySeconds) randomFull(p);
+
+    if (Math.random() < 0.5) param.feedback.dsp = -param.feedback.dsp;
+    randomLoguniform(param.frequency, 1, 200);
+    randomLoguniform(param.lpCutoffHz, 400, param.lpCutoffHz.scale.maxDsp);
+
+    randomUniform(param.stereoPickupSpread, 0.0, 0.08);
+    randomUniform(param.stereoBuzzerDetune, 0.0, 0.1);
+    randomInt(param.stereoSeedOffset, 0, 10000);
   },
 };
 
 const scales = {
-  boolean: new parameter.IntScale(0, 1),
   renderDuration: new parameter.DecibelScale(-40, 30, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
   sampleRateScaler: new parameter.MenuItemScale(menuitems.sampleRateScalerItems),
+  boolean: new parameter.IntScale(0, 1),
 
-  tensionMod: new parameter.LinearScale(0.0, 1.0),
-
-  fretAction: new parameter.DecibelScale(util.ampToDB(0.0002), util.ampToDB(2.0), false),
-  fretRestitution: new parameter.LinearScale(0.0, 1.0),
-  fretCount: new parameter.IntScale(0, 24),
-  slapPosition: new parameter.LinearScale(0.5, 0.95),
-  pickupPosition: new parameter.LinearScale(0.05, 0.98),
-  pickupDistance: new parameter.DecibelScale(util.ampToDB(0.001), util.ampToDB(10.0), false),
-
-  buzzerGain: new parameter.LinearScale(-0.99, 0.99),
-  buzzerFeedback: new parameter.LinearScale(-0.99, 0.99),
-  buzzerDelaySeconds: new parameter.DecibelScale(-80, -20, false),
-
-  excitationGain: new parameter.DecibelScale(-40, 20, false),
-  excitationType: new parameter.MenuItemScale(menuitems.excitationItems),
-  excitationShape: new parameter.LinearScale(0.0, 1.0),
-  excitationMix: new parameter.LinearScale(0.0, 1.0),
-
+  excitationGain: new parameter.DecibelScale(-40, 40, false),
   noiseSeed: new parameter.IntScale(0, 2 ** 32 - 1),
-  noiseDecay: new parameter.DecibelScale(-40, 40, false),
+  noiseDecay: new parameter.DecibelScale(-80, 0, false),
   noiseFilterType: new parameter.MenuItemScale(menuitems.noiseFilterItems),
   noiseFilterQ: new parameter.DecibelScale(-20, 40, false),
   noiseFilterCutoffRelative: new parameter.LinearScale(-48, 96),
-  ffCombTaps: new parameter.IntScale(1, 64),
-  ffCombPoint: new parameter.LinearScale(1e-4, 1.0),
-  ffCombGain: new parameter.DecibelScale(-20, 0, true),
 
-  notePitch: new parameter.MidiPitchScale(-24, 140, false),
+  fretAction: new parameter.DecibelScale(util.ampToDB(0.0002), util.ampToDB(2.0), false),
+  fretRestitution: new parameter.LinearScale(0.0, 1.0),
+  segments: new parameter.IntScale(0, 24),
+  segmentInterval: new parameter.MenuItemScale(menuitems.segmentIntervalItems),
+  slapPosition: new parameter.LinearScale(0.5, 0.95),
+  pickupPosition: new parameter.LinearScale(0.05, 0.98),
+
+  buzzBiasedAdaaGain: new parameter.LinearScale(0.0, 20.0),
+  buzzBiasedAdaaBias: new parameter.LinearScale(-10.0, 10.0),
+  buzzBiasedAdaaDryMix: new parameter.LinearScale(0.0, 1.0),
+  buzzBiasedAdaaScale: new parameter.LinearScale(0.0, 2.0),
+
+  buzzerGain: new parameter.LinearScale(-0.99, 0.99),
+  buzzerFeedback: new parameter.LinearScale(-0.99, 0.99),
+  buzzerFeedbackSign: new parameter.MenuItemScale(menuitems.buzzerFeedbackSignItems),
+  nDelay: new parameter.IntScale(1, 16),
+  buzzerDelaySeconds: new parameter.DecibelScale(-80, 0, false),
+
+  frequency: new parameter.LogScale(0.1, 10000),
   feedback: new parameter.SymmetricLogScale(1e-3, 1),
-  dcHighpassCutoffRelative: new parameter.LinearScale(-60, 60),
-  lpCutoffRelative: new parameter.LinearScale(0, 96),
+  dcHighpassCutoffHz: new parameter.LogScale(1, 100000),
+  lpCutoffHz: new parameter.LogScale(1, 100000),
+  tensionMod: new parameter.LinearScale(0.0, 1.0),
 
-  phaserStage: new parameter.IntScale(1, 64),
-  phaserMix: new parameter.LinearScale(-1.0, 1.0),
-  phaserFeedback: new parameter.LinearScale(-0.99, 0.99),
-  phaserAllpassCenterHz: new parameter.DecibelScale(0.0, 100.0, false),
-  phaserAllpassSpread: new parameter.LinearScale(0.0, 2.0),
-  phaserModAmount: new parameter.DecibelScale(-60.0, 80.0, true),
-  phaserModLowpassHz: new parameter.DecibelScale(-20.0, 100.0, false),
+  stereoPickupSpread: new parameter.LinearScale(0.0, 0.4),
+  stereoBuzzerDetune: new parameter.LinearScale(0.0, 0.5),
+  stereoSeedOffset: new parameter.IntScale(0, 100000),
 };
 
-function createArrayParametersUniform(defaultDspValue, scale) {
-  let arr = new Array(scales.ffCombTaps.max);
-  for (let i = 0; i < arr.length; ++i) {
-    arr[i] = new parameter.Parameter(defaultDspValue, scale, false);
-  }
-  return arr;
-}
-
-function createArrayParametersSequenced(step, scale) {
-  let arr = new Array(scales.ffCombTaps.max);
-  for (let i = 0; i < arr.length; ++i) {
-    arr[i] = new parameter.Parameter(((i + 1) * step) % 1, scale, false);
-  }
-  return arr;
-}
-
 const param = {
-  renderDuration: new parameter.Parameter(1, scales.renderDuration, true),
+  renderDuration: new parameter.Parameter(4, scales.renderDuration, true),
   fadeIn: new parameter.Parameter(0.002, scales.fade, true),
   fadeOut: new parameter.Parameter(0.05, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
   overSample: new parameter.Parameter(0, scales.overSample),
-  sampleRateScaler: new parameter.Parameter(3, scales.sampleRateScaler),
+  sampleRateScaler: new parameter.Parameter(2, scales.sampleRateScaler),
   normalize: new parameter.Parameter(1, scales.boolean),
-  integerPitch: new parameter.Parameter(0, scales.boolean),
-
-  tensionMod: new parameter.Parameter(0.05, scales.tensionMod, false),
-
-  bypassNoiseFilter: new parameter.Parameter(0, scales.boolean),
-  bypassFFCombFilter: new parameter.Parameter(0, scales.boolean),
-  bypassBassString: new parameter.Parameter(0, scales.boolean),
-  bypassFeedbackPhaser: new parameter.Parameter(1, scales.boolean),
-  bypassFretCollision: new parameter.Parameter(1, scales.boolean),
-
-  fretAction: new parameter.Parameter(0.2, scales.fretAction, false),
-  fretRestitution: new parameter.Parameter(0.75, scales.fretRestitution, false),
-  fretCount: new parameter.Parameter(24, scales.fretCount),
-  slapPosition: new parameter.Parameter(0.75, scales.slapPosition, false),
-  pickupPosition: new parameter.Parameter(0.88, scales.pickupPosition, false),
-  pickupDistance: new parameter.Parameter(0.02, scales.pickupDistance, true),
-
-  buzzerGain: new parameter.Parameter(0.5, scales.buzzerGain, false),
-  buzzerFeedback: new parameter.Parameter(0.98, scales.buzzerFeedback, false),
-  buzzerDelaySeconds: [
-    new parameter.Parameter(0.001, scales.buzzerDelaySeconds, true),
-    new parameter.Parameter(0.007, scales.buzzerDelaySeconds, true),
-    new parameter.Parameter(0.019, scales.buzzerDelaySeconds, true),
-    new parameter.Parameter(0.029, scales.buzzerDelaySeconds, true),
-  ],
 
   excitationGain: new parameter.Parameter(1, scales.excitationGain, false),
-  excitationType: new parameter.Parameter(1, scales.excitationType),
-  excitationShape: new parameter.Parameter(0.25, scales.excitationShape, false),
-  excitationMix: new parameter.Parameter(0.5, scales.excitationMix, false),
 
   noiseSeed: new parameter.Parameter(0, scales.noiseSeed),
-  noiseDecay: new parameter.Parameter(1.0, scales.noiseDecay, true),
-  noiseFilterType: new parameter.Parameter(1, scales.noiseFilterType),
+  noiseDecay: new parameter.Parameter(0.01, scales.noiseDecay, true),
+  noiseFilterType: new parameter.Parameter(0, scales.noiseFilterType),
   noiseFilterQ: new parameter.Parameter(Math.SQRT1_2, scales.noiseFilterQ, true),
-  noiseFilterCutoffStart: new parameter.Parameter(48, scales.noiseFilterCutoffRelative, false),
+  noiseFilterCutoffStart: new parameter.Parameter(96, scales.noiseFilterCutoffRelative, false),
   noiseFilterCutoffEnd: new parameter.Parameter(0, scales.noiseFilterCutoffRelative, false),
 
-  ffCombTaps: new parameter.Parameter(32, scales.ffCombTaps),
-  ffCombPoint: createArrayParametersSequenced(0.1234, scales.ffCombPoint),
-  ffCombGain: createArrayParametersUniform(0.125, scales.ffCombGain),
+  fretAction: new parameter.Parameter(0.1, scales.fretAction, false),
+  fretRestitution: new parameter.Parameter(0.75, scales.fretRestitution, false),
+  segments: new parameter.Parameter(8, scales.segments),
+  segmentInterval: new parameter.Parameter(0, scales.segmentInterval),
+  slapPosition: new parameter.Parameter(0.85, scales.slapPosition, false),
+  pickupPosition: new parameter.Parameter(0.88, scales.pickupPosition, false),
 
-  notePitch: new parameter.Parameter(util.midiPitchToFreq(36), scales.notePitch, false),
+  buzzBiasedAdaaGain: new parameter.Parameter(4, scales.buzzBiasedAdaaGain, false),
+  buzzBiasedAdaaBias: new parameter.Parameter(2, scales.buzzBiasedAdaaBias, false),
+  buzzBiasedAdaaDryMix: new parameter.Parameter(0.4, scales.buzzBiasedAdaaDryMix, false),
+  buzzBiasedAdaaScale: new parameter.Parameter(0.37, scales.buzzBiasedAdaaScale, false),
+
+  buzzerGain: new parameter.Parameter(0.99, scales.buzzerGain, false),
+  buzzerFeedback: new parameter.Parameter(0.99, scales.buzzerFeedback, false),
+  buzzerFeedbackSign: new parameter.Parameter(0, scales.buzzerFeedbackSign),
+  nDelay: new parameter.Parameter(4, scales.nDelay),
+  buzzerDelaySeconds: Array.from(
+    {length: scales.nDelay.max},
+    (_, i) => {
+      const buzzerDelayDefaults = [
+        0.001, 0.007, 0.019, 0.029, 0.041, 0.053, 0.067, 0.079, 0.097, 0.113, 0.131, 0.151, 0.173,
+        0.197, 0.223, 0.251
+      ];
+      return new parameter.Parameter(buzzerDelayDefaults[i], scales.buzzerDelaySeconds, true);
+    }),
+
+  frequency: new parameter.Parameter(20, scales.frequency, true),
   feedback: new parameter.Parameter(0.95, scales.feedback, true),
-  dcHighpassCutoffRelative: new parameter.Parameter(-12, scales.dcHighpassCutoffRelative, false),
-  lpCutoffRelative: new parameter.Parameter(55, scales.lpCutoffRelative, false),
+  dcHighpassCutoffHz: new parameter.Parameter(5, scales.dcHighpassCutoffHz, true),
+  lpCutoffHz: new parameter.Parameter(80000.0, scales.lpCutoffHz, true),
+  tensionMod: new parameter.Parameter(0.5, scales.tensionMod, false),
 
-  phaserStage: new parameter.Parameter(16, scales.phaserStage),
-  phaserMix: new parameter.Parameter(1.0, scales.phaserMix, false),
-  phaserFeedback: new parameter.Parameter(0.5, scales.phaserFeedback, false),
-  phaserAllpassCenterHz: new parameter.Parameter(100.0, scales.phaserAllpassCenterHz, true),
-  phaserAllpassSpread: new parameter.Parameter(0.0, scales.phaserAllpassSpread, false),
-  phaserModAmount: new parameter.Parameter(1.0, scales.phaserModAmount, true),
-  phaserModLowpassHz: new parameter.Parameter(2000.0, scales.phaserModLowpassHz, true),
+  stereoPickupSpread: new parameter.Parameter(0, scales.stereoPickupSpread, false),
+  stereoBuzzerDetune: new parameter.Parameter(0, scales.stereoBuzzerDetune, false),
+  stereoSeedOffset: new parameter.Parameter(0, scales.stereoSeedOffset),
 };
-
-const audioFileManager = new AudioFileManager(1);
 
 const recipeBook = parameter.addLocalRecipes(localRecipeBook);
 await parameter.loadJson(param, recipeBook, []);
@@ -228,33 +166,22 @@ function getSampleRateScaler() {
   return parseInt(menuitems.sampleRateScalerItems[param.sampleRateScaler.dsp]);
 }
 
-function onFFCombTapsChanged() {
-  ui.ffCombPoint.setViewRange(0, param.ffCombTaps.dsp);
-  ui.ffCombGain.setViewRange(0, param.ffCombTaps.dsp);
+function onNDelayChanged() {
+  ui.buzzerDelaySeconds.setViewRange(0, param.nDelay.dsp);
   render();
 }
 
-async function render() {
-  const targetRate = audio.audioContext.sampleRate * getSampleRateScaler();
-  await audioFileManager.resample(targetRate);
+function render() {
   audio.render(
     parameter.toMessage(param, {
-      sampleRate: targetRate,
-      ...audioFileManager.toMessage(),
+      sampleRate: audio.audioContext.sampleRate * getSampleRateScaler(),
     }),
     param.normalize.dsp ? "link" : "bypass",
     playControl.togglebuttonQuickSave.state === 1,
   );
 }
 
-const audio = new wave.Audio(
-  2,
-  "./renderer.js",
-  undefined,
-  (wave) => {
-    for (let i = 0; i < waveView.length; ++i) { waveView[i].set(wave.data[i], wave.peakValue); }
-  },
-);
+const audio = new wave.Audio(2, "./renderer.js");
 
 const pageTitle = widget.pageTitle(document.body);
 const divMain = widget.div(document.body, "main", undefined);
@@ -272,6 +199,15 @@ const waveView = [
     divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
+audio.addEventListener("renderfinish", (event) => {
+  {
+    const wave = event.detail;
+    for (let i = 0; i < waveView.length; ++i) {
+      { waveView[i].set(wave.data[i], wave.peakValue); }
+    }
+  }
+});
+
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
 
@@ -284,8 +220,8 @@ const recipeImportDialog = new widget.RecipeImportDialog(document.body, (ev, dat
     widget.option(playControl.selectRandom, recipeName);
     playControl.selectRandom.value = recipeName;
     const runImport = () => {
-      recipeBook.get(recipeName).randomize(param);
-      onFFCombTapsChanged();
+      recipeBook.get(recipeName).setParameters(param);
+      onNDelayChanged();
       widget.refresh(ui);
     };
     if (playControl.historyManager) {
@@ -300,11 +236,15 @@ const playControl = widget.playControl(
   divLeft,
   (ev) => { audio.play(getSampleRateScaler()); },
   (ev) => { audio.stop(); },
-  (ev) => { audio.save(false, [], getSampleRateScaler()); },
+  (ev) => {
+    audio.save(
+      false, [], getSampleRateScaler(),
+      parameter.dumpJsonString(param, version, {recipeName: util.getTimeStamp()}));
+  },
   (ev) => {},
   (ev) => {
     recipeBook.get(playControl.selectRandom.value).randomize(param);
-    onFFCombTapsChanged();
+    onNDelayChanged();
     widget.refresh(ui);
   },
   [...recipeBook.keys()],
@@ -318,33 +258,19 @@ const playControl = widget.playControl(
   (ev) => { recipeImportDialog.open(); },
   param,
   () => {
-    onFFCombTapsChanged();
+    onNDelayChanged();
     widget.refresh(ui);
     render();
   },
 );
 
 const detailRender = widget.details(divLeft, "Render");
-const detailPitch = widget.details(divLeft, "Pitch");
-const detailBypass = widget.details(divLeft, "Bypass");
-const detailExcitation = widget.details(divMid, "Excitation");
-const detailSlap = widget.details(divRight, "Slap & Frets");
-const detailBuzzer = widget.details(divRight, "Buzzer");
-const detailString = widget.details(divRight, "String");
-const detailPhaser = widget.details(divRight, "Feedback Phaser");
-
-const audioLoader = new widget.AudioLoader(
-  detailExcitation,
-  "Audio File",
-  async (data, name) => {
-    await audioFileManager.setAudio(0, data, audio.audioContext.sampleRate * getSampleRateScaler());
-    render();
-  },
-  () => {
-    audioFileManager.clearAudio(0);
-    render();
-  },
-);
+const detailExcitation = widget.details(divLeft, "Excitation");
+const detailCollision = widget.details(divMid, "Collision");
+const detailBuzzer = widget.details(divMid, "Buzz");
+const detailMainPath = widget.details(divMid, "Main Path");
+const detailBuzzSaturator = widget.details(divRight, "Saturator");
+const detailStereo = widget.details(divRight, "Stereo");
 
 const ui = {
   renderDuration: new widget.NumberInput(detailRender, "Length [s]", param.renderDuration, render),
@@ -356,34 +282,12 @@ const ui = {
     new widget.ComboBoxLine(detailRender, "Sample Rate Scale", param.sampleRateScaler, render),
   normalize: new widget.ToggleButtonLine(
     detailRender, ["Normalize Off", "Normalize On"], param.normalize, render),
-  integerPitch: new widget.ToggleButtonLine(
-    detailRender, ["Integer Pitch Off", "Integer Pitch On"], param.integerPitch, render),
-
-  tensionMod: new widget.NumberInput(detailPitch, "Tension Mod", param.tensionMod, render),
-
-  bypassNoiseFilter: new widget.ToggleButtonLine(
-    detailBypass, ["Filter Bypass Off", "Filter Bypass On"], param.bypassNoiseFilter, render),
-  bypassFFCombFilter: new widget.ToggleButtonLine(
-    detailBypass, ["FF Comb Bypass Off", "FF Comb Bypass On"], param.bypassFFCombFilter, render),
-  bypassBassString: new widget.ToggleButtonLine(
-    detailBypass, ["String Bypass Off", "String Bypass On"], param.bypassBassString, render),
-  bypassFeedbackPhaser: new widget.ToggleButtonLine(
-    detailBypass, ["Phaser Bypass Off", "Phaser Bypass On"], param.bypassFeedbackPhaser, render),
-  bypassFretCollision: new widget.ToggleButtonLine(
-    detailBypass, ["Collision Bypass Off", "Collision Bypass On"], param.bypassFretCollision,
-    render),
 
   excitationGain:
     new widget.NumberInput(detailExcitation, "Gain [dB]", param.excitationGain, render),
-  excitationType:
-    new widget.ComboBoxLine(detailExcitation, "Pulse Type", param.excitationType, render),
-  excitationShape:
-    new widget.NumberInput(detailExcitation, "Pulse Shape", param.excitationShape, render),
-  excitationMix:
-    new widget.NumberInput(detailExcitation, "Mix (Pulse/Noise)", param.excitationMix, render),
 
   noiseSeed: new widget.NumberInput(detailExcitation, "Noise Seed", param.noiseSeed, render),
-  noiseDecay: new widget.NumberInput(detailExcitation, "Noise Decay", param.noiseDecay, render),
+  noiseDecay: new widget.NumberInput(detailExcitation, "Noise Decay [s]", param.noiseDecay, render),
   noiseFilterType:
     new widget.ComboBoxLine(detailExcitation, "Noise Filter Type", param.noiseFilterType, render),
   noiseFilterQ:
@@ -393,49 +297,48 @@ const ui = {
   noiseFilterCutoffEnd: new widget.NumberInput(
     detailExcitation, "Filter Cutoff End [st.]", param.noiseFilterCutoffEnd, render),
 
-  ffCombTaps:
-    new widget.NumberInput(detailExcitation, "FF Comb Taps", param.ffCombTaps, onFFCombTapsChanged),
-  ffCombPoint: new widget.BarBox(
-    detailExcitation, "FF Comb Point [ratio]", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.ffCombPoint, render),
-  ffCombGain: new widget.BarBox(
-    detailExcitation, "FF Comb Gain [dB]", uiSize.barboxWidth, uiSize.barboxHeight,
-    param.ffCombGain, render),
-
-  fretAction: new widget.NumberInput(detailSlap, "Action", param.fretAction, render),
-  fretRestitution: new widget.NumberInput(detailSlap, "Restitution", param.fretRestitution, render),
-  fretCount: new widget.NumberInput(detailSlap, "Fret Count", param.fretCount, render),
-  slapPosition: new widget.NumberInput(detailSlap, "Strike Point", param.slapPosition, render),
+  fretAction: new widget.NumberInput(detailCollision, "Action", param.fretAction, render),
+  fretRestitution:
+    new widget.NumberInput(detailCollision, "Restitution", param.fretRestitution, render),
+  segments: new widget.NumberInput(detailCollision, "Segments", param.segments, render),
+  segmentInterval:
+    new widget.ComboBoxLine(detailCollision, "Interval", param.segmentInterval, render),
+  slapPosition: new widget.NumberInput(detailCollision, "Strike Point", param.slapPosition, render),
   pickupPosition:
-    new widget.NumberInput(detailSlap, "Pickup Position", param.pickupPosition, render),
-  pickupDistance:
-    new widget.NumberInput(detailSlap, "Pickup Distance [m]", param.pickupDistance, render),
+    new widget.NumberInput(detailCollision, "Pickup Position", param.pickupPosition, render),
 
   buzzerGain: new widget.NumberInput(detailBuzzer, "Gain", param.buzzerGain, render),
   buzzerFeedback: new widget.NumberInput(detailBuzzer, "Feedback", param.buzzerFeedback, render),
+  buzzerFeedbackSign:
+    new widget.ComboBoxLine(detailBuzzer, "Feedback Signs", param.buzzerFeedbackSign, render),
+  nDelay: new widget.NumberInput(detailBuzzer, "Delay Count", param.nDelay, onNDelayChanged),
   buzzerDelaySeconds: new widget.BarBox(
     detailBuzzer, "Delay [s]", uiSize.barboxWidth, uiSize.barboxHeight, param.buzzerDelaySeconds,
     render),
 
-  notePitch: new widget.NumberInput(detailString, "Note Pitch", param.notePitch, render),
-  feedback: new widget.NumberInput(detailString, "Feedback", param.feedback, render),
-  dcHighpassCutoffRelative: new widget.NumberInput(
-    detailString, "DC Highpass [st.]", param.dcHighpassCutoffRelative, render),
-  lpCutoffRelative:
-    new widget.NumberInput(detailString, "LP Cutoff [st.]", param.lpCutoffRelative, render),
+  frequency: new widget.NumberInput(detailMainPath, "Frequency [Hz]", param.frequency, render),
+  feedback: new widget.NumberInput(detailMainPath, "Feedback", param.feedback, render),
+  dcHighpassCutoffHz:
+    new widget.NumberInput(detailMainPath, "DC Highpass [Hz]", param.dcHighpassCutoffHz, render),
+  lpCutoffHz: new widget.NumberInput(detailMainPath, "LP Cutoff [Hz]", param.lpCutoffHz, render),
+  tensionMod: new widget.NumberInput(detailMainPath, "Tension Mod", param.tensionMod, render),
 
-  phaserStage: new widget.NumberInput(detailPhaser, "Stages", param.phaserStage, render),
-  phaserMix: new widget.NumberInput(detailPhaser, "Mix", param.phaserMix, render),
-  phaserFeedback: new widget.NumberInput(detailPhaser, "Feedback", param.phaserFeedback, render),
-  phaserAllpassCenterHz:
-    new widget.NumberInput(detailPhaser, "Center Freq [Hz]", param.phaserAllpassCenterHz, render),
-  phaserAllpassSpread:
-    new widget.NumberInput(detailPhaser, "Spread", param.phaserAllpassSpread, render),
-  phaserModAmount:
-    new widget.NumberInput(detailPhaser, "Mod Amount", param.phaserModAmount, render),
-  phaserModLowpassHz:
-    new widget.NumberInput(detailPhaser, "Mod Lowpass [Hz]", param.phaserModLowpassHz, render),
+  buzzBiasedAdaaGain:
+    new widget.NumberInput(detailBuzzSaturator, "Gain", param.buzzBiasedAdaaGain, render),
+  buzzBiasedAdaaBias:
+    new widget.NumberInput(detailBuzzSaturator, "Bias", param.buzzBiasedAdaaBias, render),
+  buzzBiasedAdaaDryMix:
+    new widget.NumberInput(detailBuzzSaturator, "Dry Mix", param.buzzBiasedAdaaDryMix, render),
+  buzzBiasedAdaaScale:
+    new widget.NumberInput(detailBuzzSaturator, "Scale", param.buzzBiasedAdaaScale, render),
+
+  stereoPickupSpread:
+    new widget.NumberInput(detailStereo, "Pickup Spread", param.stereoPickupSpread, render),
+  stereoBuzzerDetune:
+    new widget.NumberInput(detailStereo, "Buzzer Detune", param.stereoBuzzerDetune, render),
+  stereoSeedOffset:
+    new widget.NumberInput(detailStereo, "Excitation Seed Offset", param.stereoSeedOffset, render),
 };
 
-onFFCombTapsChanged();
+onNDelayChanged();
 window.addEventListener("load", (ev) => { widget.refresh(ui); });
