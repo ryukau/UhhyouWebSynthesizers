@@ -9,6 +9,15 @@
       "summary": {"ja": "",             "en": ""           },
       "list"   : [
         {
+          "href"       : "./FaultyEngine/synth.html",
+          "name"       : "FaultyEngine",
+          "tag"        : {"ja": "ノイズ", "en": "Noise"},
+          "description": {
+            "ja": "発振するとエンジンやモーターのような音。",
+            "en": "Makes faulty engine sounds on oscillation."
+          }
+        },
+        {
           "href"       : "./FuzzyString/synth.html",
           "name"       : "FuzzyString",
           "tag"        : {"ja": "撥弦", "en": "String"},
