@@ -374,6 +374,8 @@ function processSlapBass(pv, upRate, upFold, durationSamples) {
     new TanhAdaa1(), pv.buzzBiasedAdaaGain, pv.buzzBiasedAdaaBias, pv.buzzBiasedAdaaDryMix,
     pv.buzzBiasedAdaaScale);
   const buzzFeedbackAdaa = new TanhAdaa1();
+  const buzzFeedbackCutoffHz = pv.buzzFeedbackCutoffHz ?? 80000.0;
+  const buzzFeedbackLowpass = new LP1(buzzFeedbackCutoffHz / upRate);
 
   const nodeInP = new Float64Array(numNodes);
   const nodeInM = new Float64Array(numNodes);
@@ -392,8 +394,8 @@ function processSlapBass(pv, upRate, upFold, durationSamples) {
 
   for (let i = 0; i < durationSamples; ++i) {
     const excSig = (i < excitation.length) ? pv.excitationGain * excitation[i] : 0.0;
-    const transverseSig
-      = excDcHighpass.process(excSig) + buzzFeedbackSign * buzzFeedbackAdaa.process(0.5 * buzzOut);
+    const transverseSig = excDcHighpass.process(excSig)
+      + buzzFeedbackLowpass.process(buzzFeedbackSign * buzzFeedbackAdaa.process(0.5 * buzzOut));
 
     for (let s = 0; s < numSegments; ++s) {
       const [outP, outM] = segments[s].process(nodeOutP[s], nodeOutM[s + 1]);

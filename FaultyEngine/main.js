@@ -9,7 +9,7 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 4;
+const version = 5;
 
 const randomUniform
   = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
@@ -48,6 +48,7 @@ const localRecipeBook = {
     randomUniform(param.buzzerGain, 0.8, 0.99);
     randomUniform(param.buzzerFeedback, -0.8, 0.8);
     randomInt(param.buzzerFeedbackSign, 0, menuitems.buzzerFeedbackSignItems.length - 1);
+    randomLoguniform(param.buzzFeedbackCutoffHz, 400, param.buzzFeedbackCutoffHz.scale.maxDsp);
     for (const p of param.buzzerDelaySeconds) randomFull(p);
 
     if (Math.random() < 0.5) param.feedback.dsp = -param.feedback.dsp;
@@ -90,6 +91,7 @@ const scales = {
   buzzerGain: new parameter.LinearScale(-0.99, 0.99),
   buzzerFeedback: new parameter.LinearScale(-0.99, 0.99),
   buzzerFeedbackSign: new parameter.MenuItemScale(menuitems.buzzerFeedbackSignItems),
+  buzzFeedbackCutoffHz: new parameter.LogScale(1, 100000),
   nDelay: new parameter.IntScale(1, 16),
   buzzerDelaySeconds: new parameter.DecibelScale(-80, 0, false),
 
@@ -137,6 +139,7 @@ const param = {
   buzzerGain: new parameter.Parameter(0.99, scales.buzzerGain, false),
   buzzerFeedback: new parameter.Parameter(0.99, scales.buzzerFeedback, false),
   buzzerFeedbackSign: new parameter.Parameter(0, scales.buzzerFeedbackSign),
+  buzzFeedbackCutoffHz: new parameter.Parameter(80000.0, scales.buzzFeedbackCutoffHz, true),
   nDelay: new parameter.Parameter(4, scales.nDelay),
   buzzerDelaySeconds: Array.from(
     {length: scales.nDelay.max},
@@ -311,6 +314,8 @@ const ui = {
   buzzerFeedback: new widget.NumberInput(detailBuzzer, "Feedback", param.buzzerFeedback, render),
   buzzerFeedbackSign:
     new widget.ComboBoxLine(detailBuzzer, "Feedback Signs", param.buzzerFeedbackSign, render),
+  buzzFeedbackCutoffHz: new widget.NumberInput(
+    detailBuzzer, "Feedback Lowpass [Hz]", param.buzzFeedbackCutoffHz, render),
   nDelay: new widget.NumberInput(detailBuzzer, "Delay Count", param.nDelay, onNDelayChanged),
   buzzerDelaySeconds: new widget.BarBox(
     detailBuzzer, "Delay [s]", uiSize.barboxWidth, uiSize.barboxHeight, param.buzzerDelaySeconds,
