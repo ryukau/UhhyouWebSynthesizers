@@ -62,7 +62,7 @@ const localRecipeBook = {
 };
 
 const scales = {
-  renderDuration: new parameter.DecibelScale(-40, 30, false),
+  renderDuration: new parameter.DecibelScale(-40, 40, false),
   fade: new parameter.DecibelScale(-60, 40, true),
   decayTo: new parameter.DecibelScale(util.ampToDB(1 / 2 ** 24), 0, false),
   overSample: new parameter.MenuItemScale(menuitems.oversampleItems),
