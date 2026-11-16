@@ -4,23 +4,17 @@
 import * as delay from "../common/dsp/delay.js";
 import {randomSpecialOrthogonal} from "../common/dsp/fdn.js"
 import {downSampleIIR} from "../common/dsp/multirate.js";
-import {AP1, HP1, LP1} from "../common/dsp/onepole.js"
+import {AP1TPT, HP1, LP1} from "../common/dsp/onepole.js"
 import {SlopeFilter} from "../common/dsp/slopefilter.js";
 import {RateLimiter} from "../common/dsp/smoother.js";
 import {SVF, SVFHighShelf} from "../common/dsp/svf.js";
-import {
-  dbToAmp,
-  exponentialMap,
-  normalDistributionMap,
-  uniformFloatMap
-} from "../common/util.js";
+import {dbToAmp, exponentialMap, normalDistributionMap, uniformFloatMap} from "../common/util.js";
 import {PcgRandom} from "../lib/pcgrandom/pcgrandom.js";
 
 import * as menuitems from "./menuitems.js";
 
 class BandedNoise {
-  constructor(
-    sampleRate, rng, initialGain, durationSeconds, decaySeconds, band1Hz, band2Hz) {
+  constructor(sampleRate, rng, initialGain, durationSeconds, decaySeconds, band1Hz, band2Hz) {
     this.envRandom = rng => exponentialMap(rng.number(), 1 / 8, 8);
     this.baseTime = sampleRate * decaySeconds;
     this.envCounter = 0;
@@ -85,11 +79,9 @@ class FDN {
 
     this.delayMod = delayMod;
     this.allpassMod = allpassMod;
-    this.allpassModDecay = modDecaySeconds >= 1
-      ? 1
-      : Math.pow(Number.EPSILON, 1 / (modDecaySeconds * sampleRate));
-    this.feedbackDecay
-      = Math.pow(Number.EPSILON, 1 / (feedbackDecaySeconds * sampleRate));
+    this.allpassModDecay
+      = modDecaySeconds >= 1 ? 1 : Math.pow(Number.EPSILON, 1 / (modDecaySeconds * sampleRate));
+    this.feedbackDecay = Math.pow(Number.EPSILON, 1 / (feedbackDecaySeconds * sampleRate));
     this.modReductionThreshold = modReductionThreshold;
     this.modResumeRate = modResumeRate;
     this.enableClipper = enableClipper;
@@ -113,9 +105,9 @@ class FDN {
       this.lowpass[i] = new SVFHighShelf(lowpassCutoff[i], Math.SQRT1_2, dbToAmp(-0.5));
       this.highpass[i] = new HP1(100 / sampleRate);
       this.apCut1[i] = lowpassCutoff[i] * 2 ** allpass1Cut;
-      this.allpass1[i] = new AP1(this.apCut1[i]);
+      this.allpass1[i] = new AP1TPT();
       this.apCut2[i] = lowpassCutoff[i] * 2 ** allpass2Cut;
-      this.allpass2[i] = new AP1(this.apCut2[i]);
+      this.allpass2[i] = new AP1TPT();
     }
   }
 
@@ -146,10 +138,10 @@ class FDN {
 
       front[i] = this.highpass[i].process(front[i]);
 
-      this.allpass1[i].setCutoff(this.apCut1[i] * Math.exp(this.allpassMod * front[i]));
-      front[i] = this.allpass1[i].process(front[i]);
-      this.allpass2[i].setCutoff(this.apCut2[i] * Math.exp(this.allpassMod * front[i]));
-      front[i] = this.allpass2[i].process(front[i]);
+      front[i] = this.allpass1[i].processMod(
+        front[i], this.apCut1[i] * Math.exp(this.allpassMod * front[i]));
+      front[i] = this.allpass2[i].processMod(
+        front[i], this.apCut2[i] * Math.exp(this.allpassMod * front[i]));
 
       const absed = Math.abs(front[i]);
       if (absed > 100 * this.modReductionThreshold) {
@@ -216,18 +208,16 @@ onmessage = async (event) => {
 
   for (let idx = 0; idx < pv.fdnCount; ++idx) {
     for (let j = 0; j < fdnSize; ++j) {
-      fdnDelaySeconds[j]
-        = 1 / exponentialMap(dsp.rng.number(), pv.minDelayHz, pv.maxDelayHz);
+      fdnDelaySeconds[j] = 1 / exponentialMap(dsp.rng.number(), pv.minDelayHz, pv.maxDelayHz);
       fdnLowpassCutoff[j]
         = exponentialMap(dsp.rng.number(), pv.lowpassHz / 2, pv.lowpassHz * 2) / upRate;
     }
     let fdn = new FDN(
-      fdnSize, upRate, fdnMaxSeconds, pv.delayMod, pv.allpass1Cut, pv.allpass2Cut,
-      pv.allpassMod, pv.modDecaySeconds, pv.feedbackDecaySeconds,
-      pv.modReductionThreshold, Math.pow(1 + pv.modResumeRate, 1 / upFold),
-      pv.enableClipper, pv.clipperScale, fdnDelaySeconds, fdnLowpassCutoff);
-    fdn.randomizeMatrix(
-      Math.floor(uniformFloatMap(rng.number(), 0, Number.MAX_SAFE_INTEGER)));
+      fdnSize, upRate, fdnMaxSeconds, pv.delayMod, pv.allpass1Cut, pv.allpass2Cut, pv.allpassMod,
+      pv.modDecaySeconds, pv.feedbackDecaySeconds, pv.modReductionThreshold,
+      Math.pow(1 + pv.modResumeRate, 1 / upFold), pv.enableClipper, pv.clipperScale,
+      fdnDelaySeconds, fdnLowpassCutoff);
+    fdn.randomizeMatrix(Math.floor(uniformFloatMap(rng.number(), 0, Number.MAX_SAFE_INTEGER)));
     dsp.fdn.push(fdn);
   }
 

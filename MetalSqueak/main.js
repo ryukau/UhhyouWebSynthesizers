@@ -9,22 +9,59 @@ import * as wave from "../common/wave.js";
 
 import * as menuitems from "./menuitems.js";
 
-const version = 0;
+const version = 1;
+
+const randomUniform
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformFloat(low, high)));
+const randomInt
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomUniformInt(low, high)));
+const randomLoguniform
+  = (prm, low, high) => prm.randomize((p) => (p.dsp = util.randomLoguniform(low, high)));
+const randomUi
+  = (prm, low, high) => prm.randomize((p) => (p.ui = util.randomUniformFloat(low, high)));
+const randomFull = (prm) => prm.randomize((p) => (p.normalized = Math.random()));
 
 const localRecipeBook = {
-  "Default": {
-    renderDuration: () => {},
-    fadeIn: () => {},
-    fadeOut: () => {},
-    decayTo: () => {},
-    stereoMerge: () => {},
-    dcHighpassHz: () => {},
-    toneSlope: () => {},
-    overSample: () => {},
-    sampleRateScaler: () => {},
-    lowpassHz: () => {},
-    allpassMod: (prm) => { prm.dsp = util.uniformFloatMap(Math.random(), -4, 4); },
-    modReductionThreshold: () => {},
+  "Default": (param) => {
+    randomFull(param.seed);
+
+    randomFull(param.impulseGain);
+    randomFull(param.noiseGain);
+    randomFull(param.noiseDuration);
+    randomFull(param.noiseDecaySeconds);
+    randomFull(param.noiseBand1Hz);
+    randomFull(param.noiseBand2Hz);
+    randomFull(param.impulseLowpassHz);
+    randomFull(param.impulseHighpassHz);
+
+    randomFull(param.fdnCount);
+    randomFull(param.minDelayHz);
+    randomFull(param.maxDelayHz);
+    randomFull(param.delayMod);
+    randomFull(param.allpass1Cut);
+    randomFull(param.allpass2Cut);
+    randomUniform(param.allpassMod, -4, 4);
+    randomFull(param.modDecaySeconds);
+    randomFull(param.feedbackDecaySeconds);
+    randomFull(param.modResumeRate);
+    randomFull(param.enableClipper);
+    randomFull(param.clipperScale);
+  },
+  "Smoother": (param) => {
+    localRecipeBook["Default"](param);
+
+    randomUi(param.impulseGain, 20, 40);
+    randomLoguniform(param.impulseLowpassHz, 10000, param.impulseLowpassHz.scale.maxDsp);
+    randomLoguniform(param.impulseHighpassHz, param.impulseHighpassHz.scale.minDsp, 20);
+
+    randomInt(param.fdnCount, 1, 3);
+    randomLoguniform(param.minDelayHz, 3000, param.minDelayHz.scale.maxDsp);
+    randomLoguniform(param.maxDelayHz, param.maxDelayHz.scale.minDsp, 2000);
+    randomUniform(param.delayMod, -0.5, 0.5);
+    randomUniform(param.allpassMod, -0.5, 0.5);
+    randomLoguniform(param.modDecaySeconds, util.dbToAmp(param.modDecaySeconds.scale.minDB), 0.1);
+    param.modReductionThreshold.randomize((p) => (p.dsp = 0.5));
+    randomLoguniform(param.modResumeRate, 0.01, param.modResumeRate.scale.maxDsp);
   },
 };
 
@@ -79,8 +116,8 @@ const param = {
   fadeOut: new parameter.Parameter(0.002, scales.fade, true),
   decayTo: new parameter.Parameter(1, scales.decayTo, false),
   stereoMerge: new parameter.Parameter(0.8, scales.stereoMerge),
-  overSample: new parameter.Parameter(1, scales.overSample),
-  sampleRateScaler: new parameter.Parameter(0, scales.sampleRateScaler),
+  overSample: new parameter.Parameter(0, scales.overSample),
+  sampleRateScaler: new parameter.Parameter(1, scales.sampleRateScaler),
   dcHighpassHz: new parameter.Parameter(4, scales.dcHighpassHz, true),
   toneSlope: new parameter.Parameter(1, scales.toneSlope, false),
 
@@ -134,12 +171,14 @@ const waveView = [
     divWaveRow, uiSize.waveViewWidth, uiSize.waveViewHeight, audio.wave.data[1], false),
 ];
 
-audio.addEventListener("renderfinish", (event) => {{
-  const wave = event.detail;
-  for (let i = 0; i < waveView.length; ++i) {{
-    waveView[i].set(wave.data[i], wave.peakValue);
-  }}
-}});
+audio.addEventListener("renderfinish", (event) => {
+  {
+    const wave = event.detail;
+    for (let i = 0; i < waveView.length; ++i) {
+      { waveView[i].set(wave.data[i], wave.peakValue); }
+    }
+  }
+});
 
 const pRenderStatus = widget.paragraph(divLeft, "renderStatus", undefined);
 audio.renderStatusElement = pRenderStatus;
